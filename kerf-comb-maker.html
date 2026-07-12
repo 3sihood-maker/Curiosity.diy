@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kerf Test Comb Maker — Curiosity.diy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4ece0;
+  --paper-2:#eadfcd;
+  --espresso:#241a12;
+  --espresso-soft:#4a382a;
+  --rust:#c0442a;
+  --tan:#d9b483;
+  --line:#c9b79c;
+  --ok:#5d7b3e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--espresso);
+  font-family:Inter,system-ui,sans-serif;
+  font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+header{
+  background:var(--espresso);color:var(--paper);
+  padding:18px 20px 20px;
+}
+header .eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--tan);
+}
+header h1{
+  font-family:Fraunces,Georgia,serif;font-weight:600;
+  font-size:clamp(26px,6vw,38px);margin:6px 0 4px;line-height:1.05;
+}
+header h1 em{font-style:italic;color:var(--tan)}
+header p{margin:0;color:#cdbba4;font-size:14px;max-width:60ch}
+.wrap{max-width:1080px;margin:0 auto;padding:20px}
+.grid{display:grid;gap:20px;grid-template-columns:1fr}
+@media(min-width:900px){.grid{grid-template-columns:340px 1fr;align-items:start}}
+.card{
+  background:#fbf6ee;border:1px solid var(--line);border-radius:10px;
+  padding:16px;box-shadow:0 1px 0 #fff inset;
+}
+.card h2{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--espresso-soft);margin:0 0 12px;
+  padding-bottom:8px;border-bottom:1px solid var(--line);
+}
+label{display:block;margin:0 0 14px}
+label .lab{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:13px;font-weight:500;margin-bottom:5px;
+}
+label .val{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--rust);font-weight:700}
+input[type=range]{width:100%;accent-color:var(--rust)}
+select,input[type=number]{
+  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;
+  background:#fff;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--espresso);
+}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{
+  flex:1;padding:9px 6px;border:0;background:#fff;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em;
+  color:var(--espresso-soft);border-right:1px solid var(--line);
+}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--espresso);color:var(--paper)}
+.seg button:focus-visible{outline:2px solid var(--rust);outline-offset:-2px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.btn{
+  flex:1;min-width:130px;padding:12px 14px;border-radius:8px;border:1px solid var(--espresso);
+  background:var(--espresso);color:var(--paper);cursor:pointer;
+  font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+}
+.btn.alt{background:var(--tan);color:var(--espresso);border-color:#b8925f}
+.btn:hover{filter:brightness(1.12)}
+.btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+.preview{
+  background:#fffdf9;border:1px solid var(--line);border-radius:10px;padding:12px;
+}
+canvas{width:100%;height:auto;display:block;border-radius:4px;background:#fffdf9}
+.legend{
+  display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--espresso-soft);
+}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:middle;border-radius:2px}
+.stat{
+  display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dotted var(--line);
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+}
+.stat:last-child{border-bottom:0}
+.stat b{font-weight:700;color:var(--rust)}
+.note{
+  border-left:3px solid var(--rust);background:#f7efe3;padding:12px 14px;border-radius:0 6px 6px 0;
+  font-size:14px;margin:0 0 14px;
+}
+.note strong{font-weight:600}
+.explain h3{
+  font-family:Fraunces,Georgia,serif;font-size:20px;margin:18px 0 6px;font-weight:600;
+}
+.explain h3:first-child{margin-top:0}
+.explain ol,.explain ul{margin:0 0 10px;padding-left:20px}
+.explain li{margin-bottom:6px}
+.explain code{
+  font-family:'JetBrains Mono',monospace;background:#efe4d2;padding:1px 5px;border-radius:3px;font-size:13px;
+}
+footer{
+  text-align:center;padding:26px 20px 40px;color:var(--espresso-soft);
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;
+}
+.chiplist{
+  display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;
+}
+.chip{
+  font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 7px;border-radius:4px;
+  background:#efe4d2;border:1px solid var(--line);
+}
+@media(prefers-reduced-motion:no-preference){
+  .btn{transition:filter .15s ease}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Curiosity.diy · Laser bench</div>
+  <h1>Kerf Test <em>Comb</em> Maker</h1>
+  <p>One strip, a row of slots, each a hair different. Find the slot your board actually grips in — that tells you your kerf. Two minutes of cutting saves a whole sheet.</p>
+</header>
+
+<div class="wrap">
+<div class="note">
+  <strong>What the comb is for.</strong> A laser beam has width. Cut a 3.0&nbsp;mm slot and you get back something wider than 3.0&nbsp;mm, so a 3.0&nbsp;mm tab flops around in it. The comb cuts a ladder of slots stepping down from nominal thickness. The slot your board slides into by hand but grips firmly is the fit. <code>kerf = nominal thickness − that slot width</code>. Feed that number into Box Maker or the Astounding Shape Designer and every joint closes tight. Kerf changes with machine, power, speed, lens <em>and</em> the board — so cut a fresh comb whenever any of those change.
+</div>
+
+<div class="grid">
+  <div>
+    <div class="card">
+      <h2>Comb</h2>
+
+      <label>
+        <div class="lab"><span>Sheet set</span></div>
+        <div class="seg" id="modeSeg">
+          <button data-mode="single" aria-pressed="true">One thickness</button>
+          <button data-mode="set" aria-pressed="false">Full set 2–12</button>
+        </div>
+      </label>
+
+      <label id="thickWrap">
+        <div class="lab"><span>Nominal thickness</span><span class="val" id="tVal">3.0 mm</span></div>
+        <input type="range" id="t" min="2" max="12" step="0.1" value="3">
+      </label>
+
+      <label>
+        <div class="lab"><span>Steps below nominal</span><span class="val" id="nVal">10</span></div>
+        <input type="range" id="n" min="4" max="16" step="1" value="10">
+      </label>
+
+      <label>
+        <div class="lab"><span>Step size</span><span class="val" id="sVal">0.05 mm</span></div>
+        <input type="range" id="s" min="0.02" max="0.15" step="0.01" value="0.05">
+      </label>
+
+      <label>
+        <div class="lab"><span>Slot depth</span><span class="val" id="dVal">14 mm</span></div>
+        <input type="range" id="d" min="8" max="30" step="1" value="14">
+      </label>
+
+      <label>
+        <div class="lab"><span>Land between slots</span><span class="val" id="gVal">6 mm</span></div>
+        <input type="range" id="g" min="3" max="14" step="0.5" value="6">
+      </label>
+
+      <label>
+        <div class="lab"><span>Number orientation</span></div>
+        <div class="seg" id="orientSeg">
+          <button data-orient="vertical" aria-pressed="true">Vertical</button>
+          <button data-orient="horizontal" aria-pressed="false">Horizontal</button>
+        </div>
+      </label>
+
+      <label>
+        <div class="lab"><span>Engrave resolution</span></div>
+        <select id="dpi">
+          <option value="300">300 dpi</option>
+          <option value="500" selected>500 dpi</option>
+          <option value="600">600 dpi</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>Sheet</h2>
+      <div class="stat"><span>Document</span><b id="docSize">—</b></div>
+      <div class="stat"><span>Combs</span><b id="nCombs">1</b></div>
+      <div class="stat"><span>Slot range</span><b id="range">—</b></div>
+      <div class="stat"><span>Kerf range tested</span><b id="kerfRange">—</b></div>
+      <div class="chiplist" id="chips"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>Download</h2>
+      <div class="btnrow">
+        <button class="btn" id="dlSvg">SVG · cut</button>
+        <button class="btn alt" id="dlJpg">JPG · engrave</button>
+      </div>
+      <p style="font-size:13px;color:var(--espresso-soft);margin:12px 0 0">
+        Both files share one origin and one page size. Import the JPG, engrave the numbers, then import the SVG over the top at <code>0,0</code> and cut. The 4&nbsp;mm square at the top-left corner appears in both — line the squares up and everything else lands.
+      </p>
+    </div>
+  </div>
+
+  <div>
+    <div class="preview">
+      <canvas id="cv" width="1200" height="800"></canvas>
+      <div class="legend">
+        <span><i style="background:#c0442a"></i>Cut lines — SVG</span>
+        <span><i style="background:#241a12"></i>Engraved numbers — JPG</span>
+        <span><i style="background:#5d7b3e"></i>Registration square at 0,0 — both files</span>
+      </div>
+    </div>
+
+    <div class="card explain" style="margin-top:20px">
+      <h2>How to use it</h2>
+      <h3>Cut the comb</h3>
+      <ol>
+        <li>Engrave the JPG first, on the very board you plan to build from, at your usual settings.</li>
+        <li>Cut the SVG over it without moving the board.</li>
+        <li>Take a scrap of the same board and try its edge in each slot, working from the widest down.</li>
+      </ol>
+      <h3>Read the comb</h3>
+      <ul>
+        <li>Too loose: it rattles. Too tight: it needs a mallet, or splits the land.</li>
+        <li>The right one goes in with firm thumb pressure and stays put when you tip the comb over.</li>
+        <li>Read the engraved number on that slot. <code>kerf = nominal − slot</code>. If 3&nbsp;mm ply grips the 2.85 slot, your kerf is 0.15&nbsp;mm.</li>
+      </ul>
+      <h3>Why nominal lies</h3>
+      <p style="margin:0">Ply is rarely the thickness on the label — "3&nbsp;mm" birch often measures 2.9. That's fine. Measure your board with calipers, set that as nominal here, and the comb tells you the true kerf for that board rather than for a number on a packing slip. Write the answer on the board with a marker and on the wall above the machine.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>Curiosity.diy · cut a comb before every real job</footer>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- state ---------- */
+var S = {
+  mode:'single',
+  T:3.0,
+  n:10,          // steps below nominal
+  step:0.05,
+  depth:14,
+  land:6,
+  margin:8,
+  orient:'vertical',
+  dpi:500
+};
+
+var REG = 4;      // registration square, mm
+var REG_GAP = 5;  // clear space under the square before the comb block
+var LABEL_H_V = 13;  // label band, vertical numbers
+var LABEL_H_H = 8;   // label band, horizontal numbers
+var TITLE_H = 8;     // title band under the labels
+var ROW_GAP = 7;     // between combs in a set
+var MIN_SLOT = 0.6;  // never cut a slot narrower than this
+
+/* ---------- geometry ---------- */
+
+// Slot widths for a nominal thickness: nominal at the top, stepping down.
+function widths(T, n, step){
+  var out = [];
+  for(var i=n;i>=0;i--){
+    var w = +(T - i*step).toFixed(3);
+    if(w >= MIN_SLOT) out.push(w);
+  }
+  return out; // ascending
+}
+
+// One comb, local coordinates, origin at its top-left.
+function buildComb(T){
+  var ws = widths(T, S.n, S.step);
+  var labelH = S.orient === 'vertical' ? LABEL_H_V : LABEL_H_H;
+  var slots = [];
+  var x = S.margin;
+  for(var i=0;i<ws.length;i++){
+    slots.push({ x:x, w:ws[i], label:ws[i].toFixed(2) });
+    x += ws[i] + S.land;
+  }
+  var W = x - S.land + S.margin;
+  var H = S.depth + labelH + TITLE_H;
+  return {
+    T:T, W:W, H:H, slots:slots, widths:ws,
+    depth:S.depth, labelY:S.depth + labelH/2, titleY:S.depth + labelH + TITLE_H/2,
+    labelH:labelH
+  };
+}
+
+// Outline path for a comb: around the rim, dipping into every slot from the top edge.
+function combPath(c){
+  var p = [];
+  p.push([0, c.H]);
+  p.push([0, 0]);
+  for(var i=0;i<c.slots.length;i++){
+    var s = c.slots[i];
+    p.push([s.x, 0]);
+    p.push([s.x, c.depth]);
+    p.push([s.x + s.w, c.depth]);
+    p.push([s.x + s.w, 0]);
+  }
+  p.push([c.W, 0]);
+  p.push([c.W, c.H]);
+  return p; // closed by the consumer
+}
+
+// Full document: registration square at 0,0, comb block below it.
+function buildDoc(){
+  var list = [];
+  if(S.mode === 'set'){
+    for(var t=2;t<=12;t++) list.push(buildComb(t));
+  } else {
+    list.push(buildComb(+S.T.toFixed(1)));
+  }
+  var y = REG + REG_GAP;
+  var rows = [];
+  var maxW = 0;
+  for(var i=0;i<list.length;i++){
+    rows.push({ y:y, comb:list[i] });
+    y += list[i].H + ROW_GAP;
+    if(list[i].W > maxW) maxW = list[i].W;
+  }
+  var H = y - ROW_GAP + 4;
+  var W = Math.max(maxW, REG + 10) + 4;
+  return { W:+W.toFixed(2), H:+H.toFixed(2), rows:rows, reg:REG };
+}
+
+/* ---------- SVG: the cut file ---------- */
+function makeSVG(doc){
+  var L = [];
+  L.push('<?xml version="1.0" encoding="UTF-8"?>');
+  L.push('<svg xmlns="http://www.w3.org/2000/svg" width="'+doc.W+'mm" height="'+doc.H+'mm" viewBox="0 0 '+doc.W+' '+doc.H+'">');
+  L.push('<!-- Kerf Test Comb - CUT file - Curiosity.diy. Units mm. Registration square at 0,0 matches the engrave JPG. -->');
+  L.push('<g id="cut" fill="none" stroke="#ff0000" stroke-width="0.1">');
+  // registration square, top-left corner exactly on the origin
+  L.push('  <rect x="0" y="0" width="'+doc.reg+'" height="'+doc.reg+'"/>');
+  for(var i=0;i<doc.rows.length;i++){
+    var r = doc.rows[i], c = r.comb, pts = combPath(c);
+    var d = '';
+    for(var j=0;j<pts.length;j++){
+      d += (j===0?'M':'L') + (+(pts[j][0]).toFixed(3)) + ' ' + (+(pts[j][1] + r.y).toFixed(3)) + ' ';
+    }
+    d += 'Z';
+    L.push('  <path d="'+d+'"/>');
+  }
+  L.push('</g>');
+  L.push('</svg>');
+  return L.join('\n');
+}
+
+/* ---------- shared raster/preview drawing ---------- */
+// mode: 'engrave' (JPG: numbers + reg square only) or 'preview' (everything, coloured)
+function paint(ctx, doc, scale, mode){
+  var ink = '#000';
+  ctx.save();
+  ctx.scale(scale, scale);
+  ctx.lineJoin = 'miter';
+
+  // registration square
+  ctx.fillStyle = (mode === 'preview') ? '#5d7b3e' : ink;
+  ctx.fillRect(0, 0, doc.reg, doc.reg);
+
+  for(var i=0;i<doc.rows.length;i++){
+    var r = doc.rows[i], c = r.comb;
+
+    if(mode === 'preview'){
+      var pts = combPath(c);
+      ctx.beginPath();
+      for(var j=0;j<pts.length;j++){
+        var X = pts[j][0], Y = pts[j][1] + r.y;
+        if(j===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = '#f4ece0';
+      ctx.fill();
+      ctx.strokeStyle = '#c0442a';
+      ctx.lineWidth = 0.35;
+      ctx.stroke();
+    }
+
+    // engraved numbers
+    ctx.fillStyle = (mode === 'preview') ? '#241a12' : ink;
+    var fs = S.orient === 'vertical' ? 3.4 : Math.min(3.2, (c.slots[0].w + S.land) * 0.42);
+    ctx.font = '600 ' + fs + 'px Inter, Arial, Helvetica, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for(var k=0;k<c.slots.length;k++){
+      var s = c.slots[k];
+      var cx = s.x + s.w/2;
+      var cy = r.y + c.labelY;
+      if(S.orient === 'vertical'){
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(-Math.PI/2);
+        ctx.fillText(s.label, 0, 0);
+        ctx.restore();
+      } else {
+        ctx.fillText(s.label, cx, cy);
+      }
+    }
+
+    // title band
+    ctx.font = '600 3.2px Inter, Arial, Helvetica, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(c.T.toFixed(1) + ' mm  ·  kerf = ' + c.T.toFixed(1) + ' - slot that fits', S.margin, r.y + c.titleY);
+  }
+  ctx.restore();
+}
+
+/* ---------- JPG: the engrave file ---------- */
+function makeJPG(doc){
+  var px = S.dpi / 25.4;
+  var cv = document.createElement('canvas');
+  cv.width  = Math.round(doc.W * px);
+  cv.height = Math.round(doc.H * px);
+  var ctx = cv.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  paint(ctx, doc, px, 'engrave');
+  return cv.toDataURL('image/jpeg', 0.95);
+}
+
+/* ---------- preview ---------- */
+function drawPreview(doc){
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var pad = 16;
+  var box = cv.width - pad*2;
+  var boxH = cv.height - pad*2;
+  var scale = Math.min(box / doc.W, boxH / doc.H);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = '#fffdf9';
+  ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.save();
+  ctx.translate(pad + (box - doc.W*scale)/2, pad);
+  paint(ctx, doc, scale, 'preview');
+  ctx.restore();
+}
+
+/* ---------- download ---------- */
+function download(name, href){
+  var a = document.createElement('a');
+  a.href = href; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function slug(){
+  return S.mode === 'set' ? 'kerf-comb-set-2-12mm' : 'kerf-comb-' + S.T.toFixed(1) + 'mm';
+}
+
+/* ---------- wiring ---------- */
+function refresh(){
+  var doc = buildDoc();
+  drawPreview(doc);
+
+  var first = doc.rows[0].comb;
+  var last  = doc.rows[doc.rows.length-1].comb;
+  document.getElementById('docSize').textContent = doc.W.toFixed(0) + ' × ' + doc.H.toFixed(0) + ' mm';
+  document.getElementById('nCombs').textContent = doc.rows.length;
+
+  if(S.mode === 'set'){
+    document.getElementById('range').textContent = '2.0 → 12.0 mm';
+    document.getElementById('kerfRange').textContent = '0 → ' + (S.n*S.step).toFixed(2) + ' mm';
+    document.getElementById('chips').innerHTML = doc.rows.map(function(r){
+      return '<span class="chip">' + r.comb.T.toFixed(0) + 'mm · ' + r.comb.widths.length + ' slots</span>';
+    }).join('');
+  } else {
+    var ws = first.widths;
+    document.getElementById('range').textContent = ws[0].toFixed(2) + ' → ' + ws[ws.length-1].toFixed(2) + ' mm';
+    document.getElementById('kerfRange').textContent = '0 → ' + (first.T - ws[0]).toFixed(2) + ' mm';
+    document.getElementById('chips').innerHTML = ws.map(function(w){
+      return '<span class="chip">' + w.toFixed(2) + '</span>';
+    }).join('');
+  }
+  return doc;
+}
+
+function bindRange(id, key, fmt, valId){
+  var el = document.getElementById(id);
+  el.addEventListener('input', function(){
+    S[key] = parseFloat(el.value);
+    document.getElementById(valId).textContent = fmt(S[key]);
+    refresh();
+  });
+  document.getElementById(valId).textContent = fmt(S[key]);
+}
+
+bindRange('t','T', function(v){return v.toFixed(1)+' mm';}, 'tVal');
+bindRange('n','n', function(v){return String(v);}, 'nVal');
+bindRange('s','step', function(v){return v.toFixed(2)+' mm';}, 'sVal');
+bindRange('d','depth', function(v){return v.toFixed(0)+' mm';}, 'dVal');
+bindRange('g','land', function(v){return v.toFixed(1)+' mm';}, 'gVal');
+
+document.getElementById('modeSeg').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if(!b) return;
+  S.mode = b.dataset.mode;
+  [].forEach.call(this.querySelectorAll('button'), function(x){
+    x.setAttribute('aria-pressed', String(x === b));
+  });
+  document.getElementById('thickWrap').style.display = (S.mode === 'set') ? 'none' : 'block';
+  refresh();
+});
+
+document.getElementById('orientSeg').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if(!b) return;
+  S.orient = b.dataset.orient;
+  [].forEach.call(this.querySelectorAll('button'), function(x){
+    x.setAttribute('aria-pressed', String(x === b));
+  });
+  refresh();
+});
+
+document.getElementById('dpi').addEventListener('change', function(){
+  S.dpi = parseInt(this.value, 10);
+});
+
+document.getElementById('dlSvg').addEventListener('click', function(){
+  var doc = buildDoc();
+  var blob = new Blob([makeSVG(doc)], {type:'image/svg+xml'});
+  download(slug() + '-CUT.svg', URL.createObjectURL(blob));
+});
+
+document.getElementById('dlJpg').addEventListener('click', function(){
+  var doc = buildDoc();
+  download(slug() + '-ENGRAVE.jpg', makeJPG(doc));
+});
+
+refresh();
+
+/* expose for headless verification */
+if(typeof module !== 'undefined' && module.exports){
+  module.exports = { S:S, widths:widths, buildComb:buildComb, buildDoc:buildDoc, combPath:combPath, makeSVG:makeSVG };
+}
+window.__kerf = { S:S, widths:widths, buildComb:buildComb, buildDoc:buildDoc, combPath:combPath, makeSVG:makeSVG };
+})();
+</script>
+</body>
+</html>
