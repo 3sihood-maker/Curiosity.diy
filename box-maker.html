@@ -202,6 +202,50 @@
   #controls #parts{color:var(--ink-soft)}
   #controls #parts b{color:var(--ink)}
 
+
+  /* counters + per-cell inputs */
+  .counter{display:flex;align-items:center;gap:0;flex:none}
+  .counter button{
+    width:34px;height:34px;padding:0;font-size:17px;line-height:1;
+    border-radius:0;display:grid;place-items:center;
+  }
+  .counter button:first-child{border-radius:var(--radius) 0 0 var(--radius)}
+  .counter button:last-child{border-radius:0 var(--radius) var(--radius) 0}
+  .counter input[type=number]{
+    width:52px;border-radius:0;text-align:center;margin:0 -1px;height:34px;
+    -moz-appearance:textfield;
+  }
+  .counter input::-webkit-outer-spin-button,
+  .counter input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .cells{display:none;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+  .cells.on{display:flex}
+  .cells .cell{display:flex;flex-direction:column;gap:2px}
+  .cells .cell span{font:400 9.5px/1 ui-monospace,monospace;color:#8a7a66;letter-spacing:.1em;padding-left:2px}
+  .cells .cell input{width:58px;padding:6px 6px;font:13px ui-monospace,monospace;text-align:right}
+  #controls .cells .cell span{color:#8a7761}
+  #controls input.driven{background:#e2d6bd;color:#7d6a52;cursor:not-allowed}
+  body.tree-on #colCells, body.tree-on #rowCells{opacity:.35;pointer-events:none}
+  body.tree-on .counter, body.tree-on #colMode, body.tree-on #rowMode{opacity:.35;pointer-events:none}
+  .fitopt{display:none}
+  .fitopt.on{display:flex}
+
+
+  /* advanced layout disclosure + plan editor */
+  .disclose{
+    width:100%;text-align:left;display:flex;align-items:center;gap:8px;
+    font-size:13px;padding:10px 11px;
+  }
+  .disclose .chev{display:inline-block;transition:transform .16s ease;font-size:16px;line-height:1}
+  .disclose[aria-expanded=true] .chev{transform:rotate(90deg)}
+  #advBody{padding-top:10px}
+  canvas.plan{
+    width:100%;height:auto;display:block;margin:8px 0;
+    border:1px solid var(--rule);border-radius:var(--radius);
+    background:#fbf6ea;touch-action:manipulation;cursor:pointer;
+  }
+  .planbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+  .planbtns button{padding:9px 6px;font-size:12.5px}
+
   .mobtabs{display:none}
   @media (max-width:860px){
     main{flex-direction:column}
@@ -265,12 +309,48 @@
 
       <fieldset>
         <legend>Compartments</legend>
-        <div class="row"><label for="cols">Columns (X)</label><input type="number" id="cols" value="3" min="1" max="12" step="1"></div>
-        <div class="row"><label for="colW">Column widths</label><input type="text" id="colW" class="mono ratio" value="1 1 1"></div>
-        <div class="row"><label for="rows">Rows (Y)</label><input type="number" id="rows" value="2" min="1" max="12" step="1"></div>
-        <div class="row"><label for="rowW">Row depths</label><input type="text" id="rowW" class="mono ratio" value="1 1"></div>
-        <p class="hint">Widths are relative — <span class="mono">2 1 1</span> makes the first column twice the others. Add or remove numbers to change the count.</p>
-        <div class="row"><label for="dmode">Wall join</label>
+
+        <div class="row">
+          <label>Columns (X)</label>
+          <div class="counter">
+            <button type="button" data-step="cols:-1" aria-label="Fewer columns">&minus;</button>
+            <input type="number" id="cols" value="3" min="1" max="16" step="1">
+            <button type="button" data-step="cols:1" aria-label="More columns">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <label for="colMode">Column sizing</label>
+          <select id="colMode">
+            <option value="even" selected>Even</option>
+            <option value="prop">Proportional</option>
+            <option value="exact">Exact (mm)</option>
+          </select>
+        </div>
+        <div class="cells" id="colCells"></div>
+        <label class="check fitopt" id="fitColsWrap"><input type="checkbox" id="fitCols" checked> Resize box width to fit</label>
+
+        <div class="row" style="margin-top:12px">
+          <label>Rows (Y)</label>
+          <div class="counter">
+            <button type="button" data-step="rows:-1" aria-label="Fewer rows">&minus;</button>
+            <input type="number" id="rows" value="2" min="1" max="16" step="1">
+            <button type="button" data-step="rows:1" aria-label="More rows">+</button>
+          </div>
+        </div>
+        <div class="row">
+          <label for="rowMode">Row sizing</label>
+          <select id="rowMode">
+            <option value="even" selected>Even</option>
+            <option value="prop">Proportional</option>
+            <option value="exact">Exact (mm)</option>
+          </select>
+        </div>
+        <div class="cells" id="rowCells"></div>
+        <label class="check fitopt" id="fitRowsWrap"><input type="checkbox" id="fitRows" checked> Resize box depth to fit</label>
+
+        <p class="hint" id="cellHint">Even splits the cavity equally.</p>
+
+        <div class="row" style="margin-top:12px"><label for="dmode">Wall join</label>
           <select id="dmode">
             <option value="tab" selected>Tabbed slots</option>
             <option value="finger">Finger joints</option>
@@ -279,6 +359,30 @@
         </div>
         <label class="check"><input type="checkbox" id="baseSlot" checked> Slot dividers into base</label>
         <p class="hint">Crossing dividers are always cross-lapped. Free-floating makes a removable egg-crate with no wall or base slots.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Advanced layout</legend>
+        <button type="button" id="advToggle" class="disclose" aria-expanded="false">
+          <span class="chev">&rsaquo;</span> Guillotine layout &mdash; asymmetrical compartments
+        </button>
+        <div id="advBody" hidden>
+          <label class="check"><input type="checkbox" id="useTree"> Use this layout instead of the grid</label>
+          <p class="hint">Tap a compartment, then split it. Splits nest, so you can give one region three narrow slots while its neighbour stays a single wide tray. Walls that dead-end into other walls are tabbed through them; nothing cross-laps.</p>
+          <canvas id="plan" class="plan"></canvas>
+          <div class="planbtns">
+            <button type="button" id="splitX">Split &#8596;</button>
+            <button type="button" id="splitY">Split &#8597;</button>
+            <button type="button" id="unsplit">Remove wall</button>
+            <button type="button" id="resetTree">Reset</button>
+          </div>
+          <div class="slide" id="posWrap" hidden>
+            <label for="splitPos">Position</label>
+            <input type="range" id="splitPos" min="6" max="94" value="50">
+            <span class="mono" id="posVal" style="width:36px;text-align:right;font-size:11px"></span>
+          </div>
+          <p class="hint" id="planHint">Tap a compartment to select it.</p>
+        </div>
       </fieldset>
 
       <fieldset>
@@ -303,6 +407,7 @@
         <div class="btns">
           <button class="primary" id="dlZip">Download all sheets (.zip)</button>
           <button id="dlOne">Download sheet 1 (.svg)</button>
+          <button id="dlPng">Save render (PNG, on white)</button>
         </div>
       </fieldset>
 
@@ -503,7 +608,10 @@ function bbox(p){
 }
 
 /* ---------- one open-or-closed shell (walls + base [+ flush lid]) ---------- */
-function shellPanels(W, D, H, t, f, k, lid, hFB, hLR, hBase){
+function shellPanels(W, D, H, t, f, k, lid, holes){
+  const h = holes || {};
+  const hFront = h.front || [], hBack = h.back || [],
+        hLeft  = h.left  || [], hRight = h.right || [], hBase = h.base || [];
   const parts = [];
   const insTop = lid ? t : 0;
   const push = (name, poly, holes, place)=>{ parts.push({name, poly, holes:holes||[], place}); };
@@ -516,8 +624,8 @@ function shellPanels(W, D, H, t, f, k, lid, hFB, hLR, hBase){
     bottom: fbBottom, right: fbSide,
     top: reverseRuns(fbTop, W), left: reverseRuns(fbSide, H)
   });
-  push('Front', frontPoly, hFB, {O:[0,0,0],   U:[1,0,0], V:[0,0,1], N:[0,1,0], t});
-  push('Back',  frontPoly, hFB, {O:[0,D-t,0], U:[1,0,0], V:[0,0,1], N:[0,1,0], t});
+  push('Front', frontPoly, hFront, {O:[0,0,0],   U:[1,0,0], V:[0,0,1], N:[0,1,0], t});
+  push('Back',  frontPoly.map(q=>q.slice()), hBack, {O:[0,D-t,0], U:[1,0,0], V:[0,0,1], N:[0,1,0], t});
 
   // LEFT / RIGHT  (u = y, v = z)
   const lrBottom = jointRuns(D, t, f, false, 0, 0, k);
@@ -527,8 +635,8 @@ function shellPanels(W, D, H, t, f, k, lid, hFB, hLR, hBase){
     bottom: lrBottom, right: lrSide,
     top: reverseRuns(lrTop, D), left: reverseRuns(lrSide, H)
   });
-  push('Left',  leftPoly, hLR, {O:[0,0,0],   U:[0,1,0], V:[0,0,1], N:[1,0,0], t});
-  push('Right', leftPoly, hLR, {O:[W-t,0,0], U:[0,1,0], V:[0,0,1], N:[1,0,0], t});
+  push('Left',  leftPoly, hLeft, {O:[0,0,0],   U:[0,1,0], V:[0,0,1], N:[1,0,0], t});
+  push('Right', leftPoly.map(q=>q.slice()), hRight, {O:[W-t,0,0], U:[0,1,0], V:[0,0,1], N:[1,0,0], t});
 
   // BASE / FLUSH LID  (u = x, v = y)
   const btX = jointRuns(W, t, f, true, 0, 0, k);
@@ -538,25 +646,245 @@ function shellPanels(W, D, H, t, f, k, lid, hFB, hLR, hBase){
     top: reverseRuns(btX, W), left: reverseRuns(btY, D)
   });
   push('Base', basePoly, hBase, {O:[0,0,0], U:[1,0,0], V:[0,1,0], N:[0,0,1], t});
-  if(lid) push('Lid', basePoly, [], {O:[0,0,H-t], U:[1,0,0], V:[0,1,0], N:[0,0,1], t});
+  if(lid) push('Lid', basePoly.map(q=>q.slice()), [], {O:[0,0,H-t], U:[1,0,0], V:[0,1,0], N:[0,0,1], t});
 
   return parts;
 }
 
-/* Compartment sizes from weights, then the divider centres that produce them.
-   The weights govern the usable cells — divider thickness is taken out first,
-   so "2 1 1" really does make the first compartment twice the others. */
-function divisionCentres(a, b, weights, t){
-  const w = (weights && weights.length ? weights : [1]).map(x=> (x > 0 ? x : 1));
-  const n = w.length;
-  const total = w.reduce((s,x)=>s+x, 0);
-  const usable = (b - a) - (n - 1)*t;
-  if(usable <= 0) return {centres:[], cells:[b - a]};
-  const cells = w.map(x=> usable * x / total);
-  const centres = [];
-  let pos = a;
-  for(let i=0;i<n-1;i++){ pos += cells[i]; centres.push(pos + t/2); pos += t; }
-  return {centres, cells};
+/* ---------- compartment sizing ------------------------------
+   Three ways to size an axis:
+     even   — n equal compartments
+     prop   — n relative weights ("2 1 1")
+     exact  — n literal millimetre sizes
+   Divider thickness is always taken out of the span first, so a
+   requested compartment size is the real usable size.
+------------------------------------------------------------- */
+function axisCells(spec, innerSpan, t){
+  const n = Math.max(1, Math.round(spec && spec.n ? spec.n : 1));
+  const mode = (spec && spec.mode) || 'even';
+  const vals = (spec && spec.values) || [];
+  const usable = innerSpan - (n - 1)*t;
+  const warn = [];
+
+  if(usable <= 0) return {cells:[Math.max(0, innerSpan)], warn:['Too many dividers for this span.'], n:1};
+
+  if(mode === 'exact'){
+    const want = [];
+    for(let i=0;i<n;i++) want.push(Math.max(0, +vals[i] || 0));
+    const fixed = want.slice(0, n-1).reduce((a,b)=>a+b, 0);
+    const cells = want.slice(0, n-1);
+    const last = usable - fixed;              // the final compartment absorbs the slack
+    if(last < t){
+      warn.push('The exact compartment sizes overflow the box — the last one has been squeezed.');
+      cells.push(Math.max(0, last));
+    } else {
+      cells.push(last);
+      if(n > 1 && Math.abs(last - (want[n-1] || last)) > 0.05)
+        warn.push('The last compartment takes up the slack — turn on "resize box to fit" to honour every size.');
+    }
+    return {cells, warn, n};
+  }
+
+  const w = (mode === 'prop')
+    ? Array.from({length:n}, (_,i)=> (+vals[i] > 0 ? +vals[i] : 1))
+    : Array.from({length:n}, ()=> 1);
+  const total = w.reduce((a,b)=>a+b, 0);
+  return {cells: w.map(x=> usable * x / total), warn, n};
+}
+
+/* The inner span an axis needs if every exact size is to be honoured. */
+function exactSpan(spec, t){
+  const n = Math.max(1, Math.round(spec.n || 1));
+  let sum = 0;
+  for(let i=0;i<n;i++) sum += Math.max(0, +(spec.values || [])[i] || 0);
+  return sum + (n - 1)*t;
+}
+
+function centresFromCells(a, cells, t){
+  const out = []; let pos = a;
+  for(let i=0;i<cells.length-1;i++){ pos += cells[i]; out.push(pos + t/2); pos += t; }
+  return out;
+}
+
+/* ---------- interior wall segments ---------------------------
+   One model for both layouts. A segment is an axis-aligned wall:
+     axis 'x' -> a wall at constant x, running along y
+     axis 'y' -> a wall at constant y, running along x
+   Each end abuts either 'wall' (an outer panel) or the index of
+   another segment (a T-joint). Two segments that properly cross
+   get a cross-lap; a segment that dead-ends into another gets a
+   tab through a slot. Grid layouts produce crossings; guillotine
+   layouts produce T-joints and never cross.
+------------------------------------------------------------- */
+function gridSegments(cellsX, cellsY, t, W, D){
+  const segs = [];
+  for(const pos of centresFromCells(t, cellsX, t))
+    segs.push({axis:'x', pos, a:t, b:D - t, endA:'wall', endB:'wall'});
+  for(const pos of centresFromCells(t, cellsY, t))
+    segs.push({axis:'y', pos, a:t, b:W - t, endA:'wall', endB:'wall'});
+  return segs;
+}
+
+/* Recursive guillotine split. Returns segments plus the leaf compartments. */
+function treeLayout(tree, W, D, t, minCell){
+  const segs = [], leaves = [], nodes = [];
+  const root = {x0:t, y0:t, x1:W - t, y1:D - t, sx0:'wall', sy0:'wall', sx1:'wall', sy1:'wall'};
+
+  (function rec(node, reg, path){
+    nodes.push({node, reg, path});
+    if(!node || !node.split || !node.kids){ leaves.push({node, reg, path}); return; }
+    const dir = node.split.dir;
+    const f = Math.min(0.95, Math.max(0.05, +node.split.frac));
+
+    if(dir === 'x'){
+      const span = reg.x1 - reg.x0;
+      if(span < 2*minCell + t){ leaves.push({node, reg, path}); return; }
+      let pos = reg.x0 + f*span;
+      pos = Math.max(reg.x0 + minCell + t/2, Math.min(reg.x1 - minCell - t/2, pos));
+      const id = segs.length;
+      segs.push({axis:'x', pos, a:reg.y0, b:reg.y1, endA:reg.sy0, endB:reg.sy1});
+      rec(node.kids[0], {...reg, x1:pos - t/2, sx1:id}, path.concat(0));
+      rec(node.kids[1], {...reg, x0:pos + t/2, sx0:id}, path.concat(1));
+    } else {
+      const span = reg.y1 - reg.y0;
+      if(span < 2*minCell + t){ leaves.push({node, reg, path}); return; }
+      let pos = reg.y0 + f*span;
+      pos = Math.max(reg.y0 + minCell + t/2, Math.min(reg.y1 - minCell - t/2, pos));
+      const id = segs.length;
+      segs.push({axis:'y', pos, a:reg.x0, b:reg.x1, endA:reg.sx0, endB:reg.sx1});
+      rec(node.kids[0], {...reg, y1:pos - t/2, sy1:id}, path.concat(0));
+      rec(node.kids[1], {...reg, y0:pos + t/2, sy0:id}, path.concat(1));
+    }
+  })(tree, root, []);
+
+  return {segs, leaves, nodes};
+}
+
+/* Tabs across [a,b], stepping around zones the panel cannot tab through
+   (a cross-lap eats the bottom half of the wall, so no base tab can live there).
+   Each clear span gets its own tabs rather than the tab simply being dropped. */
+function tabsAvoiding(mode, a, b, f, zones, clear){
+  if(mode === 'free' || b - a <= 0) return [];
+  const blocked = zones.map(z=>({a:z.a - clear, b:z.b + clear})).sort((x,y)=>x.a - y.a);
+  const spans = [];
+  let cur = a;
+  for(const z of blocked){
+    if(z.a > cur + EPS) spans.push({a:cur, b:Math.min(z.a, b)});
+    cur = Math.max(cur, z.b);
+  }
+  if(cur < b - EPS) spans.push({a:cur, b});
+  const out = [];
+  for(const sp of spans){
+    if(sp.b - sp.a < f*0.8) continue;
+    for(const r of tabIntervals(mode, sp.a, sp.b, f)) out.push(r);
+  }
+  return out;
+}
+
+/* Build every interior panel from a segment list, and the slots they cut
+   into the outer panels and into each other. */
+function segmentPanels(segs, geo){
+  const {t, f, k, mode, baseSlot, Hd, bt, W, D} = geo;
+  const Vtot = bt + Hd;
+  const half = t/2, kh = k/2;
+  const free = (mode === 'free');
+  const parts = [];
+  const holes = {front:[], back:[], left:[], right:[], base:[]};
+  const segHoles = segs.map(()=>[]);
+  const warn = [];
+  if(Hd <= f*0.5 || !segs.length) return {parts, holes, warn};
+
+  const endTabs = tabIntervals(mode, bt + t, bt + Hd - t, f);
+  const zOf = (v)=> v - bt + t;
+
+  // panel extents: a jointed end reaches a thickness past the region face
+  const ext = segs.map(s=>{
+    const uMin = free ? s.a : s.a - t;
+    const uMax = free ? s.b : s.b + t;
+    return {uMin, uMax, Wp: uMax - uMin};
+  });
+
+  // proper crossings (grid layouts only)
+  const laps = segs.map(()=>[]);
+  for(let i=0;i<segs.length;i++) for(let j=0;j<segs.length;j++){
+    const A = segs[i], B = segs[j];
+    if(A.axis !== 'x' || B.axis !== 'y') continue;
+    if(A.pos > B.a + EPS && A.pos < B.b - EPS && B.pos > A.a + EPS && B.pos < A.b - EPS){
+      laps[i].push(B.pos);    // A (runs in y) is crossed at y = B.pos — notches down from the top
+      laps[j].push(A.pos);    // B (runs in x) is crossed at x = A.pos — notches up from the bottom
+    }
+  }
+
+  const sideRuns = free ? flat(Vtot, 0)
+    : runsFromFeatures(Vtot, t, endTabs.map(s=>({a:s.a-kh, b:s.b+kh, d:0})));
+
+  segs.forEach((s, i)=>{
+    const {uMin, uMax, Wp} = ext[i];
+    const isX = (s.axis === 'x');
+    const lapZones = laps[i].map(c=>({a:c - half - uMin, b:c + half - uMin}));
+
+    // Base tabs, held one thickness clear of whatever the segment lands on.
+    // An x-wall is solid at the bottom (it laps downward from the top), so it can
+    // tab anywhere; a y-wall is cut away at each crossing, so it steps around them.
+    const baseTabs = (baseSlot && !free)
+      ? tabsAvoiding(mode, s.a + t, s.b - t, f,
+                     isX ? [] : laps[i].map(c=>({a:c - half, b:c + half})), t)
+      : [];
+
+    const bFeats = baseTabs.map(r=>({a:r.a - uMin - kh, b:r.b - uMin + kh, d:0}));
+
+    // cross-laps: x-walls are notched from the top, y-walls from the bottom
+    const topFeats = isX  ? lapZones.map(z=>({a:z.a + kh, b:z.b - kh, d:Hd/2})) : [];
+    const botFeats = !isX ? lapZones.map(z=>({a:z.a + kh, b:z.b - kh, d:bt + Hd/2})) : [];
+
+    const bottomRuns = mergeRuns(runsFromFeatures(Wp, bt, bFeats.concat(botFeats)));
+    const topRuns    = mergeRuns(runsFromFeatures(Wp, 0, topFeats));
+
+    const poly = buildPolygon(Wp, Vtot, {
+      bottom: bottomRuns,
+      right : sideRuns,
+      top   : reverseRuns(topRuns, Wp),
+      left  : reverseRuns(sideRuns, Vtot)
+    });
+
+    parts.push({
+      name: 'Divider ' + (isX ? 'X' : 'Y') + (segs.slice(0,i).filter(q=>q.axis===s.axis).length + 1),
+      poly, holes: segHoles[i],
+      place: isX
+        ? {O:[s.pos - half, uMin, t - bt], U:[0,1,0], V:[0,0,1], N:[1,0,0], t}
+        : {O:[uMin, s.pos - half, t - bt], U:[1,0,0], V:[0,0,1], N:[0,1,0], t}
+    });
+
+    if(free) return;
+
+    // ---- slots for this segment's end tabs ----
+    const wallFor = (which)=> isX ? (which === 'A' ? 'front' : 'back')
+                                  : (which === 'A' ? 'left'  : 'right');
+    for(const [which, end] of [['A', s.endA], ['B', s.endB]]){
+      for(const tb of endTabs){
+        if(end === 'wall'){
+          holes[wallFor(which)].push({
+            x: s.pos - half + kh, y: zOf(tb.a) + kh, w: t - k, h: (tb.b - tb.a) - k
+          });
+        } else {
+          const P = segs[end];
+          if(!P){ warn.push('A wall lost its neighbour.'); continue; }
+          segHoles[end].push({
+            x: s.pos - ext[end].uMin - half + kh, y: tb.a + kh, w: t - k, h: (tb.b - tb.a) - k
+          });
+        }
+      }
+    }
+
+    // ---- slots in the base ----
+    for(const r of baseTabs){
+      holes.base.push(isX
+        ? {x: s.pos - half + kh, y: r.a + kh, w: t - k, h: (r.b - r.a) - k}
+        : {x: r.a + kh, y: s.pos - half + kh, w: (r.b - r.a) - k, h: t - k});
+    }
+  });
+
+  return {parts, holes, warn};
 }
 
 /* ---------- the box ----------------------------------------- */
@@ -568,6 +896,11 @@ function generate(p){
   const skirt = Math.max(0, +(p.lidSkirt != null ? p.lidSkirt : 12));
   const clr = Math.max(0, +(p.lidClearance != null ? p.lidClearance : 0.3));
 
+  const colSpec = p.colSpec || {mode:'even', n:1, values:[]};
+  const rowSpec = p.rowSpec || {mode:'even', n:1, values:[]};
+  const C = Math.max(1, Math.round(colSpec.n || 1));
+  const R = Math.max(1, Math.round(rowSpec.n || 1));
+
   // Outer dimensions of the box body.
   let W, D, H;
   if(internal){
@@ -577,13 +910,15 @@ function generate(p){
   } else {
     W = +p.W; D = +p.D; H = +p.H;
   }
-
-  const colW = (p.colWeights && p.colWeights.length) ? p.colWeights : [1];
-  const rowW = (p.rowWeights && p.rowWeights.length) ? p.rowWeights : [1];
-  const C = colW.length, R = rowW.length;
+  // Exact sizing may drive the box instead of the other way round.
+  const fitW = !!p.fitCols && colSpec.mode === 'exact';
+  const fitD = !!p.fitRows && rowSpec.mode === 'exact';
+  if(fitW) W = exactSpan(colSpec, t) + 2*t;
+  if(fitD) D = exactSpan(rowSpec, t) + 2*t;
 
   const warn = [];
-  const box = {W, D, H, t, lidMode, C, R, mode, internal, skirt, clr};
+  const box = {W, D, H, t, lidMode, C, R, mode, internal, skirt, clr, fitW, fitD,
+               colMode: colSpec.mode, rowMode: rowSpec.mode};
   if(t <= 0 || W <= 4*t || D <= 4*t || H <= 3*t)
     return {parts:[], warnings:['Box is too small for this material thickness.'], box};
   if(f < t*1.2) warn.push('Joint size is small relative to thickness — fingers may be fragile.');
@@ -592,86 +927,46 @@ function generate(p){
   const baseSlot = !!p.baseSlot && mode !== 'free';
   const flushLid = (lidMode === 'flush');
 
-  // ---- divider centres from weights ----
-  const gx = divisionCentres(t, W - t, colW, t);
-  const gy = divisionCentres(t, D - t, rowW, t);
-  const cx = gx.centres, cy = gy.centres;
+  // ---- compartments ----
+  const gx = axisCells(fitW ? {...colSpec, mode:'exact'} : colSpec, W - 2*t, t);
+  const gy = axisCells(fitD ? {...rowSpec, mode:'exact'} : rowSpec, D - 2*t, t);
 
   const Htop = flushLid ? H - t : H;   // z of divider top
   const Hd   = Htop - t;               // divider body height
   const bt   = baseSlot ? t : 0;
-  const Vtot = bt + Hd;
 
-  const minCell = Math.min(...gx.cells, ...gy.cells);
-  if((cx.length || cy.length) && minCell < 3*t)
+  const guillotine = (p.layout === 'guillotine' && p.tree);
+  const minCellReq = Math.max(3*t, 8);
+  let segs, leaves = null;
+  if(guillotine){
+    const L = treeLayout(p.tree, W, D, t, minCellReq);
+    segs = L.segs;
+    leaves = L.leaves.map(l=>({x0:l.reg.x0, y0:l.reg.y0, x1:l.reg.x1, y1:l.reg.y1}));
+  } else {
+    for(const m of gx.warn) if(!fitW) warn.push('Columns: ' + m);
+    for(const m of gy.warn) if(!fitD) warn.push('Rows: ' + m);
+    segs = gridSegments(gx.cells, gy.cells, t, W, D);
+  }
+
+  const minCell = leaves
+    ? (leaves.length ? Math.min(...leaves.map(r=>Math.min(r.x1-r.x0, r.y1-r.y0))) : Infinity)
+    : Math.min(...gx.cells, ...gy.cells);
+  if(segs.length && minCell < 3*t)
     warn.push('At least one compartment is very narrow for this stock.');
-
-  const uMinX = (mode==='free') ? t : 0, uMaxX = (mode==='free') ? D - t : D;
-  const uMinY = (mode==='free') ? t : 0, uMaxY = (mode==='free') ? W - t : W;
-
-  const endTabs  = tabIntervals(mode, bt + t, bt + Hd - t, f);
-  const baseTabX = baseSlot ? tabIntervals(mode, 2*t, D - 2*t, f) : [];
-  const baseTabY = baseSlot ? tabIntervals(mode, 2*t, W - 2*t, f) : [];
-  if((cx.length || cy.length) && mode !== 'free' && Hd < 3*t + f)
+  if(segs.length && mode !== 'free' && Hd < 3*t + f)
     warn.push('Box is shallow for these divider joints — consider a smaller joint size.');
 
-  const half = t/2, kh = k/2;
+  const seg = segmentPanels(segs, {t, f, k, mode, baseSlot, Hd, bt, W, D});
+  for(const m of seg.warn) warn.push(m);
 
-  const wallHolesFB = [], wallHolesLR = [], baseHoles = [];
-  for(const c of cx) for(const s of endTabs)
-    wallHolesFB.push({x:c-half+kh, y:s.a - bt + t + kh, w:t-k, h:(s.b-s.a)-k});
-  for(const c of cy) for(const s of endTabs)
-    wallHolesLR.push({x:c-half+kh, y:s.a - bt + t + kh, w:t-k, h:(s.b-s.a)-k});
-  for(const c of cx) for(const s of baseTabX)
-    baseHoles.push({x:c-half+kh, y:s.a+kh, w:t-k, h:(s.b-s.a)-k});
-  for(const c of cy) for(const s of baseTabY)
-    baseHoles.push({x:s.a+kh, y:c-half+kh, w:(s.b-s.a)-k, h:t-k});
-
-  const parts = shellPanels(W, D, H, t, f, k, flushLid, wallHolesFB, wallHolesLR, baseHoles);
-
-  /* ---------- dividers ---------- */
-  if(Hd > f*0.5){
-    const endFeats = endTabs.map(s=>({a:s.a-kh, b:s.b+kh, d:0}));
-    const sideRuns = (mode==='free') ? flat(Vtot, 0) : runsFromFeatures(Vtot, t, endFeats);
-
-    const Wx = uMaxX - uMinX;
-    for(let i=0;i<cx.length;i++){
-      const feats = baseTabX.map(s=>({a:s.a-uMinX-kh, b:s.b-uMinX+kh, d:0}));
-      const bottomRuns = mergeRuns(runsFromFeatures(Wx, bt, feats));
-      const lapFeats = cy.map(c=>({a:c-half-uMinX+kh, b:c+half-uMinX-kh, d:Hd/2}));
-      const topRuns = mergeRuns(runsFromFeatures(Wx, 0, lapFeats));
-      const poly = buildPolygon(Wx, Vtot, {
-        bottom: bottomRuns, right: sideRuns,
-        top: reverseRuns(topRuns, Wx), left: reverseRuns(sideRuns, Vtot)
-      });
-      parts.push({name:'Divider X'+(i+1), poly, holes:[],
-        place:{O:[cx[i]-half, uMinX, t - bt], U:[0,1,0], V:[0,0,1], N:[1,0,0], t}});
-    }
-
-    const Wy = uMaxY - uMinY;
-    for(let j=0;j<cy.length;j++){
-      const lapZones = cx.map(c=>({a:c-half-uMinY, b:c+half-uMinY}));
-      const inLap = (s)=> lapZones.some(z=> s.b > z.a - EPS && s.a < z.b + EPS);
-      const bFeats = baseTabY
-        .map(s=>({a:s.a-uMinY, b:s.b-uMinY}))
-        .filter(s=>!inLap(s))
-        .map(s=>({a:s.a-kh, b:s.b+kh, d:0}));
-      const lFeats = lapZones.map(z=>({a:z.a+kh, b:z.b-kh, d:bt + Hd/2}));
-      const bottomRuns = mergeRuns(runsFromFeatures(Wy, bt, bFeats.concat(lFeats)));
-      const poly = buildPolygon(Wy, Vtot, {
-        bottom: bottomRuns, right: sideRuns,
-        top: flat(Wy, 0), left: reverseRuns(sideRuns, Vtot)
-      });
-      parts.push({name:'Divider Y'+(j+1), poly, holes:[],
-        place:{O:[uMinY, cy[j]-half, t - bt], U:[1,0,0], V:[0,0,1], N:[0,1,0], t}});
-    }
-  }
+  const parts = shellPanels(W, D, H, t, f, k, flushLid, seg.holes);
+  for(const q of seg.parts) parts.push(q);
 
   /* ---------- overlay cap: a lidless shell, inverted, dropped over the top ---------- */
   if(lidMode === 'overlay'){
     const Wc = W + 2*(t + clr), Dc = D + 2*(t + clr), Hc = skirt + t;
     if(Wc > 4*t && Dc > 4*t && Hc > 3*t){
-      const cap = shellPanels(Wc, Dc, Hc, t, f, k, false, [], [], []);
+      const cap = shellPanels(Wc, Dc, Hc, t, f, k, false, {});
       const rename = {Front:'Lid rim (front)', Back:'Lid rim (back)', Left:'Lid rim (left)', Right:'Lid rim (right)', Base:'Lid top'};
       const ox = -(t + clr), oyk = Dc - (t + clr), ozk = H + t;
       for(const c of cap){
@@ -704,93 +999,153 @@ function generate(p){
   // report the cavity and the compartment grid
   box.inner = {W: W - 2*t, D: D - 2*t, H: Htop - t};
   box.cells = {x: gx.cells, y: gy.cells};
+  box.layout = guillotine ? 'guillotine' : 'grid';
+  box.leaves = leaves;
+  box.segments = segs.length;
+  box.compartments = leaves ? leaves.length : (gx.cells.length * gy.cells.length);
+  box.minCell = minCell;
   box.Hd = Hd; box.bt = bt;
 
   return {parts, warnings:warn, box};
 }
 
-/* ---------- nesting: MaxRects, best short side fit ---------- */
-function packSheets(parts, sheetW, sheetH, margin, gap, allowRot){
-  const usableW = sheetW - 2*margin, usableH = sheetH - 2*margin;
-  const sheets=[];
-  const oversize=[];
+/* ---------- nesting -----------------------------------------
+   MaxRects, but run as a small tournament: five orderings x four
+   fit rules = twenty packings, and we keep the best. Scored on
+   sheet count first, then on how little is crammed onto the final
+   sheet (so the offcut comes back as one usable piece rather than
+   a lace doily), then on the largest single rectangle left over.
+------------------------------------------------------------- */
+const SORTS = {
+  maxSide:   (a,b)=> Math.max(b.w,b.h) - Math.max(a.w,a.h) || (b.w*b.h - a.w*a.h),
+  area:      (a,b)=> (b.w*b.h) - (a.w*a.h),
+  height:    (a,b)=> b.h - a.h || b.w - a.w,
+  width:     (a,b)=> b.w - a.w || b.h - a.h,
+  perimeter: (a,b)=> (b.w+b.h) - (a.w+a.h)
+};
+const RULES = ['bssf','blsf','baf','bl'];
 
-  const items = parts.map((p,i)=>({i, p, w:p.w + gap, h:p.h + gap}))
-                     .sort((a,b)=> Math.max(b.w,b.h) - Math.max(a.w,a.h) || (b.w*b.h - a.w*a.h));
+function scoreFit(rule, fr, w, h){
+  const dw = fr.w - w, dh = fr.h - h;
+  switch(rule){
+    case 'bssf': return [Math.min(dw,dh), Math.max(dw,dh)];
+    case 'blsf': return [Math.max(dw,dh), Math.min(dw,dh)];
+    case 'baf':  return [fr.w*fr.h - w*h, Math.min(dw,dh)];
+    case 'bl':   return [fr.y + h, fr.x];
+    default:     return [Math.min(dw,dh), Math.max(dw,dh)];
+  }
+}
 
-  const newSheet = ()=>({free:[{x:0,y:0,w:usableW,h:usableH}], placed:[]});
+function packOnce(items, usableW, usableH, allowRot, rule){
+  const sheets = [];
+  const newSheet = ()=>({free:[{x:0, y:0, w:usableW, h:usableH}], placed:[]});
 
-  function place(sheet, it){
-    let best=null;
+  const place = (sheet, it)=>{
+    let best = null;
     for(const fr of sheet.free){
-      const tryFit=(w,h,rot)=>{
-        if(w <= fr.w + EPS && h <= fr.h + EPS){
-          const ss = Math.min(fr.w - w, fr.h - h);
-          const ls = Math.max(fr.w - w, fr.h - h);
-          if(!best || ss < best.ss - EPS || (Math.abs(ss-best.ss)<EPS && ls < best.ls)){
-            best = {fr, w, h, rot, ss, ls};
-          }
+      const consider = (w, h, rot)=>{
+        if(w > fr.w + EPS || h > fr.h + EPS) return;
+        const sc = scoreFit(rule, fr, w, h);
+        if(!best || sc[0] < best.sc[0] - EPS ||
+           (Math.abs(sc[0] - best.sc[0]) < EPS && sc[1] < best.sc[1] - EPS)){
+          best = {fr, w, h, rot, sc};
         }
       };
-      tryFit(it.w, it.h, false);
-      if(allowRot) tryFit(it.h, it.w, true);
+      consider(it.w, it.h, false);
+      if(allowRot) consider(it.h, it.w, true);
     }
     if(!best) return false;
 
     const node = {x:best.fr.x, y:best.fr.y, w:best.w, h:best.h, rot:best.rot, item:it};
     sheet.placed.push(node);
 
-    // split every free rect that the node intersects
-    const next=[];
+    const next = [];
     for(const fr of sheet.free){
       if(node.x >= fr.x + fr.w - EPS || node.x + node.w <= fr.x + EPS ||
          node.y >= fr.y + fr.h - EPS || node.y + node.h <= fr.y + EPS){ next.push(fr); continue; }
-      if(node.x > fr.x + EPS)                    next.push({x:fr.x, y:fr.y, w:node.x-fr.x, h:fr.h});
-      if(node.x + node.w < fr.x + fr.w - EPS)    next.push({x:node.x+node.w, y:fr.y, w:fr.x+fr.w-node.x-node.w, h:fr.h});
-      if(node.y > fr.y + EPS)                    next.push({x:fr.x, y:fr.y, w:fr.w, h:node.y-fr.y});
-      if(node.y + node.h < fr.y + fr.h - EPS)    next.push({x:fr.x, y:node.y+node.h, w:fr.w, h:fr.y+fr.h-node.y-node.h});
+      if(node.x > fr.x + EPS)                 next.push({x:fr.x, y:fr.y, w:node.x - fr.x, h:fr.h});
+      if(node.x + node.w < fr.x + fr.w - EPS) next.push({x:node.x + node.w, y:fr.y, w:fr.x + fr.w - node.x - node.w, h:fr.h});
+      if(node.y > fr.y + EPS)                 next.push({x:fr.x, y:fr.y, w:fr.w, h:node.y - fr.y});
+      if(node.y + node.h < fr.y + fr.h - EPS) next.push({x:fr.x, y:node.y + node.h, w:fr.w, h:fr.y + fr.h - node.y - node.h});
     }
-    // prune contained rects
-    const keep=[];
+    const keep = [];
     for(let a=0;a<next.length;a++){
-      let contained=false;
-      for(let b=0;b<next.length && !contained;b++){
-        if(a===b) continue;
-        const A=next[a], B=next[b];
-        if(A.x >= B.x-EPS && A.y >= B.y-EPS && A.x+A.w <= B.x+B.w+EPS && A.y+A.h <= B.y+B.h+EPS){
-          if(A.w*A.h < B.w*B.h || b < a) contained = true;
+      const A = next[a];
+      if(A.w <= EPS || A.h <= EPS) continue;
+      let swallowed = false;
+      for(let b=0;b<next.length && !swallowed;b++){
+        if(a === b) continue;
+        const B = next[b];
+        if(A.x >= B.x - EPS && A.y >= B.y - EPS &&
+           A.x + A.w <= B.x + B.w + EPS && A.y + A.h <= B.y + B.h + EPS){
+          if(A.w*A.h < B.w*B.h - EPS || (Math.abs(A.w*A.h - B.w*B.h) < EPS && b < a)) swallowed = true;
         }
       }
-      if(!contained && next[a].w > EPS && next[a].h > EPS) keep.push(next[a]);
+      if(!swallowed) keep.push(A);
     }
     sheet.free = keep;
     return true;
-  }
+  };
 
   for(const it of items){
-    if((it.w > usableW + EPS || it.h > usableH + EPS) &&
-       (!allowRot || it.h > usableW + EPS || it.w > usableH + EPS)){
-      oversize.push(it.p.name); continue;
+    let done = false;
+    for(const sh of sheets){ if(place(sh, it)){ done = true; break; } }
+    if(!done){
+      const sh = newSheet();
+      sheets.push(sh);
+      if(!place(sh, it)) return null;   // shouldn't happen: oversize is screened first
     }
-    let done=false;
-    for(const s of sheets){ if(place(s, it)){ done=true; break; } }
-    if(!done){ const s=newSheet(); sheets.push(s); place(s, it); }
+  }
+  return sheets;
+}
+
+function packSheets(parts, sheetW, sheetH, margin, gap, allowRot){
+  const usableW = sheetW - 2*margin, usableH = sheetH - 2*margin;
+  const oversize = [];
+  const items = [];
+  parts.forEach((p, i)=>{
+    const w = p.w + gap, h = p.h + gap;
+    const fits = (w <= usableW + EPS && h <= usableH + EPS) ||
+                 (allowRot && h <= usableW + EPS && w <= usableH + EPS);
+    if(!fits) oversize.push(p.name);
+    else items.push({i, p, w, h});
+  });
+  if(!items.length) return {sheets:[], oversize, heuristic:null};
+
+  let best = null, bestScore = null, bestName = '';
+  for(const sname of Object.keys(SORTS)){
+    const ordered = items.slice().sort(SORTS[sname]);
+    for(const rule of RULES){
+      const sheets = packOnce(ordered, usableW, usableH, allowRot, rule);
+      if(!sheets) continue;
+      const last = sheets[sheets.length - 1];
+      const lastArea = last.placed.reduce((a,n)=> a + n.w*n.h, 0);
+      const lastFree = last.free.reduce((m,fr)=> Math.max(m, fr.w*fr.h), 0);
+      const score = [sheets.length, lastArea, -lastFree];
+      const better = !bestScore || score.some((v, idx)=>{
+        for(let q=0;q<idx;q++) if(Math.abs(score[q] - bestScore[q]) > 1e-6) return false;
+        return v < bestScore[idx] - 1e-6;
+      });
+      if(better){ best = sheets; bestScore = score; bestName = sname + '/' + rule; }
+    }
   }
 
-  const out = sheets.map(s=>{
-    const used = s.placed.reduce((a,n)=> a + n.item.p.w * n.item.p.h, 0);
+  const out = best.map(sh=>{
+    const used = sh.placed.reduce((a,n)=> a + n.item.p.w * n.item.p.h, 0);
+    const freeMax = sh.free.reduce((m,fr)=> Math.max(m, fr.w*fr.h), 0);
     return {
-      parts: s.placed.map(n=>({
+      parts: sh.placed.map(n=>({
         part: n.item.p,
         x: n.x + margin + gap/2,
         y: n.y + margin + gap/2,
         rot: n.rot
       })),
       used,
-      waste: 1 - used/(sheetW*sheetH)
+      waste: 1 - used/(sheetW*sheetH),
+      biggestOffcut: freeMax
     };
   });
-  return {sheets: out, oversize};
+  return {sheets: out, oversize, heuristic: bestName};
 }
 function pack(parts, sheetW, sheetH, margin, gap, allowRot){
   return packSheets(parts, sheetW, sheetH, margin, gap, allowRot);
@@ -913,7 +1268,9 @@ root.LCD = {
   generate, pack, placedPoly, svgForSheet, makeZip, crc32,
   buildPolygon, jointRuns, reverseRuns, runsFromFeatures, tabIntervals,
   mergeRuns, applyKerf, flat, polyArea, bbox, fingerCount,
-  shellPanels, divisionCentres
+  shellPanels, axisCells, centresFromCells, exactSpan,
+  gridSegments, treeLayout, segmentPanels, tabsAvoiding,
+  packOnce, SORTS, RULES
 };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -971,33 +1328,246 @@ function reskin(){
   render();
 }
 
-/* ---------- read params ---------- */
-function parseWeights(str){
-  return String(str).split(/[^0-9.]+/)
-    .map(s=>parseFloat(s))
-    .filter(n=> isFinite(n) && n > 0);
-}
-function weightsToStr(w){
-  return w.map(n=> (Math.round(n*100)/100)).join(' ');
-}
-/* Keep the count box and the weights box in step, whichever the person touched. */
-function syncCount(countId, wId){
-  const n = Math.max(1, Math.min(12, Math.round(+$(countId).value || 1)));
-  let w = parseWeights($(wId).value);
-  if(w.length > n) w = w.slice(0, n);
-  while(w.length < n) w.push(1);
-  $(countId).value = n;
-  $(wId).value = weightsToStr(w);
-}
-function syncWeights(countId, wId){
-  const w = parseWeights($(wId).value);
-  if(!w.length) return;                   // mid-typing; leave it alone
-  $(countId).value = Math.min(12, w.length);
+/* ---------- compartment state ---------- */
+/* One live spec per axis. Values persist when you change count or mode,
+   so switching Proportional -> Exact doesn't lose what you typed. */
+const AX = {
+  col: {n:3, mode:'even', prop:[1,1,1], exact:[60,30,30]},
+  row: {n:2, mode:'even', prop:[1,1],   exact:[50,50]}
+};
+const AXEL = {col:{count:'cols', mode:'colMode', cells:'colCells', fit:'fitColsWrap'},
+              row:{count:'rows', mode:'rowMode', cells:'rowCells', fit:'fitRowsWrap'}};
+
+function seedExact(ax){
+  // sensible starting sizes: whatever the current geometry actually produced
+  const a = AX[ax], t = +$('t').value || 3;
+  const span = ((ax === 'col' ? +$('W').value : +$('D').value) || 100) - ($('dims').value === 'internal' ? 0 : 2*t);
+  const usable = span - (a.n - 1)*t;
+  const each = Math.max(t, Math.round(usable / a.n * 10) / 10);
+  for(let i=0;i<a.n;i++) if(!(a.exact[i] > 0)) a.exact[i] = each;
 }
 
+function renderCells(ax){
+  const a = AX[ax], el = $(AXEL[ax].cells);
+  const showCells = (a.mode !== 'even');
+  el.classList.toggle('on', showCells);
+  $(AXEL[ax].fit).classList.toggle('on', a.mode === 'exact');
+  if(!showCells){ el.innerHTML = ''; return; }
+
+  const key = (a.mode === 'exact') ? 'exact' : 'prop';
+  if(a.mode === 'exact') seedExact(ax);
+  while(a[key].length < a.n) a[key].push(a.mode === 'exact' ? 25 : 1);
+
+  el.innerHTML = '';
+  for(let i=0;i<a.n;i++){
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    const lab = document.createElement('span');
+    lab.textContent = (ax === 'col' ? 'C' : 'R') + (i+1);
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.min = a.mode === 'exact' ? '1' : '0.1';
+    inp.step = a.mode === 'exact' ? '1' : '0.5';
+    inp.value = a[key][i];
+    inp.addEventListener('input', ()=>{
+      const v = parseFloat(inp.value);
+      if(isFinite(v) && v > 0) a[key][i] = v;
+      schedule();
+    });
+    cell.appendChild(lab); cell.appendChild(inp);
+    el.appendChild(cell);
+  }
+}
+
+function setCount(ax, n){
+  const a = AX[ax];
+  a.n = Math.max(1, Math.min(16, Math.round(n)));
+  $(AXEL[ax].count).value = a.n;
+  renderCells(ax);
+  schedule();
+}
+
+function specOf(ax){
+  const a = AX[ax];
+  return {mode:a.mode, n:a.n, values: a.mode === 'exact' ? a.exact : a.prop};
+}
+
+const CELLHINT = {
+  even:  'Even splits the cavity equally.',
+  prop:  'Proportional: relative weights. 2 / 1 / 1 makes the first compartment twice the others.',
+  exact: 'Exact: literal millimetres per compartment. With "resize box to fit" on, the box grows to honour every size; with it off, the last compartment takes up the slack.'
+};
+function updateHint(){
+  const m = (AX.col.mode !== 'even') ? AX.col.mode : AX.row.mode;
+  $('cellHint').textContent = CELLHINT[m] || CELLHINT.even;
+}
+
+/* ---------- guillotine plan editor ---------- */
+/* The tree: a node is either a leaf {} or {split:{dir,frac}, kids:[a,b]}.
+   Selection is a path of 0/1 child indices from the root. */
+let tree = null;
+let sel = [];               // path to the selected node
+let selKind = 'region';     // 'region' (a leaf) or 'wall' (a split node)
+
+function nodeAt(path){
+  let n = tree;
+  for(const i of path){ if(!n || !n.kids) return null; n = n.kids[i]; }
+  return n;
+}
+function parentOf(path){ return path.length ? nodeAt(path.slice(0,-1)) : null; }
+
+/* Seed the tree from the current grid so the advanced view opens on
+   something recognisable rather than an empty box. */
+function seedTree(){
+  const C = AX.col.n, R = AX.row.n;
+  const rowsOf = ()=>{
+    const build = (i)=> (i >= R - 1) ? {} : {split:{dir:'y', frac: 1/(R - i)}, kids:[{}, build(i+1)]};
+    return build(0);
+  };
+  const cols = (i)=> (i >= C - 1) ? rowsOf()
+    : {split:{dir:'x', frac: 1/(C - i)}, kids:[rowsOf(), cols(i+1)]};
+  tree = cols(0);
+  sel = []; selKind = tree.split ? 'wall' : 'region';
+}
+
+function planLayout(){
+  const b = model && model.box;
+  if(!b || !tree) return null;
+  const L = LCD.treeLayout(tree, b.W, b.D, b.t, Math.max(3*b.t, 8));
+  return {L, b};
+}
+
+const planCv = $('plan'), planCtx = planCv.getContext('2d');
+let planHit = [];   // [{path, kind, x0,y0,x1,y1}] in canvas pixels
+
+function drawPlan(){
+  const pl = planLayout();
+  const cw = planCv.clientWidth || 268;
+  const b = pl ? pl.b : {W:180, D:120, t:3};
+  const asp = b.D / b.W;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cwPx = Math.max(200, cw), chPx = Math.round(cwPx * asp);
+  planCv.width = cwPx * dpr; planCv.height = chPx * dpr;
+  planCv.style.height = chPx + 'px';
+  const g = planCtx;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, cwPx, chPx);
+  planHit = [];
+  if(!pl) return;
+
+  const S = cwPx / b.W;
+  const X = (x)=> x * S;
+  const Y = (y)=> chPx - y * S;      // y up, like the plan
+
+  g.fillStyle = '#e6d7b8';
+  g.fillRect(0, 0, cwPx, chPx);
+
+  // leaves
+  for(const lf of pl.L.leaves){
+    const r = lf.reg;
+    const x0 = X(r.x0), x1 = X(r.x1), y0 = Y(r.y1), y1 = Y(r.y0);
+    const isSel = (selKind === 'region' && lf.path.join(',') === sel.join(','));
+    g.fillStyle = isSel ? '#c9a227' : '#fbf6ea';
+    g.fillRect(x0, y0, x1 - x0, y1 - y0);
+    g.strokeStyle = '#cbb694'; g.lineWidth = 1;
+    g.strokeRect(x0 + .5, y0 + .5, x1 - x0 - 1, y1 - y0 - 1);
+    planHit.push({path: lf.path, kind:'region', x0, y0, x1, y1});
+    const w = r.x1 - r.x0, d = r.y1 - r.y0;
+    if(x1 - x0 > 44 && y1 - y0 > 20){
+      g.fillStyle = isSel ? '#2b211a' : '#8a7761';
+      g.font = '10px ui-monospace, monospace';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(Math.round(w) + '×' + Math.round(d), (x0+x1)/2, (y0+y1)/2);
+    }
+  }
+
+  // walls, drawn on top; each split node is tappable
+  for(const nd of pl.L.nodes){
+    if(!nd.node || !nd.node.split) continue;
+    const idx = pl.L.nodes.indexOf(nd);
+    const isSel = (selKind === 'wall' && nd.path.join(',') === sel.join(','));
+    const r = nd.reg, t = b.t;
+    const dir = nd.node.split.dir;
+    // recover the wall this node produced by re-deriving its position
+    const f = Math.min(0.95, Math.max(0.05, nd.node.split.frac));
+    let x0,y0,x1,y1;
+    if(dir === 'x'){
+      const span = r.x1 - r.x0;
+      if(span < 2*Math.max(3*t,8) + t) continue;
+      let pos = r.x0 + f*span;
+      pos = Math.max(r.x0 + Math.max(3*t,8) + t/2, Math.min(r.x1 - Math.max(3*t,8) - t/2, pos));
+      x0 = X(pos - t/2); x1 = X(pos + t/2); y0 = Y(r.y1); y1 = Y(r.y0);
+    } else {
+      const span = r.y1 - r.y0;
+      if(span < 2*Math.max(3*t,8) + t) continue;
+      let pos = r.y0 + f*span;
+      pos = Math.max(r.y0 + Math.max(3*t,8) + t/2, Math.min(r.y1 - Math.max(3*t,8) - t/2, pos));
+      x0 = X(r.x0); x1 = X(r.x1); y0 = Y(pos + t/2); y1 = Y(pos - t/2);
+    }
+    g.fillStyle = isSel ? '#b5563a' : '#7d6a52';
+    g.fillRect(x0, y0, Math.max(2, x1 - x0), Math.max(2, y1 - y0));
+    // generous tap target
+    const pad = 7;
+    planHit.push({path: nd.path, kind:'wall',
+      x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad, wall:true});
+  }
+}
+
+function selectAt(px, py){
+  // walls win over regions (they sit on top and are thin)
+  for(let i = planHit.length - 1; i >= 0; i--){
+    const h = planHit[i];
+    if(!h.wall) continue;
+    if(px >= h.x0 && px <= h.x1 && py >= h.y0 && py <= h.y1){
+      sel = h.path; selKind = 'wall'; return true;
+    }
+  }
+  for(const h of planHit){
+    if(h.wall) continue;
+    if(px >= h.x0 && px <= h.x1 && py >= h.y0 && py <= h.y1){
+      sel = h.path; selKind = 'region'; return true;
+    }
+  }
+  return false;
+}
+
+function syncPlanUI(){
+  const n = nodeAt(sel);
+  const isWall = (selKind === 'wall' && n && n.split);
+  $('posWrap').hidden = !isWall;
+  if(isWall){
+    $('splitPos').value = Math.round(n.split.frac * 100);
+    $('posVal').textContent = Math.round(n.split.frac * 100) + '%';
+  }
+  $('splitX').disabled = isWall;
+  $('splitY').disabled = isWall;
+  $('unsplit').disabled = !isWall;
+  $('planHint').textContent = isWall
+    ? 'Wall selected. Drag the slider to move it, or remove it to merge the two compartments back together.'
+    : (sel.length || (tree && !tree.split))
+      ? 'Compartment selected. Split it left/right or front/back.'
+      : 'Tap a compartment to select it.';
+}
+
+function splitSel(dir){
+  const n = nodeAt(sel);
+  if(!n || n.split) return;
+  n.split = {dir, frac: 0.5};
+  n.kids = [{}, {}];
+  selKind = 'wall';
+  refreshPlan();
+}
+function unsplitSel(){
+  const n = nodeAt(sel);
+  if(!n || !n.split) return;
+  delete n.split; delete n.kids;
+  selKind = 'region';
+  refreshPlan();
+}
+function refreshPlan(){ schedule(); requestAnimationFrame(()=>{ drawPlan(); syncPlanUI(); }); }
+
+/* ---------- read params ---------- */
 function params(){
-  const colW = parseWeights($('colW').value);
-  const rowW = parseWeights($('rowW').value);
   return {
     dims: $('dims').value,
     W:+$('W').value, D:+$('D').value, H:+$('H').value,
@@ -1005,17 +1575,23 @@ function params(){
     lidMode: $('lidMode').value,
     lidSkirt:+$('lidSkirt').value,
     lidClearance:+$('lidClearance').value,
-    colWeights: colW.length ? colW.slice(0,12) : [1],
-    rowWeights: rowW.length ? rowW.slice(0,12) : [1],
+    colSpec: specOf('col'),
+    rowSpec: specOf('row'),
+    fitCols: $('fitCols').checked,
+    fitRows: $('fitRows').checked,
+    layout: ($('useTree').checked && tree) ? 'guillotine' : 'grid',
+    tree,
     dividerMode:$('dmode').value,
     baseSlot:$('baseSlot').checked
   };
 }
+
 function sheetCfg(){
   return {
     SW:+$('SW').value, SH:+$('SH').value,
     margin:+$('margin').value, gap:+$('gap').value,
-    allowRot:$('allowRot').checked, engrave:$('engrave').checked
+    allowRot:$('allowRot').checked,
+    engrave:$('engrave').checked
   };
 }
 
@@ -1041,25 +1617,26 @@ function shade(hex, m){
   return `rgb(${r},${g},${b})`;
 }
 
-function draw3d(){
-  const wpx = cv.width / (window.devicePixelRatio>1?Math.min(window.devicePixelRatio,2):1);
-  const hpx = cv.height / (window.devicePixelRatio>1?Math.min(window.devicePixelRatio,2):1);
-  ctx.clearRect(0,0,wpx,hpx);
-  ctx.fillStyle = '#14100e';
-  ctx.fillRect(0,0,wpx,hpx);
-  if(!model || !model.parts.length) return;
+function renderScene(g, wpx, hpx, opt){
+  const o = opt || {};
+  const bg = o.bg || '#14100e';
+  g.save();
+  g.fillStyle = bg;
+  g.fillRect(0, 0, wpx, hpx);
+  if(!model || !model.parts.length){ g.restore(); return; }
 
-  const {W,D,H} = model.box;
   // world bounds over every placed panel (the overlay cap sits outside the box)
-  let lo=[1e9,1e9,1e9], hi=[-1e9,-1e9,-1e9];
+  let lo = [1e9,1e9,1e9], hi = [-1e9,-1e9,-1e9];
   for(const part of model.parts){
     const pl = part.place;
     for(const [u,v] of [[0,0],[part.w,0],[0,part.h],[part.w,part.h]])
     for(const w of [0, pl.t]){
-      const uu = u + (part.offset?part.offset[0]:0), vv = v + (part.offset?part.offset[1]:0);
+      const uu = u + (part.offset ? part.offset[0] : 0);
+      const vv = v + (part.offset ? part.offset[1] : 0);
       for(let a=0;a<3;a++){
         const q = pl.O[a] + pl.U[a]*uu + pl.V[a]*vv + pl.N[a]*w;
-        if(q<lo[a]) lo[a]=q; if(q>hi[a]) hi[a]=q;
+        if(q < lo[a]) lo[a] = q;
+        if(q > hi[a]) hi[a] = q;
       }
     }
   }
@@ -1067,16 +1644,39 @@ function draw3d(){
   const reach = Math.max(hi[0]-lo[0], hi[1]-lo[1], hi[2]-lo[2]);
   const ex = (+$('explode').value/100) * reach * 0.42;
 
-  const cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
   const view = (p)=>{
     const x = p[0]-ctr[0], y = p[1]-ctr[1], z = p[2]-ctr[2];
     const x1 = x*cy - y*sy, y1 = x*sy + y*cy, z1 = z;
     const y2 = y1*cp - z1*sp, z2 = y1*sp + z1*cp;
-    return [x1, z2, y2]; // sx, sy(up), depth
+    return [x1, z2, y2];                       // screen x, screen up, depth
   };
   const span = reach * 1.55 + ex*2;
-  const s = Math.min(wpx, hpx) / span * zoom;
-  const px = (v)=> [wpx/2 + v[0]*s, hpx/2 - v[1]*s];
+  const sc0 = Math.min(wpx, hpx) / span * zoom * (o.fill || 1);
+  const px = (v)=> [wpx/2 + v[0]*sc0, hpx/2 - v[1]*sc0];
+
+  // soft contact shadow, for the white render
+  if(o.shadow){
+    const foot = [];
+    for(const c of [[lo[0],lo[1]],[hi[0],lo[1]],[hi[0],hi[1]],[lo[0],hi[1]]])
+      foot.push(px(view([c[0], c[1], lo[2]])));
+    const cxp = foot.reduce((a,q)=>a+q[0],0)/4, cyp = foot.reduce((a,q)=>a+q[1],0)/4;
+    const rx = Math.max(...foot.map(q=>Math.abs(q[0]-cxp))) * 1.15;
+    const ry = Math.max(...foot.map(q=>Math.abs(q[1]-cyp))) * 1.15 + sc0*reach*0.02;
+    const grd = g.createRadialGradient(cxp, cyp, 0, cxp, cyp, Math.max(rx, ry));
+    grd.addColorStop(0, 'rgba(60,44,30,.30)');
+    grd.addColorStop(0.62, 'rgba(60,44,30,.11)');
+    grd.addColorStop(1, 'rgba(60,44,30,0)');
+    g.save();
+    g.translate(cxp, cyp + sc0*reach*0.02);
+    g.scale(1, Math.max(0.18, ry/Math.max(rx,1)));
+    g.translate(-cxp, -cyp);
+    g.fillStyle = grd;
+    g.beginPath();
+    g.arc(cxp, cyp, Math.max(rx, ry), 0, Math.PI*2);
+    g.fill();
+    g.restore();
+  }
 
   const L = [0.42,-0.66,0.62];
   const faces = [];
@@ -1084,68 +1684,92 @@ function draw3d(){
   for(const part of model.parts){
     const pl = part.place;
     const N = pl.N, U = pl.U, V = pl.V;
-    // outward explode offset
-    const cen3 = [
-      pl.O[0] + U[0]*part.w/2 + V[0]*part.h/2 + N[0]*pl.t/2,
-      pl.O[1] + U[1]*part.w/2 + V[1]*part.h/2 + N[1]*pl.t/2,
-      pl.O[2] + U[2]*part.w/2 + V[2]*part.h/2 + N[2]*pl.t/2
-    ];
+    const cen3 = [0,1,2].map(a=> pl.O[a] + U[a]*part.w/2 + V[a]*part.h/2 + N[a]*pl.t/2);
     const dn = (cen3[0]-ctr[0])*N[0] + (cen3[1]-ctr[1])*N[1] + (cen3[2]-ctr[2])*N[2];
     const sgn = dn >= 0 ? 1 : -1;
-    const off = [N[0]*sgn*ex, N[1]*sgn*ex, N[2]*sgn*ex];
-    const O = [pl.O[0]+off[0]+(part.offset?U[0]*part.offset[0]+V[0]*part.offset[1]:0),
-               pl.O[1]+off[1]+(part.offset?U[1]*part.offset[0]+V[1]*part.offset[1]:0),
-               pl.O[2]+off[2]+(part.offset?U[2]*part.offset[0]+V[2]*part.offset[1]:0)];
+    const O = [0,1,2].map(a=>
+      pl.O[a] + N[a]*sgn*ex + (part.offset ? U[a]*part.offset[0] + V[a]*part.offset[1] : 0));
 
     const P = (u,v,w)=>[
       O[0] + U[0]*u + V[0]*v + N[0]*w,
       O[1] + U[1]*u + V[1]*v + N[1]*w,
       O[2] + U[2]*u + V[2]*v + N[2]*w
     ];
-
     const rings = [part.poly].concat(part.holes.map(h=>[
       [h.x,h.y],[h.x+h.w,h.y],[h.x+h.w,h.y+h.h],[h.x,h.y+h.h]
     ]));
 
-    // two caps (with holes, even-odd)
     for(const w of [0, pl.t]){
-      const paths = rings.map(r=> r.map(q=> view(P(q[0],q[1],w))));
+      const paths = rings.map(r=> r.map(q=> view(P(q[0], q[1], w))));
       const dep = paths[0].reduce((a,q)=>a+q[2],0)/paths[0].length;
-      const nrm = [N[0],N[1],N[2]];
-      const nv = view([ctr[0]+nrm[0], ctr[1]+nrm[1], ctr[2]+nrm[2]]);
-      const nz = nv[2] - view(ctr)[2];
-      const dot = Math.abs(nrm[0]*L[0]+nrm[1]*L[1]+nrm[2]*L[2]);
-      faces.push({dep, paths, lum: 0.55 + 0.55*dot + (w?0:-0.06), evenodd:true});
+      const dot = Math.abs(N[0]*L[0] + N[1]*L[1] + N[2]*L[2]);
+      faces.push({dep, paths, lum: 0.55 + 0.55*dot + (w ? 0 : -0.06), evenodd:true});
     }
-    // rims
     for(const ring of rings){
       for(let i=0;i<ring.length;i++){
         const a = ring[i], b = ring[(i+1)%ring.length];
         const q = [P(a[0],a[1],0), P(b[0],b[1],0), P(b[0],b[1],pl.t), P(a[0],a[1],pl.t)].map(view);
         const dep = (q[0][2]+q[1][2]+q[2][2]+q[3][2])/4;
-        // edge normal in 3D
         const eu = b[0]-a[0], ev = b[1]-a[1];
-        const nx = U[0]*ev - V[0]*eu, ny = U[1]*ev - V[1]*eu, nz2 = U[2]*ev - V[2]*eu;
-        const ln = Math.hypot(nx,ny,nz2) || 1;
-        const dot = Math.abs((nx/ln)*L[0] + (ny/ln)*L[1] + (nz2/ln)*L[2]);
+        const nx = U[0]*ev - V[0]*eu, ny = U[1]*ev - V[1]*eu, nz = U[2]*ev - V[2]*eu;
+        const ln = Math.hypot(nx,ny,nz) || 1;
+        const dot = Math.abs((nx/ln)*L[0] + (ny/ln)*L[1] + (nz/ln)*L[2]);
         faces.push({dep, paths:[q], lum: 0.34 + 0.5*dot, evenodd:false});
       }
     }
   }
 
   faces.sort((a,b)=> b.dep - a.dep);
+  const lw = o.line != null ? o.line : 0.55;
   for(const f of faces){
-    ctx.beginPath();
+    g.beginPath();
     for(const path of f.paths){
-      path.forEach((q,i)=>{ const p = px(q); i ? ctx.lineTo(p[0],p[1]) : ctx.moveTo(p[0],p[1]); });
-      ctx.closePath();
+      path.forEach((q,i)=>{ const p = px(q); i ? g.lineTo(p[0],p[1]) : g.moveTo(p[0],p[1]); });
+      g.closePath();
     }
-    ctx.fillStyle = shade(wood.base, f.lum);
-    ctx.fill(f.evenodd ? 'evenodd' : 'nonzero');
-    ctx.strokeStyle = shade(wood.grain, 0.75);
-    ctx.lineWidth = 0.55;
-    ctx.stroke();
+    g.fillStyle = shade(wood.base, f.lum);
+    g.fill(f.evenodd ? 'evenodd' : 'nonzero');
+    if(lw > 0){
+      g.strokeStyle = shade(wood.grain, 0.75);
+      g.lineWidth = lw;
+      g.lineJoin = 'round';
+      g.stroke();
+    }
   }
+  g.restore();
+}
+
+function draw3d(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  renderScene(ctx, cv.width/dpr, cv.height/dpr, {});
+}
+
+/* High-resolution render on white, for sharing or printing. */
+function saveRender(){
+  if(!model || !model.parts.length) return;
+  const Wpx = 2400, Hpx = 1800;
+  const off = document.createElement('canvas');
+  off.width = Wpx; off.height = Hpx;
+  const g = off.getContext('2d');
+  renderScene(g, Wpx, Hpx, {bg:'#ffffff', shadow:true, line:1.4, fill:0.9});
+
+  // a quiet caption, bottom left
+  const b = model.box, r1 = (n)=> Math.round(n*10)/10;
+  g.fillStyle = 'rgba(40,32,24,.78)';
+  g.font = '500 30px ui-monospace, SFMono-Regular, Menlo, monospace';
+  g.textBaseline = 'alphabetic';
+  g.fillText(`${r1(b.W)} × ${r1(b.D)} × ${r1(b.H)} mm  ·  ${b.t} mm stock  ·  ${b.compartments} compartment${b.compartments>1?'s':''}`, 64, Hpx - 96);
+  g.fillStyle = 'rgba(40,32,24,.42)';
+  g.font = '400 24px ui-monospace, SFMono-Regular, Menlo, monospace';
+  g.fillText('Box Maker', 64, Hpx - 58);
+
+  off.toBlob((blob)=>{
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'box-maker-render.png';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
+  }, 'image/png');
 }
 
 /* ---------- sheet render ---------- */
@@ -1229,15 +1853,18 @@ function readout(){
     return;
   }
   const inner = b.inner;
-  const cells = b.cells
-    ? `${b.cells.x.map(v=>r1(v)).join(' / ')} &nbsp;×&nbsp; ${b.cells.y.map(v=>r1(v)).join(' / ')} mm`
-    : '';
+  const grid = (b.layout === 'grid');
+  const cells = grid
+    ? `Cells ${b.cells.x.map(v=>r1(v)).join(' / ')} &nbsp;×&nbsp; ${b.cells.y.map(v=>r1(v)).join(' / ')} mm<br>`
+    : `Guillotine layout · ${b.segments} interior wall${b.segments===1?'':'s'} · smallest cell ${r1(b.minCell)} mm<br>`;
+  const grid_desc = grid ? ` (${b.C}×${b.R})` : '';
+  const heur = packed && packed.heuristic ? ` · nest ${packed.heuristic}` : '';
 
   $('ro3d').innerHTML =
     `Outside <b>${r1(b.W)} × ${r1(b.D)} × ${r1(b.H)}</b> · inside <b>${r1(inner.W)} × ${r1(inner.D)} × ${r1(inner.H)}</b> mm<br>` +
-    `${b.C * b.R} compartment${b.C*b.R>1?'s':''} (${b.C}×${b.R}) · ${LIDNAME[b.lidMode]} · ${b.t} mm stock<br>` +
-    `Cells ${cells}<br>` +
-    `<b>${model.parts.length}</b> parts · <b>${n}</b> sheet${n===1?'':'s'} · ${totalWaste}% offcut` + warn + over;
+    `${b.compartments} compartment${b.compartments>1?'s':''}${grid_desc} · ${LIDNAME[b.lidMode]} · ${b.t} mm stock<br>` +
+    cells +
+    `<b>${model.parts.length}</b> parts · <b>${n}</b> sheet${n===1?'':'s'} · ${totalWaste}% offcut${heur}` + warn + over;
 
   $('parts').innerHTML = model.parts.map(p=>
     `<div class="pr"><b>${p.name}</b><span>${p.w.toFixed(1)} × ${p.h.toFixed(1)}</span></div>`
@@ -1248,11 +1875,18 @@ function readout(){
 let raf = null;
 function render(){
   model = LCD.generate(params());
+  const b = model.box, tt = +$('t').value;
+  for(const [inp, driven, outer] of [['W', b.fitW, b.W], ['D', b.fitD, b.D]]){
+    $(inp).disabled = !!driven;
+    $(inp).classList.toggle('driven', !!driven);
+    if(driven) $(inp).value = Math.round(((b.internal ? outer - 2*tt : outer)) * 100) / 100;
+  }
   sc = sheetCfg();
   packed = LCD.pack(model.parts, sc.SW, sc.SH, sc.margin, sc.gap, sc.allowRot);
   readout();
   drawSheets();
   draw3d();
+  if(!$('advBody').hidden && tree) drawPlan();
 }
 function schedule(){ if(raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(render); }
 
@@ -1263,12 +1897,48 @@ function schedule(){ if(raf) cancelAnimationFrame(raf); raf = requestAnimationFr
 ['baseSlot','allowRot','engrave','dmode'].forEach(id=>{
   $(id).addEventListener('change', schedule);
 });
-$('cols').addEventListener('input', ()=>{ syncCount('cols','colW'); schedule(); });
-$('rows').addEventListener('input', ()=>{ syncCount('rows','rowW'); schedule(); });
-$('colW').addEventListener('input', ()=>{ syncWeights('cols','colW'); schedule(); });
-$('rowW').addEventListener('input', ()=>{ syncWeights('rows','rowW'); schedule(); });
-$('colW').addEventListener('blur', ()=>{ syncCount('cols','colW'); schedule(); });
-$('rowW').addEventListener('blur', ()=>{ syncCount('rows','rowW'); schedule(); });
+$('cols').addEventListener('input', ()=> setCount('col', +$('cols').value || 1));
+$('rows').addEventListener('input', ()=> setCount('row', +$('rows').value || 1));
+document.querySelectorAll('[data-step]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const [ax, d] = b.dataset.step.split(':');
+    const key = ax === 'cols' ? 'col' : 'row';
+    setCount(key, AX[key].n + (+d));
+  });
+});
+$('colMode').addEventListener('change', ()=>{ AX.col.mode = $('colMode').value; renderCells('col'); updateHint(); schedule(); });
+$('rowMode').addEventListener('change', ()=>{ AX.row.mode = $('rowMode').value; renderCells('row'); updateHint(); schedule(); });
+$('fitCols').addEventListener('change', schedule);
+$('fitRows').addEventListener('change', schedule);
+
+$('advToggle').addEventListener('click', ()=>{
+  const open = $('advBody').hidden;
+  $('advBody').hidden = !open;
+  $('advToggle').setAttribute('aria-expanded', String(open));
+  if(open){ if(!tree) seedTree(); drawPlan(); syncPlanUI(); }
+});
+$('useTree').addEventListener('change', ()=>{
+  if($('useTree').checked && !tree) seedTree();
+  document.body.classList.toggle('tree-on', $('useTree').checked);
+  refreshPlan();
+});
+$('splitX').addEventListener('click', ()=> splitSel('x'));
+$('splitY').addEventListener('click', ()=> splitSel('y'));
+$('unsplit').addEventListener('click', unsplitSel);
+$('resetTree').addEventListener('click', ()=>{ seedTree(); refreshPlan(); });
+$('splitPos').addEventListener('input', ()=>{
+  const n = nodeAt(sel);
+  if(!n || !n.split) return;
+  n.split.frac = (+$('splitPos').value) / 100;
+  $('posVal').textContent = $('splitPos').value + '%';
+  schedule();
+  requestAnimationFrame(drawPlan);
+});
+planCv.addEventListener('click', (e)=>{
+  const r = planCv.getBoundingClientRect();
+  if(selectAt(e.clientX - r.left, e.clientY - r.top)){ drawPlan(); syncPlanUI(); }
+});
+$('dlPng').addEventListener('click', saveRender);
 
 $('dims').addEventListener('change', ()=>{
   $('dimsHint').textContent = $('dims').value === 'internal'
@@ -1336,9 +2006,10 @@ window.addEventListener('resize', ()=>{ resize3d(); });
 
 /* ---------- boot ---------- */
 document.body.classList.toggle('lid-overlay', $('lidMode').value === 'overlay');
-syncCount('cols','colW');
-syncCount('rows','rowW');
+$('cols').value = AX.col.n; $('rows').value = AX.row.n;
+renderCells('col'); renderCells('row'); updateHint();
 reskin();
+window.addEventListener('resize', ()=>{ if(!$('advBody').hidden) drawPlan(); });
 resize3d();
 (function loop(){
   if(spin && !dragging && $('pane3d').classList.contains('on')){ yaw += 0.0035; draw3d(); }
