@@ -248,6 +248,75 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
 .note{font-size:12px;line-height:1.65;color:var(--engrave)}
 .note strong{color:var(--char);font-weight:600}
 .note .k{font-family:var(--mono);color:var(--laser);font-size:11px}
+#manual{
+  position:fixed;inset:0;z-index:70;display:none;
+  background:var(--linen);overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+#manual.show{display:block}
+.mn-bar{
+  position:sticky;top:0;z-index:2;
+  display:flex;align-items:center;gap:8px;
+  padding:11px 16px;
+  background:linear-gradient(180deg,#1d130c,var(--walnut-deep));
+  border-bottom:2px solid var(--char);
+  box-shadow:inset 0 -3px 0 rgba(217,181,134,.14);
+}
+.mn-bar .tag{
+  flex:1;font-family:var(--mono);font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--birch-lo);
+}
+.mn-bar button{
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:600;
+  padding:7px 13px;border-radius:999px;cursor:pointer;transition:all .15s;
+  color:var(--birch);background:rgba(217,181,134,.08);
+  border:1.5px solid var(--burn);white-space:nowrap;
+}
+.mn-bar button.primary{background:var(--birch);color:var(--char);border-color:var(--birch)}
+.mn-bar button:focus-visible{outline:2.5px solid var(--laser);outline-offset:2px}
+.mn-body{max-width:720px;margin:0 auto;padding:26px 20px 90px}
+.mn-title{font-family:'Fraunces',serif;font-weight:500;font-size:30px;color:var(--char);line-height:1.15}
+.mn-title em{font-style:italic;color:var(--laser)}
+.mn-sub{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--engrave-dim);margin:8px 0 26px}
+.mn-h{
+  font-family:'Fraunces',serif;font-weight:600;font-size:20px;color:var(--char);
+  margin:34px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--linen-line);
+}
+.mn-sh{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--laser);
+  margin:20px 0 6px;letter-spacing:.01em}
+.mn-body p{font-size:14.5px;line-height:1.62;color:var(--engrave);margin:0 0 12px}
+.mn-body ul{margin:0 0 14px 2px;padding-left:18px}
+.mn-body li{font-size:14.5px;line-height:1.6;color:var(--engrave);margin-bottom:7px}
+.mn-body li::marker{color:var(--laser)}
+.mn-body b{color:var(--char);font-weight:600}
+.mn-note{
+  background:rgba(255,255,255,.55);border-left:3px solid var(--laser);
+  border-radius:0 8px 8px 0;padding:11px 14px;margin:6px 0 16px;
+  font-size:14px;line-height:1.55;font-style:italic;color:var(--char);
+}
+.mn-t{width:100%;border-collapse:collapse;margin:6px 0 18px;font-size:13.5px}
+.mn-t th{
+  background:var(--char);color:var(--birch-hi);text-align:left;
+  padding:9px 11px;font-weight:600;font-size:12.5px;
+}
+.mn-t td{padding:9px 11px;border-bottom:1px solid var(--linen-line);
+  color:var(--engrave);line-height:1.5;vertical-align:top}
+.mn-t tbody tr:nth-child(even){background:rgba(255,255,255,.45)}
+.mn-t td:first-child{font-weight:500;color:var(--char);white-space:nowrap}
+@media (max-width:600px){
+  .mn-t td:first-child{white-space:normal}
+  .mn-t,.mn-t th,.mn-t td{font-size:12.5px}
+}
+@media print{
+  body>.frame,#renderModal{display:none !important}
+  #manual{position:static;display:block !important;background:#fff;overflow:visible}
+  .mn-bar{display:none}
+  .mn-body{max-width:none;padding:0}
+  .mn-h{break-after:avoid;page-break-after:avoid}
+  .mn-t,.mn-note,li{break-inside:avoid;page-break-inside:avoid}
+  .mn-t th{background:#2e1a0b !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 #renderModal{
   position:fixed;inset:0;z-index:60;display:none;
   background:rgba(12,7,4,.9);
@@ -399,6 +468,7 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
       </div>
       <div class="dlrow">
         <button class="dl sec" id="loadBtn">Load design</button>
+        <button class="dl sec" id="manualBtn">📖 Manual</button>
       </div>
       <input type="file" id="loadFile" accept=".json,application/json" hidden>
     </section>
@@ -407,6 +477,15 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
       <strong>Ways to build.</strong> Start with a <strong>flat shape</strong> (one cuttable piece) and flip to <strong>3D build</strong> when ready. Ribs join <strong>inside</strong> (hidden spine, layers slide down), <strong>outside</strong> (fins that slide in radially), or <strong>flush</strong> — the rib's outer edge <em>is</em> the silhouette, mated with a half/half cross-lap. Edges can be <strong>curved</strong>, <strong>angled</strong> (fewest straight facets) or <strong>straight</strong>. <strong>Square joins</strong> put each rib on a lobe: a rib is a plane through the axis, so it meets the outline along a radial line — and that line is square to the edge only at a peak or a valley. Anywhere else it crosses the flank obliquely. A shape has only so many lobes, so the rib count caps there. <strong>Twist keeps its ribs</strong>: a twisted stack still meets a flat plane along a straight line, so the ribs simply meet each layer at a rotated angle. <strong>Grip</strong> is the joint depth — and the rib's neck at each layer is exactly that deep, so it's what decides whether a rib snaps. It can only go as deep as the part allows: a ring can be cut into only as far as leaves <span class="k">min width</span> of wall behind, so a thicker wall buys a thicker rib. A rib also only exists where it can grip — it stops short of layers too small to take a notch, rather than passing through them. Slots are <span class="k">thickness − kerf</span> for a friction fit, and <span class="k">min width</span> keeps every land, wall and rib thick enough not to snap. Always burn a kerf test comb first.
     </section>
   </aside>
+</div>
+
+<div id="manual" role="dialog" aria-label="Manual">
+  <div class="mn-bar">
+    <span class="tag">Field manual</span>
+    <button id="mnPrint">Save as PDF</button>
+    <button class="primary" id="mnClose">Close</button>
+  </div>
+  <div class="mn-body"><h2 class="mn-title">Astounding <em>Shape</em> Designer</h2><div class="mn-sub">A field manual for the superformula slicer</div><h3 class="mn-h">1 · What this is</h3><p>Astounding Shape Designer turns a mathematical surface into a set of flat parts you can cut on a laser and slot together into a three-dimensional object. It does the geometry, the joinery and the sheet layout, and gives you SVG cut files in millimetres.</p><p>The surface is a <b>superformula</b> — a single equation that produces starfish, seed pods, urchins, crystals, bowls and vases depending on seven numbers. The app sweeps it twice: once around the equator to give each layer its outline, and once from pole to pole to give the stack its profile.</p><div class="mn-note">Everything is measured in millimetres, and the SVG files are true to size. Do not scale them on the way to the laser.</div><h3 class="mn-h">2 · Quick start</h3><ul><li>Pick a <b>preset</b> in section 2, or hit <b>Randomise</b> and press <b>Back</b> if you regret it.</li><li>Set the <b>diameter</b> and <b>height</b> you want in section 1 — or switch to <b>Fit to sheets</b> and let it size itself to the material you have.</li><li>In section 5, set <b>Material</b> to the real thickness of your ply, measured with callipers, not the number on the label.</li><li>Cut a <b>kerf test comb</b> (see Joinery) and set the <b>Kerf</b> slider to what you measure.</li><li>Turn on <b>Hollow rings</b> if you want a vessel rather than a solid stack, and set the <b>Wall</b>.</li><li>Choose your ribs: how many, how they join, how deep they grip.</li><li>Read the <b>summary line</b> under the preview. It will tell you if something has been quietly dropped.</li><li>Switch to <b>Cut sheets</b>, check the nesting, then <b>Download cut sheets (SVG)</b>.</li></ul><h3 class="mn-h">3 · How it goes together</h3><p>The object is a stack of horizontal <b>layers</b>, held by vertical <b>ribs</b>. Every rib is a flat plate standing in a plane through the central axis. Layers and ribs interlock with a cross-lap: a slot is cut into the layer from its rim, a matching notch is cut into the rib, and the two slide together.</p><p>This is why a rib is always flat, always vertical, and always passes through the axis. It is also why some things are possible and others are not — most of the rules below follow from it.</p><h4 class="mn-sh">Assembly</h4><ul><li><b>Inside</b> ribs: the ribs stand in a bundle around the core. Drop each layer down over them, working from one end.</li><li><b>Outside</b> and <b>flush</b> ribs: build the layer stack loosely, then slide each rib in radially from the outside until its notches engage.</li><li>Dry-fit the whole thing before any glue. If a joint is tight, adjust the kerf and recut — do not force it, ply splits along the grain.</li><li>With <b>glue-stack</b> (0 ribs, or skew/bend/chaos in use) there are no ribs at all: the layers simply stack and glue.</li></ul><h3 class="mn-h">4 · The panel, in order</h3><p>The panel runs in the order you should think in: what it is, what it looks like, how it is built, what it is cut from.</p><h4 class="mn-sh">1 - Project</h4><ul><li><b>Flat shape</b> gives you one cuttable piece — a coaster, a plaque, a frame if you turn on Hollow. <b>3D build</b> gives you the stack. The shape carries over between them.</li><li><b>Set size</b> fixes the diameter and height. <b>Fit to sheets</b> does the reverse: you say how many sheets you are willing to use, and it sizes the piece to fit, keeping the proportions.</li></ul><h4 class="mn-sh">2 - Shape</h4><ul><li>The seven superformula sliders. <b>m1</b> and <b>m2</b> set how many lobes; the <b>n</b> values set how sharp or swollen they are; <b>a</b> and <b>b</b> stretch the two axes.</li><li><b>Randomise</b> leaps somewhere new. <b>Back</b> steps home again — it remembers the last forty states, and takes a snapshot before every randomise, preset and reset.</li><li><b>Smoother</b> rounds a spiky form into clean curves. It filters the shape itself, not just the picture, so the slots, ribs and layers all follow the smoothed curve exactly.</li></ul><h4 class="mn-sh">3 - Structure</h4><ul><li><b>Hollow rings</b> turns solid layers into rings. <b>Wall</b> is how wide the ring is. If the wall is too thick for the shape the rings collapse — the app keeps the layers solid and says so rather than deleting your piece.</li><li><b>Layers</b> is how many horizontal slices. The app will not place them closer together than the material is thick.</li><li><b>Crop top</b> and <b>Crop bottom</b> lop whole layers off the ends. The ribs shorten and re-notch themselves to whatever stack remains.</li><li><b>Solid base</b> and <b>Solid top</b> cap the ends of the stack — applied to whatever the stack ends up as, so crop the top and the new top layer is the one that gets capped.</li><li><b>Ribs</b>, <b>Grip</b>, <b>Core</b>, the placement and join options, and <b>Min width</b>. These get a section of their own below.</li></ul><h4 class="mn-sh">4 - Effects</h4><ul><li><b>Keeps the ribs</b>: Scale X/Y/Z, Fractal, and Twist. A twisted stack still meets a flat plane along a straight line, so the ribs survive — they simply meet each layer at a rotated angle, and the app cuts them for it.</li><li><b>Glue-stack only</b>: Skew, Bend, Chaos. These move each layer bodily off the axis, and no flat plane can pass through them all. Turn any of them up and the ribs are dropped; the piece becomes a glue-stack.</li></ul><h4 class="mn-sh">5 - Material and sheet</h4><ul><li><b>Material</b> — the true thickness of your board. Measure it. 3mm ply is rarely 3mm.</li><li><b>Kerf</b> — the width of the cut your laser makes. See Joinery.</li><li><b>Sheet width and height</b> — the stock you are cutting from. The packer works to these.</li></ul><h3 class="mn-h">5 · Ribs</h3><p>This is where most of the craft lives.</p><h4 class="mn-sh">How many, and where</h4><ul><li><b>Square joins</b> puts each rib on a lobe. A rib meets the outline along a radial line, and that line is square to the edge only at a peak or a valley — anywhere else it crosses the flank obliquely, which looks wrong and makes a weak joint. A shape has only so many lobes, so in this mode the rib count caps there; the summary will tell you if you asked for more.</li><li><b>Even spacing</b> ignores the lobes and spreads the ribs evenly. On a round shape it makes no difference; on a six-pointed star it can put every join 60 degrees off square.</li></ul><h4 class="mn-sh">Where they join</h4><ul><li><b>Ribs inside</b> — a hidden spine at the core. The ribs disappear inside the piece.</li><li><b>Ribs outside</b> — an exoskeleton. The fins stand proud of the silhouette.</li><li><b>Ribs flush</b> — the rib's outer edge <i>is</i> the silhouette, mated with a half/half cross-lap: the layer is slotted half the joint depth in from its rim, the rib notched half in from its edge, so they meet exactly halfway and the rib vanishes into the outline.</li></ul><h4 class="mn-sh">What shape</h4><ul><li><b>Curved</b> follows the form.</li><li><b>Angled</b> is the same form in the fewest straight facets — a deliberate contrast to the curves.</li><li><b>Straight</b> squares the rib's free edge off entirely.</li></ul><h4 class="mn-sh">Grip - the one that matters</h4><p><b>Grip</b> is the depth of the joint. In a cross-lap the rib's neck at each layer is exactly that deep — so grip <i>is</i> the strength of your rib. A 5mm grip means a 5mm neck, and a 5mm neck in 3mm ply snaps if you look at it.</p><p>Grip can only go as deep as the part allows. A ring can be cut into only as far as leaves min width of wall behind it, so <b>a thicker wall buys you a thicker rib</b>. The summary reports what you actually got, and flags the thinnest neck in the piece separately — that is usually a small layer near a pole, which cannot give a deep slot without being cut in half.</p><h4 class="mn-sh">Min width</h4><p>The thinnest anything is allowed to be. It guards the ring walls, the land beside every slot, and the body of every rib. Set it to something your material can survive — 4mm is sane for 3mm ply, more for MDF or acrylic.</p><h3 class="mn-h">6 · Joinery, kerf and fit</h3><p>A laser removes material. The slot you cut comes out wider than the line you drew, by roughly the width of the beam — the <b>kerf</b>. If you ignore it, every joint in the piece is loose.</p><p>The app cuts every slot at <b>thickness minus kerf</b>, so the joint closes to a friction fit. It cannot guess your kerf: it depends on your machine, your power, your speed and your material.</p><h4 class="mn-sh">Cutting a kerf test comb</h4><ul><li>Draw a strip with a row of slots in it, each a slightly different width: 2.6, 2.7, 2.8, 2.9, 3.0mm, and so on.</li><li>Cut it from the same board you will use for the piece, at the same settings.</li><li>Try a scrap of the board in each slot. The one that grips firmly but goes in by hand is your number.</li><li>Kerf = the nominal thickness minus the slot that fit. If 3.0mm ply fits the 2.85mm slot, your kerf is 0.15mm.</li><li>Do this once per material and machine, and write it on the wall.</li></ul><div class="mn-note">Cut a comb before every real job. It takes two minutes and saves a whole sheet.</div><h3 class="mn-h">7 · Cut files</h3><p><b>Download cut sheets (SVG)</b> gives you one SVG per sheet, true to size in millimetres.</p><table class="mn-t"><thead><tr><th>Colour</th><th>Meaning</th></tr></thead><tbody><tr><td>Red, 0.2mm</td><td>Cut line</td></tr><tr><td>Dark</td><td>Engraved part label (L1, L2... R1, R2...)</td></tr><tr><td>Dashed brown</td><td>The sheet boundary - do not cut</td></tr></tbody></table><p>Parts labelled <b>L</b> are layers, numbered from the bottom. Parts labelled <b>R</b> are ribs. Keep them in order as they come off the bed — a stack of near-identical rings is very hard to sort afterwards.</p><p>The packer nests parts inside the holes of hollow rings, and turns parts 90 degrees when that packs tighter. If a part is too big for one sheet it gets a sheet of its own, marked <b>oversize</b>.</p><h3 class="mn-h">8 · Reading the summary line</h3><p>The line under the preview is the app being honest with you. Take it seriously.</p><table class="mn-t"><thead><tr><th>It says</th><th>It means</th></tr></thead><tbody><tr><td>glue-stack - skew/bend/chaos</td><td>You are using an effect that no flat rib can follow. There are no ribs; glue the layers.</td></tr><tr><td>N ribs dropped (too thin here)</td><td>Those ribs could not be made without breaking min width. Widen the wall, lower min width, or use fewer ribs.</td></tr><tr><td>N ribs over the lobe count</td><td>You asked for more square joins than the shape has lobes. Switch to Even spacing, or accept fewer ribs.</td></tr><tr><td>ribs stop short of N layers</td><td>Those layers are too small to take a notch. The ribs end before them rather than passing through them.</td></tr><tr><td>joins 34 degrees off square</td><td>Your ribs are crossing the flanks obliquely. Switch on Square joins.</td></tr><tr><td>grip 5.0mm (all the wall allows)</td><td>You asked for a deeper joint than the ring wall can give. Thicken the wall.</td></tr><tr><td>thinnest neck 5.2mm</td><td>The weakest joint in the piece. That is where it will break.</td></tr><tr><td>wall too thick to hollow</td><td>The rings collapsed. The layers have been left solid.</td></tr><tr><td>N cropped</td><td>Layers removed from the ends.</td></tr></tbody></table><h3 class="mn-h">9 · Materials</h3><table class="mn-t"><thead><tr><th>Material</th><th>Notes</th></tr></thead><tbody><tr><td>3mm birch ply</td><td>The default. Forgiving, cuts fast, holds a friction fit well.</td></tr><tr><td>MDF</td><td>Cuts beautifully, very consistent thickness, but brittle in thin sections - raise min width.</td></tr><tr><td>Acrylic</td><td>No grain, so thin necks survive better, but it melts: the kerf is larger and varies with speed.</td></tr><tr><td>Card and chipboard</td><td>Excellent for a test fit at full size before you commit to timber.</td></tr></tbody></table><p>Whatever you use, measure the actual thickness with callipers and cut a kerf comb from the same sheet. Two boards from the same pack can differ by a quarter of a millimetre, which is the difference between a friction fit and a rattle.</p><h3 class="mn-h">10 · When it goes wrong</h3><table class="mn-t"><thead><tr><th>Symptom</th><th>Cause and cure</th></tr></thead><tbody><tr><td>Joints are loose</td><td>Kerf set too low. Measure it with a comb and raise it.</td></tr><tr><td>Joints will not go together</td><td>Kerf set too high, or the board is thicker than you told it. Measure both.</td></tr><tr><td>A rib snapped at a layer</td><td>The neck was too thin. Raise Grip; if the summary says the wall will not allow it, thicken the wall.</td></tr><tr><td>Ribs vanished</td><td>Skew, bend or chaos is turned up - those force a glue-stack. Or the ribs slider is at zero.</td></tr><tr><td>Fewer ribs than I asked for</td><td>Square joins caps at the lobe count, or ribs were dropped for being too thin. The summary says which.</td></tr><tr><td>The rings disappeared</td><td>Wall too thick for the shape. Thin the wall or smooth the shape.</td></tr><tr><td>Too many sheets</td><td>Try Fit to sheets, reduce layers, or use a larger sheet size.</td></tr><tr><td>It looks nothing like the preview</td><td>Check you did not scale the SVG on the way to the laser.</td></tr></tbody></table><h3 class="mn-h">11 · A note on the shapes</h3><p>Many superformula shapes are <b>re-entrant</b>: the surface doubles back, so two different latitudes sit at the same height. A stack of flat layers cannot reproduce an overhang, so at any height the app cuts the widest thing there — the true silhouette. This is why some presets look less like a smooth pod and more like a spool. That is the mathematics being honest, not a mistake.</p><p>If you want the gentler form, reach for the <b>Smoother</b>.</p></div>
 </div>
 
 <div id="renderModal">
@@ -2051,6 +2130,18 @@ document.getElementById('renderSave').addEventListener('click',()=>{
 });
 document.getElementById('renderClose').addEventListener('click',()=>{
   renderModal.classList.remove('show');
+});
+
+/* ---- the manual: read it here, or print it to PDF ---- */
+const manual=document.getElementById('manual');
+document.getElementById('manualBtn').addEventListener('click',()=>{
+  manual.classList.add('show');
+  manual.scrollTop=0;
+});
+document.getElementById('mnClose').addEventListener('click',()=>manual.classList.remove('show'));
+document.getElementById('mnPrint').addEventListener('click',()=>window.print());
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&manual.classList.contains('show'))manual.classList.remove('show');
 });
 
 let t0=performance.now(),lastSum=0,lastFit=0;
