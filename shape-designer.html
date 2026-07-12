@@ -123,6 +123,8 @@ canvas#cv.grabbing{cursor:grabbing}
   display:flex;align-items:center;gap:8px;
 }
 .subhead::after{content:'';flex:1;height:1px;background:var(--linen-line)}
+.hint{font-size:11.5px;line-height:1.55;color:#8a6a45;margin:-2px 0 10px}
+.dl:disabled{opacity:.4;cursor:default;transform:none}
 .viewtabs{position:absolute;top:12px;right:12px;z-index:6;display:flex;gap:6px}
 .vtab{
   font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
@@ -309,7 +311,7 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
 
   <aside>
     <section>
-      <div class="group-label">Project setup</div>
+      <div class="group-label">1 · Project</div>
       <div class="chiprow" id="buildMode">
         <button class="chip" data-b="flat">Flat shape</button>
         <button class="chip active" data-b="3d">3D build</button>
@@ -319,47 +321,76 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
         <button class="chip" data-m="fit">Fit to sheets</button>
       </div>
       <div id="constCtl"></div>
-      <div class="subhead">Sheet stock</div>
-      <div id="sheetCtl"></div>
-      <div class="subhead">Form</div>
-      <div class="chiprow" id="endsRow" style="margin-top:2px">
-        <button class="chip" data-e="bowl">Bowl · open top</button>
-        <button class="chip" data-e="closed">Sculpture · closed</button>
-        <button class="chip" data-e="open">Tube · open ends</button>
+
+    </section>
+
+    <section>
+      <div class="group-label">2 · Shape</div>
+      <div class="presets" id="presets"></div>
+      <div class="dlrow" style="margin:12px 0 4px">
+        <button class="dl sec" id="randBtn">🎲 Randomise</button>
+        <button class="dl sec" id="undoBtn" disabled>↶ Back</button>
       </div>
-      <div class="toggles" style="margin-bottom:4px">
+      <div class="subhead">Superformula</div>
+      <div id="shapeCtl"></div>
+      <div class="subhead">Smoother</div>
+      <div id="smoothCtl"></div>
+    </section>
+
+    <section>
+      <div class="group-label">3 · Structure</div>
+      <div class="toggles" style="margin-bottom:6px">
         <button class="toggle" id="tgHollow">Hollow rings</button>
       </div>
       <div id="wallCtl"></div>
-    </section>
-    <section>
-      <div class="group-label">Presets</div>
-      <div class="presets" id="presets"></div>
-    </section>
-    <section>
-      <div class="group-label">Shape — superformula</div>
-      <div id="shapeCtl"></div>
-    </section>
-    <section>
-      <div class="group-label">Shape shifting</div>
-      <div id="modCtl"></div>
-      <div class="dlrow" style="margin-top:2px">
-        <button class="dl sec" id="randBtn">🎲 Randomise</button>
-        <button class="dl sec" id="resetBtn">Reset shifts</button>
+      <div id="layerCtl"></div>
+      <div class="subhead">The stack</div>
+      <div id="cropCtl"></div>
+      <div class="toggles" id="endsRow">
+        <button class="toggle on" id="tgCapBot">Solid base</button>
+        <button class="toggle" id="tgCapTop">Solid top</button>
       </div>
-    </section>
-    <section>
-      <div class="group-label">Fabrication</div>
-      <div id="fabCtl"></div>
-      <div class="chiprow" id="ribJoinRow" style="margin-top:2px">
+      <div class="hint">Caps apply to whatever the stack ends up as — crop the top
+        and the new top layer is the one that gets capped. Hollow builds only.</div>
+      <div class="subhead">Ribs</div>
+      <div id="ribCtl"></div>
+      <div class="chiprow" id="ribAlignRow">
+        <button class="chip active" data-a="perp">Square joins</button>
+        <button class="chip" data-a="even">Even spacing</button>
+      </div>
+      <div class="chiprow" id="ribJoinRow">
         <button class="chip active" data-j="inside">Ribs inside</button>
         <button class="chip" data-j="outside">Ribs outside</button>
+        <button class="chip" data-j="flush">Ribs flush</button>
       </div>
       <div class="chiprow" id="ribShapeRow">
-        <button class="chip active" data-s="curved">Curved ribs</button>
-        <button class="chip" data-s="straight">Straight ribs</button>
+        <button class="chip active" data-s="curved">Curved</button>
+        <button class="chip" data-s="angled">Angled</button>
+        <button class="chip" data-s="straight">Straight</button>
+      </div>
+      <div id="minwCtl"></div>
+    </section>
+
+    <section>
+      <div class="group-label">4 · Effects</div>
+      <div class="subhead">Keeps the ribs</div>
+      <div id="modKeepCtl"></div>
+      <div class="subhead">Glue-stack only</div>
+      <div class="hint">These move each layer bodily off the axis, so no flat
+        rib can pass through them all. Turning any of them up drops the ribs
+        and the piece becomes a glue-stack.</div>
+      <div id="modGlueCtl"></div>
+      <div class="dlrow" style="margin-top:2px">
+        <button class="dl sec" id="resetBtn">Reset effects</button>
       </div>
     </section>
+
+    <section>
+      <div class="group-label">5 · Material &amp; sheet</div>
+      <div id="matCtl"></div>
+      <div id="sheetCtl"></div>
+    </section>
+
     <section>
       <button class="dl" id="dlBtn">Download cut sheets (SVG)</button>
       <div class="dlrow">
@@ -371,8 +402,9 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
       </div>
       <input type="file" id="loadFile" accept=".json,application/json" hidden>
     </section>
+
     <section class="note">
-      <strong>Ways to build.</strong> Start with a <strong>flat shape</strong> (one cuttable piece — coaster, plaque, frame) and flip to <strong>3D build</strong> when ready. Ribs join <strong>inside</strong> (hidden spine, layers slide down) or <strong>outside</strong> (exoskeleton fins that slide in radially and bite <span class="k">min width</span> into the silhouette); either can be curved or straight. Slots are <span class="k">thickness − kerf</span> for a friction fit, and <span class="k">min width</span> keeps every land and wall thick enough not to snap. Twist, skew, bend and chaos rearrange the stack so they switch to glue-stack automatically. The <strong>smoother</strong> rounds spiky forms into clean curves — joints follow it exactly. Always burn a kerf test comb first.
+      <strong>Ways to build.</strong> Start with a <strong>flat shape</strong> (one cuttable piece) and flip to <strong>3D build</strong> when ready. Ribs join <strong>inside</strong> (hidden spine, layers slide down), <strong>outside</strong> (fins that slide in radially), or <strong>flush</strong> — the rib's outer edge <em>is</em> the silhouette, mated with a half/half cross-lap. Edges can be <strong>curved</strong>, <strong>angled</strong> (fewest straight facets) or <strong>straight</strong>. <strong>Square joins</strong> put each rib on a lobe: a rib is a plane through the axis, so it meets the outline along a radial line — and that line is square to the edge only at a peak or a valley. Anywhere else it crosses the flank obliquely. A shape has only so many lobes, so the rib count caps there. <strong>Twist keeps its ribs</strong>: a twisted stack still meets a flat plane along a straight line, so the ribs simply meet each layer at a rotated angle. <strong>Grip</strong> is the joint depth — and the rib's neck at each layer is exactly that deep, so it's what decides whether a rib snaps. It can only go as deep as the part allows: a ring can be cut into only as far as leaves <span class="k">min width</span> of wall behind, so a thicker wall buys a thicker rib. A rib also only exists where it can grip — it stops short of layers too small to take a notch, rather than passing through them. Slots are <span class="k">thickness − kerf</span> for a friction fit, and <span class="k">min width</span> keeps every land, wall and rib thick enough not to snap. Always burn a kerf test comb first.
     </section>
   </aside>
 </div>
@@ -424,6 +456,24 @@ function boxSmooth(arr,w,periodic){
     const tmp=src;src=out;out=tmp;
   }
   return src;
+}
+/* radius of a polygon boundary along a ray from the axis. An inset vertex
+   does NOT sit at the same angle as the vertex it came from, so indexing the
+   inner ring by vertex is millimetres wrong on a lobed shape — the land
+   between a slot bottom and the hole has to be measured along the slot.  */
+function rayRadius(poly,ang){
+  const dx=Math.cos(ang),dy=Math.sin(ang);
+  let best=1e9;
+  for(let i=0;i<poly.length;i++){
+    const a=poly[i],b=poly[(i+1)%poly.length];
+    const ex=b[0]-a[0],ey=b[1]-a[1];
+    const den=dx*ey-dy*ex;
+    if(Math.abs(den)<1e-12)continue;
+    const t=(a[0]*ey-a[1]*ex)/den;
+    const u=(a[0]*dy-a[1]*dx)/den;
+    if(t>0&&u>=-1e-9&&u<=1+1e-9&&t<best)best=t;
+  }
+  return best<1e8?best:0;
 }
 function insetOutline(pts,wall){
   const n=pts.length;
@@ -543,6 +593,50 @@ function notchCurve(samples,rows,ws){
   return out;
 }
 
+/* Ramer–Douglas–Peucker: fewest straight segments within eps of the curve */
+function rdp(pts,eps){
+  if(pts.length<3)return pts.slice();
+  const keep=new Array(pts.length).fill(false);
+  keep[0]=keep[pts.length-1]=true;
+  const stack=[[0,pts.length-1]];
+  while(stack.length){
+    const [a,b]=stack.pop();
+    if(b-a<2)continue;
+    const A=pts[a],B=pts[b];
+    const dx=B[0]-A[0],dy=B[1]-A[1];
+    const len=Math.hypot(dx,dy)||1;
+    let far=-1,fd=-1;
+    for(let i=a+1;i<b;i++){
+      const d=Math.abs((pts[i][0]-A[0])*dy-(pts[i][1]-A[1])*dx)/len;
+      if(d>fd){fd=d;far=i;}
+    }
+    if(fd>eps){keep[far]=true;stack.push([a,far],[far,b]);}
+  }
+  return pts.filter((q,i)=>keep[i]);
+}
+/* flatten a z-ascending edge to a constant radius across each joint band,
+   so the material left outboard of a notch is the same at the top and bottom
+   of the notch as it is at the centre — a flat seat for the layer to sit on */
+function shoulderCurve(samples,rows,ws){
+  const out=[];
+  const rws=rows.slice().sort((a,b)=>a.z-b.z);
+  let ri=0,i=0;
+  while(i<samples.length){
+    const cur=samples[i];
+    if(ri<rws.length){
+      const row=rws[ri],zb=row.z-ws/2,zt=row.z+ws/2;
+      if(cur[1]>=zb&&(out.length===0||out[out.length-1][1]<zb)){
+        out.push([row.o,zb],[row.o,zt]);
+        while(i<samples.length&&samples[i][1]<zt)i++;
+        ri++;
+        continue;
+      }
+    }
+    out.push(cur);
+    i++;
+  }
+  return out;
+}
 const DEFAULT_MODS={sx:1,sy:1,sz:1,fractal:0,twist:0,skew:0,bend:0,chaos:0,smooth:0,seed:7};
 
 /* Build the fabrication model.
@@ -631,24 +725,108 @@ function buildModel(p,fab,mods){
   const hMM=Math.max(10,(typeof fab.heightMM==='number'?fab.heightMM:140)*mods.sz);
   const zS=hMM/Math.max(zmax-zmin,1e-9);
 
-  const stackFx=Math.abs(mods.twist)>0.5||Math.abs(mods.skew)>0.5||
-                Math.abs(mods.bend)>0.5||mods.chaos>0.5;
-  const M=stackFx?0:Math.max(0,Math.round(fab.ribs));
+  /* A twisted stack still meets a vertical plane along a straight radial
+     line, so ribs SURVIVE a twist — the rib simply meets each layer at a
+     rotated angle. Skew, bend and chaos move the layers off-axis, and no
+     flat plane can pass through all of them: those force a glue-stack.   */
+  const twistA=Math.abs(mods.twist)>0.5?mods.twist:0;
+  const stackFx=Math.abs(mods.skew)>0.5||Math.abs(mods.bend)>0.5||mods.chaos>0.5;
+  let M=stackFx?0:Math.max(0,Math.round(fab.ribs));
   const outside=fab.ribJoin==='outside';
+  const flush=fab.ribJoin==='flush';
+  const radial=outside||flush;          // rib meets the layer from the rim
   const straight=fab.ribShape==='straight';
+  const angled=fab.ribShape==='angled';
   const Lcap=Math.max(3,Math.floor(hMM/(fab.T*1.15)));
   const L=Math.min(Math.max(3,Math.round(fab.layers)),Lcap);
+  /* ---- where do the ribs go? ----
+     A rib is a plane through the axis, so it meets the outline along a RADIAL
+     line. That line is square to the edge exactly where the radius is at a
+     local max or min — the lobe peaks and the valleys between them. Anywhere
+     else it crosses the flank obliquely: an ugly slot and a weak joint.
+     'perp' therefore snaps the ribs onto the lobes; 'even' spaces them
+     regardless.                                                            */
   const ribPhi=[];
-  for(let k=0;k<M;k++)ribPhi.push((k+0.5)/M*Math.PI*2);
+  const dR=i=>{                                   // dR/dφ on the smoothed rim
+    const a=r1[(i-1+PHI_N)%PHI_N],b=r1[(i+1)%PHI_N];
+    return (b-a)/(2*(2*Math.PI/PHI_N));
+  };
+  const dRAt=phi=>{                               // dR/dφ, interpolated
+    let x=phi/(2*Math.PI)*PHI_N;
+    x=((x%PHI_N)+PHI_N)%PHI_N;
+    const i0=Math.floor(x)%PHI_N,i1=(i0+1)%PHI_N,f=x-Math.floor(x);
+    return dR(i0)*(1-f)+dR(i1)*f;
+  };
+  const skewAt=phi=>Math.atan2(dRAt(phi),Math.max(R1(phi),1e-6));
+  let ribsCapped=0;
+  let rmin=1e9,rmax=-1e9,rsum=0;
+  for(let i=0;i<PHI_N;i++){rsum+=r1[i];if(r1[i]<rmin)rmin=r1[i];if(r1[i]>rmax)rmax=r1[i];}
+  const lobed=(rmax-rmin)/Math.max(rsum/PHI_N,1e-9)>0.02;   // is there a lobe at all?
+  if(fab.ribAlign==='perp'&&M>0&&lobed){
+    const peaks=[],valleys=[];
+    for(let i=0;i<PHI_N;i++){
+      const d0=dR(i),d1=dR((i+1)%PHI_N);
+      if(d0===0||d0*d1<0){
+        const t=d0===0?0:d0/(d0-d1);
+        const phi=((i+t)/PHI_N)*Math.PI*2;
+        (d0>0?peaks:valleys).push(phi);           // rising → peak, falling → valley
+      }
+    }
+    /* Prefer the peaks — a rib in a valley is a stub. Reach for the valleys
+       only when more ribs are wanted than there are peaks. A shape has only
+       so many lobes: perpendicular joins cannot be made anywhere else, so the
+       count is capped rather than faked. Each rib then snaps to the lobe
+       NEAREST its evenly-spaced home, which keeps them spread out.        */
+    const pool=(M<=peaks.length?peaks:peaks.concat(valleys)).slice().sort((a,b)=>a-b);
+    if(pool.length){
+      const use=Math.min(M,pool.length);
+      ribsCapped=M-use;
+      const taken=new Set();
+      for(let k=0;k<use;k++){
+        const want=(k+0.5)/use*Math.PI*2;
+        let bi=-1,bd=1e9;
+        pool.forEach((phi,i)=>{
+          if(taken.has(i))return;
+          let d=Math.abs(phi-want);
+          if(d>Math.PI)d=2*Math.PI-d;
+          if(d<bd){bd=d;bi=i;}
+        });
+        if(bi>=0){taken.add(bi);ribPhi.push(pool[bi]);}
+      }
+      ribPhi.sort((a,b)=>a-b);
+      M=ribPhi.length;
+    }else{
+      for(let k=0;k<M;k++)ribPhi.push((k+0.5)/M*Math.PI*2);
+    }
+  }else{
+    for(let k=0;k<M;k++)ribPhi.push((k+0.5)/M*Math.PI*2);
+  }
+  let ribSkew=0;                                  // worst join, degrees off square
+  ribPhi.forEach(phi=>{
+    ribSkew=Math.max(ribSkew,Math.abs(skewAt(phi))*180/Math.PI);
+  });
 
+  /* Pick each layer's station by HEIGHT, taking the outer branch.
+     On a pinched or re-entrant form two different θ sit at the same height —
+     one on the silhouette, one tucked inside it. Taking whichever θ was
+     nearest in z could land on the inner branch, dropping a tiny disc into
+     the middle of a wide part of the stack (and dragging the ribs, which are
+     drawn through the layers, into a dip with it). At a given height the
+     layer is the widest thing there.                                      */
   const cand=[];
+  const tol=(zmax-zmin)/L*0.5;
   for(let j=0;j<L;j++){
     const zt=zmin+(j+0.5)/L*(zmax-zmin);
-    let bi=0,bd=1e9;
+    let bi=-1,bRc=-1,ni=0,nd=1e9;
     for(let i=0;i<TH_N;i++){
       const d=Math.abs(zsv[i]-zt);
-      if(d<bd){bd=d;bi=i;}
+      if(d<nd){nd=d;ni=i;}
+      if(d<=tol){
+        const rc=r2[i]*Math.cos(th[i]);
+        if(rc>bRc){bRc=rc;bi=i;}
+      }
     }
+    if(bi<0)bi=ni;
     cand.push({z:zsv[bi]*zS,r2:r2[bi],cth:Math.cos(th[bi])});
   }
   cand.sort((a,b)=>a.z-b.z);
@@ -656,12 +834,28 @@ function buildModel(p,fab,mods){
   cand.forEach(c=>{
     if(!slabs.length||c.z-slabs[slabs.length-1].z>=fab.T*1.05)slabs.push(c);
   });
+  /* crop: lop whole layers off the ends. The ribs are clipped to whatever
+     stack remains, so they shorten and re-notch themselves to match.     */
+  let cropB=Math.max(0,Math.round(fab.cropBot||0));
+  let cropT=Math.max(0,Math.round(fab.cropTop||0));
+  while(slabs.length-cropB-cropT<3&&cropB+cropT>0){
+    if(cropT>=cropB)cropT--;else cropB--;    // crop as far as the stack allows
+  }
+  if(cropB+cropT>0)slabs=slabs.slice(cropB,slabs.length-cropT);
+  const cropped=cropB+cropT;
 
   let rcSt=1e-9;
   slabs.forEach(s=>{const rc=s.r2*s.cth;if(rc>rcSt)rcSt=rc;});
   const S=(fab.D/2)/Math.max(r1max*rcSt,1e-9);
 
+  const zStackLo=slabs[0].z,zStackHi=slabs[slabs.length-1].z;
+  const twistAt=z=>twistA*((z-zStackLo)/Math.max(zStackHi-zStackLo,1e-9))*Math.PI/180;
+  slabs.forEach(s=>{s.rot=twistAt(s.z);});
+
   const ends=fab.ends||'bowl';
+  /* explicit caps win; otherwise the ends preset decides */
+  const capBot=typeof fab.capBot==='boolean'?fab.capBot:(ends!=='open');
+  const capTop=typeof fab.capTop==='boolean'?fab.capTop:(ends==='closed');
   slabs.forEach((s,j)=>{
     const sc=s.r2*s.cth*S;
     const base=[];
@@ -670,46 +864,205 @@ function buildModel(p,fab,mods){
     }
     s.base=base;
     const isBottom=j===0,isTop=j===slabs.length-1;
-    const cap=(ends!=='open'&&isBottom)||(ends==='closed'&&isTop);
+    const cap=(capBot&&isBottom)||(capTop&&isTop);
     const wantRing=fab.hollow&&!cap;
     s.inner=wantRing?insetOutline(base,wallEff):null;
     s.innerR=s.inner?s.inner.map(q=>Math.hypot(q[0],q[1])):null;
   });
-  if(fab.hollow){
-    if(ends!=='closed'){
-      while(slabs.length>3&&slabs[slabs.length-1].inner===null)slabs.pop();
-    }
-    if(ends==='open'){
-      while(slabs.length>3&&slabs[0].inner===null)slabs.shift();
-    }
+  /* If the wall is too thick for this shape every ring collapses. Trimming
+     the stack away in that case is nonsense — keep the layers solid and say
+     so, rather than silently deleting the piece.                          */
+  const anyRing=slabs.some(s=>s.inner);
+  const hollowFailed=fab.hollow&&!anyRing;
+  if(fab.hollow&&anyRing){
+    if(!capTop){while(slabs.length>3&&slabs[slabs.length-1].inner===null)slabs.pop();}
+    if(!capBot){while(slabs.length>3&&slabs[0].inner===null)slabs.shift();}
   }
 
-  /* joint midpoints — inside: mid of core→rim span; outside: rim − E/2,
+  /* joint midpoints — inside: mid of core→rim span; outside & flush: rim − E/2
+     (a true half/half cross-lap: the layer is slotted E/2 in from its rim and
+     the rib is notched E/2 in from its edge, so they meet exactly halfway),
      with min-width lands guaranteed either side of every slot            */
-  const Etarget=Math.max(8,2*minW);
+  /* GRIP is the depth of the joint: the layer's slot depth, which is exactly
+     the width of the rib's neck at that layer. It was hard-capped at 8mm, so
+     a thicker wall bought you nothing and every rib came out with a thin
+     neck. Now it's asked for, and clamped by what the part can actually give:
+     a ring can only be cut into as far as leaves min width of wall behind. */
+  const grip=Math.max(minW,fab.grip||6);
+  const Etarget=Math.max(2*minW,2*grip);
+  const gripList=[];const gripWanted=grip;
   const mids=[];
   for(let j=0;j<slabs.length;j++){
     const row=[];
     const s=slabs[j],sc=s.r2*s.cth*S;
     for(let k=0;k<M;k++){
-      const rho=R1(ribPhi[k])*sc;
+      const pkL=ribPhi[k]-s.rot;          // rib angle in the layer's own frame
+      const rho=R1(pkL)*sc;
       let m=null;
-      if(outside){
+      if(radial){
         let E=Etarget;
-        if(s.inner)E=Math.min(E,2*(wallEff-minW));
-        E=Math.min(E,rho*0.4);
-        if(E>=3)m=rho-E/2;
+        if(s.inner)E=Math.min(E,2*(wallEff-minW));   // leave min width of wall
+        E=Math.min(E,rho*0.5);                       // and don't halve the layer
+        if(E>=2*minW){m=rho-E/2;gripList.push(E/2);}
       }else{
         let innerLimit=fab.core;
-        if(s.inner){
-          const idx=Math.round(ribPhi[k]/(2*Math.PI)*PHI_N)%PHI_N;
-          innerLimit=Math.max(fab.core,s.innerR[idx]);
+        if(s.inner)innerLimit=Math.max(fab.core,rayRadius(s.inner,pkL));
+        if(rho>innerLimit+2*minW){
+          m=Math.max(innerLimit+minW,rho-grip);      // grip from the rim in
+          gripList.push(rho-m);
         }
-        if(rho>innerLimit+2*minW)m=(innerLimit+rho)/2;
       }
       row.push(m);
     }
     mids.push(row);
+  }
+
+  /* ---------- rib chains, built before the layers are slotted ----------
+     Both edges are sampled on one shared set of z breakpoints, so the band
+     between them is guaranteed along every segment, not just at samples.
+     Each joint gets a flat shoulder on BOTH edges across the layer's
+     thickness: the land outboard of the notch, and the depth the notch cuts,
+     are then constant through the notch instead of starving where the
+     silhouette slopes. A joint the rib cannot carry is vetoed here, before
+     the layer is slotted, so no layer is cut for a rib that isn't there.  */
+  const NZ=96,DN=361;
+  const ribLand=Math.max(8,2*minW);
+  const ribBand=Math.max(2*minW,6);          // thinnest rib material anywhere
+  const chains=[];
+  const chainAt=(chain,z)=>{
+    for(let i=0;i<chain.length-1;i++){
+      const a=chain[i],b=chain[i+1];
+      if((a[1]-z)*(b[1]-z)<=0&&a[1]!==b[1]){
+        const t=(z-a[1])/(b[1]-a[1]);
+        return a[0]+(b[0]-a[0])*t;
+      }
+    }
+    return chain[chain.length-1][0];
+  };
+  let ribSkipped=0;
+  for(let k=0;k<M;k++){
+    /* THE RIB IS DEFINED BY THE LAYERS IT HOLDS.
+       Its silhouette is drawn THROUGH the rim of each layer it meets, at that
+       layer's own angle (which the twist rotates), so the rib and the layers
+       agree exactly instead of being sampled separately.
+
+       And a rib may only exist where it can actually grip. A rib crosses every
+       layer in its span — if a layer cannot take a notch (too small to give
+       min width, or a ring wall too thin to cut into), the rib would pass
+       straight through solid material and the piece could not be assembled.
+       So the rib is clipped to the longest unbroken run of layers it CAN
+       join, and simply stops short of the ones it can't.                   */
+    const ctrl=slabs.map(sl=>[R1(ribPhi[k]-sl.rot)*sl.r2*sl.cth*S,sl.z]);
+    const depth=radial?Math.max(ribBand,flush?Math.max(ribBand,Etarget/2+minW)
+                                             :ribLand+Etarget):0;
+    /* which layers can this rib join? (needs no chain — the rim is enough) */
+    const ok=slabs.map((sl,j)=>{
+      if(mids[j][k]===null)return false;
+      const rhoS=ctrl[j][0];
+      const m=mids[j][k];
+      const oc=radial?rhoS+(flush?0:ribLand):Math.max(rhoS,fab.core+ribBand);
+      const ic=radial?Math.max(oc-depth,1):fab.core;
+      let mFloor=minW;
+      if(sl.inner)mFloor=Math.max(mFloor,rayRadius(sl.inner,ribPhi[k]-sl.rot)+minW);
+      if(!radial)mFloor=Math.max(mFloor,fab.core);
+      return m>=mFloor&&oc-m>=minW-0.01&&m-ic>=0.5;
+    });
+    /* Settle the run against the FINAL geometry: a joint can still fail once
+       the rib's own edges are known, so re-choose the longest unbroken run
+       and rebuild until nothing more drops out. Otherwise the rib would span
+       a layer it has no notch for — an assembly that cannot go together.  */
+    let built=null;
+    for(let pass=0;pass<6&&!built;pass++){
+      let bs=-1,bl=0,cs=-1,cl=0;
+      ok.forEach((v,j)=>{
+        if(v){if(cs<0)cs=j;cl++;if(cl>bl){bl=cl;bs=cs;}}
+        else{cs=-1;cl=0;}
+      });
+      const zPad=ws/2+minW;
+      while(bl>=2){
+        const belowZ=bs>0?slabs[bs-1].z:-1e9;
+        const aboveZ=bs+bl<slabs.length?slabs[bs+bl].z:1e9;
+        if(slabs[bs].z-zPad<=belowZ+ws/2+0.3){ok[bs]=false;bs++;bl--;continue;}
+        if(slabs[bs+bl-1].z+zPad>=aboveZ-ws/2-0.3){ok[bs+bl-1]=false;bl--;continue;}
+        break;
+      }
+      if(bl<2)break;
+      const run=ctrl.slice(bs,bs+bl);
+      const zLo=run[0][1]-zPad,zHi=run[run.length-1][1]+zPad;
+      const rimAt=z=>{
+        if(z<=run[0][1])return run[0][0];
+        if(z>=run[run.length-1][1])return run[run.length-1][0];
+        for(let i=0;i<run.length-1;i++){
+          if(z<=run[i+1][1]){
+            const t=(z-run[i][1])/Math.max(run[i+1][1]-run[i][1],1e-9);
+            return run[i][0]+(run[i+1][0]-run[i][0])*t;
+          }
+        }
+        return run[run.length-1][0];
+      };
+      let pMax=1e-9;
+      run.forEach(c=>{if(c[0]>pMax)pMax=c[0];});
+
+      let zs=[],os=[];
+      for(let i=0;i<NZ;i++){
+        const z=zLo+i/(NZ-1)*(zHi-zLo);
+        const rho=rimAt(z);
+        zs.push(z);
+        os.push(flush?(straight?pMax:rho)
+              :outside?(straight?pMax+ribLand:rho+ribLand)
+              :(straight?Math.max(pMax,fab.core+ribBand):rho));
+      }
+      if(angled){
+        const simp=rdp(os.map((o,i)=>[o,zs[i]]),Math.max(1.5,fab.D*0.045));
+        os=simp.map(q=>q[0]);zs=simp.map(q=>q[1]);
+      }
+      const oS=[],iS=[];
+      for(let i=0;i<os.length;i++){
+        let o=os[i],iv=radial?o-depth:fab.core;
+        if(iv<1)iv=1;
+        if(o-iv<ribBand)o=iv+ribBand;      // never thinner than the band
+        oS.push(o);iS.push(iv);
+      }
+      const oChain=oS.map((o,i)=>[o,zs[i]]);
+
+      const jrows=[];
+      let dropped=false;
+      for(let j=bs;j<bs+bl;j++){
+        let m=mids[j][k];
+        const sl=slabs[j],z=sl.z;
+        const rhoS=ctrl[j][0];
+        let oc,ic;
+        if(radial){
+          oc=rhoS+(flush?0:ribLand);
+          ic=Math.max(oc-depth,1);
+        }else{
+          oc=chainAt(oChain,z);
+          ic=fab.core;
+        }
+        if(m!==null&&oc-m<minW)m=oc-minW;
+        let mFloor=minW;
+        if(sl.inner)mFloor=Math.max(mFloor,rayRadius(sl.inner,ribPhi[k]-sl.rot)+minW);
+        if(!radial)mFloor=Math.max(mFloor,fab.core);
+        if(m===null||m<mFloor||oc-m<minW-0.01||m-ic<0.5){
+          ok[j]=false;dropped=true;continue;
+        }
+        jrows.push({z,m,o:oc,i:ic,j});
+      }
+      if(dropped)continue;                 // run changed — settle it again
+      if(jrows.length<2)break;
+      for(let j=0;j<slabs.length;j++)if(j<bs||j>=bs+bl)mids[j][k]=null;
+      jrows.forEach(r=>{mids[r.j][k]=r.m;});
+      ribSkipped+=slabs.length-bl;
+      let outerAsc=shoulderCurve(oChain,jrows.map(r=>({z:r.z,o:r.o})),ws);
+      let innerAsc=shoulderCurve(iS.map((v,i)=>[v,zs[i]]),jrows.map(r=>({z:r.z,o:r.i})),ws);
+      built={outerEdge:outerAsc,innerEdge:innerAsc.slice().reverse()};
+    }
+    if(!built){
+      for(let j=0;j<slabs.length;j++)mids[j][k]=null;
+      chains.push(null);
+      continue;
+    }
+    chains.push(built);
   }
 
   slabs.forEach((s,j)=>{
@@ -718,7 +1071,7 @@ function buildModel(p,fab,mods){
     for(let k=0;k<M;k++){
       const m=mids[j][k];
       if(m===null)continue;
-      const pk=ribPhi[k];
+      const pk=ribPhi[k]-s.rot;      // local angle; the twist rotates it into place
       const rhoK=R1(pk)*sc;
       if(rhoK<=m+0.5)continue;
       let del=Math.asin(Math.min(0.95,(ws/2)/Math.max(rhoK,0.01)));
@@ -748,17 +1101,20 @@ function buildModel(p,fab,mods){
     delete s.base;
   });
 
-  if(stackFx){
+  /* place the layers: the twist always applies (the ribs were cut for it);
+     skew, bend and chaos only in glue-stack mode                          */
+  {
     const zlo=slabs[0].z,zhi=slabs[slabs.length-1].z;
     const rng=mulberry32(Math.floor(mods.seed*2654435761)>>>0||7);
-    const chaos=Math.max(0,Math.min(1,mods.chaos/100));
+    const chaos=stackFx?Math.max(0,Math.min(1,mods.chaos/100)):0;
     slabs.forEach(s=>{
       const u=(s.z-zlo)/Math.max(zhi-zlo,1e-9);
-      const rot=mods.twist*u*Math.PI/180+(rng()-0.5)*chaos*0.55;
-      const dx=Math.tan(mods.skew*Math.PI/180)*(s.z-zlo)
+      const rot=s.rot+(rng()-0.5)*chaos*0.55;
+      const dx=stackFx?(Math.tan(mods.skew*Math.PI/180)*(s.z-zlo)
              +Math.tan(mods.bend*Math.PI/360)*hMM*u*u
-             +(rng()-0.5)*chaos*0.12*fab.D;
-      const dy=(rng()-0.5)*chaos*0.12*fab.D;
+             +(rng()-0.5)*chaos*0.12*fab.D):0;
+      const dy=stackFx?(rng()-0.5)*chaos*0.12*fab.D:0;
+      if(!rot&&!dx&&!dy)return;
       const cr=Math.cos(rot),sr=Math.sin(rot);
       const xf=q=>[q[0]*cr-q[1]*sr+dx,q[0]*sr+q[1]*cr+dy];
       s.pts=s.pts.map(xf);
@@ -766,85 +1122,18 @@ function buildModel(p,fab,mods){
     });
   }
 
-  /* ---------- ribs: inside spine or outside exoskeleton; curved or straight ---------- */
+  /* ---------- ribs: assembled from the vetted chains ---------- */
   const ribs=[];
-  const RB_N=96;
-  const ribLand=Math.max(8,2*minW);
   for(let k=0;k<M;k++){
-    const rr1=R1(ribPhi[k]);
-    const prof=[];                       // bottom → top, [rho,z]
-    for(let i=0;i<RB_N;i++){
-      const t=-Math.PI/2+i/(RB_N-1)*Math.PI;
-      const r=r2At(t);
-      prof.push([rr1*r*Math.cos(t)*S,r*Math.sin(t)*zS]);
-    }
-    const zBot=prof[0][1],zTop=prof[prof.length-1][1];
-    let profMax=1e-9;
-    prof.forEach(q=>{if(q[0]>profMax)profMax=q[0];});
+    if(!chains[k])continue;                 // this rib had nothing it could grip
+    const {outerEdge,innerEdge}=chains[k];
     const rows=[];
     for(let j=0;j<slabs.length;j++){
-      if(mids[j][k]!==null&&
-         slabs[j].z-ws/2>zBot+0.5&&
-         slabs[j].z+ws/2<zTop-0.5)rows.push({z:slabs[j].z,m:mids[j][k]});
+      if(mids[j][k]!==null)rows.push({z:slabs[j].z,m:mids[j][k]});
     }
     rows.sort((a,b)=>b.z-a.z);
-    let poly;
-    if(outside){
-      /* exoskeleton fin: built from the z-binned silhouette (widest point
-         at each height) so the profile is monotone in z and the fin
-         clears the form; inner edge bites Etarget in, notched per layer */
-      const NZ=96,DN=361;
-      let zLo=1e9,zHi=-1e9;
-      const dense=[];
-      for(let i=0;i<DN;i++){
-        const t=-Math.PI/2+i/(DN-1)*Math.PI;
-        const r=r2At(t);
-        const z=r*Math.sin(t)*zS;
-        dense.push([rr1*r*Math.cos(t)*S,z]);
-        if(z<zLo)zLo=z;if(z>zHi)zHi=z;
-      }
-      const rhoZ=new Float64Array(NZ).fill(-1);
-      dense.forEach(q=>{
-        const bi=Math.max(0,Math.min(NZ-1,Math.round((q[1]-zLo)/Math.max(zHi-zLo,1e-9)*(NZ-1))));
-        if(q[0]>rhoZ[bi])rhoZ[bi]=q[0];
-      });
-      for(let i=0;i<NZ;i++){          // fill empty bins from neighbours
-        if(rhoZ[i]>=0)continue;
-        let a=i-1;while(a>=0&&rhoZ[a]<0)a--;
-        let b=i+1;while(b<NZ&&rhoZ[b]<0)b++;
-        const va=a>=0?rhoZ[a]:(b<NZ?rhoZ[b]:1);
-        const vb=b<NZ?rhoZ[b]:va;
-        rhoZ[i]=(va+vb)/2;
-      }
-      const profZ=[];                 // bottom → top, strictly rising z
-      for(let i=0;i<NZ;i++){
-        profZ.push([rhoZ[i],zLo+i/(NZ-1)*(zHi-zLo)]);
-      }
-      let pMax=1e-9;
-      profZ.forEach(q=>{if(q[0]>pMax)pMax=q[0];});
-      const outerEdge=profZ.map(q=>[
-        straight?pMax+ribLand:Math.max(q[0]+ribLand,ribLand+1),q[1]]);
-      const innerEdge=profZ.slice().reverse().map(q=>[
-        Math.max(q[0]-Etarget,1),q[1]]);
-      poly=outerEdge.concat(notchCurve(innerEdge,rows,ws));
-    }else{
-      /* inner spine at the core */
-      let outerEdge;
-      if(straight){
-        outerEdge=[[fab.core,zBot],[profMax,zBot],[profMax,zTop],[fab.core,zTop]];
-      }else{
-        outerEdge=prof.map(q=>[Math.max(q[0],fab.core),q[1]]);
-      }
-      const spine=[[fab.core,zTop]];
-      rows.forEach(rw=>{
-        spine.push([fab.core,rw.z+ws/2]);
-        spine.push([rw.m,rw.z+ws/2]);
-        spine.push([rw.m,rw.z-ws/2]);
-        spine.push([fab.core,rw.z-ws/2]);
-      });
-      spine.push([fab.core,zBot]);
-      poly=outerEdge.concat(spine);
-    }
+    if(rows.length<2)continue;
+    const poly=outerEdge.concat(notchCurve(innerEdge,rows,ws));
     ribs.push({phi:ribPhi[k],pts:poly,slots:rows.length});
   }
   const slabZs=slabs.map(s=>s.z);
@@ -856,102 +1145,188 @@ function buildModel(p,fab,mods){
     });
   });
 
-  return {slabs,ribs,S,zmin:zmin*zS,zmax:zmax*zS,stackFx,
-          maxRadius:fab.D/2,height:hMM,ws,flat:false};
+  /* report the grip you'll typically get, and the weakest neck separately —
+     a small layer near a pole can only give a shallow slot, and that is the
+     joint that will snap, not the median one.                              */
+  gripList.sort((a,b)=>a-b);
+  const gripGot=gripList.length?gripList[Math.floor(gripList.length/2)]:0;
+  const gripMin=gripList.length?gripList[0]:0;
+  const hActual=slabs[slabs.length-1].z-slabs[0].z+fab.T;
+  return {slabs,ribs,S,zmin:zmin*zS,zmax:zmax*zS,stackFx,cropped,twist:twistA,
+          hollowFailed,capBot,capTop,ribSkew,ribsCapped,
+          grip:gripGot,gripMin,gripWanted,ribSkipped,
+          maxRadius:fab.D/2,height:hActual,ws,flat:false};
 }
 
-function partStats(outer,inner){
+function partStats(outer,inner,rot){
+  const tf=q=>rot?[q[1],-q[0]]:q;                 // 90° turn when it packs better
+  const o=outer.map(tf),h=inner?inner.map(tf):null;
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,cx=0,cy=0;
-  outer.forEach(q=>{
+  o.forEach(q=>{
     if(q[0]<x0)x0=q[0];if(q[1]<y0)y0=q[1];
     if(q[0]>x1)x1=q[0];if(q[1]>y1)y1=q[1];
     cx+=q[0];cy+=q[1];
   });
-  cx/=outer.length;cy/=outer.length;
+  cx/=o.length;cy/=o.length;
   let bR=0;
-  outer.forEach(q=>{const d=Math.hypot(q[0]-cx,q[1]-cy);if(d>bR)bR=d;});
+  o.forEach(q=>{const d=Math.hypot(q[0]-cx,q[1]-cy);if(d>bR)bR=d;});
   let hole=null;
-  if(inner){
+  if(h){
     let hx=0,hy=0;
-    inner.forEach(q=>{hx+=q[0];hy+=q[1];});
-    hx/=inner.length;hy/=inner.length;
+    h.forEach(q=>{hx+=q[0];hy+=q[1];});
+    hx/=h.length;hy/=h.length;
     let hr=1e9;
-    inner.forEach(q=>{const d=Math.hypot(q[0]-hx,q[1]-hy);if(d<hr)hr=d;});
+    h.forEach(q=>{const d=Math.hypot(q[0]-hx,q[1]-hy);if(d<hr)hr=d;});
     hole={x:hx,y:hy,r:hr};
   }
-  return {ox:x0,oy:y0,w:x1-x0,h:y1-y0,cx,cy,bR,hole};
+  return {outer:o,inner:h,ox:x0,oy:y0,w:x1-x0,h:y1-y0,cx,cy,bR,hole,rot:!!rot};
 }
 
+/* Skyline bottom-left packer. Shelf packing wastes the gap above every short
+   part, which is most of the sheet when tall skinny ribs sit beside wide flat
+   layers; the skyline drops each part into the lowest spot it actually fits,
+   and turns it 90° when that packs tighter. Small parts still nest inside the
+   holes of hollow rings first — that space is free.                        */
 function layoutSheets(model,fab){
-  const pad=8,clear=1.5;
-  const parts=[];
-  model.slabs.forEach((s,j)=>{
-    parts.push(Object.assign({label:'L'+(j+1),outer:s.pts,inner:s.inner},
-      partStats(s.pts,s.inner)));
+  const pad=6,clear=1.5;
+  const raw=[];
+  model.slabs.forEach((s,j)=>raw.push({label:'L'+(j+1),outer:s.pts,inner:s.inner}));
+  model.ribs.forEach((r,k)=>raw.push({label:'R'+(k+1),outer:r.pts,inner:null}));
+  const parts=raw.map(p=>{
+    const a=partStats(p.outer,p.inner,false),b=partStats(p.outer,p.inner,true);
+    return {label:p.label,raw:p,a,b,bR:a.bR,host:null,holeUsed:false,sheet:-1};
   });
-  model.ribs.forEach((r,k)=>{
-    parts.push(Object.assign({label:'R'+(k+1),outer:r.pts,inner:null},
-      partStats(r.pts,null)));
-  });
-  const byR=parts.slice().sort((a,b)=>b.bR-a.bR);
-  byR.forEach(p=>{p.host=null;p.holeUsed=false;});
+
+  /* free real estate first: nest what fits inside the ring holes */
+  const byR=parts.slice().sort((x,y)=>y.bR-x.bR);
   byR.forEach(p=>{
     for(const h of byR){
-      if(h===p||h.holeUsed||!h.hole)continue;
-      if(p.bR+clear<h.hole.r){
+      if(h===p||h.holeUsed||!h.a.hole)continue;
+      if(p.bR+clear<h.a.hole.r){
         let anc=h,cyc=false;
         while(anc){if(anc===p){cyc=true;break;}anc=anc.host;}
         if(cyc)continue;
         p.host=h;h.holeUsed=true;
+        p.st=p.a;
         break;
       }
     }
   });
-  const roots=byR.filter(p=>!p.host).sort((a,b)=>b.h-a.h);
+
   const SW=fab.sheetW,SH=fab.sheetH;
   const sheets=[];
   let oversize=0;
-  function newSheet(w,h){const sh={w,h,x:pad,y:pad,rowH:0,parts:[]};sheets.push(sh);return sh;}
+  function newSheet(w,h){
+    const sh={w,h,parts:[],sky:[{x:pad,y:pad,w:w-2*pad}]};
+    sheets.push(sh);return sh;
+  }
+  /* lowest y at which a w-wide part starting at skyline node i would rest */
+  function rest(sh,i,w){
+    if(sh.sky[i].x+w>sh.w-pad)return null;
+    let y=sh.sky[i].y,left=w,j=i;
+    while(left>0){
+      if(j>=sh.sky.length)return null;
+      if(sh.sky[j].y>y)y=sh.sky[j].y;
+      left-=sh.sky[j].w;
+      j++;
+    }
+    return y;
+  }
+  function addSky(sh,x,y,w,h){
+    const node={x,y:y+h+pad,w:w+pad};
+    const out=[];
+    sh.sky.forEach(n=>{
+      if(n.x+n.w<=node.x||n.x>=node.x+node.w){out.push(n);return;}
+      if(n.x<node.x)out.push({x:n.x,y:n.y,w:node.x-n.x});
+      const right=n.x+n.w-(node.x+node.w);
+      if(right>0)out.push({x:node.x+node.w,y:n.y,w:right});
+    });
+    out.push(node);
+    out.sort((a,b)=>a.x-b.x);
+    /* merge equal-height neighbours */
+    const merged=[];
+    out.forEach(n=>{
+      const last=merged[merged.length-1];
+      if(last&&Math.abs(last.y-n.y)<0.01&&Math.abs(last.x+last.w-n.x)<0.01)last.w+=n.w;
+      else merged.push(n);
+    });
+    sh.sky=merged;
+  }
+  /* the skyline proposes; this verifies. A span walk over the skyline can
+     misjudge across a gap, so every candidate is checked against what is
+     actually on the sheet before it is accepted.                        */
+  function clashes(sh,x,y,w,h){
+    return sh.parts.some(q=>{
+      if(q.host)return false;
+      const ox=Math.min(x+w,q.px+q.st.w)-Math.max(x,q.px);
+      const oy=Math.min(y+h,q.py+q.st.h)-Math.max(y,q.py);
+      return ox>-pad*0.5&&oy>-pad*0.5;
+    });
+  }
+  function place(sh,p){
+    let best=null;
+    [p.a,p.b].forEach(st=>{
+      for(let i=0;i<sh.sky.length;i++){
+        const y=rest(sh,i,st.w);
+        if(y===null||y+st.h>sh.h-pad)continue;
+        const x=sh.sky[i].x;
+        if(clashes(sh,x,y,st.w,st.h))continue;
+        const score=[y+st.h,x];
+        if(!best||score[0]<best.score[0]-0.01||
+           (Math.abs(score[0]-best.score[0])<0.01&&score[1]<best.score[1])){
+          best={st,x,y,score};
+        }
+      }
+    });
+    if(!best)return false;
+    p.st=best.st;p.px=best.x;p.py=best.y;
+    sh.parts.push(p);
+    addSky(sh,best.x,best.y,best.st.w,best.st.h);
+    return true;
+  }
+
+  /* biggest first — the classic and by far the best-behaved order here */
+  const roots=parts.filter(p=>!p.host)
+    .sort((x,y)=>Math.max(y.a.w,y.a.h)-Math.max(x.a.w,x.a.h));
   roots.forEach(p=>{
-    if(p.w>SW-2*pad||p.h>SH-2*pad){
-      const sh=newSheet(p.w+2*pad,p.h+2*pad);
-      p.px=pad;p.py=pad;sh.parts.push(p);sh.oversize=true;
+    const fits=[p.a,p.b].some(st=>st.w<=SW-2*pad&&st.h<=SH-2*pad);
+    if(!fits){
+      const st=p.a.w*p.a.h<=p.b.w*p.b.h?p.a:p.b;
+      const sh=newSheet(st.w+2*pad,st.h+2*pad);
+      p.st=st;p.px=pad;p.py=pad;sh.parts.push(p);sh.oversize=true;
       oversize++;return;
     }
-    let placed=false;
     for(const sh of sheets){
       if(sh.oversize)continue;
-      let x=sh.x,y=sh.y,rowH=sh.rowH;
-      if(x+p.w>SW-pad){x=pad;y+=rowH+pad;rowH=0;}
-      if(y+p.h<=SH-pad){
-        p.px=x;p.py=y;sh.parts.push(p);
-        sh.x=x+p.w+pad;sh.y=y;sh.rowH=Math.max(rowH,p.h);
-        placed=true;break;
-      }
+      if(place(sh,p))return;
     }
-    if(!placed){
-      const sh=newSheet(SW,SH);
-      p.px=pad;p.py=pad;sh.parts.push(p);
-      sh.x=pad+p.w+pad;sh.rowH=p.h;
-    }
+    place(newSheet(SW,SH),p);
   });
+
+  /* drop the nested parts into their hosts' holes */
   let guard=parts.length+2;
   while(guard-->0){
     let pending=false;
-    byR.forEach(p=>{
+    parts.forEach(p=>{
       if(!p.host||p.px!==undefined)return;
       const h=p.host;
       if(h.px===undefined){pending=true;return;}
-      p.px=h.px+(h.hole.x-h.ox)-(p.cx-p.ox);
-      p.py=h.py+(h.hole.y-h.oy)-(p.cy-p.oy);
+      p.px=h.px+(h.st.hole.x-h.st.ox)-(p.st.cx-p.st.ox);
+      p.py=h.py+(h.st.hole.y-h.st.oy)-(p.st.cy-p.st.oy);
       for(const sh of sheets){
         if(sh.parts.includes(h)){sh.parts.push(p);break;}
       }
     });
     if(!pending)break;
   }
-  const nested=byR.filter(p=>p.host).length;
-  return {sheets,nested,oversize,total:parts.length};
+  const nested=parts.filter(p=>p.host).length;
+  const turned=parts.filter(p=>p.st&&p.st.rot).length;
+  /* how much of the used sheet area the parts actually occupy */
+  let area=0,sheetArea=0;
+  parts.forEach(p=>{if(p.st)area+=p.st.w*p.st.h;});
+  sheets.forEach(sh=>sheetArea+=sh.w*sh.h);
+  const fill=sheetArea>0?area/sheetArea:0;
+  return {sheets,nested,turned,oversize,fill,total:parts.length};
 }
 
 function makeSVGs(model,fab){
@@ -964,30 +1339,28 @@ function makeSVGs(model,fab){
     out+='<rect x="0.5" y="0.5" width="'+(sh.w-1).toFixed(1)+'" height="'+(sh.h-1).toFixed(1)+
       '" fill="none" stroke="#7a5732" stroke-width="0.3" stroke-dasharray="3 3"/>\n';
     sh.parts.forEach(p=>{
+      const st=p.st;
+      const X=q=>(q[0]-st.ox+p.px).toFixed(2),Y=q=>(q[1]-st.oy+p.py).toFixed(2);
       let d='';
-      p.outer.forEach((q,i)=>{
-        d+=(i===0?'M':'L')+(q[0]-p.ox+p.px).toFixed(2)+' '+(q[1]-p.oy+p.py).toFixed(2)+' ';
-      });
+      st.outer.forEach((q,i)=>{d+=(i===0?'M':'L')+X(q)+' '+Y(q)+' ';});
       d+='Z ';
-      if(p.inner){
-        p.inner.forEach((q,i)=>{
-          d+=(i===0?'M':'L')+(q[0]-p.ox+p.px).toFixed(2)+' '+(q[1]-p.oy+p.py).toFixed(2)+' ';
-        });
+      if(st.inner){
+        st.inner.forEach((q,i)=>{d+=(i===0?'M':'L')+X(q)+' '+Y(q)+' ';});
         d+='Z';
       }
       out+='<path d="'+d+'" fill="none" stroke="#e2482a" stroke-width="0.2"/>\n';
-      const lx=p.px+(p.cx-p.ox),ly=p.py+(p.cy-p.oy);
-      const tx=p.inner?(p.px+2):(lx),ty=p.inner?(p.py+5):(ly);
+      const lx=p.px+(st.cx-st.ox),ly=p.py+(st.cy-st.oy);
+      const tx=st.inner?(p.px+2):lx,ty=st.inner?(p.py+5):ly;
       out+='<text x="'+tx.toFixed(1)+'" y="'+ty.toFixed(1)+
         '" font-family="monospace" font-size="5" fill="#4c2f16"'+
-        (p.inner?'':' text-anchor="middle"')+'>'+p.label+'</text>\n';
+        (st.inner?'':' text-anchor="middle"')+'>'+p.label+'</text>\n';
     });
     out+='</svg>';
     return out;
   });
   return {svgs,stats:lay};
 }
-return {superR,insetOutline,buildModel,makeSVGs,layoutSheets,segmentRib,clipBand,notchCurve,boxSmooth,DEFAULT_MODS};
+return {superR,insetOutline,buildModel,makeSVGs,layoutSheets,segmentRib,clipBand,notchCurve,boxSmooth,rdp,shoulderCurve,rayRadius,DEFAULT_MODS};
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=GEO;
 </script>
@@ -1007,17 +1380,22 @@ const SHAPE_DEFS=[
   {k:'a',label:'a',hint:'cos scale',min:0.1,max:3,step:0.01,v:1},
   {k:'b',label:'b',hint:'sin scale',min:0.1,max:3,step:0.01,v:1},
 ];
-const MOD_DEFS=[
+const SMOOTH_DEFS=[
+  {k:'smooth',label:'Smoother',hint:'clean up the curves',min:0,max:100,step:1,v:0,fmt:v=>Math.round(v)+'%'},
+];
+const MOD_KEEP=[
   {k:'sx',label:'Scale X',hint:'stretch across',min:0.4,max:2,step:0.01,v:1,fmt:v=>v.toFixed(2)+'×'},
   {k:'sy',label:'Scale Y',hint:'stretch deep',min:0.4,max:2,step:0.01,v:1,fmt:v=>v.toFixed(2)+'×'},
   {k:'sz',label:'Scale Z',hint:'stretch tall',min:0.4,max:2,step:0.01,v:1,fmt:v=>v.toFixed(2)+'×'},
   {k:'fractal',label:'Fractal',hint:'self-similar detail',min:0,max:100,step:1,v:0,fmt:v=>Math.round(v)+'%'},
-  {k:'twist',label:'Twist',hint:'stack rotation',min:-180,max:180,step:1,v:0,fmt:v=>Math.round(v)+'°'},
+  {k:'twist',label:'Twist',hint:'ribs follow the helix',min:-180,max:180,step:1,v:0,fmt:v=>Math.round(v)+'°'},
+];
+const MOD_GLUE=[
   {k:'skew',label:'Skew',hint:'stack lean',min:-45,max:45,step:1,v:0,fmt:v=>Math.round(v)+'°'},
   {k:'bend',label:'Bend',hint:'stack curve',min:-60,max:60,step:1,v:0,fmt:v=>Math.round(v)+'°'},
   {k:'chaos',label:'Chaos',hint:'stack jitter',min:0,max:100,step:1,v:0,fmt:v=>Math.round(v)+'%'},
-  {k:'smooth',label:'Smoother',hint:'clean up curves',min:0,max:100,step:1,v:0,fmt:v=>Math.round(v)+'%'},
 ];
+const MOD_DEFS=[].concat(MOD_KEEP,MOD_GLUE,SMOOTH_DEFS);
 const CONST_DEFS=[
   {k:'D',label:'Diameter',hint:'finished size mm',min:60,max:400,step:5,v:180,fmt:v=>v+' mm'},
   {k:'heightMM',label:'Height',hint:'finished size mm',min:30,max:500,step:5,v:140,fmt:v=>v+' mm'},
@@ -1026,14 +1404,26 @@ const CONST_DEFS=[
 const WALL_DEFS=[
   {k:'wall',label:'Wall',hint:'ring width mm',min:3,max:40,step:0.5,v:10,fmt:v=>v.toFixed(1)+' mm'},
 ];
-const FAB_DEFS=[
-  {k:'T',label:'Material',hint:'ply thickness mm',min:1.5,max:12,step:0.5,v:3,fmt:v=>v.toFixed(1)+' mm'},
+const LAYER_DEFS=[
   {k:'layers',label:'Layers',hint:'horizontal slices',min:4,max:30,step:1,v:12,fmt:v=>String(Math.round(v))},
+];
+const CROP_DEFS=[
+  {k:'cropTop',label:'Crop top',hint:'layers removed',min:0,max:12,step:1,v:0,fmt:v=>Math.round(v)===0?'none':String(Math.round(v))},
+  {k:'cropBot',label:'Crop bottom',hint:'layers removed',min:0,max:12,step:1,v:0,fmt:v=>Math.round(v)===0?'none':String(Math.round(v))},
+];
+const RIB_DEFS=[
   {k:'ribs',label:'Ribs',hint:'0 = glue-stack',min:0,max:16,step:1,v:8,fmt:v=>Math.round(v)===0?'none':String(Math.round(v))},
-  {k:'kerf',label:'Kerf',hint:'beam width mm',min:0,max:0.5,step:0.01,v:0.15,fmt:v=>v.toFixed(2)+' mm'},
+  {k:'grip',label:'Grip',hint:'joint depth = rib neck',min:3,max:25,step:0.5,v:6,fmt:v=>v.toFixed(1)+' mm'},
   {k:'core',label:'Core',hint:'rib spine radius mm',min:4,max:40,step:1,v:12,fmt:v=>v+' mm'},
+];
+const MINW_DEFS=[
   {k:'minW',label:'Min width',hint:'thinnest allowed mm',min:2,max:12,step:0.5,v:4,fmt:v=>v.toFixed(1)+' mm'},
 ];
+const MAT_DEFS=[
+  {k:'T',label:'Material',hint:'ply thickness mm',min:1.5,max:12,step:0.5,v:3,fmt:v=>v.toFixed(1)+' mm'},
+  {k:'kerf',label:'Kerf',hint:'beam width mm',min:0,max:0.5,step:0.01,v:0.15,fmt:v=>v.toFixed(2)+' mm'},
+];
+const FAB_DEFS=[].concat(LAYER_DEFS,CROP_DEFS,RIB_DEFS,MINW_DEFS,MAT_DEFS);
 const SHEET_DEFS=[
   {k:'sheetW',label:'Sheet width',hint:'mm',min:150,max:1200,step:10,v:450,fmt:v=>v+' mm'},
   {k:'sheetH',label:'Sheet height',hint:'mm',min:150,max:1200,step:10,v:300,fmt:v=>v+' mm'},
@@ -1063,6 +1453,7 @@ FAB_DEFS.forEach(d=>{fab[d.k]=d.v;});
 SHEET_DEFS.forEach(d=>{fab[d.k]=d.v;});
 VIEW_DEFS.forEach(d=>{viewS[d.k]=d.v;});
 fab.hollow=false;fab.ends='bowl';fab.fitMode=false;
+fab.capBot=true;fab.capTop=false;fab.ribAlign='perp';
 fab.flat=false;fab.ribJoin='inside';fab.ribShape='curved';
 
 const outputs={},sliders={};
@@ -1083,52 +1474,76 @@ function buildSlider(host,d,onInput,cls){
 let dirty=true,sheetDirty=true,needFit=false;
 function markDirty(){dirty=true;sheetDirty=true;if(fab.fitMode)needFit=true;}
 
-const constEl=document.getElementById('constCtl');
-CONST_DEFS.forEach(d=>{
-  buildSlider(constEl,d,v=>{
-    fab[d.k]=v;outputs[d.k].textContent=d.fmt(v);
-    if(d.k==='sheetsN')needFit=true;else markDirty();
-  },'fab');
-  outputs[d.k].textContent=d.fmt(d.v);
-});
-const wallEl=document.getElementById('wallCtl');
-WALL_DEFS.forEach(d=>{
-  buildSlider(wallEl,d,v=>{fab[d.k]=v;outputs[d.k].textContent=d.fmt(v);markDirty();},'fab');
-  outputs[d.k].textContent=d.fmt(d.v);
-});
-const shapeEl=document.getElementById('shapeCtl');
-SHAPE_DEFS.forEach(d=>buildSlider(shapeEl,d,v=>{target[d.k]=v;clearActivePreset();}));
-const modEl=document.getElementById('modCtl');
-MOD_DEFS.forEach(d=>{
-  buildSlider(modEl,d,v=>{modsT[d.k]=v;},'mod');
-  outputs[d.k].textContent=d.fmt(d.v);
-});
-const fabEl=document.getElementById('fabCtl');
-FAB_DEFS.forEach(d=>{
-  buildSlider(fabEl,d,v=>{fab[d.k]=v;outputs[d.k].textContent=d.fmt(v);markDirty();},'fab');
-  outputs[d.k].textContent=d.fmt(d.v);
-});
-const sheetEl=document.getElementById('sheetCtl');
-SHEET_DEFS.forEach(d=>{
-  buildSlider(sheetEl,d,v=>{
-    fab[d.k]=v;outputs[d.k].textContent=d.fmt(v);
-    sheetDirty=true;if(fab.fitMode)needFit=true;
-  },'fab');
-  outputs[d.k].textContent=d.fmt(d.v);
-});
-const viewEl=document.getElementById('viewCtl');
-VIEW_DEFS.forEach(d=>{
-  buildSlider(viewEl,d,v=>{viewS[d.k]=v;outputs[d.k].textContent=d.fmt(v);});
-  outputs[d.k].textContent=d.fmt(d.v);
+function fill(hostId,defs,onInput,cls){
+  const host=document.getElementById(hostId);
+  defs.forEach(d=>{
+    buildSlider(host,d,v=>onInput(d,v),cls);
+    if(d.fmt)outputs[d.k].textContent=d.fmt(d.v);
+  });
+}
+const setFab=(d,v)=>{fab[d.k]=v;outputs[d.k].textContent=d.fmt(v);
+  if(d.k==='sheetsN')needFit=true;else markDirty();};
+const setMod=(d,v)=>{modsT[d.k]=v;};
+
+fill('constCtl',CONST_DEFS,setFab,'fab');
+fill('shapeCtl',SHAPE_DEFS,(d,v)=>{target[d.k]=v;clearActivePreset();});
+fill('smoothCtl',SMOOTH_DEFS,setMod,'mod');
+fill('wallCtl',WALL_DEFS,setFab,'fab');
+fill('layerCtl',LAYER_DEFS,setFab,'fab');
+fill('cropCtl',CROP_DEFS,setFab,'fab');
+fill('ribCtl',RIB_DEFS,setFab,'fab');
+fill('minwCtl',MINW_DEFS,setFab,'fab');
+fill('modKeepCtl',MOD_KEEP,setMod,'mod');
+fill('modGlueCtl',MOD_GLUE,setMod,'mod');
+fill('matCtl',MAT_DEFS,setFab,'fab');
+fill('sheetCtl',SHEET_DEFS,(d,v)=>{fab[d.k]=v;outputs[d.k].textContent=d.fmt(v);
+  sheetDirty=true;if(fab.fitMode)needFit=true;},'fab');
+fill('viewCtl',VIEW_DEFS,(d,v)=>{viewS[d.k]=v;outputs[d.k].textContent=d.fmt(v);});
+
+/* ---- history: randomise is a leap in the dark, so you can always step back ---- */
+const history=[];
+const undoBtn=document.getElementById('undoBtn');
+function snapshot(){
+  return {shape:Object.assign({},target),mods:Object.assign({},modsT),
+          fab:Object.assign({},fab)};
+}
+function pushHistory(){
+  history.push(snapshot());
+  if(history.length>40)history.shift();
+  undoBtn.disabled=false;
+}
+function restore(sn){
+  SHAPE_DEFS.forEach(d=>{target[d.k]=sn.shape[d.k];sliders[d.k].value=sn.shape[d.k];});
+  MOD_DEFS.forEach(d=>{
+    modsT[d.k]=sn.mods[d.k];sliders[d.k].value=sn.mods[d.k];
+    outputs[d.k].textContent=d.fmt(sn.mods[d.k]);
+  });
+  modsT.seed=sn.mods.seed;mods.seed=sn.mods.seed;
+  [].concat(CONST_DEFS,WALL_DEFS,FAB_DEFS,SHEET_DEFS).forEach(d=>{
+    fab[d.k]=sn.fab[d.k];sliders[d.k].value=sn.fab[d.k];
+    outputs[d.k].textContent=d.fmt(sn.fab[d.k]);
+  });
+  ['hollow','fitMode','flat','capBot','capTop','ribAlign','ribJoin','ribShape']
+    .forEach(k=>{fab[k]=sn.fab[k];});
+  syncConstraints();clearActivePreset();markDirty();
+}
+undoBtn.addEventListener('click',()=>{
+  const sn=history.pop();
+  if(!sn)return;
+  restore(sn);
+  undoBtn.disabled=history.length===0;
 });
 
 /* mode + option chips */
 const buildModeEl=document.getElementById('buildMode');
 const sizeModeEl=document.getElementById('sizeMode');
 const endsRow=document.getElementById('endsRow');
+const ribAlignRow=document.getElementById('ribAlignRow');
 const ribJoinRow=document.getElementById('ribJoinRow');
 const ribShapeRow=document.getElementById('ribShapeRow');
 const tgHollow=document.getElementById('tgHollow');
+const tgCapBot=document.getElementById('tgCapBot');
+const tgCapTop=document.getElementById('tgCapTop');
 function syncConstraints(){
   buildModeEl.querySelectorAll('.chip').forEach(c=>{
     c.classList.toggle('active',(c.dataset.b==='flat')===fab.flat);
@@ -1136,8 +1551,12 @@ function syncConstraints(){
   sizeModeEl.querySelectorAll('.chip').forEach(c=>{
     c.classList.toggle('active',(c.dataset.m==='fit')===fab.fitMode);
   });
-  endsRow.querySelectorAll('.chip').forEach(c=>{
-    c.classList.toggle('active',c.dataset.e===fab.ends);
+  tgCapBot.classList.toggle('on',fab.capBot);
+  tgCapTop.classList.toggle('on',fab.capTop);
+  tgCapBot.disabled=!fab.hollow||fab.flat;
+  tgCapTop.disabled=!fab.hollow||fab.flat;
+  ribAlignRow.querySelectorAll('.chip').forEach(c=>{
+    c.classList.toggle('active',c.dataset.a===fab.ribAlign);
   });
   ribJoinRow.querySelectorAll('.chip').forEach(c=>{
     c.classList.toggle('active',c.dataset.j===fab.ribJoin);
@@ -1150,8 +1569,9 @@ function syncConstraints(){
   sliders.heightMM.disabled=fab.fitMode||fab.flat;
   sliders.sheetsN.disabled=!fab.fitMode;
   sliders.wall.disabled=!fab.hollow;
-  ['layers','ribs','core'].forEach(k=>sliders[k].disabled=fab.flat);
+  ['layers','ribs','core','cropTop','cropBot'].forEach(k=>sliders[k].disabled=fab.flat);
   endsRow.classList.toggle('off',fab.flat||!fab.hollow);
+  ribAlignRow.classList.toggle('off',fab.flat);
   ribJoinRow.classList.toggle('off',fab.flat);
   ribShapeRow.classList.toggle('off',fab.flat);
 }
@@ -1166,9 +1586,11 @@ sizeModeEl.addEventListener('click',e=>{
   syncConstraints();
   if(fab.fitMode)needFit=true;
 });
-endsRow.addEventListener('click',e=>{
+tgCapBot.addEventListener('click',()=>{fab.capBot=!fab.capBot;syncConstraints();markDirty();});
+tgCapTop.addEventListener('click',()=>{fab.capTop=!fab.capTop;syncConstraints();markDirty();});
+ribAlignRow.addEventListener('click',e=>{
   const c=e.target.closest('.chip');if(!c)return;
-  fab.ends=c.dataset.e;syncConstraints();markDirty();
+  fab.ribAlign=c.dataset.a;syncConstraints();markDirty();
 });
 ribJoinRow.addEventListener('click',e=>{
   const c=e.target.closest('.chip');if(!c)return;
@@ -1187,9 +1609,15 @@ PRESETS.forEach((pr,i)=>{
   const b=document.createElement('button');
   b.className='chip';b.textContent=pr.name;
   b.addEventListener('click',()=>{
+    pushHistory();
     Object.assign(target,pr.p);
     Object.keys(pr.p).forEach(k=>{sliders[k].value=pr.p[k];});
-    if(pr.hollow!==undefined){fab.hollow=pr.hollow;fab.ends=pr.ends||'bowl';syncConstraints();markDirty();}
+    if(pr.hollow!==undefined){
+      fab.hollow=pr.hollow;
+      const e=pr.ends||'bowl';
+      fab.capBot=e!=='open';fab.capTop=e==='closed';
+      syncConstraints();markDirty();
+    }
     clearActivePreset();b.classList.add('active');activeChip=b;
   });
   presetsEl.appendChild(b);
@@ -1198,18 +1626,30 @@ PRESETS.forEach((pr,i)=>{
 function clearActivePreset(){if(activeChip){activeChip.classList.remove('active');activeChip=null;}}
 
 document.getElementById('randBtn').addEventListener('click',()=>{
+  pushHistory();                       // so ↶ Back always gets you home
   const R=(a,b)=>a+Math.random()*(b-a);
   target.m1=Math.round(R(2,14));
   target.m2=Math.random()<0.75?target.m1:Math.round(R(2,14));
   target.n1=R(0.3,10);target.n2=R(0.2,13);target.n3=R(0.2,13);
   target.a=R(0.8,1.2);target.b=R(0.8,1.2);
   SHAPE_DEFS.forEach(d=>{sliders[d.k].value=target[d.k];});
+  /* reach the effects that keep their ribs — a shape you can still build */
+  modsT.smooth=Math.random()<0.4?Math.round(R(20,70)):0;
+  modsT.fractal=Math.random()<0.35?Math.round(R(20,70)):0;
+  modsT.twist=Math.random()<0.35?Math.round(R(-120,120)):0;
+  [SMOOTH_DEFS,MOD_KEEP].forEach(g=>g.forEach(d=>{
+    sliders[d.k].value=modsT[d.k];
+    outputs[d.k].textContent=d.fmt(modsT[d.k]);
+  }));
   modsT.seed=Math.floor(Math.random()*1e6);
   mods.seed=modsT.seed;
   clearActivePreset();markDirty();
 });
 document.getElementById('resetBtn').addEventListener('click',()=>{
-  MOD_DEFS.forEach(d=>{modsT[d.k]=d.v;sliders[d.k].value=d.v;});
+  pushHistory();
+  MOD_KEEP.concat(MOD_GLUE).forEach(d=>{
+    modsT[d.k]=d.v;sliders[d.k].value=d.v;outputs[d.k].textContent=d.fmt(d.v);
+  });
 });
 
 const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1378,9 +1818,14 @@ function applyDesign(d){
     if(typeof d.fab.hollow==='boolean')fab.hollow=d.fab.hollow;
     if(typeof d.fab.fitMode==='boolean')fab.fitMode=d.fab.fitMode;
     if(typeof d.fab.flat==='boolean')fab.flat=d.fab.flat;
-    if(['bowl','closed','open'].includes(d.fab.ends))fab.ends=d.fab.ends;
-    if(['inside','outside'].includes(d.fab.ribJoin))fab.ribJoin=d.fab.ribJoin;
-    if(['curved','straight'].includes(d.fab.ribShape))fab.ribShape=d.fab.ribShape;
+    if(['bowl','closed','open'].includes(d.fab.ends)){      // legacy designs
+      fab.capBot=d.fab.ends!=='open';fab.capTop=d.fab.ends==='closed';
+    }
+    if(typeof d.fab.capBot==='boolean')fab.capBot=d.fab.capBot;
+    if(typeof d.fab.capTop==='boolean')fab.capTop=d.fab.capTop;
+    if(['even','perp'].includes(d.fab.ribAlign))fab.ribAlign=d.fab.ribAlign;
+    if(['inside','outside','flush'].includes(d.fab.ribJoin))fab.ribJoin=d.fab.ribJoin;
+    if(['curved','angled','straight'].includes(d.fab.ribShape))fab.ribShape=d.fab.ribShape;
     syncConstraints();
   }
   if(d.view)VIEW_DEFS.forEach(def=>{
@@ -1412,16 +1857,40 @@ function updateSummary(){
     return;
   }
   const n=model.slabs.length+model.ribs.length;
+  const asked=model.stackFx?0:Math.round(fab.ribs);
+  const dropped=Math.max(0,asked-model.ribs.length);
   const con=model.ribs.length<1
-    ?(model.stackFx?'glue-stack (stack fx)':'glue-stack')
-    :model.ribs.length+' '+fab.ribJoin+' ribs';
-  const style=fab.hollow?('hollow · '+Math.max(fab.wall,fab.minW).toFixed(0)+'mm wall · '+
-    (fab.ends==='bowl'?'open top':fab.ends==='closed'?'closed ends':'open ends')):'solid layers';
+    ?(model.stackFx?'glue-stack · skew/bend/chaos':'glue-stack')
+    :model.ribs.length+' '+fab.ribJoin+' '+
+      (fab.ribShape==='curved'?'':fab.ribShape+' ')+'ribs'+
+      (model.twist?' · twisted':'');
+  const caps=model.capBot&&model.capTop?'solid base + top'
+           :model.capBot?'solid base':model.capTop?'solid top':'open ends';
+  const style=model.hollowFailed
+    ?'<b>wall too thick to hollow</b> · solid layers'
+    :fab.hollow?('hollow · '+Math.max(fab.wall,fab.minW).toFixed(0)+'mm wall · '+caps)
+    :'solid layers';
   let line2='Ø'+Math.round(fab.D)+'mm · h '+Math.round(model.height)+'mm · '+n+' pieces';
   if(sheetStats){
     line2+=' · <b>'+sheetStats.sheets.length+'</b> sheet'+(sheetStats.sheets.length>1?'s':'');
     if(sheetStats.nested)line2+=' · '+sheetStats.nested+' nested';
   }
+  if(model.ribs.length){
+    line2+=model.ribSkew<2?' · square joins'
+      :' · joins <b>'+Math.round(model.ribSkew)+'°</b> off square';
+    if(model.grip){
+      line2+=' · grip <b>'+model.grip.toFixed(1)+'mm</b>'+
+        (model.grip<model.gripWanted-0.2?' (all the wall allows)':'');
+      if(model.gripMin<model.grip-0.5)
+        line2+=' · thinnest neck <b>'+model.gripMin.toFixed(1)+'mm</b>';
+    }
+  }
+  if(model.ribsCapped)line2+=' · <b>'+model.ribsCapped+'</b> rib'+(model.ribsCapped>1?'s':'')+
+    ' over the lobe count';
+  if(model.ribSkipped)line2+=' · ribs stop short of <b>'+model.ribSkipped+'</b> layer'+
+    (model.ribSkipped>1?'s':'')+' (too small to grip)';
+  if(model.cropped)line2+=' · <b>'+model.cropped+'</b> cropped';
+  if(dropped)line2+=' · <b>'+dropped+'</b> rib'+(dropped>1?'s':'')+' dropped (too thin here)';
   summaryEl.innerHTML=
     '<b>'+model.slabs.length+'</b> layers · <b>'+con+'</b> · '+style+'<br>'+line2;
 }
