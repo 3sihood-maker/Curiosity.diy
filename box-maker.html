@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Box Maker</title>
+<style>
+  :root{
+    --espresso:#1b1512;
+    --bark:#2a201a;
+    --char:#120d0b;
+    --brass:#c9a227;
+    --brass-dim:#8a7020;
+    --steel:#8d99a6;
+    --cream:#efe3cf;
+    --cream-dim:#b3a48c;
+    --sage:#7f9a6f;
+    --rust:#b5563a;
+    --line:rgba(239,227,207,.14);
+    --radius:3px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--espresso);
+    color:var(--cream);
+    font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  .display{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+
+  /* ---- chassis ---- */
+  #app{display:flex;flex-direction:column;height:100%;}
+  header{
+    display:flex;align-items:center;gap:14px;
+    padding:10px 16px;
+    background:var(--char);
+    border-bottom:1px solid var(--line);
+    box-shadow:0 2px 0 rgba(0,0,0,.5);
+    flex:none;
+  }
+  .plate{
+    width:34px;height:34px;flex:none;border-radius:2px;
+    background:linear-gradient(160deg,var(--brass),var(--brass-dim));
+    display:grid;place-items:center;
+    color:var(--char);font-weight:700;font-size:15px;
+    font-family:"Iowan Old Style",Georgia,serif;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4), 0 1px 3px rgba(0,0,0,.6);
+  }
+  h1{font-size:19px;margin:0;letter-spacing:.01em;font-weight:600}
+  h1 small{display:block;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--cream-dim);font-family:ui-monospace,monospace;font-weight:400;margin-top:2px}
+  .spacer{flex:1}
+
+  select.woodsel{
+    background:var(--bark);color:var(--cream);border:1px solid var(--line);
+    padding:7px 9px;border-radius:var(--radius);font-size:13px;
+  }
+
+  main{flex:1;display:flex;min-height:0}
+
+  /* ---- controls ---- */
+  #controls{
+    width:300px;flex:none;overflow-y:auto;padding:14px 14px 40px;
+    background:var(--bark);
+    border-right:1px solid var(--line);
+    background-image:var(--grain);
+    background-blend-mode:overlay;
+  }
+  fieldset{border:0;border-top:1px solid var(--line);margin:0 0 14px;padding:12px 0 0}
+  fieldset:first-of-type{border-top:0;padding-top:0}
+  legend{
+    padding:0;font:400 10px/1 ui-monospace,monospace;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--brass);margin-bottom:10px;
+  }
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .row label{flex:1;font-size:13px;color:var(--cream-dim)}
+  .row input[type=number]{
+    width:78px;flex:none;background:var(--char);color:var(--cream);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:6px 7px;font:13px ui-monospace,monospace;text-align:right;
+  }
+  .row select{
+    flex:none;width:auto;background:var(--char);color:var(--cream);
+    border:1px solid var(--line);border-radius:var(--radius);padding:6px 7px;font-size:13px;
+  }
+  input[type=number]:focus,select:focus,button:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+  .check{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:var(--cream-dim);cursor:pointer}
+  .check input{accent-color:var(--brass);width:16px;height:16px}
+  .slide{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .slide label{flex:none;width:74px;font-size:12px;color:var(--cream-dim)}
+  .slide input[type=range]{flex:1;accent-color:var(--brass)}
+  .row input[type=text]{
+    width:96px;flex:none;background:var(--char);color:var(--cream);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:6px 7px;font:13px ui-monospace,monospace;text-align:right;letter-spacing:.06em;
+  }
+  .lidopt{display:none}
+  body.lid-overlay .lidopt{display:flex}
+  body.lid-overlay p.lidopt{display:block}
+  .hint{font-size:11.5px;line-height:1.45;color:#8a7a66;margin:2px 0 0}
+
+  button{
+    background:var(--char);color:var(--cream);border:1px solid var(--line);
+    border-radius:var(--radius);padding:9px 12px;font-size:13px;cursor:pointer;
+  }
+  button:hover{border-color:var(--brass);color:#fff}
+  button.primary{
+    background:linear-gradient(180deg,var(--brass),var(--brass-dim));
+    color:#1b1512;border-color:transparent;font-weight:600;
+  }
+  button.primary:hover{filter:brightness(1.1);color:#000}
+  .btns{display:flex;flex-direction:column;gap:7px}
+
+  /* ---- workspace ---- */
+  #work{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+  .tabs{display:flex;gap:0;background:var(--char);border-bottom:1px solid var(--line);flex:none}
+  .tabs button{
+    border:0;border-bottom:2px solid transparent;border-radius:0;
+    padding:11px 18px;color:var(--cream-dim);background:transparent;
+    font:400 11px/1 ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;
+  }
+  .tabs button[aria-selected=true]{color:var(--brass);border-bottom-color:var(--brass)}
+  .pane{flex:1;position:relative;min-height:0;display:none}
+  .pane.on{display:block}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  #sheetPane{overflow:auto;background:#0f0b09}
+  #sheetWrap{padding:18px;display:flex;flex-direction:column;gap:18px;align-items:flex-start}
+  .sheetcard{border:1px solid var(--line);border-radius:var(--radius);background:var(--char);padding:10px}
+  .sheetcard h3{margin:0 0 8px;font:400 11px/1 ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--cream-dim)}
+  .sheetcard canvas{width:auto;height:auto;max-width:100%}
+
+  .readout{
+    position:absolute;left:12px;bottom:12px;z-index:5;
+    background:rgba(18,13,11,.82);border:1px solid var(--line);border-radius:var(--radius);
+    padding:9px 11px;font:12px/1.6 ui-monospace,monospace;color:var(--cream-dim);
+    backdrop-filter:blur(4px);pointer-events:none;max-width:60%;
+  }
+  .readout b{color:var(--cream);font-weight:600}
+  .badge{display:inline-block;padding:1px 6px;border-radius:9px;font-size:10px;background:var(--brass);color:#1b1512;font-weight:700}
+  .warn{color:var(--rust)}
+
+  #parts{font:12px/1.7 ui-monospace,monospace;color:var(--cream-dim)}
+  #parts .pr{display:flex;justify-content:space-between;gap:8px}
+  #parts .pr b{color:var(--cream);font-weight:500}
+
+
+  /* ---- control panel: light beige workbench ---- */
+  :root{
+    --panel:#ece0c8;
+    --panel-hi:#f6eeda;
+    --ink:#2b211a;
+    --ink-soft:#6b5a45;
+    --rule:#cbb694;
+    --field:#fbf6ea;
+  }
+  #controls{
+    background:var(--panel);
+    color:var(--ink);
+    border-right:1px solid #0c0907;
+    box-shadow:inset -8px 0 14px -12px rgba(0,0,0,.55);
+  }
+  #controls fieldset{
+    border:0;border-top:1px solid var(--rule);
+    margin:0 0 16px;padding:14px 0 0;
+  }
+  #controls fieldset:first-of-type{border-top:0;padding-top:2px}
+  #controls legend{
+    padding:0 0 2px;
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-size:16px;font-weight:600;line-height:1.2;
+    letter-spacing:0;text-transform:none;
+    color:var(--ink);
+    margin-bottom:10px;
+    border-bottom:2px solid var(--brass);
+  }
+  #controls .row label{color:var(--ink-soft);font-size:13px}
+  #controls .check{color:var(--ink);font-size:13px}
+  #controls .hint{color:#7d6a52;font-size:11.5px}
+  #controls input[type=number],
+  #controls input[type=text],
+  #controls select{
+    background:var(--field);
+    color:var(--ink);
+    border:1px solid var(--rule);
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.07);
+  }
+  #controls input:focus,#controls select:focus{outline:2px solid #8a6d1c;outline-offset:1px}
+  #controls .check input{accent-color:#8a6d1c}
+  #controls input[type=range]{accent-color:#8a6d1c}
+  #controls .slide label{color:var(--ink-soft)}
+  #controls button{
+    background:var(--panel-hi);color:var(--ink);border:1px solid var(--rule);
+  }
+  #controls button:hover{border-color:#8a6d1c;color:#000;background:#fff9ec}
+  #controls button.primary{
+    background:linear-gradient(180deg,#d9b544,#a8871c);
+    color:#231a10;border-color:#8a6d1c;font-weight:700;
+  }
+  #controls button.primary:hover{filter:brightness(1.06);color:#000}
+  #controls #parts{color:var(--ink-soft)}
+  #controls #parts b{color:var(--ink)}
+
+  .mobtabs{display:none}
+  @media (max-width:860px){
+    main{flex-direction:column}
+    #controls{width:100%;max-height:46%;border-right:0;border-bottom:1px solid var(--line)}
+    .readout{max-width:calc(100% - 24px)}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="plate">B</div>
+    <h1 class="display">Box Maker<small>Creating laser box designs</small></h1>
+    <div class="spacer"></div>
+    <select id="wood" class="woodsel" aria-label="Timber">
+      <option value="walnut">Walnut</option>
+      <option value="oak" selected>Oak</option>
+      <option value="maple">Maple</option>
+      <option value="birch">Birch ply</option>
+      <option value="cherry">Cherry</option>
+    </select>
+  </header>
+
+  <main>
+    <div id="controls">
+      <fieldset>
+        <legend>Box</legend>
+        <div class="row"><label for="dims">Measure</label>
+          <select id="dims">
+            <option value="external" selected>Outside</option>
+            <option value="internal">Inside (cavity)</option>
+          </select>
+        </div>
+        <div class="row"><label for="W">Width (X)</label><input type="number" id="W" value="180" min="20" step="1"></div>
+        <div class="row"><label for="D">Depth (Y)</label><input type="number" id="D" value="120" min="20" step="1"></div>
+        <div class="row"><label for="H">Height (Z)</label><input type="number" id="H" value="70" min="15" step="1"></div>
+        <p class="hint" id="dimsHint">Millimetres, measured over the outside faces.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Lid</legend>
+        <div class="row"><label for="lidMode">Style</label>
+          <select id="lidMode">
+            <option value="none" selected>Open top</option>
+            <option value="flush">Flush — jointed into the walls</option>
+            <option value="overlay">Overlay — sits over the outside</option>
+          </select>
+        </div>
+        <div class="row lidopt"><label for="lidSkirt">Skirt depth</label><input type="number" id="lidSkirt" value="15" min="3" step="1"></div>
+        <div class="row lidopt"><label for="lidClearance">Clearance</label><input type="number" id="lidClearance" value="0.3" min="0" step="0.05"></div>
+        <p class="hint lidopt">The overlay lid is a shallow lidless box that drops over the top. Clearance is the gap per side between the box wall and the lid rim.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Material &amp; joint</legend>
+        <div class="row"><label for="t">Thickness</label><input type="number" id="t" value="3" min="0.5" step="0.1"></div>
+        <div class="row"><label for="kerf">Kerf</label><input type="number" id="kerf" value="0.15" min="0" step="0.01"></div>
+        <div class="row"><label for="fs">Joint size</label><input type="number" id="fs" value="10" min="2" step="0.5"></div>
+        <p class="hint">Joint size is the target finger length. Finger counts are snapped odd so every corner lands on a tab. Kerf widens tabs and narrows slots for a press fit.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Compartments</legend>
+        <div class="row"><label for="cols">Columns (X)</label><input type="number" id="cols" value="3" min="1" max="12" step="1"></div>
+        <div class="row"><label for="colW">Column widths</label><input type="text" id="colW" class="mono ratio" value="1 1 1"></div>
+        <div class="row"><label for="rows">Rows (Y)</label><input type="number" id="rows" value="2" min="1" max="12" step="1"></div>
+        <div class="row"><label for="rowW">Row depths</label><input type="text" id="rowW" class="mono ratio" value="1 1"></div>
+        <p class="hint">Widths are relative — <span class="mono">2 1 1</span> makes the first column twice the others. Add or remove numbers to change the count.</p>
+        <div class="row"><label for="dmode">Wall join</label>
+          <select id="dmode">
+            <option value="tab" selected>Tabbed slots</option>
+            <option value="finger">Finger joints</option>
+            <option value="free">Free-floating</option>
+          </select>
+        </div>
+        <label class="check"><input type="checkbox" id="baseSlot" checked> Slot dividers into base</label>
+        <p class="hint">Crossing dividers are always cross-lapped. Free-floating makes a removable egg-crate with no wall or base slots.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Sheet</legend>
+        <div class="row"><label for="SW">Sheet width</label><input type="number" id="SW" value="600" min="50" step="10"></div>
+        <div class="row"><label for="SH">Sheet height</label><input type="number" id="SH" value="400" min="50" step="10"></div>
+        <div class="row"><label for="margin">Edge margin</label><input type="number" id="margin" value="5" min="0" step="1"></div>
+        <div class="row"><label for="gap">Part spacing</label><input type="number" id="gap" value="2" min="0" step="0.5"></div>
+        <label class="check"><input type="checkbox" id="allowRot" checked> Allow 90&deg; rotation</label>
+        <label class="check"><input type="checkbox" id="engrave"> Engrave part labels</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>View</legend>
+        <div class="slide"><label for="explode">Explode</label><input type="range" id="explode" min="0" max="100" value="0"></div>
+        <label class="check"><input type="checkbox" id="spin" checked> Auto-rotate</label>
+        <p class="hint">Drag to orbit. Scroll or pinch to zoom.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Cut files</legend>
+        <div class="btns">
+          <button class="primary" id="dlZip">Download all sheets (.zip)</button>
+          <button id="dlOne">Download sheet 1 (.svg)</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Parts</legend>
+        <div id="parts"></div>
+      </fieldset>
+    </div>
+
+    <div id="work">
+      <div class="tabs" role="tablist">
+        <button id="tab3d" role="tab" aria-selected="true">3D preview</button>
+        <button id="tabSheet" role="tab" aria-selected="false">Sheet layout</button>
+      </div>
+      <div class="pane on" id="pane3d"><canvas id="c3d"></canvas><div class="readout" id="ro3d"></div></div>
+      <div class="pane" id="sheetPane"><div id="sheetWrap"></div></div>
+    </div>
+  </main>
+</div>
+
+<script id="lcd-core">
+/* ============================================================
+   The Laser Cut Out Designer — core geometry (pure, testable)
+   All units millimetres. No dependencies.
+   ============================================================ */
+(function(root){
+"use strict";
+
+const EPS = 1e-7;
+
+/* ---------- run helpers -------------------------------------
+   A "run" describes a stretch of one panel edge:
+     {s0, s1, d}  d = how far the boundary is inset from the edge.
+     d = 0  -> material reaches the edge (a tab)
+     d = t  -> material cut back by t   (a notch)
+------------------------------------------------------------- */
+function mergeRuns(runs){
+  const out=[];
+  for(const r of runs){
+    if(r.s1 - r.s0 <= EPS) continue;
+    const last = out[out.length-1];
+    if(last && Math.abs(last.d - r.d) < EPS) last.s1 = r.s1;
+    else out.push({s0:r.s0, s1:r.s1, d:r.d});
+  }
+  return out;
+}
+
+/* Kerf: every internal boundary shifts towards the deeper (cut-away) side
+   by kerf/2. Material grows, slots shrink; after the beam eats kerf/2 from
+   each side of the line, both land on nominal. */
+function applyKerf(runs, k){
+  if(k <= 0 || runs.length < 2) return runs;
+  const h = k/2;
+  for(let i=0;i<runs.length-1;i++){
+    const a = runs[i], b = runs[i+1];
+    let shift = 0;
+    if(a.d < b.d) shift = +h;
+    else if(a.d > b.d) shift = -h;
+    if(!shift) continue;
+    const bnd = a.s1 + shift;
+    if(bnd <= a.s0 + EPS || bnd >= b.s1 - EPS) continue; // too tight to compensate
+    a.s1 = bnd; b.s0 = bnd;
+  }
+  return runs;
+}
+
+function reverseRuns(runs, len){
+  return runs.map(r=>({s0: len - r.s1, s1: len - r.s0, d: r.d})).reverse();
+}
+
+function flat(len, d){ return [{s0:0, s1:len, d:d||0}]; }
+
+function runsFromFeatures(len, baseD, feats){
+  const f = feats.slice().sort((x,y)=>x.a-y.a);
+  const out=[]; let cur=0;
+  for(const ft of f){
+    const a = Math.max(cur, Math.max(0, Math.min(len, ft.a)));
+    const b = Math.max(0, Math.min(len, ft.b));
+    if(b <= a + EPS) continue;
+    if(a > cur + EPS) out.push({s0:cur, s1:a, d:baseD});
+    out.push({s0:a, s1:b, d:ft.d});
+    cur = b;
+  }
+  if(cur < len - EPS) out.push({s0:cur, s1:len, d:baseD});
+  return mergeRuns(out);
+}
+
+/* Odd finger count so both ends of a joint land on the same state. */
+function fingerCount(len, f){
+  let n = Math.max(1, Math.round(len / f));
+  if(n % 2 === 0) n++;
+  return n;
+}
+
+/* A finger-jointed edge. male=true -> tab at the first finger. */
+function jointRuns(len, t, f, male, insA, insB, k){
+  const a = insA, b = len - insB;
+  const jl = b - a;
+  const seq = [];
+  if(jl < f*0.55 || jl <= 0){
+    // Too short for fingers: leave a plain edge.
+    return mergeRuns(flat(len, male ? 0 : 0));
+  }
+  const n = fingerCount(jl, f);
+  if(insA > EPS) seq.push({s0:0, s1:a, d:t});
+  for(let i=0;i<n;i++){
+    const isTab = male ? (i % 2 === 0) : (i % 2 === 1);
+    seq.push({s0: a + jl*i/n, s1: a + jl*(i+1)/n, d: isTab ? 0 : t});
+  }
+  if(insB > EPS) seq.push({s0:b, s1:len, d:t});
+  return applyKerf(mergeRuns(seq), k);
+}
+
+/* Tab intervals across [a,b] for a divider end / base edge. */
+function tabIntervals(mode, a, b, f){
+  const L = b - a;
+  if(L <= EPS || mode === 'free') return [];
+  if(mode === 'finger'){
+    const n = fingerCount(L, f), out=[];
+    for(let i=0;i<n;i+=2) out.push({a: a + L*i/n, b: a + L*(i+1)/n});
+    return out;
+  }
+  if(L < f*3.2){
+    const tl = Math.min(f*1.6, L*0.6), c = a + L/2;
+    return [{a:c-tl/2, b:c+tl/2}];
+  }
+  const tl = Math.min(f*1.8, L*0.25);
+  const c1 = a + L*0.27, c2 = a + L*0.73;
+  return [{a:c1-tl/2, b:c1+tl/2},{a:c2-tl/2, b:c2+tl/2}];
+}
+
+/* ---------- polygon assembly --------------------------------
+   Walk the bounding rectangle anticlockwise: bottom, right, top, left.
+   At each corner the true vertex is  C + n_in*d_in + n_out*d_out,
+   which resolves overlapping notches from the two meeting edges.
+------------------------------------------------------------- */
+function buildPolygon(W, H, edges){
+  const F = [
+    {o:[0,0], d:[1,0],  n:[0,1],  len:W, runs:edges.bottom},
+    {o:[W,0], d:[0,1],  n:[-1,0], len:H, runs:edges.right },
+    {o:[W,H], d:[-1,0], n:[0,-1], len:W, runs:edges.top   },
+    {o:[0,H], d:[0,-1], n:[1,0],  len:H, runs:edges.left  }
+  ];
+  const per = F.map(f=>{
+    const p=[];
+    for(const r of f.runs){
+      p.push([f.o[0] + f.d[0]*r.s0 + f.n[0]*r.d, f.o[1] + f.d[1]*r.s0 + f.n[1]*r.d]);
+      p.push([f.o[0] + f.d[0]*r.s1 + f.n[0]*r.d, f.o[1] + f.d[1]*r.s1 + f.n[1]*r.d]);
+    }
+    return {f, p, dS: f.runs[0].d, dE: f.runs[f.runs.length-1].d};
+  });
+
+  const pts=[];
+  for(let i=0;i<4;i++){
+    const cur = per[i], nxt = per[(i+1)%4];
+    for(let j=1;j<cur.p.length-1;j++) pts.push(cur.p[j]);
+    const C = [cur.f.o[0] + cur.f.d[0]*cur.f.len, cur.f.o[1] + cur.f.d[1]*cur.f.len];
+    pts.push([
+      C[0] + cur.f.n[0]*cur.dE + nxt.f.n[0]*nxt.dS,
+      C[1] + cur.f.n[1]*cur.dE + nxt.f.n[1]*nxt.dS
+    ]);
+  }
+
+  // drop duplicate and collinear vertices
+  const clean=[];
+  for(const p of pts){
+    const q = clean[clean.length-1];
+    if(q && Math.abs(q[0]-p[0])<1e-6 && Math.abs(q[1]-p[1])<1e-6) continue;
+    clean.push(p);
+  }
+  while(clean.length>1){
+    const a=clean[0], b=clean[clean.length-1];
+    if(Math.abs(a[0]-b[0])<1e-6 && Math.abs(a[1]-b[1])<1e-6) clean.pop(); else break;
+  }
+  const out=[];
+  for(let i=0;i<clean.length;i++){
+    const a=clean[(i-1+clean.length)%clean.length], b=clean[i], c=clean[(i+1)%clean.length];
+    const cross = (b[0]-a[0])*(c[1]-b[1]) - (b[1]-a[1])*(c[0]-b[0]);
+    const dot   = (b[0]-a[0])*(c[0]-b[0]) + (b[1]-a[1])*(c[1]-b[1]);
+    if(Math.abs(cross) < 1e-9 && dot > 0) continue; // straight through
+    out.push(b);
+  }
+  return out;
+}
+
+function polyArea(p){
+  let s=0;
+  for(let i=0;i<p.length;i++){
+    const a=p[i], b=p[(i+1)%p.length];
+    s += a[0]*b[1] - b[0]*a[1];
+  }
+  return s/2;
+}
+function bbox(p){
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(const q of p){ if(q[0]<x0)x0=q[0]; if(q[0]>x1)x1=q[0]; if(q[1]<y0)y0=q[1]; if(q[1]>y1)y1=q[1]; }
+  return {x0,y0,x1,y1,w:x1-x0,h:y1-y0};
+}
+
+/* ---------- one open-or-closed shell (walls + base [+ flush lid]) ---------- */
+function shellPanels(W, D, H, t, f, k, lid, hFB, hLR, hBase){
+  const parts = [];
+  const insTop = lid ? t : 0;
+  const push = (name, poly, holes, place)=>{ parts.push({name, poly, holes:holes||[], place}); };
+
+  // FRONT / BACK  (u = x, v = z)
+  const fbBottom = jointRuns(W, t, f, false, 0, 0, k);
+  const fbSide   = jointRuns(H, t, f, true,  t, insTop, k);
+  const fbTop    = lid ? jointRuns(W, t, f, false, 0, 0, k) : flat(W, 0);
+  const frontPoly = buildPolygon(W, H, {
+    bottom: fbBottom, right: fbSide,
+    top: reverseRuns(fbTop, W), left: reverseRuns(fbSide, H)
+  });
+  push('Front', frontPoly, hFB, {O:[0,0,0],   U:[1,0,0], V:[0,0,1], N:[0,1,0], t});
+  push('Back',  frontPoly, hFB, {O:[0,D-t,0], U:[1,0,0], V:[0,0,1], N:[0,1,0], t});
+
+  // LEFT / RIGHT  (u = y, v = z)
+  const lrBottom = jointRuns(D, t, f, false, 0, 0, k);
+  const lrSide   = jointRuns(H, t, f, false, t, insTop, k);
+  const lrTop    = lid ? jointRuns(D, t, f, false, 0, 0, k) : flat(D, 0);
+  const leftPoly = buildPolygon(D, H, {
+    bottom: lrBottom, right: lrSide,
+    top: reverseRuns(lrTop, D), left: reverseRuns(lrSide, H)
+  });
+  push('Left',  leftPoly, hLR, {O:[0,0,0],   U:[0,1,0], V:[0,0,1], N:[1,0,0], t});
+  push('Right', leftPoly, hLR, {O:[W-t,0,0], U:[0,1,0], V:[0,0,1], N:[1,0,0], t});
+
+  // BASE / FLUSH LID  (u = x, v = y)
+  const btX = jointRuns(W, t, f, true, 0, 0, k);
+  const btY = jointRuns(D, t, f, true, 0, 0, k);
+  const basePoly = buildPolygon(W, D, {
+    bottom: btX, right: btY,
+    top: reverseRuns(btX, W), left: reverseRuns(btY, D)
+  });
+  push('Base', basePoly, hBase, {O:[0,0,0], U:[1,0,0], V:[0,1,0], N:[0,0,1], t});
+  if(lid) push('Lid', basePoly, [], {O:[0,0,H-t], U:[1,0,0], V:[0,1,0], N:[0,0,1], t});
+
+  return parts;
+}
+
+/* Compartment sizes from weights, then the divider centres that produce them.
+   The weights govern the usable cells — divider thickness is taken out first,
+   so "2 1 1" really does make the first compartment twice the others. */
+function divisionCentres(a, b, weights, t){
+  const w = (weights && weights.length ? weights : [1]).map(x=> (x > 0 ? x : 1));
+  const n = w.length;
+  const total = w.reduce((s,x)=>s+x, 0);
+  const usable = (b - a) - (n - 1)*t;
+  if(usable <= 0) return {centres:[], cells:[b - a]};
+  const cells = w.map(x=> usable * x / total);
+  const centres = [];
+  let pos = a;
+  for(let i=0;i<n-1;i++){ pos += cells[i]; centres.push(pos + t/2); pos += t; }
+  return {centres, cells};
+}
+
+/* ---------- the box ----------------------------------------- */
+function generate(p){
+  const t = +p.t, k = +p.kerf, f = +p.finger;
+  const lidMode = p.lidMode || 'none';              // none | flush | overlay
+  const mode = p.dividerMode || 'tab';
+  const internal = (p.dims === 'internal');
+  const skirt = Math.max(0, +(p.lidSkirt != null ? p.lidSkirt : 12));
+  const clr = Math.max(0, +(p.lidClearance != null ? p.lidClearance : 0.3));
+
+  // Outer dimensions of the box body.
+  let W, D, H;
+  if(internal){
+    W = +p.W + 2*t;
+    D = +p.D + 2*t;
+    H = +p.H + t + (lidMode === 'flush' ? t : 0);
+  } else {
+    W = +p.W; D = +p.D; H = +p.H;
+  }
+
+  const colW = (p.colWeights && p.colWeights.length) ? p.colWeights : [1];
+  const rowW = (p.rowWeights && p.rowWeights.length) ? p.rowWeights : [1];
+  const C = colW.length, R = rowW.length;
+
+  const warn = [];
+  const box = {W, D, H, t, lidMode, C, R, mode, internal, skirt, clr};
+  if(t <= 0 || W <= 4*t || D <= 4*t || H <= 3*t)
+    return {parts:[], warnings:['Box is too small for this material thickness.'], box};
+  if(f < t*1.2) warn.push('Joint size is small relative to thickness — fingers may be fragile.');
+  if(k >= f*0.5) warn.push('Kerf is very large relative to joint size.');
+
+  const baseSlot = !!p.baseSlot && mode !== 'free';
+  const flushLid = (lidMode === 'flush');
+
+  // ---- divider centres from weights ----
+  const gx = divisionCentres(t, W - t, colW, t);
+  const gy = divisionCentres(t, D - t, rowW, t);
+  const cx = gx.centres, cy = gy.centres;
+
+  const Htop = flushLid ? H - t : H;   // z of divider top
+  const Hd   = Htop - t;               // divider body height
+  const bt   = baseSlot ? t : 0;
+  const Vtot = bt + Hd;
+
+  const minCell = Math.min(...gx.cells, ...gy.cells);
+  if((cx.length || cy.length) && minCell < 3*t)
+    warn.push('At least one compartment is very narrow for this stock.');
+
+  const uMinX = (mode==='free') ? t : 0, uMaxX = (mode==='free') ? D - t : D;
+  const uMinY = (mode==='free') ? t : 0, uMaxY = (mode==='free') ? W - t : W;
+
+  const endTabs  = tabIntervals(mode, bt + t, bt + Hd - t, f);
+  const baseTabX = baseSlot ? tabIntervals(mode, 2*t, D - 2*t, f) : [];
+  const baseTabY = baseSlot ? tabIntervals(mode, 2*t, W - 2*t, f) : [];
+  if((cx.length || cy.length) && mode !== 'free' && Hd < 3*t + f)
+    warn.push('Box is shallow for these divider joints — consider a smaller joint size.');
+
+  const half = t/2, kh = k/2;
+
+  const wallHolesFB = [], wallHolesLR = [], baseHoles = [];
+  for(const c of cx) for(const s of endTabs)
+    wallHolesFB.push({x:c-half+kh, y:s.a - bt + t + kh, w:t-k, h:(s.b-s.a)-k});
+  for(const c of cy) for(const s of endTabs)
+    wallHolesLR.push({x:c-half+kh, y:s.a - bt + t + kh, w:t-k, h:(s.b-s.a)-k});
+  for(const c of cx) for(const s of baseTabX)
+    baseHoles.push({x:c-half+kh, y:s.a+kh, w:t-k, h:(s.b-s.a)-k});
+  for(const c of cy) for(const s of baseTabY)
+    baseHoles.push({x:s.a+kh, y:c-half+kh, w:(s.b-s.a)-k, h:t-k});
+
+  const parts = shellPanels(W, D, H, t, f, k, flushLid, wallHolesFB, wallHolesLR, baseHoles);
+
+  /* ---------- dividers ---------- */
+  if(Hd > f*0.5){
+    const endFeats = endTabs.map(s=>({a:s.a-kh, b:s.b+kh, d:0}));
+    const sideRuns = (mode==='free') ? flat(Vtot, 0) : runsFromFeatures(Vtot, t, endFeats);
+
+    const Wx = uMaxX - uMinX;
+    for(let i=0;i<cx.length;i++){
+      const feats = baseTabX.map(s=>({a:s.a-uMinX-kh, b:s.b-uMinX+kh, d:0}));
+      const bottomRuns = mergeRuns(runsFromFeatures(Wx, bt, feats));
+      const lapFeats = cy.map(c=>({a:c-half-uMinX+kh, b:c+half-uMinX-kh, d:Hd/2}));
+      const topRuns = mergeRuns(runsFromFeatures(Wx, 0, lapFeats));
+      const poly = buildPolygon(Wx, Vtot, {
+        bottom: bottomRuns, right: sideRuns,
+        top: reverseRuns(topRuns, Wx), left: reverseRuns(sideRuns, Vtot)
+      });
+      parts.push({name:'Divider X'+(i+1), poly, holes:[],
+        place:{O:[cx[i]-half, uMinX, t - bt], U:[0,1,0], V:[0,0,1], N:[1,0,0], t}});
+    }
+
+    const Wy = uMaxY - uMinY;
+    for(let j=0;j<cy.length;j++){
+      const lapZones = cx.map(c=>({a:c-half-uMinY, b:c+half-uMinY}));
+      const inLap = (s)=> lapZones.some(z=> s.b > z.a - EPS && s.a < z.b + EPS);
+      const bFeats = baseTabY
+        .map(s=>({a:s.a-uMinY, b:s.b-uMinY}))
+        .filter(s=>!inLap(s))
+        .map(s=>({a:s.a-kh, b:s.b+kh, d:0}));
+      const lFeats = lapZones.map(z=>({a:z.a+kh, b:z.b-kh, d:bt + Hd/2}));
+      const bottomRuns = mergeRuns(runsFromFeatures(Wy, bt, bFeats.concat(lFeats)));
+      const poly = buildPolygon(Wy, Vtot, {
+        bottom: bottomRuns, right: sideRuns,
+        top: flat(Wy, 0), left: reverseRuns(sideRuns, Vtot)
+      });
+      parts.push({name:'Divider Y'+(j+1), poly, holes:[],
+        place:{O:[uMinY, cy[j]-half, t - bt], U:[1,0,0], V:[0,0,1], N:[0,1,0], t}});
+    }
+  }
+
+  /* ---------- overlay cap: a lidless shell, inverted, dropped over the top ---------- */
+  if(lidMode === 'overlay'){
+    const Wc = W + 2*(t + clr), Dc = D + 2*(t + clr), Hc = skirt + t;
+    if(Wc > 4*t && Dc > 4*t && Hc > 3*t){
+      const cap = shellPanels(Wc, Dc, Hc, t, f, k, false, [], [], []);
+      const rename = {Front:'Lid rim (front)', Back:'Lid rim (back)', Left:'Lid rim (left)', Right:'Lid rim (right)', Base:'Lid top'};
+      const ox = -(t + clr), oyk = Dc - (t + clr), ozk = H + t;
+      for(const c of cap){
+        const O = c.place.O, U = c.place.U, V = c.place.V, N = c.place.N;
+        c.name = rename[c.name] || c.name;
+        c.place = {
+          O:[ox + O[0], oyk - O[1], ozk - O[2]],
+          U:[U[0], -U[1], -U[2]],
+          V:[V[0], -V[1], -V[2]],
+          N:[N[0], -N[1], -N[2]],
+          t
+        };
+        parts.push(c);
+      }
+      box.capH = Hc;
+    } else warn.push('Overlay lid skirt is too shallow for this stock.');
+  }
+
+  // normalise every polygon to its own origin, carrying holes with it
+  for(const pt of parts){
+    const bb = bbox(pt.poly);
+    if(Math.abs(bb.x0) > 1e-9 || Math.abs(bb.y0) > 1e-9){
+      pt.poly = pt.poly.map(q=>[q[0]-bb.x0, q[1]-bb.y0]);
+      pt.holes = pt.holes.map(h=>({x:h.x-bb.x0, y:h.y-bb.y0, w:h.w, h:h.h}));
+      pt.offset = [bb.x0, bb.y0];
+    } else pt.offset = [0,0];
+    pt.w = bb.w; pt.h = bb.h;
+  }
+
+  // report the cavity and the compartment grid
+  box.inner = {W: W - 2*t, D: D - 2*t, H: Htop - t};
+  box.cells = {x: gx.cells, y: gy.cells};
+  box.Hd = Hd; box.bt = bt;
+
+  return {parts, warnings:warn, box};
+}
+
+/* ---------- nesting: MaxRects, best short side fit ---------- */
+function packSheets(parts, sheetW, sheetH, margin, gap, allowRot){
+  const usableW = sheetW - 2*margin, usableH = sheetH - 2*margin;
+  const sheets=[];
+  const oversize=[];
+
+  const items = parts.map((p,i)=>({i, p, w:p.w + gap, h:p.h + gap}))
+                     .sort((a,b)=> Math.max(b.w,b.h) - Math.max(a.w,a.h) || (b.w*b.h - a.w*a.h));
+
+  const newSheet = ()=>({free:[{x:0,y:0,w:usableW,h:usableH}], placed:[]});
+
+  function place(sheet, it){
+    let best=null;
+    for(const fr of sheet.free){
+      const tryFit=(w,h,rot)=>{
+        if(w <= fr.w + EPS && h <= fr.h + EPS){
+          const ss = Math.min(fr.w - w, fr.h - h);
+          const ls = Math.max(fr.w - w, fr.h - h);
+          if(!best || ss < best.ss - EPS || (Math.abs(ss-best.ss)<EPS && ls < best.ls)){
+            best = {fr, w, h, rot, ss, ls};
+          }
+        }
+      };
+      tryFit(it.w, it.h, false);
+      if(allowRot) tryFit(it.h, it.w, true);
+    }
+    if(!best) return false;
+
+    const node = {x:best.fr.x, y:best.fr.y, w:best.w, h:best.h, rot:best.rot, item:it};
+    sheet.placed.push(node);
+
+    // split every free rect that the node intersects
+    const next=[];
+    for(const fr of sheet.free){
+      if(node.x >= fr.x + fr.w - EPS || node.x + node.w <= fr.x + EPS ||
+         node.y >= fr.y + fr.h - EPS || node.y + node.h <= fr.y + EPS){ next.push(fr); continue; }
+      if(node.x > fr.x + EPS)                    next.push({x:fr.x, y:fr.y, w:node.x-fr.x, h:fr.h});
+      if(node.x + node.w < fr.x + fr.w - EPS)    next.push({x:node.x+node.w, y:fr.y, w:fr.x+fr.w-node.x-node.w, h:fr.h});
+      if(node.y > fr.y + EPS)                    next.push({x:fr.x, y:fr.y, w:fr.w, h:node.y-fr.y});
+      if(node.y + node.h < fr.y + fr.h - EPS)    next.push({x:fr.x, y:node.y+node.h, w:fr.w, h:fr.y+fr.h-node.y-node.h});
+    }
+    // prune contained rects
+    const keep=[];
+    for(let a=0;a<next.length;a++){
+      let contained=false;
+      for(let b=0;b<next.length && !contained;b++){
+        if(a===b) continue;
+        const A=next[a], B=next[b];
+        if(A.x >= B.x-EPS && A.y >= B.y-EPS && A.x+A.w <= B.x+B.w+EPS && A.y+A.h <= B.y+B.h+EPS){
+          if(A.w*A.h < B.w*B.h || b < a) contained = true;
+        }
+      }
+      if(!contained && next[a].w > EPS && next[a].h > EPS) keep.push(next[a]);
+    }
+    sheet.free = keep;
+    return true;
+  }
+
+  for(const it of items){
+    if((it.w > usableW + EPS || it.h > usableH + EPS) &&
+       (!allowRot || it.h > usableW + EPS || it.w > usableH + EPS)){
+      oversize.push(it.p.name); continue;
+    }
+    let done=false;
+    for(const s of sheets){ if(place(s, it)){ done=true; break; } }
+    if(!done){ const s=newSheet(); sheets.push(s); place(s, it); }
+  }
+
+  const out = sheets.map(s=>{
+    const used = s.placed.reduce((a,n)=> a + n.item.p.w * n.item.p.h, 0);
+    return {
+      parts: s.placed.map(n=>({
+        part: n.item.p,
+        x: n.x + margin + gap/2,
+        y: n.y + margin + gap/2,
+        rot: n.rot
+      })),
+      used,
+      waste: 1 - used/(sheetW*sheetH)
+    };
+  });
+  return {sheets: out, oversize};
+}
+function pack(parts, sheetW, sheetH, margin, gap, allowRot){
+  return packSheets(parts, sheetW, sheetH, margin, gap, allowRot);
+}
+
+/* ---------- placed geometry ---------- */
+function placedPoly(pl){
+  const {part, x, y, rot} = pl;
+  const h = part.h;
+  const tx = (q)=> rot ? [x + (h - q[1]), y + q[0]] : [x + q[0], y + q[1]];
+  const poly = part.poly.map(tx);
+  const holes = part.holes.map(hl=>{
+    const c=[[hl.x,hl.y],[hl.x+hl.w,hl.y],[hl.x+hl.w,hl.y+hl.h],[hl.x,hl.y+hl.h]].map(tx);
+    return c;
+  });
+  return {poly, holes, name: part.name};
+}
+
+/* ---------- SVG ---------- */
+function svgForSheet(sheet, sheetW, sheetH, opts){
+  const f = (n)=> (Math.round(n*1000)/1000);
+  const Y = (n)=> f(sheetH - n);
+  const body=[];
+  body.push(`<rect x="0" y="0" width="${f(sheetW)}" height="${f(sheetH)}" fill="none" stroke="#cccccc" stroke-width="0.1"/>`);
+  for(const pl of sheet.parts){
+    const g = placedPoly(pl);
+    const d = g.poly.map((q,i)=> (i?'L':'M') + f(q[0]) + ' ' + Y(q[1])).join(' ') + ' Z';
+    body.push(`<path d="${d}" fill="none" stroke="#ff0000" stroke-width="0.1"/>`);
+    for(const hl of g.holes){
+      const hd = hl.map((q,i)=> (i?'L':'M') + f(q[0]) + ' ' + Y(q[1])).join(' ') + ' Z';
+      body.push(`<path d="${hd}" fill="none" stroke="#ff0000" stroke-width="0.1"/>`);
+    }
+    if(opts && opts.engrave){
+      const bb = g.poly.reduce((a,q)=>({x0:Math.min(a.x0,q[0]),y0:Math.min(a.y0,q[1]),x1:Math.max(a.x1,q[0]),y1:Math.max(a.y1,q[1])}),
+        {x0:1e9,y0:1e9,x1:-1e9,y1:-1e9});
+      const cxp=(bb.x0+bb.x1)/2, cyp=(bb.y0+bb.y1)/2;
+      body.push(`<text x="${f(cxp)}" y="${Y(cyp)}" font-family="sans-serif" font-size="5" fill="#0000ff" text-anchor="middle" dominant-baseline="middle">${g.name}</text>`);
+    }
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${f(sheetW)}mm" height="${f(sheetH)}mm" viewBox="0 0 ${f(sheetW)} ${f(sheetH)}">
+<g id="cut">
+${body.join('\n')}
+</g>
+</svg>`;
+}
+
+/* ---------- minimal store-only ZIP ---------- */
+const CRC_TABLE = (()=>{
+  const tbl = new Uint32Array(256);
+  for(let n=0;n<256;n++){
+    let c=n;
+    for(let j=0;j<8;j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    tbl[n]=c>>>0;
+  }
+  return tbl;
+})();
+function crc32(buf){
+  let c = 0xFFFFFFFF;
+  for(let i=0;i<buf.length;i++) c = CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function makeZip(files){
+  const enc = (s)=>{
+    const out=[]; for(let i=0;i<s.length;i++){
+      const c=s.charCodeAt(i);
+      if(c<128) out.push(c);
+      else if(c<2048){ out.push(192|(c>>6), 128|(c&63)); }
+      else { out.push(224|(c>>12), 128|((c>>6)&63), 128|(c&63)); }
+    }
+    return new Uint8Array(out);
+  };
+  const chunks=[], central=[];
+  let offset=0;
+  for(const f of files){
+    const name = enc(f.name), data = enc(f.text), crc = crc32(data);
+    const lh = new Uint8Array(30 + name.length);
+    const dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true); dv.setUint16(6, 0, true); dv.setUint16(8, 0, true);
+    dv.setUint16(10, 0, true); dv.setUint16(12, 0, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, data.length, true);
+    dv.setUint32(22, data.length, true);
+    dv.setUint16(26, name.length, true); dv.setUint16(28, 0, true);
+    lh.set(name, 30);
+    chunks.push(lh, data);
+
+    const ch = new Uint8Array(46 + name.length);
+    const cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true); cv.setUint16(10, 0, true);
+    cv.setUint16(12, 0, true); cv.setUint16(14, 0, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true);
+    cv.setUint32(24, data.length, true);
+    cv.setUint16(28, name.length, true);
+    cv.setUint32(42, offset, true);
+    ch.set(name, 46);
+    central.push(ch);
+    offset += lh.length + data.length;
+  }
+  const cdSize = central.reduce((a,c)=>a+c.length, 0);
+  const end = new Uint8Array(22);
+  const ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, offset, true);
+  const all = chunks.concat(central, [end]);
+  const total = all.reduce((a,c)=>a+c.length,0);
+  const out = new Uint8Array(total);
+  let o=0; for(const c of all){ out.set(c,o); o+=c.length; }
+  return out;
+}
+
+root.LCD = {
+  generate, pack, placedPoly, svgForSheet, makeZip, crc32,
+  buildPolygon, jointRuns, reverseRuns, runsFromFeatures, tabIntervals,
+  mergeRuns, applyKerf, flat, polyArea, bbox, fingerCount,
+  shellPanels, divisionCentres
+};
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
+<script>
+/* ============================================================
+   UI  — 3D preview, sheet layout, exports, timber skin
+   ============================================================ */
+(function(){
+"use strict";
+if(typeof document === 'undefined') return;
+const LCD = window.LCD;
+const $ = (id)=>document.getElementById(id);
+
+const WOODS = {
+  walnut: {base:'#5b3a26', grain:'#3a2416', light:'#8a5f42'},
+  oak:    {base:'#b78b52', grain:'#8c6636', light:'#d8b078'},
+  maple:  {base:'#dcc196', grain:'#b99f74', light:'#f0dcb8'},
+  birch:  {base:'#e3cfa6', grain:'#c0a87c', light:'#f4e6c6'},
+  cherry: {base:'#9c5433', grain:'#6f371f', light:'#c47a52'}
+};
+
+function grainTexture(w){
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = w.base; g.fillRect(0,0,256,256);
+  for(let i=0;i<190;i++){
+    const y = Math.random()*256;
+    const amp = 3 + Math.random()*10;
+    const alpha = 0.05 + Math.random()*0.16;
+    g.strokeStyle = (Math.random() < 0.6 ? w.grain : w.light);
+    g.globalAlpha = alpha;
+    g.lineWidth = 0.4 + Math.random()*1.9;
+    g.beginPath();
+    for(let x=0;x<=256;x+=8){
+      const yy = y + Math.sin(x*0.02 + i)*amp + Math.sin(x*0.007 + i*2)*amp*0.6;
+      x ? g.lineTo(x,yy) : g.moveTo(x,yy);
+    }
+    g.stroke();
+  }
+  g.globalAlpha = 1;
+  return c;
+}
+
+let wood = WOODS.oak;
+let tex = null;
+function reskin(){
+  wood = WOODS[$('wood').value] || WOODS.oak;
+  tex = grainTexture(wood);
+  document.documentElement.style.setProperty('--grain', `url(${tex.toDataURL()})`);
+  const cs = $('controls').style;
+  cs.backgroundImage = `linear-gradient(rgba(236,224,200,.93), rgba(246,238,218,.95)), url(${tex.toDataURL()})`;
+  cs.backgroundSize = 'auto, 256px 256px';
+  render();
+}
+
+/* ---------- read params ---------- */
+function parseWeights(str){
+  return String(str).split(/[^0-9.]+/)
+    .map(s=>parseFloat(s))
+    .filter(n=> isFinite(n) && n > 0);
+}
+function weightsToStr(w){
+  return w.map(n=> (Math.round(n*100)/100)).join(' ');
+}
+/* Keep the count box and the weights box in step, whichever the person touched. */
+function syncCount(countId, wId){
+  const n = Math.max(1, Math.min(12, Math.round(+$(countId).value || 1)));
+  let w = parseWeights($(wId).value);
+  if(w.length > n) w = w.slice(0, n);
+  while(w.length < n) w.push(1);
+  $(countId).value = n;
+  $(wId).value = weightsToStr(w);
+}
+function syncWeights(countId, wId){
+  const w = parseWeights($(wId).value);
+  if(!w.length) return;                   // mid-typing; leave it alone
+  $(countId).value = Math.min(12, w.length);
+}
+
+function params(){
+  const colW = parseWeights($('colW').value);
+  const rowW = parseWeights($('rowW').value);
+  return {
+    dims: $('dims').value,
+    W:+$('W').value, D:+$('D').value, H:+$('H').value,
+    t:+$('t').value, kerf:+$('kerf').value, finger:+$('fs').value,
+    lidMode: $('lidMode').value,
+    lidSkirt:+$('lidSkirt').value,
+    lidClearance:+$('lidClearance').value,
+    colWeights: colW.length ? colW.slice(0,12) : [1],
+    rowWeights: rowW.length ? rowW.slice(0,12) : [1],
+    dividerMode:$('dmode').value,
+    baseSlot:$('baseSlot').checked
+  };
+}
+function sheetCfg(){
+  return {
+    SW:+$('SW').value, SH:+$('SH').value,
+    margin:+$('margin').value, gap:+$('gap').value,
+    allowRot:$('allowRot').checked, engrave:$('engrave').checked
+  };
+}
+
+let model = null, packed = null, sc = null;
+
+/* ---------- 3D ---------- */
+const cv = $('c3d'), ctx = cv.getContext('2d');
+let yaw = -0.62, pitch = 0.52, zoom = 1, dragging = false, lastP = null, spin = true;
+
+function resize3d(){
+  const r = cv.parentElement.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.max(1, r.width*dpr); cv.height = Math.max(1, r.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  draw3d();
+}
+
+function shade(hex, m){
+  const n = parseInt(hex.slice(1),16);
+  const r = Math.min(255, Math.round(((n>>16)&255)*m));
+  const g = Math.min(255, Math.round(((n>>8)&255)*m));
+  const b = Math.min(255, Math.round((n&255)*m));
+  return `rgb(${r},${g},${b})`;
+}
+
+function draw3d(){
+  const wpx = cv.width / (window.devicePixelRatio>1?Math.min(window.devicePixelRatio,2):1);
+  const hpx = cv.height / (window.devicePixelRatio>1?Math.min(window.devicePixelRatio,2):1);
+  ctx.clearRect(0,0,wpx,hpx);
+  ctx.fillStyle = '#14100e';
+  ctx.fillRect(0,0,wpx,hpx);
+  if(!model || !model.parts.length) return;
+
+  const {W,D,H} = model.box;
+  // world bounds over every placed panel (the overlay cap sits outside the box)
+  let lo=[1e9,1e9,1e9], hi=[-1e9,-1e9,-1e9];
+  for(const part of model.parts){
+    const pl = part.place;
+    for(const [u,v] of [[0,0],[part.w,0],[0,part.h],[part.w,part.h]])
+    for(const w of [0, pl.t]){
+      const uu = u + (part.offset?part.offset[0]:0), vv = v + (part.offset?part.offset[1]:0);
+      for(let a=0;a<3;a++){
+        const q = pl.O[a] + pl.U[a]*uu + pl.V[a]*vv + pl.N[a]*w;
+        if(q<lo[a]) lo[a]=q; if(q>hi[a]) hi[a]=q;
+      }
+    }
+  }
+  const ctr = [(lo[0]+hi[0])/2, (lo[1]+hi[1])/2, (lo[2]+hi[2])/2];
+  const reach = Math.max(hi[0]-lo[0], hi[1]-lo[1], hi[2]-lo[2]);
+  const ex = (+$('explode').value/100) * reach * 0.42;
+
+  const cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
+  const view = (p)=>{
+    const x = p[0]-ctr[0], y = p[1]-ctr[1], z = p[2]-ctr[2];
+    const x1 = x*cy - y*sy, y1 = x*sy + y*cy, z1 = z;
+    const y2 = y1*cp - z1*sp, z2 = y1*sp + z1*cp;
+    return [x1, z2, y2]; // sx, sy(up), depth
+  };
+  const span = reach * 1.55 + ex*2;
+  const s = Math.min(wpx, hpx) / span * zoom;
+  const px = (v)=> [wpx/2 + v[0]*s, hpx/2 - v[1]*s];
+
+  const L = [0.42,-0.66,0.62];
+  const faces = [];
+
+  for(const part of model.parts){
+    const pl = part.place;
+    const N = pl.N, U = pl.U, V = pl.V;
+    // outward explode offset
+    const cen3 = [
+      pl.O[0] + U[0]*part.w/2 + V[0]*part.h/2 + N[0]*pl.t/2,
+      pl.O[1] + U[1]*part.w/2 + V[1]*part.h/2 + N[1]*pl.t/2,
+      pl.O[2] + U[2]*part.w/2 + V[2]*part.h/2 + N[2]*pl.t/2
+    ];
+    const dn = (cen3[0]-ctr[0])*N[0] + (cen3[1]-ctr[1])*N[1] + (cen3[2]-ctr[2])*N[2];
+    const sgn = dn >= 0 ? 1 : -1;
+    const off = [N[0]*sgn*ex, N[1]*sgn*ex, N[2]*sgn*ex];
+    const O = [pl.O[0]+off[0]+(part.offset?U[0]*part.offset[0]+V[0]*part.offset[1]:0),
+               pl.O[1]+off[1]+(part.offset?U[1]*part.offset[0]+V[1]*part.offset[1]:0),
+               pl.O[2]+off[2]+(part.offset?U[2]*part.offset[0]+V[2]*part.offset[1]:0)];
+
+    const P = (u,v,w)=>[
+      O[0] + U[0]*u + V[0]*v + N[0]*w,
+      O[1] + U[1]*u + V[1]*v + N[1]*w,
+      O[2] + U[2]*u + V[2]*v + N[2]*w
+    ];
+
+    const rings = [part.poly].concat(part.holes.map(h=>[
+      [h.x,h.y],[h.x+h.w,h.y],[h.x+h.w,h.y+h.h],[h.x,h.y+h.h]
+    ]));
+
+    // two caps (with holes, even-odd)
+    for(const w of [0, pl.t]){
+      const paths = rings.map(r=> r.map(q=> view(P(q[0],q[1],w))));
+      const dep = paths[0].reduce((a,q)=>a+q[2],0)/paths[0].length;
+      const nrm = [N[0],N[1],N[2]];
+      const nv = view([ctr[0]+nrm[0], ctr[1]+nrm[1], ctr[2]+nrm[2]]);
+      const nz = nv[2] - view(ctr)[2];
+      const dot = Math.abs(nrm[0]*L[0]+nrm[1]*L[1]+nrm[2]*L[2]);
+      faces.push({dep, paths, lum: 0.55 + 0.55*dot + (w?0:-0.06), evenodd:true});
+    }
+    // rims
+    for(const ring of rings){
+      for(let i=0;i<ring.length;i++){
+        const a = ring[i], b = ring[(i+1)%ring.length];
+        const q = [P(a[0],a[1],0), P(b[0],b[1],0), P(b[0],b[1],pl.t), P(a[0],a[1],pl.t)].map(view);
+        const dep = (q[0][2]+q[1][2]+q[2][2]+q[3][2])/4;
+        // edge normal in 3D
+        const eu = b[0]-a[0], ev = b[1]-a[1];
+        const nx = U[0]*ev - V[0]*eu, ny = U[1]*ev - V[1]*eu, nz2 = U[2]*ev - V[2]*eu;
+        const ln = Math.hypot(nx,ny,nz2) || 1;
+        const dot = Math.abs((nx/ln)*L[0] + (ny/ln)*L[1] + (nz2/ln)*L[2]);
+        faces.push({dep, paths:[q], lum: 0.34 + 0.5*dot, evenodd:false});
+      }
+    }
+  }
+
+  faces.sort((a,b)=> b.dep - a.dep);
+  for(const f of faces){
+    ctx.beginPath();
+    for(const path of f.paths){
+      path.forEach((q,i)=>{ const p = px(q); i ? ctx.lineTo(p[0],p[1]) : ctx.moveTo(p[0],p[1]); });
+      ctx.closePath();
+    }
+    ctx.fillStyle = shade(wood.base, f.lum);
+    ctx.fill(f.evenodd ? 'evenodd' : 'nonzero');
+    ctx.strokeStyle = shade(wood.grain, 0.75);
+    ctx.lineWidth = 0.55;
+    ctx.stroke();
+  }
+}
+
+/* ---------- sheet render ---------- */
+function drawSheets(){
+  const wrap = $('sheetWrap');
+  wrap.innerHTML = '';
+  if(!packed) return;
+  const {SW,SH} = sc;
+  const px = Math.min(2.2, 900/SW);
+  packed.sheets.forEach((sheet, i)=>{
+    const card = document.createElement('div');
+    card.className = 'sheetcard';
+    const waste = Math.round(sheet.waste*100);
+    card.innerHTML = `<h3>Sheet ${i+1} &nbsp;·&nbsp; ${sheet.parts.length} parts &nbsp;·&nbsp; ${100-waste}% used</h3>`;
+    const c = document.createElement('canvas');
+    c.width = SW*px; c.height = SH*px;
+    c.style.width = (SW*px)+'px'; c.style.height = (SH*px)+'px';
+    const g = c.getContext('2d');
+    const pat = g.createPattern(tex, 'repeat');
+    g.fillStyle = pat; g.fillRect(0,0,c.width,c.height);
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0,0,c.width,c.height);
+
+    for(const pl of sheet.parts){
+      const gm = LCD.placedPoly(pl);
+      g.save();
+      g.beginPath();
+      gm.poly.forEach((q,j)=>{ const X=q[0]*px, Y=(SH-q[1])*px; j?g.lineTo(X,Y):g.moveTo(X,Y); });
+      g.closePath();
+      for(const hl of gm.holes){
+        g.moveTo(hl[0][0]*px, (SH-hl[0][1])*px);
+        for(let j=1;j<hl.length;j++) g.lineTo(hl[j][0]*px, (SH-hl[j][1])*px);
+        g.closePath();
+      }
+      g.clip('evenodd');
+      g.fillStyle = pat; g.fillRect(0,0,c.width,c.height);
+      g.fillStyle = 'rgba(255,240,215,.10)'; g.fillRect(0,0,c.width,c.height);
+      g.restore();
+
+      g.strokeStyle = '#ff5a3c'; g.lineWidth = 1;
+      g.beginPath();
+      gm.poly.forEach((q,j)=>{ const X=q[0]*px, Y=(SH-q[1])*px; j?g.lineTo(X,Y):g.moveTo(X,Y); });
+      g.closePath(); g.stroke();
+      for(const hl of gm.holes){
+        g.beginPath();
+        hl.forEach((q,j)=>{ const X=q[0]*px, Y=(SH-q[1])*px; j?g.lineTo(X,Y):g.moveTo(X,Y); });
+        g.closePath(); g.stroke();
+      }
+      const bb = gm.poly.reduce((a,q)=>({x0:Math.min(a.x0,q[0]),y0:Math.min(a.y0,q[1]),x1:Math.max(a.x1,q[0]),y1:Math.max(a.y1,q[1])}),{x0:1e9,y0:1e9,x1:-1e9,y1:-1e9});
+      g.fillStyle = 'rgba(18,13,11,.72)';
+      g.font = '10px ui-monospace, monospace';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(gm.name, (bb.x0+bb.x1)/2*px, (SH-(bb.y0+bb.y1)/2)*px);
+    }
+    g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 1;
+    g.strokeRect(0.5,0.5,c.width-1,c.height-1);
+    card.appendChild(c);
+    wrap.appendChild(card);
+  });
+  if(packed.oversize.length){
+    const p = document.createElement('div');
+    p.className = 'readout warn';
+    p.style.position = 'static';
+    p.textContent = 'Too large for the sheet: ' + packed.oversize.join(', ');
+    wrap.appendChild(p);
+  }
+}
+
+/* ---------- readout ---------- */
+const LIDNAME = {none:'open top', flush:'flush lid', overlay:'overlay lid'};
+function readout(){
+  const b = model.box;
+  const n = packed ? packed.sheets.length : 0;
+  const totalWaste = packed && n ? Math.round(packed.sheets.reduce((a,s)=>a+s.waste,0)/n*100) : 0;
+  const warn = model.warnings.length ? `<br><span class="warn">${model.warnings.join(' ')}</span>` : '';
+  const over = packed && packed.oversize.length ? `<br><span class="warn">Won't fit: ${packed.oversize.join(', ')}</span>` : '';
+  const r1 = (n)=> Math.round(n*10)/10;
+
+  if(!model.parts.length){
+    $('ro3d').innerHTML = `<span class="warn">${model.warnings.join(' ')}</span>`;
+    $('parts').innerHTML = '';
+    return;
+  }
+  const inner = b.inner;
+  const cells = b.cells
+    ? `${b.cells.x.map(v=>r1(v)).join(' / ')} &nbsp;×&nbsp; ${b.cells.y.map(v=>r1(v)).join(' / ')} mm`
+    : '';
+
+  $('ro3d').innerHTML =
+    `Outside <b>${r1(b.W)} × ${r1(b.D)} × ${r1(b.H)}</b> · inside <b>${r1(inner.W)} × ${r1(inner.D)} × ${r1(inner.H)}</b> mm<br>` +
+    `${b.C * b.R} compartment${b.C*b.R>1?'s':''} (${b.C}×${b.R}) · ${LIDNAME[b.lidMode]} · ${b.t} mm stock<br>` +
+    `Cells ${cells}<br>` +
+    `<b>${model.parts.length}</b> parts · <b>${n}</b> sheet${n===1?'':'s'} · ${totalWaste}% offcut` + warn + over;
+
+  $('parts').innerHTML = model.parts.map(p=>
+    `<div class="pr"><b>${p.name}</b><span>${p.w.toFixed(1)} × ${p.h.toFixed(1)}</span></div>`
+  ).join('');
+}
+
+/* ---------- pipeline ---------- */
+let raf = null;
+function render(){
+  model = LCD.generate(params());
+  sc = sheetCfg();
+  packed = LCD.pack(model.parts, sc.SW, sc.SH, sc.margin, sc.gap, sc.allowRot);
+  readout();
+  drawSheets();
+  draw3d();
+}
+function schedule(){ if(raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(render); }
+
+/* ---------- events ---------- */
+['W','D','H','t','kerf','fs','SW','SH','margin','gap','lidSkirt','lidClearance'].forEach(id=>{
+  $(id).addEventListener('input', schedule);
+});
+['baseSlot','allowRot','engrave','dmode'].forEach(id=>{
+  $(id).addEventListener('change', schedule);
+});
+$('cols').addEventListener('input', ()=>{ syncCount('cols','colW'); schedule(); });
+$('rows').addEventListener('input', ()=>{ syncCount('rows','rowW'); schedule(); });
+$('colW').addEventListener('input', ()=>{ syncWeights('cols','colW'); schedule(); });
+$('rowW').addEventListener('input', ()=>{ syncWeights('rows','rowW'); schedule(); });
+$('colW').addEventListener('blur', ()=>{ syncCount('cols','colW'); schedule(); });
+$('rowW').addEventListener('blur', ()=>{ syncCount('rows','rowW'); schedule(); });
+
+$('dims').addEventListener('change', ()=>{
+  $('dimsHint').textContent = $('dims').value === 'internal'
+    ? 'Millimetres of usable cavity. Stock thickness is added outside it.'
+    : 'Millimetres, measured over the outside faces.';
+  schedule();
+});
+$('lidMode').addEventListener('change', ()=>{
+  document.body.classList.toggle('lid-overlay', $('lidMode').value === 'overlay');
+  schedule();
+});
+$('explode').addEventListener('input', draw3d);
+$('spin').addEventListener('change', e=>{ spin = e.target.checked; });
+$('wood').addEventListener('change', reskin);
+
+$('tab3d').onclick = ()=>{ setTab(0); };
+$('tabSheet').onclick = ()=>{ setTab(1); };
+function setTab(i){
+  $('tab3d').setAttribute('aria-selected', i===0);
+  $('tabSheet').setAttribute('aria-selected', i===1);
+  $('pane3d').classList.toggle('on', i===0);
+  $('sheetPane').classList.toggle('on', i===1);
+  if(i===0) resize3d();
+}
+
+cv.addEventListener('pointerdown', e=>{ dragging=true; lastP=[e.clientX,e.clientY]; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  yaw   += (e.clientX - lastP[0]) * 0.009;
+  pitch += (e.clientY - lastP[1]) * 0.009;
+  pitch = Math.max(-1.45, Math.min(1.45, pitch));
+  lastP=[e.clientX,e.clientY];
+  draw3d();
+});
+cv.addEventListener('pointerup', ()=>{ dragging=false; });
+cv.addEventListener('wheel', e=>{
+  e.preventDefault();
+  zoom *= e.deltaY > 0 ? 0.92 : 1.08;
+  zoom = Math.max(0.3, Math.min(6, zoom));
+  draw3d();
+}, {passive:false});
+
+function download(name, data, mime){
+  const blob = new Blob([data], {type:mime});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+$('dlOne').onclick = ()=>{
+  if(!packed || !packed.sheets.length) return;
+  download('laser-cut-sheet-1.svg', LCD.svgForSheet(packed.sheets[0], sc.SW, sc.SH, sc), 'image/svg+xml');
+};
+$('dlZip').onclick = ()=>{
+  if(!packed || !packed.sheets.length) return;
+  const files = packed.sheets.map((s,i)=>({
+    name: `sheet-${String(i+1).padStart(2,'0')}.svg`,
+    text: LCD.svgForSheet(s, sc.SW, sc.SH, sc)
+  }));
+  download('box-maker.zip', LCD.makeZip(files), 'application/zip');
+};
+
+window.addEventListener('resize', ()=>{ resize3d(); });
+
+/* ---------- boot ---------- */
+document.body.classList.toggle('lid-overlay', $('lidMode').value === 'overlay');
+syncCount('cols','colW');
+syncCount('rows','rowW');
+reskin();
+resize3d();
+(function loop(){
+  if(spin && !dragging && $('pane3d').classList.contains('on')){ yaw += 0.0035; draw3d(); }
+  requestAnimationFrame(loop);
+})();
+})();
+</script>
+</body>
+</html>
