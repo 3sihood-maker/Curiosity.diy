@@ -37,6 +37,13 @@ header{
 header:after{content:"";position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(96deg,rgba(255,255,255,.024) 0 2px,transparent 2px 7px);}
 .brand{font:600 12px/1 "JetBrains Mono",monospace;letter-spacing:.22em;text-transform:uppercase;color:var(--wood);margin:0 0 6px}
+.home{position:relative;z-index:2;display:inline-flex;align-items:center;gap:7px;
+  font:600 11px/1 "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;
+  color:#e0cfae;text-decoration:none;background:rgba(0,0,0,.28);border:1px solid #5b452c;
+  padding:7px 12px 7px 10px;border-radius:999px;margin:0 0 12px;transition:background .18s,border-color .18s,transform .18s}
+.home:hover{background:var(--pine);border-color:#4d9c85;color:#eafaf4}
+.home .arr{transition:transform .18s;font-size:13px}
+.home:hover .arr{transform:translateX(-3px)}
 h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(28px,6vw,44px);color:var(--paper);margin:0;letter-spacing:-.01em}
 h1 em{font-style:italic;color:#5fb79c}
 .tagline{font:400 14px/1.4 Inter,sans-serif;color:#a08e77;margin:6px 0 0}
@@ -46,24 +53,49 @@ h1 em{font-style:italic;color:#5fb79c}
 @media(min-width:960px){.grid{grid-template-columns:minmax(0,1fr) 400px;align-items:start}}
 
 /* ---------- stage ---------- */
-.stage{position:relative;background:#120c06;border-bottom:1px solid #3a2c1c}
-#gl{display:block;width:100%;height:52vh;min-height:300px;touch-action:none;cursor:grab}
+.stage{
+  position:sticky; top:0; z-index:30;
+  background:#120c06; border-bottom:1px solid #3a2c1c;
+  box-shadow:0 12px 26px -14px rgba(0,0,0,.9);
+}
+#gl{display:block;width:100%;height:48vh;min-height:240px;touch-action:none;cursor:grab;
+    transition:height .22s ease}
 #gl:active{cursor:grabbing}
-@media(min-width:960px){#gl{height:calc(100vh - 132px);min-height:520px}.stage{border-right:1px solid #3a2c1c;border-bottom:none}}
+.stage.compact #gl{height:21vh;min-height:150px}
+.stage.compact .viewbar,.stage.compact .hint{display:none}
+@media(min-width:960px){
+  .stage{height:100vh;border-right:1px solid #3a2c1c;border-bottom:none}
+  #gl{height:100%;min-height:520px}
+  .stage.compact #gl{height:100%}
+  .stage.compact .viewbar{display:flex}
+  .shrink{display:none}
+}
+.shrink{position:absolute;top:12px;right:12px;z-index:3;
+  width:36px;height:36px;border-radius:6px;background:rgba(28,19,10,.9);border:1px solid #55402a;
+  color:#d8c6a8;font:600 13px/1 "JetBrains Mono",monospace;cursor:pointer;display:grid;place-items:center}
+.shrink span{display:block;transition:transform .22s}
+.stage.compact .shrink span{transform:rotate(180deg)}
+.zoom{position:absolute;right:12px;bottom:12px;z-index:3;display:flex;flex-direction:column;gap:6px}
+.zbtn{width:42px;height:42px;border-radius:6px;background:rgba(28,19,10,.9);border:1px solid #55402a;
+  color:#d8c6a8;font:600 17px/1 "JetBrains Mono",monospace;cursor:pointer;display:grid;place-items:center}
+.zbtn:active{background:var(--pine);border-color:#4d9c85;color:#eafaf4}
+.stage.compact .zoom{bottom:8px;right:8px}
+.stage.compact .zbtn{width:34px;height:34px;font-size:14px}
 .badges{position:absolute;top:12px;left:12px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
 .badge{font:600 10px/1 "JetBrains Mono",monospace;letter-spacing:.08em;text-transform:uppercase;
   padding:6px 9px;border-radius:3px;background:rgba(20,13,6,.82);border:1px solid #4b3a26;color:#c8b596}
 .badge.ok{color:#6fc7aa;border-color:#2f7360}
 .badge.warn{color:#e2ab55;border-color:#8a6224}
 .badge.bad{color:#e08066;border-color:#8f3a24}
-.viewbar{position:absolute;bottom:12px;left:12px;right:12px;display:flex;gap:6px;flex-wrap:wrap}
+.viewbar{position:absolute;bottom:12px;left:12px;right:66px;display:flex;gap:6px;flex-wrap:wrap}
 .vbtn{font:600 11px/1 "JetBrains Mono",monospace;letter-spacing:.06em;text-transform:uppercase;
   padding:9px 11px;border-radius:4px;background:rgba(28,19,10,.88);border:1px solid #55402a;color:#d8c6a8;cursor:pointer}
 .vbtn.on{background:var(--pine);border-color:#4d9c85;color:#eafaf4}
-.hint{position:absolute;top:12px;right:12px;font:400 10px/1.3 "JetBrains Mono",monospace;color:#6d5c46;text-align:right;pointer-events:none}
+.hint{position:absolute;top:14px;right:58px;font:400 10px/1.3 "JetBrains Mono",monospace;color:#6d5c46;text-align:right;pointer-events:none}
+@media(max-width:640px){.hint{display:none}}
 
 /* ---------- panel ---------- */
-.panel{background:var(--beige);border-left:1px solid var(--line);padding:0 0 24px}
+.panel{position:relative;z-index:1;background:var(--beige);border-left:1px solid var(--line);padding:0 0 24px}
 section{border-bottom:1px solid var(--line)}
 .shead{
   display:flex;align-items:center;gap:10px;width:100%;
@@ -126,14 +158,21 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .swatches{display:flex;gap:6px;flex-wrap:wrap}
 .sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer}
 .sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--wood)}
-footer{padding:22px 20px;color:#6d5c46;font:400 12px/1.6 Inter,sans-serif;text-align:center}
-footer a{color:#a08e77}
+footer{padding:26px 20px;color:#6d5c46;font:400 12px/1.6 Inter,sans-serif;text-align:center}
+footer p{margin:12px 0 0}
+.homeBig{display:inline-block;font:600 12px/1 "JetBrains Mono",monospace;letter-spacing:.1em;text-transform:uppercase;
+  color:#e0cfae;text-decoration:none;background:#2b1e13;border:1px solid #5b452c;
+  padding:12px 18px;border-radius:999px;transition:background .18s,border-color .18s,color .18s}
+.homeBig:hover{background:var(--pine);border-color:#4d9c85;color:#eafaf4}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <p class="brand">Curiosity.diy · Bench 03 · 3D printing</p>
+  <a class="home" href="https://curiosity.diy" title="Back to the workshop">
+    <span class="arr">&#8592;</span> Curiosity.diy
+  </a>
+  <p class="brand">Bench 03 &middot; 3D printing</p>
   <h1>The Astounding <em>Solid</em> Maker</h1>
   <p class="tagline">Supershapes, vessels and cutters — straight out to a watertight STL.</p>
 </header>
@@ -147,7 +186,13 @@ footer a{color:#a08e77}
       <span class="badge" id="bBed">bed</span>
       <span class="badge" id="bOver">overhang</span>
     </div>
-    <div class="hint">drag to orbit<br>pinch / scroll to zoom</div>
+    <button class="shrink" id="shrink" title="Shrink the preview" aria-label="Shrink the preview"><span>&#9650;</span></button>
+    <div class="hint">drag to orbit<br>double-click to zoom</div>
+    <div class="zoom">
+      <button class="zbtn" id="zIn" aria-label="Zoom in">+</button>
+      <button class="zbtn" id="zOut" aria-label="Zoom out">&minus;</button>
+      <button class="zbtn" id="zFit" aria-label="Fit to view">&#9678;</button>
+    </div>
     <div class="viewbar">
       <button class="vbtn on" id="vOver">Overhang view</button>
       <button class="vbtn" id="vWire">Edges</button>
@@ -243,18 +288,33 @@ footer a{color:#a08e77}
         </div>
 
         <div id="perfBox">
-          <p class="sub">Perforations</p>
+          <p class="sub">Lattice &amp; perforations</p>
           <div class="row"><div class="seg" id="perfSeg">
-            <button data-p="none">None</button>
-            <button data-p="dots">Dots</button>
-            <button data-p="slots">Slots</button>
-            <button data-p="diam">Diamonds</button>
+            <button data-p="none">Solid</button>
+            <button data-p="sform">Superform</button>
+            <button data-p="hex">Honeycomb</button>
+            <button data-p="grid">Grid</button>
+            <button data-p="gyroid">Gyroid</button>
+            <button data-p="slot">Slots</button>
+            <button data-p="chevron">Chevron</button>
           </div></div>
-          <div class="two">
-            <div class="row"><label class="lab">Around <span class="val" id="vPa">14</span></label><input type="range" id="Pa" min="3" max="40" step="1" value="14"></div>
-            <div class="row"><label class="lab">Up <span class="val" id="vPb">10</span></label><input type="range" id="Pb" min="2" max="30" step="1" value="10"></div>
+          <div id="sformBox">
+            <div class="two">
+              <div class="row"><label class="lab">Hole shape m <span class="val" id="vHm">0</span></label><input type="range" id="Hm" min="0" max="16" step="1" value="0"></div>
+              <div class="row"><label class="lab">Hole roundness <span class="val" id="vHn">2.0</span></label><input type="range" id="Hn" min="0.3" max="12" step="0.1" value="2"></div>
+            </div>
+            <label class="chk"><input type="checkbox" id="stag" checked> Stagger the rows</label>
           </div>
-          <div class="row"><label class="lab">Opening size <span class="val" id="vPs">50%</span></label><input type="range" id="Ps" min="5" max="85" step="1" value="50"></div>
+          <div class="two">
+            <div class="row"><label class="lab">Around <span class="val" id="vPa">14</span></label><input type="range" id="Pa" min="3" max="48" step="1" value="14"></div>
+            <div class="row"><label class="lab">Up <span class="val" id="vPb">10</span></label><input type="range" id="Pb" min="2" max="40" step="1" value="10"></div>
+          </div>
+          <div class="row"><label class="lab">Opening size <span class="val" id="vPs">50%</span></label><input type="range" id="Ps" min="5" max="92" step="1" value="50"></div>
+          <div class="two">
+            <div class="row"><label class="lab">Solid base band <span class="val" id="vLb">10%</span></label><input type="range" id="Lb" min="0" max="45" step="1" value="10"></div>
+            <div class="row"><label class="lab">Solid top band <span class="val" id="vLt">10%</span></label><input type="range" id="Lt" min="0" max="45" step="1" value="10"></div>
+          </div>
+          <p class="note" id="latNote"></p>
         </div>
 
         <div id="gripBox">
@@ -274,8 +334,9 @@ footer a{color:#a08e77}
         </div>
 
         <div id="trimBox">
-          <p class="sub">Sit flat</p>
+          <p class="sub">Pod</p>
           <div class="row"><label class="lab">Trim the underside <span class="val" id="vTr">12%</span></label><input type="range" id="Tr" min="0" max="45" step="1" value="12"></div>
+          <label class="chk"><input type="checkbox" id="podH"> Hollow shell &mdash; unlocks the lattice</label>
         </div>
       </div>
     </section>
@@ -363,7 +424,10 @@ footer a{color:#a08e77}
 
   </div>
 </div>
-<footer>Made at <a href="https://curiosity.diy">curiosity.diy</a> · free, forever · STL is unitless — every slicer reads these as millimetres.</footer>
+<footer>
+  <a class="homeBig" href="https://curiosity.diy">&#8592; Back to the workshop at curiosity.diy</a>
+  <p>Free, forever. STL is unitless &mdash; every slicer reads these as millimetres.</p>
+</footer>
 </div>
 
 <script id="engine">
@@ -557,13 +621,26 @@ function buildVessel(p){
     O.push(ring); I.push(inner);
   }
 
-  /* wall cells + perforations */
+  /* wall cells + lattice */
+  prep(p);
   var cell=[];
   for(i=0;i<V;i++){
     var row=[];
     for(u=0;u<U;u++) row.push(!voided(p,(u+0.5)/U,(i+0.5)/V));
     cell.push(row);
   }
+  /* The base slab meets the wall along ring 0 and assumes the wall is solid
+     there. A lattice hole opening in that bottom row would tear the seam, so
+     the boundary row is forced solid whenever there is a slab to meet.
+     Structural — it does not depend on the user leaving a margin. */
+  if(p.closedBase) for(u=0;u<U;u++) cell[0][u]=true;
+  if(p.closedTop)  for(u=0;u<U;u++) cell[V-1][u]=true;
+  /* The base slab butts onto the bottom row of the wall and assumes it is
+     there. If the lattice opens a hole in that row the seam tears, so the
+     boundary rows next to a cap are forced solid — structurally, not by
+     trusting the margin slider to be big enough. */
+  if(p.closedBase) for(u=0;u<U;u++) cell[0][u]=true;
+  if(p.closedTop)  for(u=0;u<U;u++) cell[V-1][u]=true;
 
   shell(mesh,O,I,cell, !p.closedBase, !p.closedTop);
 
@@ -594,31 +671,73 @@ function buildVessel(p){
   return {mesh:mesh, warn: thin ? 'wall' : null};
 }
 
+/* ---------- LATTICE ----------------------------------------------------------
+   One mask function over the wall's (u,v) grid. Where it returns true the cell
+   is void, and the masked shell stitches side walls around the gap — so every
+   lattice is a true hole right through the wall, and the mesh stays watertight.
+   `a` wraps 0..1 around the object, `b` runs 0..1 up it.
+--------------------------------------------------------------------------- */
+function prep(p){
+  if(p.perf==='sform'){
+    var hp={m1:p.holeM,m2:p.holeM,n1:p.holeN,n2:p.holeN2,n3:p.holeN2,a:1,b:1};
+    p._hp=hp; p._hmax=sfMax(hp,720);
+  }
+  return p;
+}
+function hexDist(dx,dy){
+  var ax=Math.abs(dx), ay=Math.abs(dy);
+  return Math.max(ax*0.866+ay*0.5, ay);
+}
 function voided(p,a,b){
-  if(p.perf==='none'||!p.perf) return false;
-  var m=0.10;                              /* keep rims solid */
-  if(b<m || b>1-m) return false;
-  var bb=(b-m)/(1-2*m);
-  var s=p.perfS;
-  if(p.perf==='dots'){
-    var row=Math.floor(bb*p.perfB);
-    var off=(row%2)*0.5;
-    var ca=frac(a*p.perfA+off)-0.5;
-    var cb=frac(bb*p.perfB)-0.5;
-    var ar=(p.perfB/ (p.perfA||1));
-    return (ca*ca + (cb*cb)/Math.max(ar*ar,0.04)) < (s*0.5)*(s*0.5);
+  var pat=p.perf;
+  if(!pat || pat==='none') return false;
+  var b0=p.latBot, b1=1-p.latTop;
+  if(b<b0 || b>b1) return false;                 /* rims and poles stay solid */
+  var span=Math.max(b1-b0,1e-6), bb=(b-b0)/span;
+  var s=p.perfS, A=p.perfA, B=p.perfB;
+  var x=a*A, y=bb*B;
+  var gx,gy,w,row,off,cx,cy,dx,dy,dr,h,best;
+
+  if(pat==='grid'){                              /* square lattice of struts */
+    w=(1-s)*0.5;
+    gx=Math.abs(frac(x)-0.5); gy=Math.abs(frac(y)-0.5);
+    return gx <= 0.5-w && gy <= 0.5-w;
   }
-  if(p.perf==='slots'){
-    var ca2=Math.abs(frac(a*p.perfA)-0.5);
-    var cb2=Math.abs(frac(bb*p.perfB)-0.5);
-    return ca2 < s*0.42 && cb2 < 0.40;
+  if(pat==='hex'){                               /* honeycomb */
+    best=9;
+    for(dr=-1;dr<=1;dr++){
+      row=Math.floor(y)+dr; off=(((row%2)+2)%2)*0.5;
+      cx=Math.floor(x-off)+0.5+off; cy=row+0.5;
+      for(var k=-1;k<=1;k++){
+        h=hexDist(x-(cx+k), y-cy);
+        if(h<best) best=h;
+      }
+    }
+    return best < s*0.5;
   }
-  if(p.perf==='diam'){
-    var row2=Math.floor(bb*p.perfB);
-    var off2=(row2%2)*0.5;
-    var ca3=Math.abs(frac(a*p.perfA+off2)-0.5);
-    var cb3=Math.abs(frac(bb*p.perfB)-0.5);
-    return (ca3+cb3) < s*0.55;
+  if(pat==='slot'){
+    gx=Math.abs(frac(x)-0.5); gy=Math.abs(frac(y)-0.5);
+    return gx < s*0.45 && gy < 0.40;
+  }
+  if(pat==='chevron'){
+    var zz=frac(y), tw=Math.abs(zz*2-1);
+    gx=Math.abs(frac(x+tw*0.5)-0.5);
+    return gx < s*0.45;
+  }
+  if(pat==='gyroid'){                            /* a slice of the gyroid surface */
+    var X=TAU*x, Y=TAU*y;
+    var f=Math.cos(X)*Math.sin(Y)+Math.sin(X);
+    return Math.abs(f) > (1-s)*1.45;
+  }
+  if(pat==='sform'){                             /* the hole itself is a superformula */
+    row=Math.floor(y);
+    off=p.latStag ? (((row%2)+2)%2)*0.5 : 0;
+    cx=Math.floor(x-off)+0.5+off; cy=row+0.5;
+    dx=x-cx; dy=y-cy;
+    var d=Math.hypot(dx,dy);
+    if(d<1e-6) return true;
+    var rr=sfR(Math.atan2(dy,dx), p._hp)/(p._hmax||1);
+    return d < rr*s*0.55;
   }
   return false;
 }
@@ -666,12 +785,49 @@ function buildStamp(p){
   return {mesh:mesh, warn:null};
 }
 
-/* =====================  POD  (true 3D supershape) ========================= */
+/* =====================  POD  (true 3D supershape) =========================
+   Solid by default. Tick "hollow shell" and the same masked-shell primitive
+   the vessels use gets applied to a closed supershape surface — which is how
+   you get a latticed ball or a pierced seed pod.
+   Vertex normals are taken BEFORE the sit-flat clamp, so the inner surface
+   follows the true shape and only then gets flattened into a floor.
+========================================================================= */
+function normalsOf(A,U,V){
+  var N=[],v,u;
+  for(v=0;v<=V;v++){
+    var row=[];
+    for(u=0;u<U;u++){
+      var u1=(u+1)%U, u0=(u-1+U)%U;
+      var v1=Math.min(v+1,V), v0=Math.max(v-1,0);
+      var ax=A[v][u1][0]-A[v][u0][0], ay=A[v][u1][1]-A[v][u0][1], az=A[v][u1][2]-A[v][u0][2];
+      var bx=A[v1][u][0]-A[v0][u][0], by=A[v1][u][1]-A[v0][u][1], bz=A[v1][u][2]-A[v0][u][2];
+      var nx=ay*bz-az*by, ny=az*bx-ax*bz, nz=ax*by-ay*bx;   /* e_u x e_v = outward */
+      var L=Math.hypot(nx,ny,nz);
+      if(!(L>1e-9)){ nx=0; ny=0; nz=(v===0?-1:1); L=1; }
+      row.push([nx/L,ny/L,nz/L]);
+    }
+    N.push(row);
+  }
+  return N;
+}
+function gridVolume(G,U,V){
+  var vol=0,v,u;
+  function tet(a,b,c){
+    return (a[0]*(b[1]*c[2]-b[2]*c[1]) - a[1]*(b[0]*c[2]-b[2]*c[0]) + a[2]*(b[0]*c[1]-b[1]*c[0]))/6;
+  }
+  for(v=0;v<V;v++)for(u=0;u<U;u++){
+    var u1=(u+1)%U;
+    vol += tet(G[v][u],G[v][u1],G[v+1][u1]);
+    vol += tet(G[v][u],G[v+1][u1],G[v+1][u]);
+  }
+  return vol;
+}
 function buildPod(p){
   var mesh=new Mesh(), U=p.U, V=p.V;
   var m1=sfMax(p.cs), m2=sfMax(p.meri);
-  var G=[], v,u;
-  var minz=1e9,maxz=-1e9,maxxy=1e-6;
+  var A=[], v, u;
+  var minz=1e9, maxz=-1e9, maxxy=1e-6;
+
   for(v=0;v<=V;v++){
     var phi=-Math.PI/2 + (v/V)*Math.PI;
     var r2=sfR(phi,p.meri)/m2;
@@ -684,28 +840,58 @@ function buildPod(p){
       var z=r2*Math.sin(phi);
       row.push([x,y,z]);
       if(z<minz)minz=z; if(z>maxz)maxz=z;
-      var d=Math.hypot(x,y); if(d>maxxy)maxxy=d;
+      var dd=Math.hypot(x,y); if(dd>maxxy)maxxy=dd;
     }
-    G.push(row);
+    A.push(row);
   }
-  var sxy = (p.D/2)/maxxy;
-  var sz  = p.H/Math.max(maxz-minz,1e-6);
-  var z0  = minz + (maxz-minz)*p.trim;
+  var sxy=(p.D/2)/maxxy, sz=p.H/Math.max(maxz-minz,1e-6);
+  var z0=minz + (maxz-minz)*p.trim;
 
+  /* scale + twist, but DO NOT clamp yet — normals need the true surface */
   for(v=0;v<=V;v++)for(u=0;u<U;u++){
-    var q=G[v][u];
-    var zc = Math.max(q[2], z0);
-    var zz = (zc - z0)*sz;
-    var tw = (p.twist*Math.PI/180) * ((q[2]-minz)/Math.max(maxz-minz,1e-6));
+    var q=A[v][u];
+    var tw=(p.twist*Math.PI/180) * ((q[2]-minz)/Math.max(maxz-minz,1e-6));
     var ct=Math.cos(tw), st=Math.sin(tw);
-    var x=q[0]*sxy, y=q[1]*sxy;
-    G[v][u]=[ x*ct - y*st, x*st + y*ct, zz ];
+    var xx=q[0]*sxy, yy=q[1]*sxy;
+    A[v][u]=[ xx*ct - yy*st, xx*st + yy*ct, (q[2]-z0)*sz ];
   }
-  for(v=0;v<V;v++)for(u=0;u<U;u++){
-    var u1=(u+1)%U;
-    mesh.quad(G[v][u], G[v][u1], G[v+1][u1], G[v+1][u]);
+
+  if(!p.podHollow){
+    for(v=0;v<=V;v++)for(u=0;u<U;u++) A[v][u][2]=Math.max(A[v][u][2],0);
+    for(v=0;v<V;v++)for(u=0;u<U;u++){
+      var uu=(u+1)%U;
+      mesh.quad(A[v][u], A[v][uu], A[v+1][uu], A[v+1][u]);
+    }
+    return {mesh:mesh, warn:null};
   }
-  return {mesh:mesh, warn:null};
+
+  /* ---- hollow shell ---- */
+  var N=normalsOf(A,U,V);
+  var wall=p.wall;
+  var O=[], I=[];
+  for(v=0;v<=V;v++){
+    var ro=[], ri=[];
+    for(u=0;u<U;u++){
+      var a=A[v][u], n=N[v][u];
+      ro.push([a[0], a[1], Math.max(a[2],0)]);
+      ri.push([a[0]-n[0]*wall, a[1]-n[1]*wall, Math.max(a[2]-n[2]*wall, wall)]);
+    }
+    O.push(ro); I.push(ri);
+  }
+  var outerVol=gridVolume(O,U,V);
+
+  prep(p);
+  var cell=[];
+  for(v=0;v<V;v++){
+    var crow=[];
+    for(u=0;u<U;u++) crow.push(!voided(p,(u+0.5)/U,(v+0.5)/V));
+    cell.push(crow);
+  }
+  shell(mesh,O,I,cell,false,false);
+
+  var shellVol=gridVolume(O,U,V) - gridVolume(I,U,V);
+  var warn = (outerVol>0 && shellVol/outerVol > 0.92) ? 'wall' : null;
+  return {mesh:mesh, warn:warn};
 }
 
 /* =====================  DISPATCH  ======================================== */
@@ -824,6 +1010,7 @@ var P = {
   wall:2.4, floorT:3, closedBase:true, closedTop:false,
   drainN:0, drainS:0.45,
   perf:'none', perfA:14, perfB:10, perfS:0.5,
+  latStag:true, latBot:0.10, latTop:0.10, holeM:0, holeN:2, holeN2:2, podHollow:false,
   grip:false, gripW:2.8, gripH:3,
   plateT:4, reliefH:3,
   trim:0.12,
@@ -841,13 +1028,14 @@ var PRESETS={
   planter:{core:'lathe', H:105,D:115, ctrl:[0.62,0.80,0.94,1.00], cs:{m1:6,m2:6,n1:14,n2:14,n3:14,a:1,b:1},
            wall:3.0,floorT:4,closedBase:true,closedTop:false,perf:'none',drainN:5,drainS:0.45,grip:false,twist:0,fluteA:0.10,fluteN:16,waveA:0},
   shade:  {core:'lathe', H:180,D:160, ctrl:[0.48,0.84,1.00,0.92], cs:{m1:0,m2:0,n1:2,n2:2,n3:2,a:1,b:1},
-           wall:1.6,floorT:0,closedBase:false,closedTop:false,perf:'diam',perfA:16,perfB:12,perfS:0.5,drainN:0,grip:false,twist:15,fluteA:0,waveA:0},
+           wall:1.6,floorT:0,closedBase:false,closedTop:false,perf:'hex',perfA:16,perfB:11,perfS:0.62,latBot:0.12,latTop:0.08,drainN:0,grip:false,twist:15,fluteA:0,waveA:0},
   cutter: {core:'lathe', H:18,D:80,   ctrl:[1,1,1,1],             cs:{m1:5,m2:5,n1:0.6,n2:1.4,n3:1.4,a:1,b:1},
            wall:0.9,floorT:0,closedBase:false,closedTop:false,perf:'none',drainN:0,grip:true,gripW:2.8,gripH:3,twist:0,fluteA:0,waveA:0},
   stamp:  {core:'lathe', H:7,D:50,    ctrl:[1,1,1,1],             cs:{m1:5,m2:5,n1:0.6,n2:1.4,n3:1.4,a:1,b:1},
            plateT:4,reliefH:3,closedBase:true,perf:'none',drainN:0,grip:false,twist:0,fluteA:0,waveA:0},
   pod:    {core:'super', H:90,D:90,   cs:{m1:8,m2:8,n1:0.9,n2:1.0,n3:1.0,a:1,b:1},
-           meri:{m1:4,m2:4,n1:1.6,n2:1.2,n3:1.2,a:1,b:1}, trim:0.12, twist:0, fluteA:0, waveA:0}
+           meri:{m1:4,m2:4,n1:1.6,n2:1.2,n3:1.2,a:1,b:1}, trim:0.12, twist:0, fluteA:0, waveA:0,
+           podHollow:false, wall:2.0, perf:'none', latBot:0.14, latTop:0.14}
 };
 var NOTES={
   vase:'A lathed vessel — hollow, open at the top, flat on the bed. Print it in spiral/vase mode for a seamless single-wall finish.',
@@ -868,13 +1056,14 @@ var SLIDERS = {
   lay:['lay','vLay',0,null], W:['W','vW',1,null], F:['F','vF',1,null],
   Dn:['Dn','vDn',0,null], Ds:['Ds','vDs',0,null],
   Pa:['Pa','vPa',0,null], Pb:['Pb','vPb',0,null], Ps:['Ps','vPs',0,null],
+  Hm:['Hm','vHm',0,null], Hn:['Hn','vHn',1,null], Lb:['Lb','vLb',0,null], Lt:['Lt','vLt',0,null],
   Gw:['Gw','vGw',1,null], Gh:['Gh','vGh',1,null],
   Sp:['Sp','vSp',1,null], Sr:['Sr','vSr',1,null], Tr:['Tr','vTr',0,null],
   Tw:['Tw','vTw',0,null], Fn:['Fn','vFn',0,null], Fa:['Fa','vFa',0,null],
   Wn:['Wn','vWn',0,null], Wa:['Wa','vWa',0,null], Oa:['Oa','vOa',0,null], Sd:['Sd','vSd',0,null],
   Nz:['Nz','vNz',2,null], Ol:['Ol','vOl',0,null]
 };
-var PCT={c0:1,c1:1,c2:1,c3:1,Ds:1,Ps:1,Fa:1,Wa:1,Oa:1,Tr:1};
+var PCT={c0:1,c1:1,c2:1,c3:1,Ds:1,Ps:1,Fa:1,Wa:1,Oa:1,Tr:1,Lb:1,Lt:1};
 var DEG={Tw:1,Ol:1};
 
 function readUI(){
@@ -886,6 +1075,9 @@ function readUI(){
   P.wall=+$('W').value; P.floorT=+$('F').value; P.closedBase=$('cBase').checked;
   P.drainN=+$('Dn').value; P.drainS=+$('Ds').value/100;
   P.perfA=+$('Pa').value; P.perfB=+$('Pb').value; P.perfS=+$('Ps').value/100;
+  P.holeM=+$('Hm').value; P.holeN=+$('Hn').value; P.holeN2=+$('Hn').value;
+  P.latBot=+$('Lb').value/100; P.latTop=+$('Lt').value/100;
+  P.latStag=$('stag').checked; P.podHollow=$('podH').checked;
   P.gripW=+$('Gw').value; P.gripH=+$('Gh').value;
   P.plateT=+$('Sp').value; P.reliefH=+$('Sr').value; P.trim=+$('Tr').value/100;
   P.twist=+$('Tw').value; P.fluteN=+$('Fn').value; P.fluteA=+$('Fa').value/100;
@@ -903,6 +1095,9 @@ function writeUI(){
   $('lay').value=P.layers; $('W').value=P.wall; $('F').value=P.floorT; $('cBase').checked=P.closedBase;
   $('Dn').value=P.drainN; $('Ds').value=Math.round(P.drainS*100);
   $('Pa').value=P.perfA; $('Pb').value=P.perfB; $('Ps').value=Math.round(P.perfS*100);
+  $('Hm').value=P.holeM; $('Hn').value=P.holeN;
+  $('Lb').value=Math.round(P.latBot*100); $('Lt').value=Math.round(P.latTop*100);
+  $('stag').checked=P.latStag; $('podH').checked=P.podHollow;
   $('Gw').value=P.gripW; $('Gh').value=P.gripH;
   $('Sp').value=P.plateT; $('Sr').value=P.reliefH; $('Tr').value=Math.round(P.trim*100);
   $('Tw').value=P.twist; $('Fn').value=P.fluteN; $('Fa').value=Math.round(P.fluteA*100);
@@ -940,9 +1135,10 @@ function visibility(){
   show('meriBox', P.core==='super');
   show('profBox', vessel);
   show('terrBox', P.core==='terr');
-  show('hollowBox', vessel);
   show('drainBox', vessel && (o==='planter'||o==='bowl'||o==='vase'));
-  show('perfBox', vessel && o!=='cutter' && o!=='stamp');
+  show('perfBox', (vessel && o!=='cutter' && o!=='stamp') || (P.core==='super' && P.podHollow));
+  show('sformBox', P.perf==='sform');
+  show('hollowBox', vessel || (P.core==='super' && P.podHollow));
   show('gripBox', o==='cutter');
   show('stampBox', o==='stamp');
   show('trimBox', P.core==='super');
@@ -1028,19 +1224,51 @@ function statsPanel(warn){
     st('Triangles','<span>'+ST.tris.toLocaleString()+'</span>');
   var a=$('advice'), msgs=[];
   if(!WT.ok) msgs.push('<b>Not watertight.</b> '+WT.openEdges+' open edges — a slicer will choke. Ease the trim, thin the wall, or shrink the perforations.');
-  if(warn==='wall') msgs.push('<b>Wall too thick for this shape.</b> The cavity is collapsing on itself. Reduce the wall, or widen the narrowest part of the profile.');
+  if(warn==='wall') msgs.push('<b>Wall too thick for this shape.</b> The cavity has all but closed up. Reduce the wall, or widen the narrowest part of the shape.');
   if(P.wall < P.nozzle*2 && P.obj!=='cutter') msgs.push('<b>Wall is under two nozzle widths.</b> A '+P.nozzle+' mm nozzle wants '+(P.nozzle*2).toFixed(1)+' mm minimum, unless you are printing in vase mode.');
   if(ST.overhang>0.10) msgs.push('<b>'+(ST.overhang*100).toFixed(0)+'% of the surface overhangs past '+P.limit+'\u00b0.</b> Expect supports, or lift the profile so the walls climb more steeply.');
   if(!msgs.length) msgs.push('<b>Ready to slice.</b> Watertight, on the bed, and inside your overhang limit.');
   a.innerHTML=msgs.join('<br><br>');
   a.className='note'+((!WT.ok||warn)?' alert':'');
-  $('dlStl').disabled = !WT.ok;
+  /* Export only what a slicer can actually swallow: watertight AND not turned
+     inside out by an impossible wall. Both gates, or no STL. */
+  $('dlStl').disabled = !WT.ok || warn==='wall' || ST.signed<=0;
+  $('dlStl').textContent = $('dlStl').disabled ? 'Fix the mesh first' : 'Download STL';
+  latticeNote();
 }
 function st(k,v){ return '<div class="stat"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+
+/* how big are the lattice cells and struts, really, in millimetres */
+function latticeNote(){
+  var el=$('latNote'); if(!el) return;
+  if(P.perf==='none'){
+    el.className='note';
+    el.innerHTML='<b>Solid wall.</b> Pick a lattice and the openings are cut clean through &mdash; the shell stitches its own side walls around every hole, so the mesh stays watertight.';
+    return;
+  }
+  var meanR;
+  if(P.core==='super'){ meanR=P.D/2*0.72; }
+  else {
+    var sum=0; for(var i=0;i<=10;i++) sum+=E.profileR(i/10,P.ctrl);
+    meanR=P.D/2*(sum/11);
+  }
+  var circ=2*Math.PI*meanR;
+  var band=P.H*Math.max(1-P.latBot-P.latTop,0.02);
+  var cA=circ/P.perfA, cB=band/P.perfB;
+  var strut=Math.min(cA,cB)*(1-P.perfS);
+  var minS=P.nozzle*2;
+  var bad=strut<minS;
+  el.className='note'+(bad?' alert':'');
+  el.innerHTML='<b>Cell \u2248 '+cA.toFixed(1)+' \u00d7 '+cB.toFixed(1)+' mm.</b> Strut \u2248 '+strut.toFixed(1)+' mm'+
+    (bad ? ' &mdash; thinner than two passes of a '+P.nozzle+' mm nozzle ('+minS.toFixed(1)+' mm). Shrink the opening or use fewer cells, or it will print as a fragile smear.'
+         : ' &mdash; that is '+Math.max(1,Math.round(strut/P.nozzle))+' passes of a '+P.nozzle+' mm nozzle. Sound.');
+}
 
 /* ================= WEBGL ================= */
 var gl, prog, plateProg, buf, nbuf, vcount, plateBuf;
 var cam={yaw:0.6, pitch:0.32, dist:2.4};
+var ZMIN=0.45, ZMAX=9;                       /* 0.45 gets you right inside a lattice cell */
+function zoom(f){ cam.dist=Math.max(ZMIN,Math.min(ZMAX,cam.dist*f)); }
 var showOver=true, showWire=false, showPlate=true;
 
 function initGL(){
@@ -1133,7 +1361,7 @@ function draw(){
   var d=span*cam.dist;
   var Rm=mul(rotX(-Math.PI/2+cam.pitch), rotZ(cam.yaw));
   var Mv=mul(trans(0,0,-d), mul(Rm, trans(0,0,-ST.bbox[2]/2)));
-  var Pj=persp(0.85, w/h, span*0.05, d+span*6);
+  var Pj=persp(0.85, w/h, Math.max(d*0.02, span*0.004), d+span*6);
   var MVP=mul(Pj,Mv);
 
   if(showPlate){
@@ -1177,18 +1405,26 @@ function bindDrag(cv){
   });
   cv.addEventListener('pointerup',function(){down=false;});
   cv.addEventListener('pointercancel',function(){down=false;});
-  cv.addEventListener('wheel',function(e){e.preventDefault();cam.dist=Math.max(0.9,Math.min(8,cam.dist*(1+e.deltaY*0.0012)));},{passive:false});
+  cv.addEventListener('wheel',function(e){e.preventDefault();zoom(1+e.deltaY*0.0012);},{passive:false});
+  cv.addEventListener('dblclick',function(e){e.preventDefault();zoom(cam.dist>ZMIN*1.6?0.55:1/0.55);});
   var pts={};
   cv.addEventListener('touchmove',function(e){
     if(e.touches.length===2){
       e.preventDefault();
       var dx=e.touches[0].clientX-e.touches[1].clientX, dy=e.touches[0].clientY-e.touches[1].clientY;
       var d=Math.hypot(dx,dy);
-      if(pd) cam.dist=Math.max(0.9,Math.min(8,cam.dist*(pd/d)));
+      if(pd) zoom(pd/d);
       pd=d; down=false;
     }
   },{passive:false});
   cv.addEventListener('touchend',function(){pd=0;});
+  var lastTap=0;
+  cv.addEventListener('touchend',function(e){
+    if(e.touches.length) return;
+    var t=Date.now();
+    if(t-lastTap<300){ zoom(cam.dist>ZMIN*1.6?0.55:1/0.55); lastTap=0; }
+    else lastTap=t;
+  });
 }
 
 /* ---------------- downloads ---------------- */
@@ -1206,7 +1442,7 @@ function boot(){
       var b=e.target.closest('button'); if(!b)return;
       if(id==='objSeg'){ applyObject(b.getAttribute('data-o')); return; }
       if(id==='coreSeg'){ P.core=b.getAttribute('data-c'); }
-      if(id==='perfSeg'){ P.perf=b.getAttribute('data-p'); }
+      if(id==='perfSeg'){ P.perf=b.getAttribute('data-p'); if(P.perf==='sform'&&P.holeM===0&&P.holeN===2){} }
       if(id==='bedSeg'){ P.bed=b.getAttribute('data-b').split(',').map(Number); }
       if(id==='matSeg'){ P.density=+b.getAttribute('data-m'); }
       if(id==='resSeg'){ var r=b.getAttribute('data-r').split(',').map(Number); P.U=r[0]; P.V=r[1]; }
@@ -1219,6 +1455,8 @@ function boot(){
     })($(SLIDERS[k][0]));
   }
   $('cBase').addEventListener('change',rebuild);
+  $('stag').addEventListener('change',rebuild);
+  $('podH').addEventListener('change',function(){ P.podHollow=this.checked; visibility(); rebuild(); });
   $('rand').addEventListener('click',randomise);
   $('undo').addEventListener('click',function(){
     if(!HIST.length)return;
@@ -1231,7 +1469,13 @@ function boot(){
   $('vOver').addEventListener('click',function(){showOver=!showOver;this.classList.toggle('on',showOver);});
   $('vWire').addEventListener('click',function(){showWire=!showWire;this.classList.toggle('on',showWire);});
   $('vPlate').addEventListener('click',function(){showPlate=!showPlate;this.classList.toggle('on',showPlate);});
-  $('vReset').addEventListener('click',function(){cam={yaw:0.6,pitch:0.32,dist:2.4};});
+  $('vReset').addEventListener('click',function(){cam.yaw=0.6;cam.pitch=0.32;cam.dist=2.4;});
+  $('zIn').addEventListener('click',function(){zoom(0.78);});
+  $('zOut').addEventListener('click',function(){zoom(1/0.78);});
+  $('zFit').addEventListener('click',function(){cam.dist=2.4;});
+  $('shrink').addEventListener('click',function(){
+    document.querySelector('.stage').classList.toggle('compact');
+  });
 
   var cols=['#d9dbd6','#2f7360','#b5462a','#d4922a','#3a4a63','#e8e2d0','#1d1a17'];
   $('swatches').innerHTML=cols.map(function(c,i){return '<div class="sw'+(i===0?' on':'')+'" data-c="'+c+'" style="background:'+c+'"></div>';}).join('');
