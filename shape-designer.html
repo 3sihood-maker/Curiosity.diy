@@ -225,6 +225,15 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
 .control .num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .control .num:focus{outline:2px solid var(--laser);outline-offset:1px;background:#fff}
 .control .num:disabled{opacity:.4}
+.numwrap{display:flex;align-items:center;gap:3px}
+.stp{
+  width:22px;height:24px;flex:0 0 auto;border:1.5px solid var(--linen-line);
+  background:#fff;border-radius:6px;cursor:pointer;color:var(--char);
+  font:600 14px/1 'Inter',sans-serif;padding:0;
+}
+.stp:active{background:var(--linen-line)}
+.stp:focus-visible{outline:2px solid var(--laser);outline-offset:1px}
+.viewbar .stp{display:none}
 .control .unit{font-family:var(--mono);font-size:11px;color:var(--engrave-dim);margin-left:5px}
 .viewbar .control .num{
   width:58px;background:rgba(217,181,134,.12);border-color:var(--burn);
@@ -341,6 +350,13 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
   color:var(--engrave);line-height:1.5;vertical-align:top}
 .mn-t tbody tr:nth-child(even){background:rgba(255,255,255,.45)}
 .mn-t td:first-child{font-weight:500;color:var(--char);white-space:nowrap}
+.asm-views{display:flex;gap:10px}
+.asm-views figure{flex:1;margin:0}
+#asmBody figure{margin:0 0 14px}
+#asmBody figcaption{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--engrave-dim);margin-top:5px;text-align:center;
+}
 @media (max-width:600px){
   .mn-t td:first-child{white-space:normal}
   .mn-t,.mn-t th,.mn-t td{font-size:12.5px}
@@ -352,6 +368,7 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
   .mn-body{max-width:none;padding:0}
   .mn-h{break-after:avoid;page-break-after:avoid}
   .mn-t,.mn-note,li{break-inside:avoid;page-break-inside:avoid}
+  #asmBody figure,#asmBody img{break-inside:avoid;page-break-inside:avoid}
   .mn-t th{background:#2e1a0b !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 #renderModal{
@@ -489,6 +506,7 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
       </div>
       <div id="minwCtl"></div>
       <div class="toggles" style="margin-bottom:0">
+        <button class="toggle" id="tgEvenZ">Even layer spacing</button>
         <button class="toggle on" id="tgClean">Clean lines</button>
       </div>
       <div class="hint">Cleaning removes doubled-up points and the tiny
@@ -1081,7 +1099,12 @@ function buildModel(p,fab,mods){
       }
     }
     if(bi<0)bi=ni;
-    cand.push({z:zsv[bi]*zS,r2:r2[bi],cth:Math.cos(th[bi])});
+    /* Even layer spacing: the stations are TARGETED evenly, but normally
+       snap to the nearest outer-branch sample — which can drift each layer
+       by up to half a gap, so the finished stack breathes unevenly. In even
+       mode the layer keeps the snapped sample's SIZE (the true silhouette
+       radius near that height) but sits at exactly the even station.      */
+    cand.push({z:(fab.evenZ?zt:zsv[bi])*zS,r2:r2[bi],cth:Math.cos(th[bi])});
   }
   cand.sort((a,b)=>a.z-b.z);
   let slabs=[];
@@ -1945,7 +1968,7 @@ VIEW_DEFS.forEach(d=>{viewS[d.k]=d.v;});
 fab.hollow=false;fab.ends='bowl';fab.fitMode=false;
 fab.capBot=true;fab.capTop=false;fab.ribAlign='perp';
 fab.roundTop=false;fab.roundBot=false;fab.clean=true;fab.grain='lock';
-fab.flat=false;fab.ribJoin='inside';fab.ribShape='curved';
+fab.flat=false;fab.ribJoin='inside';fab.ribShape='curved';fab.evenZ=false;
 
 const outputs={},sliders={},nums={};
 /* Every slider carries a number you can type into. A slider is fine for
@@ -1960,7 +1983,37 @@ function buildSlider(host,d,onInput,cls){
   num.type='number';num.className='num';
   num.min=d.min;num.max=d.max;num.step=d.step;num.value=d.v;
   num.setAttribute('aria-label',d.label+' value');
-  row.appendChild(num);
+  /* − / + steppers: a slider is for hunting, the box is for exact numbers,
+     and the arrows are for the last nudge — one step at a time, hold to
+     repeat. */
+  const numwrap=document.createElement('span');
+  numwrap.className='numwrap';
+  const mkStep=(txt,dir)=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='stp';b.textContent=txt;
+    b.setAttribute('aria-label',(dir>0?'increase ':'decrease ')+d.label);
+    let t1=null,t2=null;
+    const once=()=>{
+      let v=parseFloat(num.value);
+      if(!isFinite(v))v=parseFloat(s.value);
+      v=Math.max(d.min,Math.min(d.max,v+dir*d.step));
+      v=Math.round(v/d.step)*d.step;
+      v=parseFloat(v.toFixed(4));
+      num.value=v;s.value=v;
+      onInput(v);
+    };
+    b.addEventListener('click',e=>{e.preventDefault();once();});
+    b.addEventListener('pointerdown',()=>{
+      t1=setTimeout(()=>{t2=setInterval(once,90);},450);
+    });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>
+      b.addEventListener(ev,()=>{clearTimeout(t1);clearInterval(t2);}));
+    return b;
+  };
+  numwrap.appendChild(mkStep('−',-1));
+  numwrap.appendChild(num);
+  numwrap.appendChild(mkStep('+',1));
+  row.appendChild(numwrap);
   wrap.appendChild(row);
   const s=document.createElement('input');
   s.type='range';s.className='slider'+(cls?' '+cls:'');
@@ -2036,7 +2089,7 @@ function restore(sn){
     outputs[d.k].textContent=d.fmt(sn.fab[d.k]);
   });
   ['hollow','fitMode','flat','capBot','capTop','ribAlign','ribJoin','ribShape',
-   'roundTop','roundBot','clean','grain'].forEach(k=>{fab[k]=sn.fab[k];});
+   'roundTop','roundBot','clean','grain','evenZ'].forEach(k=>{fab[k]=sn.fab[k];});
   syncConstraints();clearActivePreset();markDirty();
 }
 undoBtn.addEventListener('click',()=>{
@@ -2058,6 +2111,8 @@ const tgCapBot=document.getElementById('tgCapBot');
 const tgCapTop=document.getElementById('tgCapTop');
 const tgRoundTop=document.getElementById('tgRoundTop');
 const tgRoundBot=document.getElementById('tgRoundBot');
+const tgEvenZ=document.getElementById('tgEvenZ');
+tgEvenZ.addEventListener('click',()=>{fab.evenZ=!fab.evenZ;tgEvenZ.classList.toggle('on',fab.evenZ);markDirty();});
 const tgClean=document.getElementById('tgClean');
 const grainRow=document.getElementById('grainRow');
 function syncConstraints(){
@@ -2076,6 +2131,7 @@ function syncConstraints(){
   tgRoundTop.disabled=fab.flat;
   tgRoundBot.disabled=fab.flat;
   tgClean.classList.toggle('on',fab.clean);
+  tgEvenZ.classList.toggle('on',!!fab.evenZ);
   grainRow.querySelectorAll('.chip').forEach(c=>{
     c.classList.toggle('active',c.dataset.g===fab.grain);
   });
@@ -2518,6 +2574,7 @@ function applyDesign(d){
     ['roundTop','roundBot','clean'].forEach(k=>{
       if(typeof d.fab[k]==='boolean')fab[k]=d.fab[k];
     });
+    if(typeof d.fab.evenZ==='boolean')fab.evenZ=d.fab.evenZ;
     if(['inside','outside','flush'].includes(d.fab.ribJoin))fab.ribJoin=d.fab.ribJoin;
     if(['curved','angled','straight'].includes(d.fab.ribShape))fab.ribShape=d.fab.ribShape;
     syncConstraints();
@@ -2795,17 +2852,63 @@ const assembly=document.getElementById('assembly');
 const asmBody=document.getElementById('asmBody');
 function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 function buildAssemblyGuide(){
-  /* a snapshot of THIS design: exploded, labelled, on white for the printer */
-  const keepEx=viewS.explode,keepLab=labels3d,keepTilt=viewS.tilt;
-  viewS.explode=Math.max(viewS.explode,55);
-  viewS.tilt=Math.abs(viewS.tilt)<14?18:viewS.tilt;
+  /* snapshots of THIS design, labelled, on white for the printer:
+     the assembled piece from top / side / three-quarter, plus exploded */
+  const keepEx=viewS.explode,keepLab=labels3d,keepTilt=viewS.tilt,keepRot=rot;
   labels3d=true;
-  const c=document.createElement('canvas');
-  c.width=1280;c.height=1060;
-  const cg=c.getContext('2d');
-  cg.fillStyle='#ffffff';cg.fillRect(0,0,c.width,c.height);
-  drawScene(cg,c.width,c.height,1.7);
-  viewS.explode=keepEx;labels3d=keepLab;viewS.tilt=keepTilt;
+  rot=0.55;
+  const shot=(tilt,explode,w,h,lw)=>{
+    viewS.tilt=tilt;viewS.explode=explode;
+    const cv=document.createElement('canvas');
+    cv.width=w;cv.height=h;
+    const g2=cv.getContext('2d');
+    g2.fillStyle='#ffffff';g2.fillRect(0,0,w,h);
+    drawScene(g2,w,h,lw);
+    return cv.toDataURL('image/png');
+  };
+  const topView=shot(88,0,760,700,1.5);
+  const sideView=shot(3,0,760,700,1.5);
+  const tqView=shot(30,0,760,700,1.5);
+  const explView=shot(20,60,1280,1060,1.7);
+  viewS.explode=keepEx;labels3d=keepLab;viewS.tilt=keepTilt;rot=keepRot;
+
+  /* the cut sheets, redrawn with labels big enough to read on paper */
+  const lay=GEO.layoutSheets(model,fab);
+  const sheetImgs=lay.sheets.map((sh,si)=>{
+    const scale=Math.min(1100/sh.w,900/sh.h);
+    const cv=document.createElement('canvas');
+    cv.width=Math.round(sh.w*scale);cv.height=Math.round(sh.h*scale);
+    const g2=cv.getContext('2d');
+    g2.fillStyle='#ffffff';g2.fillRect(0,0,cv.width,cv.height);
+    g2.strokeStyle='#a08054';g2.lineWidth=1;
+    g2.setLineDash([6,6]);
+    g2.strokeRect(1,1,cv.width-2,cv.height-2);
+    g2.setLineDash([]);
+    sh.parts.forEach(pp=>{
+      const draw=poly=>{
+        g2.beginPath();
+        poly.forEach((q,i)=>{
+          const x=(q[0]+pp.px)*scale,y=(q[1]+pp.py)*scale;
+          if(i===0)g2.moveTo(x,y);else g2.lineTo(x,y);
+        });
+        g2.closePath();
+        g2.stroke();
+      };
+      g2.strokeStyle='#b5402a';g2.lineWidth=1.1;
+      draw(pp.f.outer);
+      if(pp.f.inner)draw(pp.f.inner);
+      const ref=pp.f.inner||pp.f.outer;
+      let cx=0,cy=0;
+      ref.forEach(q=>{cx+=q[0];cy+=q[1];});
+      cx=(cx/ref.length+pp.px)*scale;cy=(cy/ref.length+pp.py)*scale;
+      g2.font='700 '+Math.max(20,Math.round(26*scale))+'px "JetBrains Mono",monospace';
+      g2.textAlign='center';g2.textBaseline='middle';
+      g2.fillStyle='#2e1a0b';
+      g2.fillText(pp.label,cx,cy);
+    });
+    return {src:cv.toDataURL('image/png'),
+            caption:'Sheet '+(si+1)+' of '+lay.sheets.length+' · '+sh.w+'×'+sh.h+'mm'};
+  });
 
   const L=model.slabs.length,R=model.ribs.length;
   const layerRows=model.slabs.map((sl,j)=>{
@@ -2842,12 +2945,23 @@ function buildAssemblyGuide(){
   if(model.capTop)steps.push('The solid top (L'+L+') caps the piece — it goes on last.');
   steps.push('If any joint fights you, stop. Check kerf with a test comb and recut that part rather than splitting the ply.');
 
+  const IMG='style="width:100%;border-radius:10px;border:1px solid var(--linen-line)"';
   asmBody.innerHTML=
     '<h2 class="mn-title">Assembly <em>guide</em></h2>'+
     '<div class="mn-sub">'+esc(new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}))+
     ' · Ø'+Math.round(2*model.maxRadius)+'mm · h '+Math.round(model.height)+'mm · '+
     esc(fab.T)+'mm material · kerf '+esc(fab.kerf)+'mm</div>'+
-    '<img src="'+c.toDataURL('image/png')+'" style="width:100%;border-radius:10px;border:1px solid var(--linen-line)" alt="Exploded view">'+
+    '<h3 class="mn-h">The finished piece</h3>'+
+    '<div class="asm-views">'+
+      '<figure><img src="'+topView+'" '+IMG+' alt="Top view"><figcaption>Top</figcaption></figure>'+
+      '<figure><img src="'+sideView+'" '+IMG+' alt="Side view"><figcaption>Side</figcaption></figure>'+
+      '<figure><img src="'+tqView+'" '+IMG+' alt="Three-quarter view"><figcaption>Three-quarter</figcaption></figure>'+
+    '</div>'+
+    '<h3 class="mn-h">How it comes apart</h3>'+
+    '<img src="'+explView+'" '+IMG+' alt="Exploded view">'+
+    '<h3 class="mn-h">The cut sheets</h3>'+
+    sheetImgs.map(si=>'<figure class="asm-sheet"><img src="'+si.src+'" '+IMG+
+      ' alt="'+esc(si.caption)+'"><figcaption>'+esc(si.caption)+'</figcaption></figure>').join('')+
     '<h3 class="mn-h">Parts</h3>'+
     '<table class="mn-t"><thead><tr><th>Layer</th><th>Width</th><th>Type</th></tr></thead><tbody>'+layerRows+'</tbody></table>'+
     (R?'<table class="mn-t"><thead><tr><th>Rib</th><th>Size</th><th>Holds</th></tr></thead><tbody>'+ribRows+'</tbody></table>'
