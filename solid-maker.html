@@ -215,6 +215,7 @@ footer p{margin:12px 0 0}
             <button data-o="shade">Lamp shade</button>
             <button data-o="cutter">Cutter</button>
             <button data-o="stamp">Stamp</button>
+            <button data-o="ball">Ball</button>
             <button data-o="pod">Pod</button>
           </div>
         </div>
@@ -1033,6 +1034,10 @@ var PRESETS={
            wall:0.9,floorT:0,closedBase:false,closedTop:false,perf:'none',drainN:0,grip:true,gripW:2.8,gripH:3,twist:0,fluteA:0,waveA:0},
   stamp:  {core:'lathe', H:7,D:50,    ctrl:[1,1,1,1],             cs:{m1:5,m2:5,n1:0.6,n2:1.4,n3:1.4,a:1,b:1},
            plateT:4,reliefH:3,closedBase:true,perf:'none',drainN:0,grip:false,twist:0,fluteA:0,waveA:0},
+  ball:   {core:'super', H:80,D:80,   cs:{m1:0,m2:0,n1:2,n2:2,n3:2,a:1,b:1},
+           meri:{m1:0,m2:0,n1:2,n2:2,n3:2,a:1,b:1}, trim:0.06, twist:0, fluteA:0, waveA:0,
+           podHollow:true, wall:2.0, perf:'sform', holeM:0, holeN:2, holeN2:2,
+           perfA:14, perfB:9, perfS:0.62, latStag:true, latBot:0.10, latTop:0.10},
   pod:    {core:'super', H:90,D:90,   cs:{m1:8,m2:8,n1:0.9,n2:1.0,n3:1.0,a:1,b:1},
            meri:{m1:4,m2:4,n1:1.6,n2:1.2,n3:1.2,a:1,b:1}, trim:0.12, twist:0, fluteA:0, waveA:0,
            podHollow:false, wall:2.0, perf:'none', latBot:0.14, latTop:0.14}
@@ -1044,7 +1049,8 @@ var NOTES={
   shade:'Open top and bottom, thin wall, perforated. Prints without supports if the perforations stay small.',
   cutter:'Open both ends. Thin blade at the bottom, thicker grip band at the top. Blade wall of 0.8–1.0 mm cuts best.',
   stamp:'Prints face-up on a solid plate — no supports, best detail. Glue a knob to the back once it is off the bed.',
-  pod:'The true 3D supershape: two superformulas multiplied. Solid, not hollow. Trim the underside so it sits on the bed.'
+  ball:'A sphere is just m=0, n=2 in both superformulas \u2014 nudge either one and it stops being a ball. Hollow and latticed by default: a solid ball is a waste of filament, a latticed one is an ornament. The lower hemisphere is a genuine overhang, so either accept supports or raise the trim until it sits on a real flat.',
+  pod:'The true 3D supershape: two superformulas multiplied. Trim the underside so it sits on the bed, and tick hollow shell to open it up to the lattice.'
 };
 
 /* ---------------- controls wiring ---------------- */
