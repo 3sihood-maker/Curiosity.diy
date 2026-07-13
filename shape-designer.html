@@ -394,10 +394,30 @@ aside > section:nth-last-of-type(2){background:none;border:none;box-shadow:none;
     box-shadow:0 16px 34px rgba(0,0,0,.5);
   }
   .stage{height:42vh;height:42dvh}
-  .viewbar{gap:10px;padding:7px 10px;overflow-x:auto}
+  /* The view bar was a single row of sliders, number boxes and buttons on a
+     360px screen — the pieces sat on top of each other. On a phone it becomes
+     two rows: the sliders share the top, the buttons get a row of their own,
+     each big enough for a thumb. Nothing overflows and nothing overlaps.  */
+  .viewbar{
+    gap:7px;padding:8px 10px;overflow:visible;
+    flex-wrap:wrap;align-items:stretch;
+  }
   .viewbar .vb-tag{display:none}
-  .viewbar #viewCtl{gap:12px}
-  .viewbar .control{min-width:130px}
+  .viewbar #viewCtl{
+    order:1;flex:1 1 100%;gap:14px;min-width:0;
+  }
+  .viewbar .control{flex:1 1 0;min-width:0;gap:7px}
+  .viewbar .control .row{flex:0 0 auto;gap:5px}
+  .viewbar .control label{font-size:11px}
+  .viewbar .control .num{
+    width:44px;font-size:11px;padding:2px 3px;text-align:center;
+  }
+  .viewbar .slider{min-width:0;height:26px}
+  .viewbar .vb-spin{
+    order:2;flex:1 1 0;min-width:0;
+    padding:9px 6px;font-size:12px;text-align:center;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
   aside{border-left:none;overflow:visible;padding-bottom:90px}
   .summary{font-size:10px;padding:7px 10px;left:10px;bottom:8px;line-height:1.6}
   .viewtabs{top:8px;right:8px}
@@ -1216,7 +1236,12 @@ function buildModel(p,fab,mods){
     }
     return chain[chain.length-1][0];
   };
-  let ribSkipped=0,ribFlats=0;
+  /* Which LAYERS end up unheld — not how many rib-layer pairs were skipped.
+     Summing per rib gave nonsense like "ribs stop short of 32 layers" on a
+     10-layer stack (8 ribs × 4 layers each). What matters to the person at
+     the bench is: how many layers has no rib reached?                     */
+  const skippedLayers=new Set();
+  let ribFlats=0;
   for(let k=0;k<M;k++){
     /* THE RIB IS DEFINED BY THE LAYERS IT HOLDS.
        Its silhouette is drawn THROUGH the rim of each layer it meets, at that
@@ -1366,7 +1391,7 @@ function buildModel(p,fab,mods){
       if(jrows.length<2)break;
       for(let j=0;j<slabs.length;j++)if(j<bs||j>=bs+bl)mids[j][k]=null;
       jrows.forEach(r=>{mids[r.j][k]=r.m;});
-      ribSkipped+=slabs.length-bl;
+      for(let j=0;j<slabs.length;j++)if(j<bs||j>=bs+bl)skippedLayers.add(j);
       ribFlats+=flatRows.length;
 
       /* round the ends if asked: a fillet on the outer corners, radius kept
@@ -1618,7 +1643,20 @@ function buildModel(p,fab,mods){
   const hActual=slabs[slabs.length-1].z-slabs[0].z+fab.T;
   return {slabs,ribs,S,zmin:zmin*zS,zmax:zmax*zS,stackFx,cropped,twist:twistA,
           hollowFailed,capBot,capTop,ribSkew,ribsCapped,ribFlats,
-          grip:gripGot,gripMin,gripWanted,ribSkipped,
+          grip:gripGot,gripMin,gripWanted,
+          ribSkipped:(function(){
+            /* a layer only counts as unheld if NO rib reaches it */
+            let n=0;
+            skippedLayers.forEach(j=>{
+              const held=ribs.some(rb=>{
+                let lo=1e9,hi=-1e9;
+                rb.pts.forEach(q=>{lo=Math.min(lo,q[1]);hi=Math.max(hi,q[1]);});
+                return slabs[j].z>lo-0.5&&slabs[j].z<hi+0.5;
+              });
+              if(!held)n++;
+            });
+            return n;
+          })(),
           maxRadius:fab.D/2,height:hActual,ws,flat:false};
 }
 
@@ -1881,22 +1919,26 @@ if(typeof module!=='undefined'&&module.exports)module.exports=GEO;
 "use strict";
 if(typeof document==='undefined')return;
 
+/* The opening shape is a real, cuttable design — a soft six-lobed bowl with
+   three flush ribs, the sort of thing that comes off the laser and goes
+   together first try. The old default (spiky, 8 ribs, solid) looked dramatic
+   and told you nothing about whether the tool worked.                      */
 const SHAPE_DEFS=[
   {k:'m1',label:'m₁',hint:'symmetry · cos',min:0,max:24,step:0.05,v:6},
   {k:'m2',label:'m₂',hint:'symmetry · sin',min:0,max:24,step:0.05,v:6},
-  {k:'n1',label:'n₁',hint:'overall pinch',min:0.1,max:20,step:0.05,v:2},
-  {k:'n2',label:'n₂',hint:'cos exponent',min:0.05,max:20,step:0.05,v:7},
-  {k:'n3',label:'n₃',hint:'sin exponent',min:0.05,max:20,step:0.05,v:7},
-  {k:'a',label:'a',hint:'cos scale',min:0.1,max:3,step:0.01,v:1},
-  {k:'b',label:'b',hint:'sin scale',min:0.1,max:3,step:0.01,v:1},
+  {k:'n1',label:'n₁',hint:'overall pinch',min:0.1,max:20,step:0.05,v:1},
+  {k:'n2',label:'n₂',hint:'cos exponent',min:0.05,max:20,step:0.05,v:1},
+  {k:'n3',label:'n₃',hint:'sin exponent',min:0.05,max:20,step:0.05,v:2.05},
+  {k:'a',label:'a',hint:'cos scale',min:0.1,max:3,step:0.01,v:0.67},
+  {k:'b',label:'b',hint:'sin scale',min:0.1,max:3,step:0.01,v:1.52},
 ];
 const SMOOTH_DEFS=[
-  {k:'smooth',label:'Smoother',hint:'clean up the curves',min:0,max:100,step:1,v:0,fmt:v=>Math.round(v)+'%'},
+  {k:'smooth',label:'Smoother',hint:'clean up the curves',min:0,max:100,step:1,v:25,fmt:v=>Math.round(v)+'%'},
 ];
 const MOD_KEEP=[
   {k:'sx',label:'Scale X',hint:'stretch across',min:0.4,max:2,step:0.01,v:1,fmt:v=>v.toFixed(2)+'×'},
   {k:'sy',label:'Scale Y',hint:'stretch deep',min:0.4,max:2,step:0.01,v:1,fmt:v=>v.toFixed(2)+'×'},
-  {k:'sz',label:'Scale Z',hint:'stretch tall',min:0.4,max:2,step:0.01,v:1,fmt:v=>v.toFixed(2)+'×'},
+  {k:'sz',label:'Scale Z',hint:'stretch tall',min:0.4,max:2,step:0.01,v:0.76,fmt:v=>v.toFixed(2)+'×'},
   {k:'fractal',label:'Fractal',hint:'self-similar detail',min:0,max:100,step:1,v:0,fmt:v=>Math.round(v)+'%'},
   {k:'twist',label:'Twist',hint:'ribs follow the helix',min:-180,max:180,step:1,v:0,fmt:v=>Math.round(v)+'°'},
 ];
@@ -1915,14 +1957,14 @@ const WALL_DEFS=[
   {k:'wall',label:'Wall',hint:'ring width mm',min:3,max:40,step:0.5,v:10,fmt:v=>v.toFixed(1)+' mm'},
 ];
 const LAYER_DEFS=[
-  {k:'layers',label:'Layers',hint:'horizontal slices',min:4,max:30,step:1,v:12,fmt:v=>String(Math.round(v))},
+  {k:'layers',label:'Layers',hint:'horizontal slices',min:4,max:30,step:1,v:13,fmt:v=>String(Math.round(v))},
 ];
 const CROP_DEFS=[
   {k:'cropTop',label:'Crop top',hint:'layers removed',min:0,max:12,step:1,v:0,fmt:v=>Math.round(v)===0?'none':String(Math.round(v))},
   {k:'cropBot',label:'Crop bottom',hint:'layers removed',min:0,max:12,step:1,v:0,fmt:v=>Math.round(v)===0?'none':String(Math.round(v))},
 ];
 const RIB_DEFS=[
-  {k:'ribs',label:'Ribs',hint:'0 = glue-stack',min:0,max:16,step:1,v:8,fmt:v=>String(Math.round(v))},
+  {k:'ribs',label:'Ribs',hint:'0 = glue-stack',min:0,max:16,step:1,v:3,fmt:v=>String(Math.round(v))},
   {k:'grip',label:'Grip',hint:'joint depth = rib neck mm',min:3,max:25,step:0.5,v:6,fmt:v=>v.toFixed(1)},
   {k:'core',label:'Core',hint:'rib spine radius mm',min:4,max:40,step:1,v:12,fmt:v=>String(v)},
   {k:'ribOffset',label:'Rib angle',hint:'turn the set by hand °',min:0,max:359,step:1,v:0,fmt:v=>String(Math.round(v))},
@@ -1965,10 +2007,10 @@ WALL_DEFS.forEach(d=>{fab[d.k]=d.v;});
 FAB_DEFS.forEach(d=>{fab[d.k]=d.v;});
 SHEET_DEFS.forEach(d=>{fab[d.k]=d.v;});
 VIEW_DEFS.forEach(d=>{viewS[d.k]=d.v;});
-fab.hollow=false;fab.ends='bowl';fab.fitMode=false;
+fab.hollow=true;fab.ends='bowl';fab.fitMode=false;
 fab.capBot=true;fab.capTop=false;fab.ribAlign='perp';
 fab.roundTop=false;fab.roundBot=false;fab.clean=true;fab.grain='lock';
-fab.flat=false;fab.ribJoin='inside';fab.ribShape='curved';fab.evenZ=false;
+fab.flat=false;fab.ribJoin='flush';fab.ribShape='curved';fab.evenZ=true;
 
 const outputs={},sliders={},nums={};
 /* Every slider carries a number you can type into. A slider is fine for
