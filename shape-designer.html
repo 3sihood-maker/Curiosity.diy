@@ -654,6 +654,33 @@ function rayRadius(poly,ang){
   }
   return best<1e8?best:0;
 }
+function trimNeedles(poly){
+  /* A hole outline that pinches into a doubling-back finger (the inset of a
+     pointed lobe) leaves a thin splinter of waste on the cut — the "little
+     corner bits". Eat such fingers back, apex by apex, until every corner
+     opens wider than ~9°. Unlike the display cleanup this is geometry: it
+     runs regardless of the Clean lines toggle, and has no length cap.     */
+  if(!poly||poly.length<5)return poly;
+  let out=poly;
+  for(let pass=0;pass<40;pass++){
+    const n=out.length;
+    if(n<5)break;
+    const keep=[];
+    let cut=0;
+    for(let i=0;i<n;i++){
+      const a=out[(i-1+n)%n],b=out[i],c=out[(i+1)%n];
+      const ux=b[0]-a[0],uy=b[1]-a[1],vx=c[0]-b[0],vy=c[1]-b[1];
+      const lu=Math.hypot(ux,uy),lv=Math.hypot(vx,vy);
+      if(lu<1e-9||lv<1e-9){cut++;continue;}
+      const cross=ux*vy-uy*vx,dot=ux*vx+uy*vy;
+      if(dot<0&&Math.abs(cross)/(lu*lv)<0.16){cut++;continue;}
+      keep.push(b);
+    }
+    if(!cut||keep.length<5)break;
+    out=keep;
+  }
+  return out.length>=3?out:poly;
+}
 function insetOutline(pts,wall){
   const n=pts.length;
   let cx=0,cy=0;
@@ -929,10 +956,10 @@ function buildModel(p,fab,mods){
     for(let i=0;i<PHI_N;i++){
       base.push([r1[i]*sc*Math.cos(phis[i]),r1[i]*sc*Math.sin(phis[i])]);
     }
-    const inner0=fab.hollow?insetOutline(base,wallEff):null;
+    const inner0=fab.hollow?trimNeedles(insetOutline(base,wallEff)):null;
     const slab={z:0,
       pts:fab.clean===false?base:cleanPoly(base,0.08),
-      inner:(inner0&&fab.clean!==false)?cleanPoly(inner0,0.08):inner0};
+      inner:(inner0&&fab.clean!==false)?trimNeedles(cleanPoly(inner0,0.08)):inner0};
     return {slabs:[slab],ribs:[],S,zmin:-fab.T/2,zmax:fab.T/2,stackFx:false,
             maxRadius:fab.D/2,height:fab.T,ws,flat:true};
   }
@@ -1082,7 +1109,7 @@ function buildModel(p,fab,mods){
     const isBottom=j===0,isTop=j===slabs.length-1;
     const cap=(capBot&&isBottom)||(capTop&&isTop);
     const wantRing=fab.hollow&&!cap;
-    s.inner=wantRing?insetOutline(base,wallEff):null;
+    s.inner=wantRing?trimNeedles(insetOutline(base,wallEff)):null;
     s.innerR=s.inner?s.inner.map(q=>Math.hypot(q[0],q[1])):null;
   });
   /* If the wall is too thick for this shape every ring collapses. Trimming
@@ -1401,40 +1428,92 @@ function buildModel(p,fab,mods){
     chains.push(built);
   }
 
+  /* Cut a slot as a TRUE rectangle subtracted from the outline: walls
+     parallel, width exactly ws, floor at depth m. The old splice placed the
+     slot mouths at a fixed ANGULAR window and drew the walls inward from
+     wherever the rim happened to be — at a sharp lobe peak the rim falls
+     away so fast that the mouth sits below the slot floor, and the "inward"
+     wall pokes OUTWARD past the rim, leaving a thin dagger on the cut file
+     (and a slot slightly narrower than the material it must accept).      */
+  function cutSlot(poly,ang,m,w,Tfar){
+    const ux=Math.cos(ang),uy=Math.sin(ang);
+    const tOf=q=>q[0]*ux+q[1]*uy, pOf=q=>-q[0]*uy+q[1]*ux;
+    const inRect=q=>{const t=tOf(q),pp=pOf(q);return t>m&&t<Tfar&&pp>-w&&pp<w;};
+    let start=poly.findIndex(q=>!inRect(q));
+    if(start<0)return poly;                        // nothing to cut against
+    const P=poly.slice(start).concat(poly.slice(0,start));
+    /* boundary walk parameter, never crossing the open (far) end:
+       wall p=+w far→floor, the floor +w→−w, wall p=−w floor→far          */
+    const sOf=q=>{
+      const t=tOf(q),pp=pOf(q);
+      if(pp>=w-1e-6)return Tfar-t;
+      if(pp<=-w+1e-6)return (Tfar-m)+2*w+(t-m);
+      return (Tfar-m)+(w-pp);                       // on the floor
+    };
+    const cornerA=[m*ux-w*uy,m*uy+w*ux];            // (m,+w)
+    const cornerB=[m*ux+w*uy,m*uy-w*ux];            // (m,−w)
+    const sA=(Tfar-m),sB=(Tfar-m)+2*w;
+    const out=[];
+    let entry=null;
+    const emitBoundary=(E,X)=>{
+      const s1=sOf(E),s2=sOf(X);
+      out.push(E);
+      if(s1<s2){if(sA>s1&&sA<s2)out.push(cornerA);if(sB>s1&&sB<s2)out.push(cornerB);}
+      else{if(sB<s1&&sB>s2)out.push(cornerB);if(sA<s1&&sA>s2)out.push(cornerA);}
+      out.push(X);
+    };
+    for(let i=0;i<P.length;i++){
+      const A2=P[i],B2=P[(i+1)%P.length];
+      /* Liang–Barsky clip of A2→B2 against the slot rectangle */
+      const dx=B2[0]-A2[0],dy=B2[1]-A2[1];
+      const dt=dx*ux+dy*uy,dp=-dx*uy+dy*ux;
+      const t0=tOf(A2),p0=pOf(A2);
+      let q0=0,q1=1,ok=true;
+      [[-dt,t0-m],[dt,Tfar-t0],[-dp,p0+w],[dp,w-p0]].forEach(([den,num])=>{
+        if(!ok)return;
+        if(Math.abs(den)<1e-12){if(num<0)ok=false;return;}
+        const r=num/den;
+        if(den<0){if(r>q1)ok=false;else if(r>q0)q0=r;}
+        else{if(r<q0)ok=false;else if(r<q1)q1=r;}
+      });
+      const aIn=inRect(A2),bIn=inRect(B2);
+      if(!ok||q1<=q0+1e-12){                        // edge misses the slot
+        if(!bIn)out.push(B2);
+        continue;
+      }
+      const E=[A2[0]+dx*q0,A2[1]+dy*q0];
+      const X=[A2[0]+dx*q1,A2[1]+dy*q1];
+      /* came in from outside — even if the entry is at the very start of
+         the edge (a vertex sitting exactly on the slot boundary). Missing
+         that case left the notch un-drawn and a chord across the slot.   */
+      if(!aIn&&entry===null)entry=E;
+      if(!bIn){                                     // leaves again on this edge
+        if(entry)emitBoundary(entry,X);
+        entry=null;
+        out.push(B2);
+      }
+      /* B2 inside: swallow it; the entry stays pending until we leave     */
+    }
+    return out.length>=3?out:poly;
+  }
+
   slabs.forEach((s,j)=>{
     const sc=s.r2*s.cth*S;
-    let pts=s.base.map((q,i)=>({phi:phis[i],x:q[0],y:q[1]}));
+    let poly=s.base.map(q=>[q[0],q[1]]);
+    let far=0;
+    poly.forEach(q=>{const d=Math.hypot(q[0],q[1]);if(d>far)far=d;});
+    far=far*1.5+10;
     for(let k=0;k<M;k++){
       const m=mids[j][k];
       if(m===null)continue;
       const pk=ribPhi[k]-s.rot;      // local angle; the twist rotates it into place
       const rhoK=R1(pk)*sc;
       if(rhoK<=m+0.5)continue;
-      let del=Math.asin(Math.min(0.95,(ws/2)/Math.max(rhoK,0.01)));
-      del=Math.min(del,(Math.PI/Math.max(M,1))*0.8);
-      const ux=Math.cos(pk),uy=Math.sin(pk);
-      const mk=a=>{const r=R1(a)*sc;return{x:r*Math.cos(a),y:r*Math.sin(a)};};
-      const o1=mk(pk-del),o2=mk(pk+del);
-      const t1=o1.x*ux+o1.y*uy,t2=o2.x*ux+o2.y*uy;
-      const i1={x:o1.x-ux*(t1-m),y:o1.y-uy*(t1-m)};
-      const i2={x:o2.x-ux*(t2-m),y:o2.y-uy*(t2-m)};
-      const keep=pts.filter(q=>{
-        let d=q.phi-pk;
-        while(d>Math.PI)d-=2*Math.PI;
-        while(d<-Math.PI)d+=2*Math.PI;
-        return Math.abs(d)>del;
-      });
-      let idx=keep.findIndex(q=>q.phi>pk+del);
-      if(idx<0)idx=keep.length;
-      keep.splice(idx,0,
-        {phi:pk-del,x:o1.x,y:o1.y},
-        {phi:pk-del/2,x:i1.x,y:i1.y},
-        {phi:pk+del/2,x:i2.x,y:i2.y},
-        {phi:pk+del,x:o2.x,y:o2.y});
-      pts=keep;
+      poly=cutSlot(poly,pk,m,ws/2,far);
     }
+    const pts=poly.map(q=>({x:q[0],y:q[1]}));
     s.pts=fab.clean===false?pts.map(q=>[q.x,q.y]):cleanPoly(pts.map(q=>[q.x,q.y]),0.08);
-    if(s.inner&&fab.clean!==false)s.inner=cleanPoly(s.inner,0.08);
+    if(s.inner&&fab.clean!==false)s.inner=trimNeedles(cleanPoly(s.inner,0.08));
     delete s.base;
   });
 
