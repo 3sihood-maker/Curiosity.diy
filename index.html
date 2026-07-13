@@ -119,6 +119,20 @@
     .ltr,.wordmark.popping .ltr-face{animation:none!important}
   }
 
+  /* ---------- development notice ---------- */
+  .notice{
+    background:repeating-linear-gradient(-45deg,rgba(233,162,39,.28) 0 12px,rgba(233,162,39,.12) 12px 24px);
+    border-top:1px solid rgba(201,135,26,.45);
+    border-bottom:1px solid rgba(201,135,26,.45);
+    padding:11px 0;margin-top:14px;
+  }
+  .notice p{
+    margin:0;text-align:center;
+    font-family:"Space Mono",monospace;font-size:12px;line-height:1.5;
+    letter-spacing:.1em;text-transform:uppercase;color:#5C4413;
+  }
+  .notice strong{font-weight:700;color:#3A2A08}
+
   /* ---------- hero ---------- */
   .hero{padding:34px 0 56px;text-align:center}
   .nail{width:11px;height:11px;margin:0 auto 14px;border-radius:50%;
@@ -280,6 +294,10 @@
 
 <main id="top">
 
+  <div class="notice" role="status">
+    <p class="wrap"><strong>Please note:</strong> This site is in development and tools are still being tested.</p>
+  </div>
+
   <section class="hero wrap">
     <div class="nail" aria-hidden="true"></div>
     <div class="signboard">
@@ -380,6 +398,22 @@
             <p>There's room on the board. Tell me what tool you wish existed and I'll see what I can make.</p>
             <div class="foot">
               <span class="open">Send an idea</span>
+            </div>
+          </a>
+
+        </div>
+      </div>
+
+      <div class="bench">
+        <p class="bench-label"><span class="tag">Bench 03</span> 3D printing</p>
+        <div class="rack">
+
+          <a class="tool" href="/solid-maker.html">
+            <h3>The Astounding Solid Maker</h3>
+            <p>Supershapes, vessels and cutters, straight out to a watertight STL. Twist, flute and taper a form on the lathe, then send it to the printer.</p>
+            <div class="foot">
+              <span class="status ready">Ready</span>
+              <span class="open">Open tool</span>
             </div>
           </a>
 
