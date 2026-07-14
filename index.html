@@ -224,6 +224,10 @@
   }
   .ready{color:var(--teal);border-color:rgba(30,96,118,.35);background:rgba(30,96,118,.07)}
   .building{color:#8A5A12;border-color:rgba(201,135,26,.4);background:rgba(233,162,39,.14)}
+  .testing{
+    color:#8A3A12;border-color:rgba(180,80,30,.45);background:rgba(226,120,50,.14);
+    font-weight:700;
+  }
   .open{font-weight:600;color:var(--teal);font-size:15px}
   .tool:hover .open::after{transform:translateX(4px)}
   .open::after{content:"→";display:inline-block;margin-left:6px;transition:transform .2s ease}
@@ -373,6 +377,15 @@
             <p>Cut one little comb and find the true kerf of your machine on this board. Two minutes of cutting saves a whole sheet of guesswork later.</p>
             <div class="foot">
               <span class="status ready">Ready</span>
+              <span class="open">Open tool</span>
+            </div>
+          </a>
+
+          <a class="tool" href="/infinite-flower-creator.html">
+            <h3>The Infinite Flower Creator</h3>
+            <p>Petal maths made playful — set the count, round or sharpen the petals, push the separation and watch a bloom appear. Export the SVG and cut it.</p>
+            <div class="foot">
+              <span class="status testing">Test version</span>
               <span class="open">Open tool</span>
             </div>
           </a>
