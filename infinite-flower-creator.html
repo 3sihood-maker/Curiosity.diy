@@ -496,8 +496,8 @@
         <label for="in-leaflets">Leaflet pairs <output id="out-leaflets">10</output></label>
         <input type="range" id="in-leaflets" min="4" max="20" step="1" value="10">
       </div>
-      <div class="ctl hidden" id="lscroll-ctl">
-        <label for="in-lscroll">Tip scroll (fiddlehead curl) <output id="out-lscroll">0.00</output></label>
+      <div class="ctl" id="lscroll-ctl">
+        <label for="in-lscroll">Tip scroll (curl the ends) <output id="out-lscroll">0.00</output></label>
         <input type="range" id="in-lscroll" min="0" max="1" step="0.05" value="0">
       </div>
       <div class="ctl">
@@ -781,6 +781,61 @@ function makeFrame(ox, oy, rot, spin, sqx, sqy, bendAmt, refR){
   };
 }
 
+/* A leaf frame with a tip curl: beyond a start depth the blade's axis rolls
+   onto a shrinking spiral, carrying every point — outline, vein windows,
+   lobes — consistently with it. The spiral path is integrated once and
+   sampled by interpolation. */
+function makeCurledLeafFrame(ox, oy, rot, sq, bendAmt, refR, scroll, side, maxHalf){
+  const cr = Math.cos(rot), sr = Math.sin(rot);
+  const b = bendAmt || 0;
+  const rr = refR || 1;
+  const d0 = rr * (0.58 - 0.15 * scroll);   // curl starts here
+  const Lr = Math.max(1, rr - d0);           // axis length that rolls
+  // injectivity guarantee: the roll radius must exceed the blade's half-width
+  // in the roll zone, or the inner edge folds through the curl centre.
+  // Wide blades therefore curl more gently — as real leaves do.
+  let thTot = scroll * Math.PI;              // at most a half-turn
+  if (maxHalf > 0) thTot = Math.min(thTot, Lr / (maxHalf * 1.25));
+  const s = side >= 0 ? 1 : -1;
+  // integrate the rolled axis: position A(e), normal N(e)
+  const STEPS = 160;
+  const Ax = new Array(STEPS + 1), Ay = new Array(STEPS + 1);
+  const Nx = new Array(STEPS + 1), Ny = new Array(STEPS + 1);
+  let px = 0, py = -d0, heading = -Math.PI / 2; // axis continues downward-locally? no: up is -y, blade grows toward -y
+  for (let i = 0; i <= STEPS; i++){
+    Ax[i] = px; Ay[i] = py;
+    // normal: heading rotated +90°, which is (1,0) at the curl start —
+    // lateral offsets keep their side; only the curl direction uses s
+    Nx[i] = Math.cos(heading + Math.PI / 2);
+    Ny[i] = Math.sin(heading + Math.PI / 2);
+    const de = Lr / STEPS;
+    const frac = i / STEPS;
+    const dth = (thTot / STEPS) * (0.55 + 0.9 * frac); // curl accelerates toward the tip
+    heading += s * dth;
+    px += de * Math.cos(heading);
+    py += de * Math.sin(heading);
+  }
+  return (th, r) => {
+    let lx = r * Math.cos(th) * sq;
+    let ly = r * Math.sin(th);
+    if (b) lx += b * (ly * ly) / rr * 0.8;
+    const depth = -ly;
+    if (scroll > 0.02 && depth > d0){
+      const e = Math.min(depth - d0, Lr - 1e-6);
+      const f = (e / Lr) * STEPS;
+      const i = Math.floor(f), t = f - i;
+      const ax = Ax[i] + (Ax[i + 1] - Ax[i]) * t;
+      const ay = Ay[i] + (Ay[i + 1] - Ay[i]) * t;
+      const nx = Nx[i] + (Nx[i + 1] - Nx[i]) * t;
+      const ny = Ny[i] + (Ny[i + 1] - Ny[i]) * t;
+      const newx = ax + lx * nx;
+      const newy = ay + lx * ny;
+      lx = newx; ly = newy;
+    }
+    return [ox + lx * cr - ly * sr, oy + lx * sr + ly * cr];
+  };
+}
+
 function ringLoop(radii, frame){
   const n = radii.length;
   const pts = new Array(n);
@@ -793,11 +848,12 @@ function radiusIdx(th){
   return Math.min(SAMPLES - 1, Math.round(t / TAU * SAMPLES)) % SAMPLES;
 }
 
-function slopeFactor(radii, i, dth){
+function slopeFactor(radii, i, dth, cap){
   const r = radii[i];
   if (r <= 0.5) return 1;
-  const rp = (radii[(i + 1) % SAMPLES] - radii[(i - 1 + SAMPLES) % SAMPLES]) / (2 * dth);
-  return Math.min(4, Math.sqrt(r * r + rp * rp) / r);
+  const n = radii.length;
+  const rp = (radii[(i + 1) % n] - radii[(i - 1 + n) % n]) / (2 * dth);
+  return Math.min(cap || 4, Math.sqrt(r * r + rp * rp) / r);
 }
 
 function latticeHoles(radii, opts, frame){
@@ -850,7 +906,7 @@ function outlineInner(radii, thick, minmat){
   const dth = TAU / SAMPLES;
   const raw = new Array(SAMPLES);
   for (let i = 0; i < SAMPLES; i++){
-    raw[i] = radii[i] - thick * slopeFactor(radii, i, dth);
+    raw[i] = radii[i] - thick * slopeFactor(radii, i, dth, 14);
   }
   // boxcar smooth ±4 samples, two passes
   let a = raw;
@@ -869,7 +925,8 @@ function outlineInner(radii, thick, minmat){
     const r = radii[i];
     const band = Math.max(floor, thick * 0.5);
     let v = Math.min(a[i], r - band); // the band is never thinner than `band`
-    if (v < floor) v = 0;             // hollow too small to cut → solid to the centre
+    if (v < floor * 2.2) v = 0;       // hollow opens only with real clearance —
+                                      // a hair-thin neck would leak it to the outside
     inner[i] = Math.max(0, v);
   }
   return inner;
@@ -1063,6 +1120,66 @@ function buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   return { parts, holes: 0 };
 }
 
+/* True geometric inset of a closed loop: each point moves inward along its
+   normal, then candidates that ended up too close to the original boundary
+   (the crossing arcs at a tapered base) are pruned. Unlike a polar inset,
+   this CLOSES at a leaf's base instead of leaking through the origin, and
+   because it runs after frame mapping it follows curls for free. */
+function insetLoop(pts, inset, kx, ky, keepR){
+  const n = pts.length;
+  // orientation: signed area
+  let A = 0;
+  for (let i = 0; i < n; i++){
+    const p = pts[i], q = pts[(i + 1) % n];
+    A += p[0] * q[1] - q[0] * p[1];
+  }
+  const s = A > 0 ? 1 : -1;
+  const cand = [];
+  for (let i = 0; i < n; i++){
+    const a = pts[(i - 2 + n) % n], b = pts[(i + 2) % n];
+    let tx = b[0] - a[0], ty = b[1] - a[1];
+    const L = Math.hypot(tx, ty);
+    if (L < 1e-9) continue;
+    // inward normal for this orientation
+    cand.push([pts[i][0] - s * (ty / L) * inset, pts[i][1] + s * (tx / L) * inset, i]);
+  }
+  // prune candidates that sit too close to the original boundary
+  const keep = [];
+  const W = 90; // check nearby original segments only
+  const k2 = (keepR || 0) * (keepR || 0);
+  for (const c of cand){
+    const i0 = c[2];
+    let ok = true;
+    if (k2 > 0){
+      const ddx = c[0] - kx, ddy = c[1] - ky;
+      if (ddx * ddx + ddy * ddy < k2) ok = false; // keep-out: the hollow never nears the base
+    }
+    for (let j = -W; j <= W && ok; j += 2){
+      const p = pts[(i0 + j + n) % n], q = pts[(i0 + j + 2 + n) % n];
+      // point-segment distance
+      const vx = q[0] - p[0], vy = q[1] - p[1];
+      const wx = c[0] - p[0], wy = c[1] - p[1];
+      const t = Math.max(0, Math.min(1, (vx * wx + vy * wy) / (vx * vx + vy * vy + 1e-12)));
+      const dx = wx - t * vx, dy = wy - t * vy;
+      if (dx * dx + dy * dy < inset * inset * 0.7) ok = false;
+    }
+    if (ok) keep.push([c[0], c[1]]);
+  }
+  if (keep.length < 24) return null; // no room for a hollow
+  // gentle smoothing to settle pruning seams
+  const out = new Array(keep.length);
+  const m = keep.length;
+  for (let i = 0; i < m; i++){
+    let sx = 0, sy = 0;
+    for (let j = -2; j <= 2; j++){
+      const p = keep[(i + j + m) % m];
+      sx += p[0]; sy += p[1];
+    }
+    out[i] = [sx / 5, sy / 5];
+  }
+  return out;
+}
+
 function leafHead(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   if (st.ltype === "frond") return buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign);
   const lst = { mode: "leaf", dia: size * 2, lwidth: st.lwidth, ltip: st.ltip,
@@ -1071,20 +1188,47 @@ function leafHead(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   const radii = sampleRadii(lst);
   const sq = Math.max(0.25, Math.cos((st.ltilt || 0) * Math.PI / 180));
   const bendAmt = (st.lbend || 0) * (bendSign || 1);
-  const frame = makeFrame(ox, oy, dir - UP, 0, sq, 1, bendAmt, size);
+  const scroll = st.lscroll || 0;
+  let frame;
+  let featureRadii = radii;
+  if (scroll > 0.02){
+    const d0 = size * (0.58 - 0.15 * scroll);
+    // max half-width of the blade within the roll zone
+    let maxHalf = 0;
+    for (let i = 0; i < radii.length; i++){
+      const th = i / radii.length * TAU;
+      const r = radii[i];
+      if (-r * Math.sin(th) > d0) maxHalf = Math.max(maxHalf, Math.abs(r * Math.cos(th) * sq));
+    }
+    frame = makeCurledLeafFrame(ox, oy, dir - UP, sq, bendAmt, size, scroll, bendSign || 1, maxHalf);
+    // windows and hollows keep to the flat body — the curled tip stays solid
+    const dLim = d0 * 0.95;
+    featureRadii = radii.map((r, i) => {
+      const s = Math.sin(i / radii.length * TAU);
+      return s < -0.05 ? Math.min(r, dLim / (-s)) : r;
+    });
+  } else {
+    frame = makeFrame(ox, oy, dir - UP, 0, sq, 1, bendAmt, size);
+  }
   const loops = [ringLoop(radii, frame)];
   let holes = 0;
   if (st.lstyle === "veins"){
-    const hs = latticeHoles(radii,
+    const hs = latticeHoles(featureRadii,
       { hub: Math.max(4, size * 0.14), rim: Math.max(2.5, st.minmat * 1.6),
         rayw: Math.max(1.6, st.minmat), rays: Math.max(4, st.veins | 0),
         minmat: st.minmat, squash: sq }, frame);
     holes = hs.length;
     loops.push(...hs);
   } else if (st.lstyle === "outline"){
-    const thick = Math.max(st.lthick, st.minmat) / sq;
-    loops.push(ringLoop(outlineInner(radii, thick, st.minmat), frame));
-    holes = 1;
+    const thick = Math.max(st.lthick, st.minmat);
+    const pr = Math.max(st.minmat * 1.8, thick * 1.6, size * 0.055);
+    const hole = insetLoop(loops[0], thick, ox, oy, pr * 1.1 + thick);
+    if (hole){ loops.push(hole); holes = 1; }
+    // a petiole disc, pushed a little into the blade, welds the tapered base solid
+    const px = ox + Math.cos(dir) * pr * 0.35, py = oy + Math.sin(dir) * pr * 0.35; // straddles the attach point
+    return { parts: [{ loops, colour: "leaf" },
+                     { loops: [circleLoop(px, py, pr)], colour: "leaf" }],
+             holes };
   }
   return { parts: [{ loops, colour: "leaf" }], holes };
 }
@@ -1193,45 +1337,63 @@ function planLeavesAlong(st, cl, spots, seedBase){
   return plans;
 }
 
-function leafCircle(pl){
+/* Long thin leaves are nearly invisible to a single circle, so each leaf is
+   three circles strung along its axis. */
+function leafCircles(pl){
   const at = pl.cl[Math.round(pl.t * (pl.cl.length - 1))];
   const dir = at.h + pl.side * pl.ang;
-  return { x: at.x + Math.cos(dir) * pl.size * 0.55,
-           y: at.y + Math.sin(dir) * pl.size * 0.55,
-           r: pl.size * 0.42, at };
+  const cd = Math.cos(dir), sd = Math.sin(dir);
+  const mk = (d, r) => ({ x: at.x + cd * pl.size * d, y: at.y + sd * pl.size * d, r: pl.size * r, at });
+  return [mk(0.28, 0.30), mk(0.58, 0.27), mk(0.88, 0.22)];
 }
 
 /* Breathing room: iterative repulsion. Each leaf may swing its angle and
    slide along its stem — it always stays attached, so the weld holds. */
 function relaxLeaves(plans, obstacles, amount){
   if (amount <= 0.001 || plans.length + obstacles.length < 2) return;
-  for (let iter = 0; iter < 8; iter++){
-    const cs = plans.map(leafCircle);
+  const strength = Math.min(1, amount) * 1.5;
+  for (let iter = 0; iter < 16; iter++){
+    const all = plans.map(leafCircles);
     for (let i = 0; i < plans.length; i++){
-      const ci = cs[i];
-      let fx = 0, fy = 0;
-      const push = o => {
-        const dx = ci.x - o.x, dy = ci.y - o.y;
-        const d = Math.hypot(dx, dy);
-        const rr = ci.r + o.r;
-        if (d < rr && d > 0.01){
-          const k = (rr - d) / rr;
-          fx += dx / d * k; fy += dy / d * k;
-        }
-      };
-      for (let j = 0; j < cs.length; j++) if (j !== i) push(cs[j]);
-      for (const o of obstacles) push(o);
-      if (Math.abs(fx) + Math.abs(fy) < 1e-4) continue;
+      const mine = all[i];
+      const at0 = mine[0].at;
+      const sx = Math.cos(at0.h), sy = Math.sin(at0.h);
+      let fx = 0, fy = 0, tq = 0, slide = 0;
+      for (const ci of mine){
+        const push = (o, w, escape) => {
+          const dx = ci.x - o.x, dy = ci.y - o.y;
+          const d = Math.hypot(dx, dy);
+          const rr = ci.r + o.r;
+          if (d < rr && d > 0.01){
+            const k = (rr - d) / rr * w;
+            const px = dx / d * k, py = dy / d * k;
+            fx += px; fy += py;
+            const ax = ci.x - ci.at.x, ay = ci.y - ci.at.y;
+            tq += (ax * py - ay * px) / Math.sqrt(ax * ax + ay * ay + 1);
+            if (escape){
+              // an obstacle up-stem pushes the leaf down-stem, and vice versa
+              const up = (o.x - at0.x) * sx + (o.y - at0.y) * sy;
+              slide -= Math.sign(up) * k;
+            }
+          }
+        };
+        for (let j = 0; j < all.length; j++)
+          if (j !== i) for (const cj of all[j]) push(cj, 1, false);
+        for (const o of obstacles) push(o, 2.2, true); // leaves fear blooms most
+      }
+      if (Math.abs(fx) + Math.abs(fy) + Math.abs(tq) + Math.abs(slide) < 1e-4) continue;
       const pl = plans[i];
-      const ax = ci.x - ci.at.x, ay = ci.y - ci.at.y;
-      const torque = (ax * fy - ay * fx) / Math.sqrt(ax * ax + ay * ay + 1);
-      pl.ang += pl.side * Math.max(-0.1, Math.min(0.1, torque * 0.9)) * amount;
-      pl.ang = Math.max(0.12, Math.min(1.5, pl.ang));
-      const tx = Math.cos(ci.at.h), ty = Math.sin(ci.at.h);
-      const along = fx * tx + fy * ty;
+      if (iter >= 9){
+        if (pl.size0 == null) pl.size0 = pl.size;
+        pl.size = Math.max(pl.size0 * 0.6, pl.size * (1 - 0.022 * strength));
+      }
+      pl.ang += pl.side * Math.max(-0.13, Math.min(0.13, tq * 0.7)) * strength;
+      pl.ang = Math.max(0.1, Math.min(1.55, pl.ang));
+      const along = fx * sx + fy * sy;
       const stemMM = pl.cl.length * 1.6;
-      pl.t += Math.max(-0.03, Math.min(0.03, along * pl.size * 0.25 / stemMM)) * amount;
-      pl.t = Math.max(0.06, Math.min(0.9, pl.t));
+      pl.t += Math.max(-0.06, Math.min(0.06,
+              (along * pl.size * 0.3 + slide * pl.size * 0.5) / stemMM)) * strength;
+      pl.t = Math.max(0.05, Math.min(0.93, pl.t));
     }
   }
 }
@@ -1691,7 +1853,7 @@ function buildColourSVG(plant, st){
 
 function buildCutSVG(plant, st){
   let loops;
-  if (plant.parts.length === 1){
+  if (plant.parts.length === 1 && !((st.lscroll || 0) > 0.02)){
     loops = plant.parts[0].loops;
   } else {
     loops = weldParts(plant.parts, plant.W, plant.H).loops;
@@ -1981,7 +2143,6 @@ if (typeof document !== "undefined" && document.getElementById){
     $("lt-blade").classList.toggle("on", ltype === "blade");
     $("lt-frond").classList.toggle("on", ltype === "frond");
     $("leaflets-ctl").classList.toggle("hidden", ltype !== "frond");
-    $("lscroll-ctl").classList.toggle("hidden", ltype !== "frond");
     $("stamlen-ctl").classList.toggle("hidden", parseInt($("in-stamens").value) === 0);
     ["branch","along","cluster"].forEach(m => {
       const map = { branch:"xm-branch", along:"xm-along", cluster:"xm-cluster" };
@@ -2169,7 +2330,7 @@ if (typeof document !== "undefined" && document.getElementById){
     $("in-smoothing").value = 0;
     $("in-stamens").value = Math.random() < 0.75 ? 0 : Math.floor(rnd(3, 10));
     $("in-stamlen").value = rnd(0.5, 1.1).toFixed(2);
-    $("in-lscroll").value = ltype === "frond" && Math.random() < 0.4 ? rnd(0.3, 0.9).toFixed(2) : 0;
+    $("in-lscroll").value = Math.random() < 0.35 ? rnd(0.3, 0.9).toFixed(2) : 0;
     xmode = ["branch","along","cluster"][Math.floor(Math.random() * 3)];
     $("in-leaflets").value = Math.floor(rnd(6, 16));
     ltype = Math.random() < 0.25 ? "frond" : "blade";
