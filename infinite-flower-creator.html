@@ -27,11 +27,11 @@
   header h1{font-family:Georgia,'Times New Roman',serif;font-weight:normal;font-size:2rem;letter-spacing:.5px}
   header h1 .bloom{color:var(--accent)}
   header p{color:var(--ink-soft);font-size:.92rem;margin-top:6px}
-  .stage-tag{
-    display:inline-block;margin-top:8px;font-size:.72rem;letter-spacing:.12em;
-    text-transform:uppercase;color:var(--sage);border:1px solid var(--sage);
-    border-radius:999px;padding:3px 12px;background:rgba(119,133,95,.07);
+  .backlink{margin-bottom:4px}
+  .backlink a{
+    color:var(--sage);text-decoration:none;font-size:.82rem;letter-spacing:.04em;
   }
+  .backlink a:hover{text-decoration:underline}
   main{
     max-width:1180px;margin:16px auto 40px;padding:0 16px;
     display:grid;grid-template-columns:350px 1fr;
@@ -136,6 +136,16 @@
   details.notes b{color:var(--ink)}
   .hidden{display:none}
   footer{text-align:center;color:var(--ink-soft);font-size:.78rem;padding:0 16px 28px}
+  .binder{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .tab{
+    border:1px solid var(--line);background:#fff;color:var(--ink-soft);
+    border-radius:10px 10px 4px 4px;padding:7px 12px;font-size:.82rem;cursor:pointer;
+    border-bottom-width:3px;
+  }
+  .tab.filled{border-bottom-color:var(--sage);color:var(--ink)}
+  .tab.empty{border-style:dashed}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .tab:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
   .toast{
     position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(70px);
     background:var(--ink);color:var(--limewash);border-radius:999px;padding:9px 18px;
@@ -148,9 +158,9 @@
 <body>
 
 <header>
+  <p class="backlink"><a href="https://curiosity.diy">← Curiosity.diy</a></p>
   <h1>The Infinite <span class="bloom">Flower Creator</span></h1>
   <p>Mathematical blooms, stems and leaves for the laser cutter — grown from formulas, cut from plywood.</p>
-  <span class="stage-tag">Stage 5 · The Nursery</span>
 </header>
 
 <main>
@@ -161,10 +171,11 @@
       <span class="colour-item"><input type="color" id="in-bloomcol" value="#c98a5b" aria-label="Bloom colour"> Bloom</span>
       <span class="colour-item"><input type="color" id="in-leafcol" value="#8a9a70" aria-label="Stem and leaf colour"> Stem &amp; leaves</span>
       <button class="btn ghost small" id="btn-savecolour">Colour SVG</button>
-      <button class="btn primary small" id="btn-addbq">＋ Bouquet</button>
+      <button class="btn primary small" id="btn-addbq">Save flower</button>
       <span class="seg hidden" id="viewseg" style="flex:0 0 auto">
         <button id="view-plant" class="on">Plant</button>
         <button id="view-bouquet">Bouquet</button>
+        <button id="view-sheets">Sheets</button>
       </span>
     </div>
     <div class="statline" id="statline"></div>
@@ -172,6 +183,21 @@
 
   <!-- ============ CONTROLS ============ -->
   <div class="control-col">
+
+    <!-- 0 · PROJECT BINDER -->
+    <div class="panel">
+      <div class="subhead">Your project <span class="stepnum">The binder</span></div>
+      <div class="ctl">
+        <label for="in-slots">Flowers in this project <output id="out-slots">4</output></label>
+        <input type="range" id="in-slots" min="2" max="8" step="1" value="4">
+      </div>
+      <div class="binder" id="bindertabs"></div>
+      <div class="actions">
+        <button class="btn ghost small" id="btn-exportproj">Export project</button>
+        <button class="btn ghost small" id="btn-importproj">Import flowers</button>
+        <input type="file" id="in-projfile" accept=".json,application/json" class="hidden">
+      </div>
+    </div>
 
     <!-- 1 · BUILD -->
     <div class="panel">
@@ -204,9 +230,17 @@
         <label for="in-bend">Bend (bow) <output id="out-bend">0.00</output></label>
         <input type="range" id="in-bend" min="-1" max="1" step="0.05" value="0">
       </div>
-      <div class="ctl hidden" id="branchsize-ctl">
-        <label for="in-branchscale">Extra bloom size <output id="out-branchscale">0.55</output></label>
-        <input type="range" id="in-branchscale" min="0.3" max="1" step="0.05" value="0.55">
+      <div class="hidden" id="xmode-wrap">
+        <div class="mini-label">Extra blooms (when flowers outnumber stems)</div>
+        <div class="seg" role="group" aria-label="Extra bloom placement">
+          <button id="xm-branch" class="on">Branches</button>
+          <button id="xm-along">Along stem</button>
+          <button id="xm-cluster">Tip cluster</button>
+        </div>
+        <div class="ctl">
+          <label for="in-branchscale">Extra bloom size <output id="out-branchscale">0.55</output></label>
+          <input type="range" id="in-branchscale" min="0.3" max="1" step="0.05" value="0.55">
+        </div>
       </div>
       <div class="nat-row">
         <button class="btn sage small" id="nat-S">Naturise stem</button>
@@ -229,12 +263,16 @@
       <div id="flower-body">
       <div class="presets">
         <button class="chip" data-flower="daisy">Daisy</button>
+        <button class="chip" data-flower="sidedaisy">Side daisy</button>
         <button class="chip" data-flower="cosmos">Cosmos</button>
         <button class="chip" data-flower="poppy">Poppy</button>
         <button class="chip" data-flower="starburst">Starburst</button>
         <button class="chip" data-flower="gumblossom">Gum blossom</button>
         <button class="chip" data-flower="tuliphead">Tulip</button>
         <button class="chip" data-flower="lilyhead">Lily</button>
+        <button class="chip" data-flower="hellebore">Hellebore</button>
+        <button class="chip" data-flower="wattle">Wattle</button>
+        <button class="chip" data-flower="kangaroopaw">Kangaroo paw</button>
       </div>
       <div class="mini-label">Petal maths</div>
       <div class="seg" role="group" aria-label="Formula family">
@@ -339,6 +377,19 @@
         <label for="in-fspin">Spin <output id="out-fspin">0°</output></label>
         <input type="range" id="in-fspin" min="0" max="360" step="5" value="0">
       </div>
+      <div class="ctl">
+        <label for="in-calyx">Calyx (sepal cup under the bloom) <output id="out-calyx">off</output></label>
+        <input type="range" id="in-calyx" min="0" max="0.4" step="0.01" value="0">
+      </div>
+      <div class="mini-label">Advanced · stamens</div>
+      <div class="ctl">
+        <label for="in-stamens">Stamens <output id="out-stamens">0</output></label>
+        <input type="range" id="in-stamens" min="0" max="12" step="1" value="0">
+      </div>
+      <div class="ctl hidden" id="stamlen-ctl">
+        <label for="in-stamlen">Stamen length <output id="out-stamlen">0.75</output></label>
+        <input type="range" id="in-stamlen" min="0.3" max="1.4" step="0.05" value="0.75">
+      </div>
 
       <div class="mini-label">Flower cut style</div>
       <div class="seg" role="group" aria-label="Flower cut style">
@@ -402,14 +453,36 @@
         <button class="chip leafchip" data-leaf="oak">Oak</button>
         <button class="chip leafchip" data-leaf="gum">Gum</button>
         <button class="chip leafchip" data-leaf="willow">Willow</button>
+        <button class="chip leafchip" data-leaf="fern">Fern</button>
       </div>
       <div class="ctl">
         <label for="in-leafsize">Leaf size <output id="out-leafsize">55 mm</output></label>
         <input type="range" id="in-leafsize" min="20" max="160" step="5" value="55">
       </div>
       <div class="ctl">
+        <label for="in-lsizevar">Leaf size variety <output id="out-lsizevar">0.00</output></label>
+        <input type="range" id="in-lsizevar" min="0" max="1" step="0.05" value="0">
+      </div>
+      <div class="ctl">
         <label for="in-leafangle">Leaf angle <output id="out-leafangle">50°</output></label>
         <input type="range" id="in-leafangle" min="20" max="80" step="5" value="50">
+      </div>
+      <div class="mini-label">Leaf type</div>
+      <div class="seg sagey" role="group" aria-label="Leaf type">
+        <button id="lt-blade" class="on">Blade</button>
+        <button id="lt-frond">Frond</button>
+      </div>
+      <div class="ctl hidden" id="leaflets-ctl">
+        <label for="in-leaflets">Leaflet pairs <output id="out-leaflets">10</output></label>
+        <input type="range" id="in-leaflets" min="4" max="20" step="1" value="10">
+      </div>
+      <div class="ctl hidden" id="lscroll-ctl">
+        <label for="in-lscroll">Tip scroll (fiddlehead curl) <output id="out-lscroll">0.00</output></label>
+        <input type="range" id="in-lscroll" min="0" max="1" step="0.05" value="0">
+      </div>
+      <div class="ctl">
+        <label for="in-lscatter">Direction scatter <output id="out-lscatter">0.00</output></label>
+        <input type="range" id="in-lscatter" min="0" max="1" step="0.05" value="0">
       </div>
       <div class="mini-label">Arrangement along the stem</div>
       <div class="seg sagey" role="group" aria-label="Leaf arrangement">
@@ -467,8 +540,17 @@
     <div class="panel">
       <div class="subhead">Cut &amp; export <span class="stepnum">Step 4</span></div>
       <div class="ctl">
-        <label for="in-minmat">Minimum material <output id="out-minmat">1.6 mm</output></label>
+        <label for="in-declutter">Breathing room (move blooms &amp; leaves apart) <output id="out-declutter">0.00</output></label>
+        <input type="range" id="in-declutter" min="0" max="1" step="0.05" value="0">
+      </div>
+      <div class="ctl">
+        <label for="in-smoothing">Final smoothing (tidy-up) <output id="out-smoothing">0.00</output></label>
+        <input type="range" id="in-smoothing" min="0" max="1" step="0.05" value="0">
+      </div>
+      <div class="ctl">
+        <label for="in-minmat">Thinnest cut part <output id="out-minmat">1.6 mm</output></label>
         <input type="range" id="in-minmat" min="1" max="4" step="0.1" value="1.6">
+        <p class="mini-label">No spoke, rim, stem or filament will ever be cut thinner than this — the safety floor for fragile material.</p>
       </div>
       <div class="actions">
         <button class="btn ghost" id="btn-copy">Copy SVG</button>
@@ -478,8 +560,7 @@
 
     <div class="panel">
       <div class="subhead">The bouquet <span class="stepnum">Step 5</span></div>
-      <p class="mini-label" id="bq-hint">Happy with a plant? Add it with the ＋ button under the preview — up to 8 make a bouquet.</p>
-      <div class="presets" id="bq-chips"></div>
+      <p class="mini-label" id="bq-hint">Save flowers into the binder tabs above — every filled tab joins the bouquet.</p>
       <div class="mini-label" id="bq-controls-label" style="display:none">Sheet size for nesting (mm)</div>
       <div id="bq-controls" class="hidden">
         <div class="seg" role="group" aria-label="Sheet size">
@@ -501,8 +582,11 @@
       <p><b>Flower packets vs engines.</b> A packet (Daisy, Poppy…) is a recipe: it configures an engine and its dials. The engines — Daisy curve, Wave petals, Superformula, Fan — are the renderers underneath. Because every radial engine is a radius-around-the-centre function, two engines can be <b>blended</b>: the outline becomes a weighted mix of both. Daisy × Super grows daisies with starry undertones; Waves × Daisy frills the tips. The mix slider is the ratio.</p>
       <p><b>Lattice layouts.</b> Free spaces spokes evenly around the circle regardless of petals. Per petal locks the spoke count to a multiple of the petal count and aligns one spoke to each petal's centreline, so every petal carries an identical, tidy window pattern.</p>
       <p><b>Outline style</b> hollows a shape to a band of your chosen thickness. The inner edge is slope-corrected like the lattice rim, so the band keeps its true width around steep petal edges.</p>
+      <p><b>Calyx.</b> Real flowers meet their stems through a cup of sepals. The calyx control welds a green cup between stem and bloom — essential for tilted side-view flowers like the Side daisy sample, where the head foreshortens to an ellipse and the petals droop past horizontal, exactly as a daisy looks from across the garden. Leaf size variety scatters leaf sizes (seeded, deterministic) without disturbing their shape — because no two leaves on a real plant agree.</p>
       <p><b>Foliage.</b> Leaves take Solid, Veins, or Outline styles; Bend curls each blade sideways; arrangement chooses Alternate, Opposite pairs, or Wild scatter (seeded — reroll with Naturise). Branches in Step 1 grow side stems that carry their own leaves, and their own smaller blooms when a flower is present — that's the bushy, many-flowered look.</p>
+      <p><b>Breathing room.</b> A relaxation pass: stems widen their fan until tip blooms stop colliding, then leaves gently repel each other and the blooms — each leaf may swing its angle and slide along its stem, but always stays attached, so everything still welds. <b>Final smoothing</b> runs a soft rounding pass over every cut line at export — a tidy-up for naturised wobbles and welded seams.</p>
       <p><b>One piece, guaranteed.</b> Cut files rasterise the whole plant and trace the boundary, welding every branch, leaf and bloom into one outline no matter how they overlap.</p>
+      <p><b>Stamens.</b> Thin filaments fan from the flower's centre, each tipped with an anther dot, built inside the head's own frame so tilt and spin carry them — the crown of a hellebore or the reach of a hibiscus. <b>Extra blooms</b> can grow on branches, be strung along the stem (wattle, kangaroo paw), or cluster at the tip (a lily bunch). <b>Tip scroll</b> curls a frond's midrib into a fiddlehead spiral. The Sheets view shows exactly how everything nests before you commit to cutting.</p>
       <p><b>The bouquet.</b> Save up to eight plants you love with ＋ Bouquet — each is snapshotted with its seeds, so it regrows identically. Bouquet view arranges them fanned in a silhouette vase, every plant's blooms in its own colour. Nested cut SVG welds each plant into its own piece and shelf-packs them (rotating where it helps) onto sheets, vase included — red lines cut, blue lines are sheet guides. Clicking a saved chip loads it back into the editor; × lets it go. The bouquet lives for this browser session, so export what you love.</p>
       <p>Coming in Stage 6: leaf-by-leaf hand editing and drag-arranged bouquets.</p>
     </details>
@@ -639,9 +723,10 @@ function makeProfile(st){
   return th => (1 - m) * primary(th) + m * secondary(th);
 }
 
-function sampleRadii(st){
+function sampleRadii(st, n){
+  n = n || SAMPLES;
   const profile = makeProfile(st);
-  const radii = new Array(SAMPLES);
+  const radii = new Array(n);
   const nat = st.nat || 0;
   if (nat > 0.001){
     const k = Math.max(2, st.mode === "leaf" ? 6 : st.petals);
@@ -651,12 +736,12 @@ function sampleRadii(st){
     const wAmp = st.mode === "leaf" ? nat * 0.10
                : st.mode === "fan"  ? nat * 0.25 * (st.spread * Math.PI / 180) / Math.max(2, st.petals)
                : nat * 0.38 * TAU / Math.max(k, 4);
-    for (let i = 0; i < SAMPLES; i++){
-      const th = i / SAMPLES * TAU;
+    for (let i = 0; i < n; i++){
+      const th = i / n * TAU;
       radii[i] = Math.max(0, profile(th + wAmp * warpN(th)) * (1 + 0.28 * nat * ampN(th)));
     }
   } else {
-    for (let i = 0; i < SAMPLES; i++) radii[i] = Math.max(0, profile(i / SAMPLES * TAU));
+    for (let i = 0; i < n; i++) radii[i] = Math.max(0, profile(i / n * TAU));
   }
   return radii;
 }
@@ -677,8 +762,9 @@ function makeFrame(ox, oy, rot, spin, sqx, sqy, bendAmt, refR){
 }
 
 function ringLoop(radii, frame){
-  const pts = new Array(SAMPLES);
-  for (let i = 0; i < SAMPLES; i++) pts[i] = frame(i / SAMPLES * TAU, radii[i]);
+  const n = radii.length;
+  const pts = new Array(n);
+  for (let i = 0; i < n; i++) pts[i] = frame(i / n * TAU, radii[i]);
   return pts;
 }
 
@@ -771,6 +857,49 @@ function outlineInner(radii, thick, minmat){
 
 /* ---------- heads (flower or leaf) ---------- */
 
+/* Stamens: thin filaments fanning from the flower centre, each tipped with
+   an anther dot, built in the head's local frame so tilt and spin carry them. */
+function stamenParts(st, R, mapXY){
+  const n = st.stamens | 0;
+  if (n < 1) return [];
+  const L = (st.stamlen || 0.75) * R;
+  const w = Math.max(st.minmat || 1.6, 1.2);
+  const arc = n > 1 ? 2.3 : 0;
+  const out = [];
+  for (let i = 0; i < n; i++){
+    const a = n > 1 ? -arc / 2 + arc * (i / (n - 1)) : 0;
+    // integrate a gently outward-bowing filament in local coords (up = -y)
+    const steps = 12;
+    const pts = [];
+    let x = 0, y = -R * 0.1, h = -Math.PI / 2 + a;
+    for (let s = 0; s <= steps; s++){
+      pts.push({ x, y, h });
+      h += (a * 0.5) / steps;
+      x += (L / steps) * Math.cos(h);
+      y += (L / steps) * Math.sin(h);
+    }
+    // thin strip
+    const left = [], right = [];
+    for (let s = 0; s < pts.length; s++){
+      const ww = (w * (1 - 0.3 * s / steps)) / 2;
+      const nx = Math.cos(pts[s].h + Math.PI / 2), ny = Math.sin(pts[s].h + Math.PI / 2);
+      left.push(mapXY(pts[s].x + ww * nx, pts[s].y + ww * ny));
+      right.push(mapXY(pts[s].x - ww * nx, pts[s].y - ww * ny));
+    }
+    out.push({ loops: [left.concat(right.reverse())], colour: "bloom" });
+    // anther dot
+    const end = pts[pts.length - 1];
+    const ar = Math.max(1.8, R * 0.04);
+    const dot = [];
+    for (let k = 0; k < 24; k++){
+      const t = k / 24 * TAU;
+      dot.push(mapXY(end.x + ar * Math.cos(t), end.y + ar * Math.sin(t)));
+    }
+    out.push({ loops: [dot], colour: "bloom" });
+  }
+  return out;
+}
+
 /* Places a flower head relative to a stem tip. Solid heads sit centred on
    the tip (the stem reads as passing behind). Lattice and outline heads slide
    down the stem so it terminates INSIDE the rim/band at the petal edge —
@@ -798,7 +927,8 @@ function flowerHeadAt(st, scale, tip, seedBump){
   } else {
     ext = Math.min(st.dia * scale * 0.3, Math.max(7, 6));
   }
-  const frame = makeFrame(ox, oy, tip.h - UP, spinRad, 1, sq, 0, 1);
+  const rot = tip.h - UP;
+  const frame = makeFrame(ox, oy, rot, spinRad, 1, sq, 0, 1);
   const loops = [ringLoop(radii, frame)];
   let holes = 0;
   if (st.fstyle === "lattice"){
@@ -812,10 +942,24 @@ function flowerHeadAt(st, scale, tip, seedBump){
     loops.push(ringLoop(outlineInner(radii, thick, st.minmat), frame));
     holes = 1;
   }
-  return { part: { loops, colour: "bloom" }, holes, ext };
+  const parts = [{ loops, colour: "bloom" }];
+  if ((st.stamens | 0) > 0){
+    const cr = Math.cos(rot), sr = Math.sin(rot), cs = Math.cos(spinRad), ss = Math.sin(spinRad);
+    const mapXY = (x, y) => {
+      const xs = x * cs - y * ss, ys = x * ss + y * cs;
+      const lx = xs, ly = ys * sq;
+      return [ox + lx * cr - ly * sr, oy + lx * sr + ly * cr];
+    };
+    parts.push(...stamenParts(st, st.dia * scale / 2, mapXY));
+  }
+  return { parts, holes, ext };
 }
 
 function flowerHead(st, scale, ox, oy, rot, seedBump){
+  return flowerHeadAt(st, scale, { x: ox, y: oy, h: rot + UP }, seedBump);
+}
+
+function flowerHead_unused(st, scale, ox, oy, rot, seedBump){
   const fst = { mode: st.mode, blend: st.blend, mix: st.mix,
                 dia: st.dia * scale, petals: st.petals,
                 sharp: st.sharp, valley: st.valley,
@@ -842,7 +986,65 @@ function flowerHead(st, scale, ox, oy, rot, seedBump){
   return { part: { loops, colour: "bloom" }, holes };
 }
 
+/* A compound frond: a midrib grown like a tiny stem, with tapering pairs of
+   leaflets along it. Leaflets inherit the blade shape controls, so the lobes
+   slider gives the toothed pinnae of a true fern. */
+function buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
+  const rng = mulberry32(((st.seedL || 1) + seedBump + 77) >>> 0);
+  let noise = null;
+  if (natAmt > 0.001){
+    const n = makeNoise(rng, 3, 2);
+    noise = t => natAmt * 0.18 * n(t * TAU * 0.5);
+  }
+  const curl = (st.lbend || 0) * (bendSign || 1) * 0.9;
+  const cl = growStem(size, ox, oy, dir, curl, 0, noise);
+  const origLast = cl.length - 1;
+  const scroll = st.lscroll || 0;
+  if (scroll > 0.02){
+    // fiddlehead: spiral the midrib tip inward
+    const steps = 34;
+    const turns = scroll * 1.7 * TAU * (bendSign || 1);
+    let { x, y, h } = cl[cl.length - 1];
+    let ds = Math.max(0.8, size * 0.02);
+    for (let k = 0; k < steps; k++){
+      h += turns / steps;
+      x += ds * Math.cos(h);
+      y += ds * Math.sin(h);
+      cl.push({ x, y, h });
+      ds = Math.max(0.5, ds * 0.93);
+    }
+  }
+  const mw = Math.max(st.minmat * 1.1, size * 0.018 + 1);
+  const parts = [{ loops: [stemPolygon(cl, mw, Math.max(st.minmat, 0.9))], colour: "leaf" }];
+  const nP = Math.max(4, st.leaflets | 0);
+  for (let i = 0; i < nP; i++){
+    const t = 0.08 + 0.88 * (i / (nP - 1));
+    const taper = Math.pow(bump((t - 0.30) / 0.78), 0.7);
+    let llen = size * 0.30 * taper;
+    if (natAmt > 0.001) llen *= 1 + (rng() - 0.5) * 0.35 * natAmt;
+    if (llen < 3) continue;
+    const at = cl[Math.round(t * origLast)];
+    for (const side of [1, -1]){
+      let ang = at.h + side * (1.05 - 0.25 * t);
+      if (natAmt > 0.001) ang += (rng() - 0.5) * 0.3 * natAmt;
+      const lst = { mode: "leaf", dia: llen * 2, lwidth: st.lwidth, ltip: st.ltip,
+                    lobes: st.lobes, lobedepth: st.lobedepth, petals: 6,
+                    nat: natAmt * 0.5, seed: (st.seedL || 1) + seedBump + i * 13 + (side > 0 ? 0 : 7) };
+      const radii = sampleRadii(lst, 120);
+      parts.push({ loops: [ringLoop(radii, makeFrame(at.x, at.y, ang - UP, 0, 1, 1, 0, 1))], colour: "leaf" });
+    }
+  }
+  // tip leaflet, anchored a little back along the midrib so it welds
+  if (scroll > 0.15) return { parts, holes: 0 };
+  const tipEnd = cl[Math.round(0.95 * origLast)];
+  const tst = { mode: "leaf", dia: size * 0.22, lwidth: st.lwidth, ltip: st.ltip,
+                lobes: st.lobes, lobedepth: st.lobedepth, petals: 6, nat: 0, seed: 1 };
+  parts.push({ loops: [ringLoop(sampleRadii(tst, 96), makeFrame(tipEnd.x, tipEnd.y, tipEnd.h - UP, 0, 1, 1, 0, 1))], colour: "leaf" });
+  return { parts, holes: 0 };
+}
+
 function leafHead(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
+  if (st.ltype === "frond") return buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign);
   const lst = { mode: "leaf", dia: size * 2, lwidth: st.lwidth, ltip: st.ltip,
                 lobes: st.lobes, lobedepth: st.lobedepth, petals: 6,
                 nat: natAmt, seed: (st.seedL || 1) + seedBump };
@@ -864,7 +1066,17 @@ function leafHead(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
     loops.push(ringLoop(outlineInner(radii, thick, st.minmat), frame));
     holes = 1;
   }
-  return { part: { loops, colour: "leaf" }, holes };
+  return { parts: [{ loops, colour: "leaf" }], holes };
+}
+
+function circleLoop(cx, cy, r, n){
+  n = n || 64;
+  const pts = new Array(n);
+  for (let i = 0; i < n; i++){
+    const a = i / n * TAU;
+    pts[i] = [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  }
+  return pts;
 }
 
 /* ---------- stems ---------- */
@@ -915,7 +1127,7 @@ function headExt(st, headSize, tipW, isFlower){
 
 /* ---------- leaf placement ---------- */
 
-function leafSpots(n, arrange, rngL, natL){
+function leafSpots(n, arrange, rngL, natL, scatter){
   // returns [{t, side}]
   const spots = [];
   if (arrange === "opposite"){
@@ -938,28 +1150,71 @@ function leafSpots(n, arrange, rngL, natL){
   return spots.map(s => {
     let t = s.t;
     if (natL > 0.001 && arrange !== "wild") t += (rngL() - 0.5) * 0.08 * natL;
+    if (scatter > 0.001) t += (rngL() - 0.5) * 0.22 * scatter;
     return { t: Math.min(0.88, Math.max(0.06, t)), side: s.side };
   });
 }
 
-function addLeavesAlong(st, cl, spots, parts, counter, seedBase){
+function planLeavesAlong(st, cl, spots, seedBase){
   const rngL = mulberry32(((st.seedL || 1) + seedBase + 5) >>> 0);
+  const plans = [];
   for (let j = 0; j < spots.length; j++){
     const { t, side } = spots[j];
     let size = st.leafsize;
     let ang = st.leafangle * Math.PI / 180;
+    if (st.lscatter > 0.001) ang += (rngL() - 0.5) * 1.6 * st.lscatter;
+    if (st.lsizevar > 0.001) size *= 1 + (rngL() - 0.5) * st.lsizevar;
     if (st.natL > 0.001){
       size *= 1 + (rngL() - 0.5) * 0.45 * st.natL;
       ang *= 1 + (rngL() - 0.5) * 0.35 * st.natL;
     }
-    const at = cl[Math.round(t * (cl.length - 1))];
-    const lp = leafHead(st, size, at.x, at.y, at.h + side * ang, st.natL * 0.6, seedBase + 31 * (j + 1), side);
-    counter.holes += lp.holes;
-    parts.push(lp.part);
+    plans.push({ cl, t, side, size, ang, seedBump: seedBase + 31 * (j + 1) });
   }
+  return plans;
 }
 
-/* ---------- plant assembly ---------- */
+function leafCircle(pl){
+  const at = pl.cl[Math.round(pl.t * (pl.cl.length - 1))];
+  const dir = at.h + pl.side * pl.ang;
+  return { x: at.x + Math.cos(dir) * pl.size * 0.55,
+           y: at.y + Math.sin(dir) * pl.size * 0.55,
+           r: pl.size * 0.42, at };
+}
+
+/* Breathing room: iterative repulsion. Each leaf may swing its angle and
+   slide along its stem — it always stays attached, so the weld holds. */
+function relaxLeaves(plans, obstacles, amount){
+  if (amount <= 0.001 || plans.length + obstacles.length < 2) return;
+  for (let iter = 0; iter < 8; iter++){
+    const cs = plans.map(leafCircle);
+    for (let i = 0; i < plans.length; i++){
+      const ci = cs[i];
+      let fx = 0, fy = 0;
+      const push = o => {
+        const dx = ci.x - o.x, dy = ci.y - o.y;
+        const d = Math.hypot(dx, dy);
+        const rr = ci.r + o.r;
+        if (d < rr && d > 0.01){
+          const k = (rr - d) / rr;
+          fx += dx / d * k; fy += dy / d * k;
+        }
+      };
+      for (let j = 0; j < cs.length; j++) if (j !== i) push(cs[j]);
+      for (const o of obstacles) push(o);
+      if (Math.abs(fx) + Math.abs(fy) < 1e-4) continue;
+      const pl = plans[i];
+      const ax = ci.x - ci.at.x, ay = ci.y - ci.at.y;
+      const torque = (ax * fy - ay * fx) / Math.sqrt(ax * ax + ay * ay + 1);
+      pl.ang += pl.side * Math.max(-0.1, Math.min(0.1, torque * 0.9)) * amount;
+      pl.ang = Math.max(0.12, Math.min(1.5, pl.ang));
+      const tx = Math.cos(ci.at.h), ty = Math.sin(ci.at.h);
+      const along = fx * tx + fy * ty;
+      const stemMM = pl.cl.length * 1.6;
+      pl.t += Math.max(-0.03, Math.min(0.03, along * pl.size * 0.25 / stemMM)) * amount;
+      pl.t = Math.max(0.06, Math.min(0.9, pl.t));
+    }
+  }
+}
 
 function buildPlant(st){
   const minmat = st.minmat || 1.6;
@@ -979,53 +1234,90 @@ function buildPlant(st){
     if (flowerOn){
       const fh = flowerHead(st, 1, 0, 0, 0, 0);
       counter.holes += fh.holes;
-      parts.push(fh.part);
+      parts.push(...fh.parts);
     } else {
       const lh = leafHead(st, st.leafsize * 1.6, 0, 0, UP, (st.natL || 0) * 0.6, 3, 1);
       counter.holes += lh.holes;
-      parts.push(lh.part);
+      parts.push(...lh.parts);
     }
   } else {
-    // grow the bunch: stems fan out from a shared base
+    // grow the bunch: stems fan out from a shared base.
+    // random draws are captured first so stems can be rebuilt with a wider
+    // splay when Breathing room finds tip blooms colliding.
     const mid = (nStems - 1) / 2;
-    const stemInfos = [];
+    const draws = [];
     for (let s = 0; s < nStems; s++){
-      const off = s - mid;
-      let len = st.stemlen * (1 - 0.12 * Math.abs(off));
-      let splay = off * 0.24;
-      let curve = st.curve + off * 0.18;
+      const d = { lenJit: 0, splayJit: 0, noise: null };
       if (st.natS > 0.001){
-        len *= 1 + (rngS() - 0.5) * 0.3 * st.natS;
-        splay += (rngS() - 0.5) * 0.15 * st.natS;
-      }
-      let noise = null;
-      if (st.natS > 0.001){
+        d.lenJit = (rngS() - 0.5) * 0.3 * st.natS;
+        d.splayJit = (rngS() - 0.5) * 0.15 * st.natS;
         const n = makeNoise(rngS, 3, 2);
-        noise = t => st.natS * 0.22 * n(t * TAU * 0.5);
+        d.noise = t => st.natS * 0.22 * n(t * TAU * 0.5);
       }
-      const cl = growStem(len, 0, 0, UP + splay, curve, st.bend, noise);
-      stemInfos.push({ cl, len, s });
+      draws.push(d);
+    }
+    const buildStems = splayMul => {
+      const infos = [];
+      for (let s = 0; s < nStems; s++){
+        const off = s - mid;
+        const len = st.stemlen * (1 - 0.12 * Math.abs(off)) * (1 + draws[s].lenJit);
+        const splay = (off * 0.24 + draws[s].splayJit) * splayMul;
+        const curve = st.curve + off * 0.18 * splayMul;
+        infos.push({ cl: growStem(len, 0, 0, UP + splay, curve, st.bend, draws[s].noise), len, s });
+      }
+      return infos;
+    };
+    let stemInfos = buildStems(1);
+
+    // flowers: one per stem tip first, extras branch off host stems
+    const tipsWithBlooms = Math.min(nFlowers, nStems);
+    const extras = Math.max(0, nFlowers - nStems);
+
+    // Breathing room, phase 1: widen the fan until tip blooms stop colliding
+    if ((st.declutter || 0) > 0.001 && tipsWithBlooms > 1){
+      let splayMul = 1;
+      const br = st.dia / 2 * 0.8;
+      for (let k = 0; k < 4; k++){
+        let worst = 0;
+        for (let a = 0; a < tipsWithBlooms; a++){
+          for (let b = a + 1; b < tipsWithBlooms; b++){
+            const ta = stemInfos[a].cl[stemInfos[a].cl.length - 1];
+            const tb = stemInfos[b].cl[stemInfos[b].cl.length - 1];
+            const d = Math.hypot(ta.x - tb.x, ta.y - tb.y);
+            worst = Math.max(worst, (2 * br - d) / (2 * br));
+          }
+        }
+        if (worst <= 0.02) break;
+        splayMul *= 1 + worst * st.declutter * 0.9;
+        stemInfos = buildStems(splayMul);
+      }
     }
 
     // distribute leaves across stems (round robin)
     const perStemLeaves = new Array(nStems).fill(0);
     for (let j = 0; j < nLeaves; j++) perStemLeaves[j % nStems]++;
 
-    // flowers: one per stem tip first, extras branch off host stems
-    const tipsWithBlooms = Math.min(nFlowers, nStems);
-    const extras = Math.max(0, nFlowers - nStems);
-
     const baseW = Math.max(st.stemw, minmat * 1.2);
     const tipW = Math.max(baseW * 0.55, minmat, 1.5);
+    const leafPlans = [];
+    const obstacles = [];
 
     for (let s = 0; s < nStems; s++){
       const { cl } = stemInfos[s];
       const tip = cl[cl.length - 1];
       const bloomAtTip = s < tipsWithBlooms;
-      let fh = null;
+      let fh = null, calyxPart = null;
       let ext;
       if (bloomAtTip){
-        fh = flowerHeadAt(st, 1, tip, s * 11);
+        let atip = tip;
+        if (st.calyx > 0.01){
+          const cr = st.calyx * st.dia / 2;
+          calyxPart = { loops: [circleLoop(tip.x + cr * 0.7 * Math.cos(tip.h),
+                                           tip.y + cr * 0.7 * Math.sin(tip.h), cr)], colour: "leaf" };
+          atip = { x: tip.x + cr * 1.5 * Math.cos(tip.h),
+                   y: tip.y + cr * 1.5 * Math.sin(tip.h), h: tip.h };
+        }
+        fh = flowerHeadAt(st, 1, atip, s * 11);
         ext = fh.ext;
       } else {
         ext = headExt(st, st.leafsize * 2, tipW, false);
@@ -1033,46 +1325,114 @@ function buildPlant(st){
       parts.push({ loops: [stemPolygon(extendInto(cl, ext), baseW, tipW)], colour: "leaf" });
 
       if (bloomAtTip){
+        if (calyxPart) parts.push(calyxPart);
         counter.holes += fh.holes;
-        parts.push(fh.part);
+        parts.push(...fh.parts);
+        obstacles.push({ x: tip.x, y: tip.y, r: st.dia / 2 * 0.8 });
       } else if (leavesOn){
         const lh = leafHead(st, st.leafsize * 1.3, tip.x, tip.y, tip.h, (st.natL || 0) * 0.6, 900 + s, 1);
         counter.holes += lh.holes;
-        parts.push(lh.part);
+        parts.push(...lh.parts);
       }
 
       if (leavesOn && perStemLeaves[s] > 0){
         const rngPlace = mulberry32(((st.seedL || 1) + 13 + s * 7) >>> 0);
-        const spots = leafSpots(perStemLeaves[s], st.arrange, rngPlace, st.natL);
-        addLeavesAlong(st, cl, spots, parts, counter, s * 100);
+        const spots = leafSpots(perStemLeaves[s], st.arrange, rngPlace, st.natL, st.lscatter || 0);
+        leafPlans.push(...planLeavesAlong(st, cl, spots, s * 100));
       }
     }
 
-    // extra blooms on auto-branches
+    // extra blooms: on branches, strung along the stem, or clustered at the tip
     const rngB = mulberry32(((st.seedS || 1) + 101) >>> 0);
+    const xm = st.xmode || "branch";
+    const xPlans = [];
     for (let e = 0; e < extras; e++){
       const host = stemInfos[e % nStems];
-      const cl = host.cl;
-      let bt = 0.45 + 0.3 * ((e / Math.max(1, nStems)) % 1 ? rngB() : rngB());
       const side = e % 2 === 0 ? 1 : -1;
-      let bAng = side * (0.55 + 0.35 * rngB());
-      let bLen = host.len * (0.35 + 0.15 * rngB());
-      bt = Math.min(0.8, Math.max(0.3, bt));
-      const at = cl[Math.round(bt * (cl.length - 1))];
+      const scale = st.branchscale || 0.55;
+      let bt, bAng, bLen;
+      if (xm === "along"){
+        bt = 0.5 + 0.42 * ((e + 0.5) / extras) + (rngB() - 0.5) * 0.05;
+        bAng = side * (0.85 + 0.25 * rngB());
+        bLen = st.dia * scale * 0.35 + 8;
+      } else if (xm === "cluster"){
+        bt = 0.88 + 0.08 * rngB();
+        bAng = side * (0.3 + 0.3 * rngB()) * (1 + Math.floor(e / 2) * 0.4);
+        bLen = st.dia * scale * 0.3 + 10 + rngB() * 8;
+      } else { // branch
+        bt = 0.45 + 0.3 * rngB();
+        bAng = side * (0.55 + 0.35 * rngB());
+        bLen = host.len * (0.35 + 0.15 * rngB());
+      }
       let bNoise = null;
       if (st.natS > 0.001){
         const n = makeNoise(rngB, 3, 2);
         bNoise = t => st.natS * 0.2 * n(t * TAU * 0.5);
       }
-      const bcl = growStem(bLen, at.x, at.y, at.h + bAng, st.curve * 0.5 - side * 0.25, st.bend * 0.5, bNoise);
-      const btip = bcl[bcl.length - 1];
-      const bBaseW = Math.max(minmat * 1.2, baseW * 0.75);
+      xPlans.push({ host, bt: Math.min(0.97, Math.max(0.25, bt)), side, bAng, bLen, bNoise, e });
+    }
+
+    // Breathing room for the extras themselves: swing and stretch pedicels apart
+    const xTip = pl => {
+      const at = pl.host.cl[Math.round(pl.bt * (pl.host.cl.length - 1))];
+      const bcl = growStem(pl.bLen, at.x, at.y, at.h + pl.bAng,
+                           st.curve * 0.5 - pl.side * 0.25, st.bend * 0.5, pl.bNoise);
+      return { at, bcl, tip: bcl[bcl.length - 1] };
+    };
+    if ((st.declutter || 0) > 0.001 && xPlans.length){
+      const br = st.dia * (st.branchscale || 0.55) / 2 * 0.85;
+      for (let iter = 0; iter < 5; iter++){
+        const built = xPlans.map(xTip);
+        const circles = built.map(b => ({ x: b.tip.x, y: b.tip.y, r: br }));
+        const all = circles.concat(obstacles);
+        for (let i = 0; i < xPlans.length; i++){
+          let fx = 0, fy = 0;
+          const ci = circles[i];
+          for (let j = 0; j < all.length; j++){
+            if (all[j] === ci) continue;
+            const dx = ci.x - all[j].x, dy = ci.y - all[j].y;
+            const d = Math.hypot(dx, dy), rr = ci.r + all[j].r;
+            if (d < rr && d > 0.01){ const k = (rr - d) / rr; fx += dx / d * k; fy += dy / d * k; }
+          }
+          if (Math.abs(fx) + Math.abs(fy) < 1e-4) continue;
+          const pl = xPlans[i], at = built[i].at;
+          const ax = ci.x - at.x, ay = ci.y - at.y;
+          const torque = (ax * fy - ay * fx) / Math.sqrt(ax * ax + ay * ay + 1);
+          pl.bAng += Math.max(-0.12, Math.min(0.12, torque * 0.9)) * st.declutter;
+          const out = (fx * ax + fy * ay) / Math.sqrt(ax * ax + ay * ay + 1);
+          pl.bLen = Math.max(6, pl.bLen * (1 + Math.max(-0.06, Math.min(0.08, out * 0.4)) * st.declutter));
+        }
+      }
+    }
+
+    for (const pl of xPlans){
+      const { bcl, tip: btip } = xTip(pl);
+      const bBaseW = Math.max(minmat * 1.2, baseW * (xm === "branch" ? 0.75 : 0.55));
       const bTipW = Math.max(bBaseW * 0.55, minmat, 1.3);
       const scale = st.branchscale || 0.55;
-      const fh = flowerHeadAt(st, scale, btip, 500 + 17 * e);
+      let batip = btip, bCalyx = null;
+      if (st.calyx > 0.01){
+        const cr = st.calyx * st.dia * scale / 2;
+        bCalyx = { loops: [circleLoop(btip.x + cr * 0.7 * Math.cos(btip.h),
+                                      btip.y + cr * 0.7 * Math.sin(btip.h), cr)], colour: "leaf" };
+        batip = { x: btip.x + cr * 1.5 * Math.cos(btip.h),
+                  y: btip.y + cr * 1.5 * Math.sin(btip.h), h: btip.h };
+      }
+      const fh = flowerHeadAt(st, scale, batip, 500 + 17 * pl.e);
       parts.push({ loops: [stemPolygon(extendInto(bcl, fh.ext), bBaseW, bTipW)], colour: "leaf" });
+      if (bCalyx) parts.push(bCalyx);
       counter.holes += fh.holes;
-      parts.push(fh.part);
+      parts.push(...fh.parts);
+      obstacles.push({ x: btip.x, y: btip.y, r: st.dia * scale / 2 * 0.8 });
+    }
+
+    // Breathing room, phase 2: leaves repel each other and the blooms
+    relaxLeaves(leafPlans, obstacles, st.declutter || 0);
+    for (const pl of leafPlans){
+      const at = pl.cl[Math.round(pl.t * (pl.cl.length - 1))];
+      const lp = leafHead(st, pl.size, at.x, at.y, at.h + pl.side * pl.ang, st.natL * 0.6, pl.seedBump, pl.side);
+      counter.holes += lp.holes;
+      parts.push(...lp.parts);
     }
   }
 
@@ -1246,6 +1606,28 @@ function weldParts(parts, W, H){
 
 /* ---------- SVG builders ---------- */
 
+/* Final tidy-up: a circular moving average over each loop. Gentle at low
+   values, softly rounding at high ones. */
+function smoothLoops(loops, amount){
+  if (!amount || amount <= 0.01) return loops;
+  const w = 2 * Math.round(amount * 4) + 1; // 3..9 point window
+  return loops.map(pts => {
+    const n = pts.length;
+    if (n < w * 3) return pts;
+    const h = (w - 1) / 2;
+    const out = new Array(n);
+    for (let i = 0; i < n; i++){
+      let sx = 0, sy = 0;
+      for (let j = -h; j <= h; j++){
+        const p = pts[(i + j + n) % n];
+        sx += p[0]; sy += p[1];
+      }
+      out[i] = [sx / w, sy / w];
+    }
+    return out;
+  });
+}
+
 function fmt(n){ return (Math.round(n * 100) / 100).toString(); }
 
 function loopToD(pts){
@@ -1267,7 +1649,7 @@ function layeredPaths(plant, st, forExport){
   let s = "";
   for (const part of plant.parts){
     const fill = colourOf(part, st);
-    const d = part.loops.map(loopToD).join("");
+    const d = smoothLoops(part.loops, st.smoothing || 0).map(loopToD).join("");
     s += '<path d="' + d + '" fill="' + fill + '" fill-rule="evenodd" stroke="' + shade(fill, 0.72) +
          '" stroke-width="' + (forExport ? 0.3 : Math.max(0.3, Math.max(plant.W, plant.H) / 500)) + '"/>';
   }
@@ -1288,12 +1670,13 @@ function buildColourSVG(plant, st){
 }
 
 function buildCutSVG(plant, st){
-  let d;
+  let loops;
   if (plant.parts.length === 1){
-    d = plant.parts[0].loops.map(loopToD).join("");
+    loops = plant.parts[0].loops;
   } else {
-    d = weldParts(plant.parts, plant.W, plant.H).loops.map(loopToD).join("");
+    loops = weldParts(plant.parts, plant.W, plant.H).loops;
   }
+  const d = smoothLoops(loops, st.smoothing || 0).map(loopToD).join("");
   return '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<!-- The Infinite Flower Creator · Curiosity.diy · seeds F' + (st.seedF || 1) + ' L' + (st.seedL || 1) + ' S' + (st.seedS || 1) + ' -->\n' +
     '<svg xmlns="http://www.w3.org/2000/svg" width="' + fmt(plant.W) + 'mm" height="' + fmt(plant.H) + 'mm" viewBox="0 0 ' + fmt(plant.W) + ' ' + fmt(plant.H) + '">\n' +
@@ -1440,10 +1823,10 @@ function pieceFromState(st){
   const loops = plant.parts.length === 1
     ? plant.parts[0].loops
     : weldParts(plant.parts, plant.W, plant.H).loops;
-  return normalisePiece(loops);
+  return normalisePiece(smoothLoops(loops, st.smoothing || 0));
 }
 
-function buildNestedCutSVG(states, shW, shH, withVase){
+function nestLayout(states, shW, shH, withVase){
   const pieces = states.map(pieceFromState);
   if (withVase){
     const mouthW = Math.max(80, 24 * states.length + 40);
@@ -1451,7 +1834,11 @@ function buildNestedCutSVG(states, shW, shH, withVase){
     for (const st of states) maxH = Math.max(maxH, buildPlant(st).H);
     pieces.push(normalisePiece([vasePolygon(mouthW, Math.max(70, maxH * 0.42))]));
   }
-  const sheets = nestPieces(pieces, shW, shH);
+  return { pieces, sheets: nestPieces(pieces, shW, shH) };
+}
+
+function buildNestedCutSVG(states, shW, shH, withVase){
+  const { pieces, sheets } = nestLayout(states, shW, shH, withVase);
   const sheetGap = 15;
   let ox = 0, maxSheetH = 0, body = "";
   for (const s of sheets){
@@ -1475,7 +1862,7 @@ function buildNestedCutSVG(states, shW, shH, withVase){
 if (typeof globalThis !== "undefined"){
   globalThis.__flower = { sampleRadii, buildPlant, weldParts, buildCutSVG, buildColourSVG, buildPreviewSVG,
                           traceContours, makeProfile, buildBouquetScene, buildBouquetColourSVG,
-                          buildNestedCutSVG, nestPieces, pieceFromState, vasePolygon, PALETTE };
+                          buildNestedCutSVG, nestLayout, nestPieces, pieceFromState, vasePolygon, PALETTE };
 }
 
 /* ---------- UI ---------- */
@@ -1484,11 +1871,11 @@ if (typeof document !== "undefined" && document.getElementById){
 
   const $ = id => document.getElementById(id);
   const sliders = ["dia","petals","sharp","valley","a1","a2","a3","depth","n1","n2","n3",
-                   "spread","fwidth","ftip","fbase","ftilt","fspin","mix",
+                   "spread","fwidth","ftip","fbase","ftilt","fspin","mix","calyx","stamens","stamlen",
                    "lwidth","ltip","lobes","lobedepth","ltilt","lbend",
                    "natF","natL","natS",
-                   "stemlen","stemw","curve","bend","branchscale",
-                   "flowers","stems","leaves","leafsize","leafangle",
+                   "stemlen","stemw","curve","bend","branchscale","declutter","smoothing",
+                   "flowers","stems","leaves","leafsize","leafangle","lsizevar","lscatter","leaflets",
                    "hub","rim","rayw","rays","raysper","othick","veins","lthick","minmat"];
   const twins = { flowers: "flowers2", leaves: "leaves2" };
   let mode = "rose";
@@ -1496,12 +1883,14 @@ if (typeof document !== "undefined" && document.getElementById){
   let fstyle = "lattice";
   let latlayout = "free";
   let lstyle = "veins";
+  let ltype = "blade";
+  let xmode = "branch";
   let arrange = "alternate";
   const seeds = { F: 12345, L: 54321, S: 11111 };
   const hist = { F: [], L: [], S: [] };
 
   function readState(){
-    const st = { mode, blend, fstyle, latlayout, lstyle, arrange,
+    const st = { mode, blend, fstyle, latlayout, lstyle, ltype, xmode, arrange,
                  seedF: seeds.F, seedL: seeds.L, seedS: seeds.S };
     for (const s of sliders) st[s] = parseFloat($("in-" + s).value);
     st.bloomcol = $("in-bloomcol").value;
@@ -1520,6 +1909,11 @@ if (typeof document !== "undefined" && document.getElementById){
     set("n1", f1("n1")); set("n2", f1("n2")); set("n3", f1("n3"));
     set("spread", v("spread") + "°"); set("fwidth", f2("fwidth")); set("ftip", f1("ftip")); set("fbase", f2("fbase"));
     set("ftilt", v("ftilt") + "°"); set("fspin", v("fspin") + "°");
+    set("calyx", (+v("calyx")) < 0.01 ? "off" : f2("calyx"));
+    set("stamens", v("stamens")); set("stamlen", f2("stamlen"));
+    set("lscroll", f2("lscroll"));
+    set("lsizevar", f2("lsizevar"));
+    set("lscatter", f2("lscatter")); set("leaflets", v("leaflets"));
     const mixPct = Math.round((+v("mix")) * 100);
     const engName = { rose:"Daisy", harm:"Waves", super:"Super", fan:"Fan" };
     set("mix", blend === "off" ? "—" : (100 - mixPct) + "% " + engName[mode] + " · " + mixPct + "% " + engName[blend]);
@@ -1530,6 +1924,7 @@ if (typeof document !== "undefined" && document.getElementById){
     set("stemlen", v("stemlen") + " mm"); set("stemw", f1("stemw") + " mm");
     set("curve", f2("curve")); set("bend", f2("bend"));
     set("branchscale", f2("branchscale"));
+    set("declutter", f2("declutter")); set("smoothing", f2("smoothing"));
     set("leaves", v("leaves")); set("leafsize", v("leafsize") + " mm"); set("leafangle", v("leafangle") + "°");
     set("hub", v("hub") + " mm"); set("rim", f1("rim") + " mm"); set("rayw", f1("rayw") + " mm");
     set("rays", v("rays")); set("raysper", v("raysper"));
@@ -1563,6 +1958,17 @@ if (typeof document !== "undefined" && document.getElementById){
     $("lay-per").classList.toggle("on", latlayout === "perpetal");
     $("rays-ctl").classList.toggle("hidden", latlayout === "perpetal");
     $("raysper-ctl").classList.toggle("hidden", latlayout === "free");
+    $("lt-blade").classList.toggle("on", ltype === "blade");
+    $("lt-frond").classList.toggle("on", ltype === "frond");
+    $("leaflets-ctl").classList.toggle("hidden", ltype !== "frond");
+    $("lscroll-ctl").classList.toggle("hidden", ltype !== "frond");
+    $("stamlen-ctl").classList.toggle("hidden", parseInt($("in-stamens").value) === 0);
+    ["branch","along","cluster"].forEach(m => {
+      const map = { branch:"xm-branch", along:"xm-along", cluster:"xm-cluster" };
+      $(map[m]).classList.toggle("on", xmode === m);
+    });
+    // fronds are always solid — their leaflets are too small for windows
+    document.querySelectorAll("#ls-solid,#ls-veins,#ls-outline").forEach(el => el.disabled = ltype === "frond");
     $("ls-solid").classList.toggle("on", lstyle === "solid");
     $("ls-veins").classList.toggle("on", lstyle === "veins");
     $("ls-outline").classList.toggle("on", lstyle === "outline");
@@ -1575,7 +1981,7 @@ if (typeof document !== "undefined" && document.getElementById){
     $("flower-hint").classList.toggle("hidden", flowerOn);
     $("leaf-body").classList.toggle("hidden", !leavesOn);
     $("leaf-hint").classList.toggle("hidden", leavesOn);
-    $("branchsize-ctl").classList.toggle("hidden", nF <= nS);
+    $("xmode-wrap").classList.toggle("hidden", nF <= nS);
   }
 
   const modeNames = { rose:"daisy curve", harm:"wave petals", super:"superformula", fan:"fan bloom" };
@@ -1583,6 +1989,7 @@ if (typeof document !== "undefined" && document.getElementById){
   function render(){
     updateOutputs();
     if (view === "bouquet" && bouquet.length){ renderBouquet(); return; }
+    if (view === "sheets" && bouquet.length){ renderSheets(); return; }
     const st = readState();
     const plant = buildPlant(st);
     $("preview").innerHTML = buildPreviewSVG(plant, st);
@@ -1612,6 +2019,11 @@ if (typeof document !== "undefined" && document.getElementById){
   $("fs-outline").addEventListener("click", () => { fstyle = "outline"; showGroups(); render(); });
   $("lay-free").addEventListener("click", () => { latlayout = "free"; showGroups(); render(); });
   $("lay-per").addEventListener("click", () => { latlayout = "perpetal"; showGroups(); render(); });
+  $("xm-branch").addEventListener("click", () => { xmode = "branch"; showGroups(); render(); });
+  $("xm-along").addEventListener("click", () => { xmode = "along"; showGroups(); render(); });
+  $("xm-cluster").addEventListener("click", () => { xmode = "cluster"; showGroups(); render(); });
+  $("lt-blade").addEventListener("click", () => { ltype = "blade"; showGroups(); render(); });
+  $("lt-frond").addEventListener("click", () => { ltype = "frond"; showGroups(); render(); });
   $("ls-solid").addEventListener("click", () => { lstyle = "solid"; showGroups(); render(); });
   $("ls-veins").addEventListener("click", () => { lstyle = "veins"; showGroups(); render(); });
   $("ls-outline").addEventListener("click", () => { lstyle = "outline"; showGroups(); render(); });
@@ -1655,6 +2067,8 @@ if (typeof document !== "undefined" && document.getElementById){
   /* packets */
   function applyValues(p){
     if (p.mode){ mode = p.mode; blend = "off"; }
+    if (p.ltype) ltype = p.ltype;
+    if (p.xmode) xmode = p.xmode;
     for (const key in p){
       if (key === "mode") continue;
       const el = $("in-" + key);
@@ -1665,19 +2079,26 @@ if (typeof document !== "undefined" && document.getElementById){
   }
 
   const flowerPacks = {
-    daisy:      { mode:"rose",  petals:12, sharp:1.2, valley:0.38, dia:140 },
-    cosmos:     { mode:"rose",  petals:8,  sharp:0.7, valley:0.30, dia:140 },
-    poppy:      { mode:"harm",  petals:5,  a1:0.55, a2:-0.2, a3:0.1, depth:0.45, dia:130 },
-    starburst:  { mode:"super", petals:14, n1:0.8, n2:3, n3:3, dia:160 },
-    gumblossom: { mode:"super", petals:18, n1:4, n2:12, n3:12, dia:130 },
-    tuliphead:  { mode:"fan",   petals:3, spread:75, fwidth:1.15, ftip:1.2, fbase:0.3, dia:110 },
-    lilyhead:   { mode:"fan",   petals:5, spread:170, fwidth:0.7, ftip:2.8, fbase:0.18, dia:150 }
+    daisy:      { mode:"rose",  petals:12, sharp:1.2, valley:0.38, dia:140, ftilt:0, fspin:0, calyx:0, stamens:0 },
+    sidedaisy:  { mode:"rose",  petals:13, sharp:2.2, valley:0.72, dia:130, ftilt:58, fspin:0, calyx:0.16, stamens:0 },
+    cosmos:     { mode:"rose",  petals:8,  sharp:0.7, valley:0.30, dia:140, ftilt:0, fspin:0, calyx:0, stamens:0 },
+    poppy:      { mode:"harm",  petals:5,  a1:0.55, a2:-0.2, a3:0.1, depth:0.45, dia:130, ftilt:0, fspin:0, calyx:0, stamens:0 },
+    starburst:  { mode:"super", petals:14, n1:0.8, n2:3, n3:3, dia:160, ftilt:0, fspin:0, calyx:0, stamens:0 },
+    gumblossom: { mode:"super", petals:18, n1:4, n2:12, n3:12, dia:130, ftilt:0, fspin:0, calyx:0, stamens:0 },
+    tuliphead:  { mode:"fan",   petals:3, spread:75, fwidth:1.15, ftip:1.2, fbase:0.3, dia:110, ftilt:0, fspin:0, calyx:0, stamens:0 },
+    lilyhead:   { mode:"fan",   petals:5, spread:170, fwidth:0.7, ftip:2.8, fbase:0.18, dia:150, ftilt:0, fspin:0, calyx:0 },
+    hellebore:  { mode:"rose",  petals:5, sharp:0.9, valley:0.5, dia:120, ftilt:20, fspin:0, calyx:0.12, stamens:9, stamlen:0.7 },
+    wattle:     { mode:"super", petals:16, n1:2.5, n2:10, n3:10, dia:26, ftilt:0, fspin:0, calyx:0, stamens:0,
+                  flowers:7, stems:1, xmode:"along", branchscale:1 },
+    kangaroopaw:{ mode:"fan",   petals:5, spread:110, fwidth:0.5, ftip:3.5, fbase:0.15, dia:48, ftilt:0, fspin:0, calyx:0.14, stamens:0,
+                  flowers:5, stems:1, xmode:"along", branchscale:0.9 }
   };
   const leafPacks = {
-    simple: { lwidth:0.42, ltip:1.8, lobes:0, lobedepth:0.2 },
-    oak:    { lwidth:0.6,  ltip:1.1, lobes:7, lobedepth:0.3 },
-    gum:    { lwidth:0.2,  ltip:2.2, lobes:0, lobedepth:0.2 },
-    willow: { lwidth:0.28, ltip:3.2, lobes:0, lobedepth:0.2 }
+    simple: { lwidth:0.42, ltip:1.8, lobes:0, lobedepth:0.2, ltype:"blade" },
+    oak:    { lwidth:0.6,  ltip:1.1, lobes:7, lobedepth:0.3, ltype:"blade" },
+    gum:    { lwidth:0.2,  ltip:2.2, lobes:0, lobedepth:0.2, ltype:"blade" },
+    willow: { lwidth:0.28, ltip:3.2, lobes:0, lobedepth:0.2, ltype:"blade" },
+    fern:   { lwidth:0.5,  ltip:1.4, lobes:4, lobedepth:0.28, ltype:"frond", leaflets:12, lbend:0.25 }
   };
   document.querySelectorAll("[data-flower]").forEach(ch =>
     ch.addEventListener("click", () => applyValues(flowerPacks[ch.getAttribute("data-flower")])));
@@ -1721,6 +2142,17 @@ if (typeof document !== "undefined" && document.getElementById){
     $("in-ftip").value = rnd(0.7, 3.2).toFixed(1);
     $("in-fbase").value = rnd(0.1, 0.4).toFixed(2);
     $("in-ftilt").value = Math.random() < 0.5 ? 0 : Math.floor(rnd(10, 55));
+    $("in-calyx").value = Math.random() < 0.7 ? 0 : rnd(0.1, 0.25).toFixed(2);
+    $("in-lsizevar").value = rnd(0, 0.5).toFixed(2);
+    $("in-lscatter").value = rnd(0, 0.6).toFixed(2);
+    $("in-declutter").value = Math.random() < 0.5 ? 0 : rnd(0.3, 0.8).toFixed(2);
+    $("in-smoothing").value = 0;
+    $("in-stamens").value = Math.random() < 0.75 ? 0 : Math.floor(rnd(3, 10));
+    $("in-stamlen").value = rnd(0.5, 1.1).toFixed(2);
+    $("in-lscroll").value = ltype === "frond" && Math.random() < 0.4 ? rnd(0.3, 0.9).toFixed(2) : 0;
+    xmode = ["branch","along","cluster"][Math.floor(Math.random() * 3)];
+    $("in-leaflets").value = Math.floor(rnd(6, 16));
+    ltype = Math.random() < 0.25 ? "frond" : "blade";
     $("in-fspin").value = Math.floor(rnd(0, 72)) * 5;
     $("in-lwidth").value = rnd(0.18, 0.75).toFixed(2);
     $("in-ltip").value = rnd(0.8, 3.5).toFixed(1);
@@ -1742,83 +2174,183 @@ if (typeof document !== "undefined" && document.getElementById){
     render();
   });
 
-  /* ---------- bouquet ---------- */
-  const bouquet = [];
+  /* ---------- project binder ---------- */
+  const MAXSLOTS = 8;
+  const slots = new Array(MAXSLOTS).fill(null);
+  let activeSlot = 0;
   let view = "plant";
   let sheet = [300, 300];
   let withVase = true;
   const modeShort = { rose:"Daisy", harm:"Waves", super:"Super", fan:"Fan" };
+  const filled = () => slots.filter(Boolean);
+  const bouquet = { get length(){ return filled().length; } }; // legacy guards
 
-  function bqChips(){
-    const box = $("bq-chips");
-    box.innerHTML = "";
-    bouquet.forEach((st, i) => {
-      const chip = document.createElement("button");
-      chip.className = "chip";
-      chip.style.borderColor = PALETTE[i % PALETTE.length];
-      chip.style.color = PALETTE[i % PALETTE.length];
-      const label = st.flowers > 0 ? modeShort[st.mode] + (st.flowers > 1 ? " ×" + st.flowers : "") : "Foliage";
-      chip.textContent = (i + 1) + " · " + label + "  ✕";
-      chip.title = "Click to load back into the editor; ✕ end removes";
-      chip.addEventListener("click", ev => {
-        // clicking the right edge (the ✕) removes; elsewhere loads
-        const r = chip.getBoundingClientRect();
-        if (ev.clientX > r.right - 24){
-          bouquet.splice(i, 1);
-          if (!bouquet.length) view = "plant";
-          bqUI(); render();
-        } else {
-          loadState(st);
-          toast("Loaded bloom " + (i + 1) + " into the editor");
-        }
-      });
-      box.appendChild(chip);
-    });
-    $("bq-hint").textContent = bouquet.length
-      ? bouquet.length + " of 8 saved — tap a chip to edit it again, or its ✕ to remove."
-      : "Happy with a plant? Add it with the ＋ button under the preview — up to 8 make a bouquet.";
+  function slotLabel(st, i){
+    if (!st) return (i + 1) + " · empty";
+    return (i + 1) + " · " + (st.flowers > 0 ? modeShort[st.mode] + (st.flowers > 1 ? " ×" + st.flowers : "") : "Foliage");
   }
 
-  function bqUI(){
-    bqChips();
-    $("viewseg").classList.toggle("hidden", bouquet.length === 0);
-    $("bq-controls").classList.toggle("hidden", bouquet.length === 0);
+  function projectToJSON(){
+    return JSON.stringify({ app: "infinite-flower-creator", version: 1,
+      projectSize: parseInt($("in-slots").value), slots }, null, 1);
+  }
+  function projectFromJSON(text){
+    const p = JSON.parse(text);
+    if (!p || p.app !== "infinite-flower-creator" || !Array.isArray(p.slots)) throw new Error("not a project file");
+    return p;
+  }
+
+  function persist(){
+    try { localStorage.setItem("ifc-project-v1", projectToJSON()); } catch(e){}
+  }
+  function restore(){
+    try {
+      const t = localStorage.getItem("ifc-project-v1");
+      if (!t) return;
+      const p = projectFromJSON(t);
+      p.slots.slice(0, MAXSLOTS).forEach((s, i) => slots[i] = s || null);
+      if (p.projectSize) $("in-slots").value = Math.min(MAXSLOTS, Math.max(2, p.projectSize));
+    } catch(e){}
+  }
+
+  function binderUI(){
+    const n = parseInt($("in-slots").value);
+    $("out-slots").textContent = n;
+    const box = $("bindertabs");
+    box.innerHTML = "";
+    for (let i = 0; i < n; i++){
+      const b = document.createElement("button");
+      b.className = "tab " + (slots[i] ? "filled" : "empty") + (i === activeSlot ? " active" : "");
+      b.textContent = slotLabel(slots[i], i);
+      if (slots[i]) b.style.borderBottomColor = PALETTE[i % PALETTE.length];
+      b.addEventListener("click", () => switchSlot(i));
+      box.appendChild(b);
+    }
+    $("viewseg").classList.toggle("hidden", filled().length === 0);
+    $("bq-controls").classList.toggle("hidden", filled().length === 0);
     $("view-plant").classList.toggle("on", view === "plant");
     $("view-bouquet").classList.toggle("on", view === "bouquet");
+    $("view-sheets").classList.toggle("on", view === "sheets");
     $("tog-vase").classList.toggle("on", withVase);
     $("tog-vase").textContent = withVase ? "Vase ✓" : "Vase ✗";
     $("sheet-300").classList.toggle("on", sheet[0] === 300);
     $("sheet-450").classList.toggle("on", sheet[0] === 450);
     $("sheet-600").classList.toggle("on", sheet[0] === 600);
+    $("bq-hint").textContent = filled().length
+      ? filled().length + " flower" + (filled().length === 1 ? "" : "s") + " in the binder — every filled tab joins the bouquet."
+      : "Save flowers into the binder tabs above — every filled tab joins the bouquet.";
+  }
+  const bqUI = binderUI; // keep older call sites working
+
+  function saveToSlot(i){
+    slots[i] = readState();
+    persist();
+  }
+
+  function switchSlot(i){
+    if (i === activeSlot){ binderUI(); return; }
+    saveToSlot(activeSlot);          // your work is never lost on tab switch
+    activeSlot = i;
+    if (slots[i]) loadState(slots[i]);
+    else { view = "plant"; binderUI(); render(); toast("Fresh tab — carry on from here and Save flower"); }
   }
 
   function loadState(st){
     mode = st.mode; blend = st.blend; fstyle = st.fstyle; latlayout = st.latlayout;
-    lstyle = st.lstyle; arrange = st.arrange;
+    lstyle = st.lstyle; ltype = st.ltype || "blade"; xmode = st.xmode || "branch"; arrange = st.arrange;
     seeds.F = st.seedF; seeds.L = st.seedL; seeds.S = st.seedS;
     for (const s of sliders){ const el = $("in-" + s); if (el && st[s] != null) el.value = st[s]; }
     $("in-flowers2").value = st.flowers; $("in-leaves2").value = st.leaves;
     $("in-bloomcol").value = st.bloomcol; $("in-leafcol").value = st.leafcol;
     view = "plant";
-    showGroups(); bqUI(); render();
+    showGroups(); binderUI(); render();
   }
 
   $("btn-addbq").addEventListener("click", () => {
-    if (bouquet.length >= 8){ toast("The bouquet is full — 8 is a good bunch"); return; }
-    bouquet.push(readState());
-    view = "bouquet";
-    bqUI(); render();
-    toast("Added to the bouquet (" + bouquet.length + " of 8)");
+    saveToSlot(activeSlot);
+    binderUI(); render();
+    toast("Saved to tab " + (activeSlot + 1));
   });
-  $("view-plant").addEventListener("click", () => { view = "plant"; bqUI(); render(); });
-  $("view-bouquet").addEventListener("click", () => { view = "bouquet"; bqUI(); render(); });
-  $("tog-vase").addEventListener("click", () => { withVase = !withVase; bqUI(); render(); });
-  $("sheet-300").addEventListener("click", () => { sheet = [300, 300]; bqUI(); });
-  $("sheet-450").addEventListener("click", () => { sheet = [450, 300]; bqUI(); });
-  $("sheet-600").addEventListener("click", () => { sheet = [600, 400]; bqUI(); });
+  $("in-slots").addEventListener("input", () => {
+    if (activeSlot >= parseInt($("in-slots").value)) activeSlot = 0;
+    binderUI(); persist();
+  });
+  $("view-plant").addEventListener("click", () => { view = "plant"; binderUI(); render(); });
+  $("view-bouquet").addEventListener("click", () => {
+    saveToSlot(activeSlot); // the bouquet always includes what you're looking at
+    view = "bouquet"; binderUI(); render();
+  });
+  $("view-sheets").addEventListener("click", () => {
+    saveToSlot(activeSlot);
+    view = "sheets"; binderUI();
+    toast("Welding and nesting — a moment…");
+    setTimeout(render, 40);
+  });
+  $("tog-vase").addEventListener("click", () => { withVase = !withVase; binderUI(); render(); });
+  $("sheet-300").addEventListener("click", () => { sheet = [300, 300]; binderUI(); });
+  $("sheet-450").addEventListener("click", () => { sheet = [450, 300]; binderUI(); });
+  $("sheet-600").addEventListener("click", () => { sheet = [600, 400]; binderUI(); });
+
+  /* project files */
+  $("btn-exportproj").addEventListener("click", () => {
+    saveToSlot(activeSlot);
+    binderUI();
+    saveSVG_any(projectToJSON(), "flower-project.json", "application/json", "Project exported");
+  });
+  $("btn-importproj").addEventListener("click", () => $("in-projfile").click());
+  $("in-projfile").addEventListener("change", async ev => {
+    const f = ev.target.files[0];
+    if (!f) return;
+    try {
+      const p = projectFromJSON(await f.text());
+      const incoming = p.slots.filter(Boolean);
+      if (filled().length === 0){
+        p.slots.slice(0, MAXSLOTS).forEach((s, i) => slots[i] = s || null);
+        if (p.projectSize) $("in-slots").value = Math.min(MAXSLOTS, Math.max(2, p.projectSize));
+        toast("Project loaded — " + incoming.length + " flower" + (incoming.length === 1 ? "" : "s"));
+      } else {
+        let placed = 0;
+        for (const s of incoming){
+          const empty = slots.findIndex(x => !x);
+          if (empty < 0) break;
+          slots[empty] = s; placed++;
+        }
+        toast(placed + " flower" + (placed === 1 ? "" : "s") + " imported into empty tabs" +
+              (placed < incoming.length ? " (" + (incoming.length - placed) + " didn't fit)" : ""));
+      }
+      persist();
+      binderUI(); render();
+    } catch(e){
+      toast("That doesn't look like a flower project file");
+    }
+    ev.target.value = "";
+  });
+
+  function renderSheets(){
+    const { sheets } = nestLayout(filled(), sheet[0], sheet[1], withVase);
+    const gap = 15;
+    let ox = 0, maxH = 0, body = "";
+    let pieceCount = 0;
+    for (const s of sheets){
+      body += '<rect x="' + fmt(ox) + '" y="0" width="' + fmt(s.w) + '" height="' + fmt(s.h) +
+              '" fill="#fff" stroke="#9db3c8" stroke-width="1" stroke-dasharray="4 3" rx="2"/>';
+      for (const pl of s.placements){
+        pieceCount++;
+        const d = pl.p.loops.map(l => loopToD(l.map(([x, y]) => [x + ox + pl.x, y + pl.y]))).join("");
+        body += '<path d="' + d + '" fill="#dcc094" fill-rule="evenodd" stroke="#9a7a4e" stroke-width="0.5"/>';
+      }
+      ox += s.w + gap;
+      maxH = Math.max(maxH, s.h);
+    }
+    const W = ox - gap, H = maxH;
+    $("preview").innerHTML = '<svg viewBox="-4 -4 ' + fmt(W + 8) + ' ' + fmt(H + 8) +
+      '" role="img" aria-label="Nested sheets preview">' + body + '</svg>';
+    $("statline").textContent = "Sheets · " + pieceCount + " pieces on " + sheets.length +
+      (sheets.length === 1 ? " sheet" : " sheets") + " of " + sheet[0] + "×" + sheet[1] + " mm" + (withVase ? " · vase included" : "");
+  }
 
   function renderBouquet(){
-    const sc = buildBouquetScene(bouquet);
+    const sc = buildBouquetScene(filled());
     let body = "";
     for (const it of sc.items){
       for (const p of it.parts){
@@ -1831,20 +2363,22 @@ if (typeof document !== "undefined" && document.getElementById){
     $("preview").innerHTML = '<svg viewBox="0 0 ' + fmt(sc.W) + ' ' + fmt(sc.H) +
       '" role="img" aria-label="Bouquet preview"><g style="filter:drop-shadow(0 ' + sc.H / 140 +
       'px ' + sc.H / 100 + 'px rgba(80,60,30,.25))">' + body + '</g></svg>';
-    $("statline").textContent = "Bouquet · " + bouquet.length + (bouquet.length === 1 ? " plant" : " plants") +
+    $("statline").textContent = "Bouquet · " + filled().length + (filled().length === 1 ? " plant" : " plants") +
       " · " + Math.round(sc.W) + "×" + Math.round(sc.H) + " mm arranged" + (withVase ? " · vase" : "");
   }
 
   $("btn-bqcolour").addEventListener("click", () => {
-    if (!bouquet.length){ toast("Add some plants first"); return; }
-    saveSVG(buildBouquetColourSVG(bouquet), "bouquet-" + bouquet.length + "-colour.svg", "Bouquet saved");
+    saveToSlot(activeSlot);
+    if (!filled().length){ toast("Save some flowers first"); return; }
+    saveSVG(buildBouquetColourSVG(filled()), "bouquet-" + filled().length + "-colour.svg", "Bouquet saved");
   });
   $("btn-bqcut").addEventListener("click", () => {
-    if (!bouquet.length){ toast("Add some plants first"); return; }
+    saveToSlot(activeSlot);
+    if (!filled().length){ toast("Save some flowers first"); return; }
     toast("Welding and nesting — a moment…");
     setTimeout(() => {
-      saveSVG(buildNestedCutSVG(bouquet, sheet[0], sheet[1], withVase),
-              "bouquet-" + bouquet.length + "-nested-" + sheet[0] + "x" + sheet[1] + ".svg",
+      saveSVG(buildNestedCutSVG(filled(), sheet[0], sheet[1], withVase),
+              "bouquet-" + filled().length + "-nested-" + sheet[0] + "x" + sheet[1] + ".svg",
               "Nested cut sheet saved");
     }, 50);
   });
@@ -1854,6 +2388,24 @@ if (typeof document !== "undefined" && document.getElementById){
     const st = readState();
     const what = st.flowers === 0 ? "foliage" : (st.stems > 1 || st.flowers > 1 ? "bunch" : (st.stemlen >= 10 ? "plant" : "flower"));
     return "infinite-" + what + "-" + st.mode + (kind === "colour" ? "-colour" : "") + ".svg";
+  }
+
+  async function saveSVG_any(text, name, mime, doneMsg){
+    const blob = new Blob([text], { type: mime });
+    if (window.showSaveFilePicker){
+      try{
+        const handle = await window.showSaveFilePicker({ suggestedName: name });
+        const w = await handle.createWritable();
+        await w.write(blob); await w.close();
+        toast(doneMsg); return;
+      } catch(e){ if (e && e.name === "AbortError") return; }
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast(doneMsg);
   }
 
   async function saveSVG(svg, name, doneMsg){
@@ -1899,8 +2451,9 @@ if (typeof document !== "undefined" && document.getElementById){
     }
   });
 
+  restore();
   showGroups();
-  bqUI();
+  binderUI();
   render();
 }
 </script>
