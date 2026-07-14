@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Infinite Flower Creator · Curiosity.diy</title>
+<style>
+  :root{
+    --limewash:#f3ede2;
+    --card:#faf6ee;
+    --ink:#3b342a;
+    --ink-soft:#6f6656;
+    --line:#ddd3c2;
+    --accent:#a45f3f;
+    --accent-soft:#e8d5c8;
+    --sage:#77855f;
+    --sage-soft:#e4e9d8;
+    --shadow:0 2px 10px rgba(80,64,40,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--limewash);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+  }
+  header{text-align:center;padding:26px 16px 8px}
+  header h1{font-family:Georgia,'Times New Roman',serif;font-weight:normal;font-size:2rem;letter-spacing:.5px}
+  header h1 .bloom{color:var(--accent)}
+  header p{color:var(--ink-soft);font-size:.92rem;margin-top:6px}
+  .stage-tag{
+    display:inline-block;margin-top:8px;font-size:.72rem;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--sage);border:1px solid var(--sage);
+    border-radius:999px;padding:3px 12px;background:rgba(119,133,95,.07);
+  }
+  main{
+    max-width:1180px;margin:16px auto 40px;padding:0 16px;
+    display:grid;grid-template-columns:350px 1fr;
+    grid-template-areas:"controls preview";
+    gap:18px;align-items:start;
+  }
+  .preview-col{grid-area:preview;position:sticky;top:14px;display:flex;flex-direction:column;gap:10px}
+  .control-col{grid-area:controls;display:flex;flex-direction:column;gap:14px}
+  @media (max-width:860px){
+    main{grid-template-columns:1fr;grid-template-areas:"preview" "controls"}
+    .preview-col{
+      position:sticky;top:0;z-index:20;background:var(--limewash);
+      padding:8px 0 10px;box-shadow:0 8px 12px -10px rgba(80,64,40,.25);
+    }
+    .preview svg{max-height:34vh}
+  }
+  .panel{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);padding:16px 18px;
+  }
+  .subhead{
+    font-family:Georgia,serif;font-weight:normal;font-size:1.05rem;color:var(--ink);
+    border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:12px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .stepnum{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+  .mini-label{font-size:.76rem;color:var(--ink-soft);margin:12px 0 6px;letter-spacing:.04em}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{
+    flex:1;min-width:70px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);
+    border-radius:9px;padding:8px 6px;font-size:.82rem;cursor:pointer;
+  }
+  .seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .seg button:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+  .seg.sagey button.on{background:var(--sage);border-color:var(--sage)}
+  .ctl{margin:10px 0}
+  .ctl label{
+    display:flex;justify-content:space-between;font-size:.82rem;
+    color:var(--ink-soft);margin-bottom:4px;
+  }
+  .ctl label output{color:var(--ink);font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--accent);height:22px}
+  input[type=range]:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+  .preview-bar{
+    display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--shadow);padding:8px 12px;
+  }
+  .colour-item{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--ink-soft)}
+  input[type=color]{
+    width:38px;height:28px;border:1px solid var(--line);border-radius:8px;
+    background:#fff;padding:2px;cursor:pointer;
+  }
+  input[type=color]:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px}
+  .chip{
+    border:1px solid var(--accent-soft);background:#fff;color:var(--accent);
+    border-radius:999px;padding:5px 12px;font-size:.8rem;cursor:pointer;
+  }
+  .chip:hover{background:var(--accent-soft)}
+  .chip:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+  .chip.leafchip{border-color:#cdd6bd;color:var(--sage)}
+  .chip.leafchip:hover{background:var(--sage-soft)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .btn{
+    border:none;border-radius:10px;padding:11px 14px;font-size:.88rem;cursor:pointer;
+    flex:1;min-width:110px;
+  }
+  .btn.small{padding:7px 12px;font-size:.8rem;flex:0 0 auto;min-width:0}
+  .btn:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:hover{background:#8f5236}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .btn.ghost:hover{background:var(--accent-soft)}
+  .btn.sage{background:var(--sage);color:#fff}
+  .btn.sage:hover{background:#616e4d}
+  .nat-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+  .nat-row .btn{flex:0 0 auto}
+  .nat-row input[type=range]{flex:1}
+  .undo{
+    border:1px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:9px;
+    width:38px;height:34px;cursor:pointer;font-size:1rem;flex:0 0 auto;
+  }
+  .undo:hover{background:var(--accent-soft)}
+  .undo:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+  .preview{
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,.55), transparent 60%),
+      var(--card);
+    border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+    padding:12px;display:flex;align-items:center;justify-content:center;
+  }
+  .preview svg{width:100%;max-width:560px;max-height:60vh;height:auto;display:block}
+  .statline{text-align:center;font-size:.8rem;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  details.notes{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);padding:14px 18px;font-size:.88rem;
+    color:var(--ink-soft);line-height:1.55;
+  }
+  details.notes summary{cursor:pointer;color:var(--ink);font-family:Georgia,serif;font-size:.98rem}
+  details.notes p{margin:10px 0}
+  details.notes b{color:var(--ink)}
+  .hidden{display:none}
+  footer{text-align:center;color:var(--ink-soft);font-size:.78rem;padding:0 16px 28px}
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(70px);
+    background:var(--ink);color:var(--limewash);border-radius:999px;padding:9px 18px;
+    font-size:.85rem;opacity:0;transition:all .25s ease;pointer-events:none;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The Infinite <span class="bloom">Flower Creator</span></h1>
+  <p>Mathematical blooms, stems and leaves for the laser cutter — grown from formulas, cut from plywood.</p>
+  <span class="stage-tag">Stage 5 · The Nursery</span>
+</header>
+
+<main>
+  <!-- ============ PREVIEW ============ -->
+  <div class="preview-col">
+    <div class="preview" id="preview" aria-label="Plant preview"></div>
+    <div class="preview-bar">
+      <span class="colour-item"><input type="color" id="in-bloomcol" value="#c98a5b" aria-label="Bloom colour"> Bloom</span>
+      <span class="colour-item"><input type="color" id="in-leafcol" value="#8a9a70" aria-label="Stem and leaf colour"> Stem &amp; leaves</span>
+      <button class="btn ghost small" id="btn-savecolour">Colour SVG</button>
+      <button class="btn primary small" id="btn-addbq">＋ Bouquet</button>
+      <span class="seg hidden" id="viewseg" style="flex:0 0 auto">
+        <button id="view-plant" class="on">Plant</button>
+        <button id="view-bouquet">Bouquet</button>
+      </span>
+    </div>
+    <div class="statline" id="statline"></div>
+  </div>
+
+  <!-- ============ CONTROLS ============ -->
+  <div class="control-col">
+
+    <!-- 1 · BUILD -->
+    <div class="panel">
+      <div class="subhead">Build your plant <span class="stepnum">Step 1</span></div>
+      <div class="ctl">
+        <label for="in-flowers">Flowers <output id="out-flowers">1</output></label>
+        <input type="range" id="in-flowers" min="0" max="10" step="1" value="1">
+      </div>
+      <div class="ctl">
+        <label for="in-stems">Stems <output id="out-stems">1</output></label>
+        <input type="range" id="in-stems" min="1" max="5" step="1" value="1">
+      </div>
+      <div class="ctl">
+        <label for="in-leaves">Leaves <output id="out-leaves">2</output></label>
+        <input type="range" id="in-leaves" min="0" max="12" step="1" value="2">
+      </div>
+      <div class="ctl">
+        <label for="in-stemlen">Stem height <output id="out-stemlen">110 mm</output></label>
+        <input type="range" id="in-stemlen" min="0" max="300" step="5" value="110">
+      </div>
+      <div class="ctl">
+        <label for="in-stemw">Stem thickness <output id="out-stemw">5.0 mm</output></label>
+        <input type="range" id="in-stemw" min="2" max="12" step="0.5" value="5">
+      </div>
+      <div class="ctl">
+        <label for="in-curve">Curve (lean) <output id="out-curve">0.15</output></label>
+        <input type="range" id="in-curve" min="-1" max="1" step="0.05" value="0.15">
+      </div>
+      <div class="ctl">
+        <label for="in-bend">Bend (bow) <output id="out-bend">0.00</output></label>
+        <input type="range" id="in-bend" min="-1" max="1" step="0.05" value="0">
+      </div>
+      <div class="ctl hidden" id="branchsize-ctl">
+        <label for="in-branchscale">Extra bloom size <output id="out-branchscale">0.55</output></label>
+        <input type="range" id="in-branchscale" min="0.3" max="1" step="0.05" value="0.55">
+      </div>
+      <div class="nat-row">
+        <button class="btn sage small" id="nat-S">Naturise stem</button>
+        <input type="range" id="in-natS" min="0" max="1" step="0.01" value="0" aria-label="Stem naturise amount">
+        <button class="undo" id="undo-S" title="Undo stem naturise" aria-label="Undo stem naturise">↶</button>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="btn-random">Surprise me</button>
+      </div>
+    </div>
+
+    <!-- 2 · FLOWER -->
+    <div class="panel" id="sec-flower">
+      <div class="subhead">The flower <span class="stepnum">Step 2</span></div>
+      <div class="ctl">
+        <label for="in-flowers2">Flowers <output id="out-flowers2">1</output></label>
+        <input type="range" id="in-flowers2" min="0" max="10" step="1" value="1">
+      </div>
+      <p class="mini-label hidden" id="flower-hint">No flowers yet — slide the count up to grow some.</p>
+      <div id="flower-body">
+      <div class="presets">
+        <button class="chip" data-flower="daisy">Daisy</button>
+        <button class="chip" data-flower="cosmos">Cosmos</button>
+        <button class="chip" data-flower="poppy">Poppy</button>
+        <button class="chip" data-flower="starburst">Starburst</button>
+        <button class="chip" data-flower="gumblossom">Gum blossom</button>
+        <button class="chip" data-flower="tuliphead">Tulip</button>
+        <button class="chip" data-flower="lilyhead">Lily</button>
+      </div>
+      <div class="mini-label">Petal maths</div>
+      <div class="seg" role="group" aria-label="Formula family">
+        <button id="mode-rose" class="on">Daisy</button>
+        <button id="mode-harm">Waves</button>
+        <button id="mode-super">Super</button>
+        <button id="mode-fan">Fan</button>
+      </div>
+
+      <div id="blend-wrap">
+        <div class="mini-label">Add a second flavour — the outline becomes a mix of both curves</div>
+        <div class="seg" role="group" aria-label="Second flavour">
+          <button id="blend-off" class="on">None</button>
+          <button id="blend-rose">+ Daisy</button>
+          <button id="blend-harm">+ Waves</button>
+          <button id="blend-super">+ Super</button>
+        </div>
+        <div class="ctl hidden" id="mix-ctl">
+          <label for="in-mix">Recipe <output id="out-mix">50% · 50%</output></label>
+          <input type="range" id="in-mix" min="0" max="1" step="0.01" value="0.5">
+        </div>
+      </div>
+
+      <div class="ctl">
+        <label for="in-dia">Flower size <output id="out-dia">140 mm</output></label>
+        <input type="range" id="in-dia" min="15" max="400" step="5" value="140">
+      </div>
+      <div class="ctl">
+        <label for="in-petals">Petals <output id="out-petals">8</output></label>
+        <input type="range" id="in-petals" min="2" max="24" step="1" value="8">
+      </div>
+
+      <div data-group="rose">
+        <div class="ctl">
+          <label for="in-sharp">Petal shape (round → pointy) <output id="out-sharp">1.6</output></label>
+          <input type="range" id="in-sharp" min="0.3" max="6" step="0.1" value="1.6">
+        </div>
+        <div class="ctl">
+          <label for="in-valley">Petal separation <output id="out-valley">0.45</output></label>
+          <input type="range" id="in-valley" min="0" max="0.85" step="0.01" value="0.45">
+        </div>
+      </div>
+
+      <div data-group="harm" class="hidden">
+        <div class="ctl">
+          <label for="in-a1">Wave 1 <output id="out-a1">0.60</output></label>
+          <input type="range" id="in-a1" min="-1" max="1" step="0.05" value="0.6">
+        </div>
+        <div class="ctl">
+          <label for="in-a2">Wave 2 (tip detail) <output id="out-a2">0.15</output></label>
+          <input type="range" id="in-a2" min="-1" max="1" step="0.05" value="0.15">
+        </div>
+        <div class="ctl">
+          <label for="in-a3">Wave 3 (frill) <output id="out-a3">0.00</output></label>
+          <input type="range" id="in-a3" min="-1" max="1" step="0.05" value="0">
+        </div>
+        <div class="ctl">
+          <label for="in-depth">Petal separation <output id="out-depth">0.50</output></label>
+          <input type="range" id="in-depth" min="0.1" max="0.9" step="0.01" value="0.5">
+        </div>
+      </div>
+
+      <div data-group="super" class="hidden">
+        <div class="ctl">
+          <label for="in-n1">n1 (overall roundness) <output id="out-n1">3.0</output></label>
+          <input type="range" id="in-n1" min="0.2" max="20" step="0.1" value="3">
+        </div>
+        <div class="ctl">
+          <label for="in-n2">n2 (petal push) <output id="out-n2">7.0</output></label>
+          <input type="range" id="in-n2" min="0.2" max="20" step="0.1" value="7">
+        </div>
+        <div class="ctl">
+          <label for="in-n3">n3 (petal pull) <output id="out-n3">7.0</output></label>
+          <input type="range" id="in-n3" min="0.2" max="20" step="0.1" value="7">
+        </div>
+      </div>
+
+      <div data-group="fan" class="hidden">
+        <div class="ctl">
+          <label for="in-spread">Fan spread <output id="out-spread">100°</output></label>
+          <input type="range" id="in-spread" min="40" max="220" step="5" value="100">
+        </div>
+        <div class="ctl">
+          <label for="in-fwidth">Petal width <output id="out-fwidth">0.90</output></label>
+          <input type="range" id="in-fwidth" min="0.4" max="1.6" step="0.05" value="0.9">
+        </div>
+        <div class="ctl">
+          <label for="in-ftip">Petal tip (round → pointy) <output id="out-ftip">1.5</output></label>
+          <input type="range" id="in-ftip" min="0.5" max="4" step="0.1" value="1.5">
+        </div>
+        <div class="ctl">
+          <label for="in-fbase">Cup size <output id="out-fbase">0.22</output></label>
+          <input type="range" id="in-fbase" min="0.05" max="0.5" step="0.01" value="0.22">
+        </div>
+      </div>
+
+      <div class="ctl">
+        <label for="in-ftilt">Tilt (facing you → nodding away) <output id="out-ftilt">0°</output></label>
+        <input type="range" id="in-ftilt" min="0" max="70" step="1" value="0">
+      </div>
+      <div class="ctl">
+        <label for="in-fspin">Spin <output id="out-fspin">0°</output></label>
+        <input type="range" id="in-fspin" min="0" max="360" step="5" value="0">
+      </div>
+
+      <div class="mini-label">Flower cut style</div>
+      <div class="seg" role="group" aria-label="Flower cut style">
+        <button id="fs-solid">Solid</button>
+        <button id="fs-lattice" class="on">Lattice</button>
+        <button id="fs-outline">Outline</button>
+      </div>
+      <div data-fs="lattice">
+        <div class="mini-label">Lattice layout</div>
+        <div class="seg" role="group" aria-label="Lattice layout">
+          <button id="lay-free" class="on">Free</button>
+          <button id="lay-per">Per petal</button>
+        </div>
+        <div class="ctl" id="rays-ctl">
+          <label for="in-rays">Spokes <output id="out-rays">24</output></label>
+          <input type="range" id="in-rays" min="6" max="90" step="1" value="24">
+        </div>
+        <div class="ctl hidden" id="raysper-ctl">
+          <label for="in-raysper">Spokes per petal <output id="out-raysper">3</output></label>
+          <input type="range" id="in-raysper" min="1" max="7" step="1" value="3">
+        </div>
+        <div class="ctl">
+          <label for="in-hub">Centre disc <output id="out-hub">12 mm</output></label>
+          <input type="range" id="in-hub" min="3" max="40" step="1" value="12">
+        </div>
+        <div class="ctl">
+          <label for="in-rim">Rim width <output id="out-rim">4 mm</output></label>
+          <input type="range" id="in-rim" min="1" max="15" step="0.5" value="4">
+        </div>
+        <div class="ctl">
+          <label for="in-rayw">Spoke width <output id="out-rayw">2.2 mm</output></label>
+          <input type="range" id="in-rayw" min="0.8" max="8" step="0.2" value="2.2">
+        </div>
+      </div>
+      <div data-fs="outline" class="hidden">
+        <div class="ctl">
+          <label for="in-othick">Outline thickness <output id="out-othick">4 mm</output></label>
+          <input type="range" id="in-othick" min="1.5" max="15" step="0.5" value="4">
+        </div>
+      </div>
+
+      </div><!-- /flower-body -->
+      <div class="nat-row">
+        <button class="btn sage small" id="nat-F">Naturise flower</button>
+        <input type="range" id="in-natF" min="0" max="1" step="0.01" value="0" aria-label="Flower naturise amount">
+        <button class="undo" id="undo-F" title="Undo flower naturise" aria-label="Undo flower naturise">↶</button>
+      </div>
+    </div>
+
+    <!-- 3 · FOLIAGE -->
+    <div class="panel" id="sec-leaves">
+      <div class="subhead">The foliage <span class="stepnum">Step 3</span></div>
+      <div class="ctl">
+        <label for="in-leaves2">Leaves <output id="out-leaves2">2</output></label>
+        <input type="range" id="in-leaves2" min="0" max="12" step="1" value="2">
+      </div>
+      <p class="mini-label hidden" id="leaf-hint">No leaves yet — slide the count up to grow some.</p>
+      <div id="leaf-body">
+      <div class="presets">
+        <button class="chip leafchip" data-leaf="simple">Simple</button>
+        <button class="chip leafchip" data-leaf="oak">Oak</button>
+        <button class="chip leafchip" data-leaf="gum">Gum</button>
+        <button class="chip leafchip" data-leaf="willow">Willow</button>
+      </div>
+      <div class="ctl">
+        <label for="in-leafsize">Leaf size <output id="out-leafsize">55 mm</output></label>
+        <input type="range" id="in-leafsize" min="20" max="160" step="5" value="55">
+      </div>
+      <div class="ctl">
+        <label for="in-leafangle">Leaf angle <output id="out-leafangle">50°</output></label>
+        <input type="range" id="in-leafangle" min="20" max="80" step="5" value="50">
+      </div>
+      <div class="mini-label">Arrangement along the stem</div>
+      <div class="seg sagey" role="group" aria-label="Leaf arrangement">
+        <button id="ar-alt" class="on">Alternate</button>
+        <button id="ar-opp">Opposite</button>
+        <button id="ar-wild">Wild</button>
+      </div>
+      <div class="ctl">
+        <label for="in-lwidth">Leaf width <output id="out-lwidth">0.42</output></label>
+        <input type="range" id="in-lwidth" min="0.15" max="0.9" step="0.01" value="0.42">
+      </div>
+      <div class="ctl">
+        <label for="in-ltip">Tip (round → pointy) <output id="out-ltip">1.8</output></label>
+        <input type="range" id="in-ltip" min="0.6" max="5" step="0.1" value="1.8">
+      </div>
+      <div class="ctl">
+        <label for="in-lbend">Leaf bend <output id="out-lbend">0.00</output></label>
+        <input type="range" id="in-lbend" min="-1" max="1" step="0.05" value="0">
+      </div>
+      <div class="ctl">
+        <label for="in-lobes">Edge lobes <output id="out-lobes">0</output></label>
+        <input type="range" id="in-lobes" min="0" max="12" step="1" value="0">
+      </div>
+      <div class="ctl">
+        <label for="in-lobedepth">Lobe depth <output id="out-lobedepth">0.20</output></label>
+        <input type="range" id="in-lobedepth" min="0.05" max="0.5" step="0.01" value="0.2">
+      </div>
+      <div class="ctl">
+        <label for="in-ltilt">Turn (flat → edge-on) <output id="out-ltilt">0°</output></label>
+        <input type="range" id="in-ltilt" min="0" max="70" step="1" value="0">
+      </div>
+      <div class="mini-label">Leaf cut style</div>
+      <div class="seg" role="group" aria-label="Leaf cut style">
+        <button id="ls-solid">Solid</button>
+        <button id="ls-veins" class="on">Veins</button>
+        <button id="ls-outline">Outline</button>
+      </div>
+      <div class="ctl" id="veins-ctl">
+        <label for="in-veins">Veins <output id="out-veins">12</output></label>
+        <input type="range" id="in-veins" min="4" max="28" step="1" value="12">
+      </div>
+      <div class="ctl hidden" id="lthick-ctl">
+        <label for="in-lthick">Outline thickness <output id="out-lthick">3 mm</output></label>
+        <input type="range" id="in-lthick" min="1.5" max="12" step="0.5" value="3">
+      </div>
+      </div><!-- /leaf-body -->
+      <div class="nat-row">
+        <button class="btn sage small" id="nat-L">Naturise foliage</button>
+        <input type="range" id="in-natL" min="0" max="1" step="0.01" value="0" aria-label="Foliage naturise amount">
+        <button class="undo" id="undo-L" title="Undo foliage naturise" aria-label="Undo foliage naturise">↶</button>
+      </div>
+    </div>
+
+    <!-- 4 · CUT & EXPORT -->
+    <div class="panel">
+      <div class="subhead">Cut &amp; export <span class="stepnum">Step 4</span></div>
+      <div class="ctl">
+        <label for="in-minmat">Minimum material <output id="out-minmat">1.6 mm</output></label>
+        <input type="range" id="in-minmat" min="1" max="4" step="0.1" value="1.6">
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="btn-copy">Copy SVG</button>
+        <button class="btn primary" id="btn-save">Download cut SVG</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="subhead">The bouquet <span class="stepnum">Step 5</span></div>
+      <p class="mini-label" id="bq-hint">Happy with a plant? Add it with the ＋ button under the preview — up to 8 make a bouquet.</p>
+      <div class="presets" id="bq-chips"></div>
+      <div class="mini-label" id="bq-controls-label" style="display:none">Sheet size for nesting (mm)</div>
+      <div id="bq-controls" class="hidden">
+        <div class="seg" role="group" aria-label="Sheet size">
+          <button id="sheet-300" class="on">300×300</button>
+          <button id="sheet-450">450×300</button>
+          <button id="sheet-600">600×400</button>
+        </div>
+        <div class="actions">
+          <button class="toggle on" id="tog-vase" style="flex:0 0 auto;padding:8px 14px">Vase ✓</button>
+          <button class="btn ghost" id="btn-bqcolour">Bouquet colour SVG</button>
+          <button class="btn primary" id="btn-bqcut">Nested cut SVG</button>
+        </div>
+      </div>
+    </div>
+
+    <details class="notes">
+      <summary>Field notes — the maths under the soil</summary>
+      <p><b>The flow.</b> Step 1 decides what you're growing — flower, foliage, or both — and the stem architecture including branches. Steps 2 and 3 shape each part with their own cut styles and their own Naturise seeds (↶ walks back your rolls). Step 4 holds the one rule everything obeys: minimum material.</p>
+      <p><b>Flower packets vs engines.</b> A packet (Daisy, Poppy…) is a recipe: it configures an engine and its dials. The engines — Daisy curve, Wave petals, Superformula, Fan — are the renderers underneath. Because every radial engine is a radius-around-the-centre function, two engines can be <b>blended</b>: the outline becomes a weighted mix of both. Daisy × Super grows daisies with starry undertones; Waves × Daisy frills the tips. The mix slider is the ratio.</p>
+      <p><b>Lattice layouts.</b> Free spaces spokes evenly around the circle regardless of petals. Per petal locks the spoke count to a multiple of the petal count and aligns one spoke to each petal's centreline, so every petal carries an identical, tidy window pattern.</p>
+      <p><b>Outline style</b> hollows a shape to a band of your chosen thickness. The inner edge is slope-corrected like the lattice rim, so the band keeps its true width around steep petal edges.</p>
+      <p><b>Foliage.</b> Leaves take Solid, Veins, or Outline styles; Bend curls each blade sideways; arrangement chooses Alternate, Opposite pairs, or Wild scatter (seeded — reroll with Naturise). Branches in Step 1 grow side stems that carry their own leaves, and their own smaller blooms when a flower is present — that's the bushy, many-flowered look.</p>
+      <p><b>One piece, guaranteed.</b> Cut files rasterise the whole plant and trace the boundary, welding every branch, leaf and bloom into one outline no matter how they overlap.</p>
+      <p><b>The bouquet.</b> Save up to eight plants you love with ＋ Bouquet — each is snapshotted with its seeds, so it regrows identically. Bouquet view arranges them fanned in a silhouette vase, every plant's blooms in its own colour. Nested cut SVG welds each plant into its own piece and shelf-packs them (rotating where it helps) onto sheets, vase included — red lines cut, blue lines are sheet guides. Clicking a saved chip loads it back into the editor; × lets it go. The bouquet lives for this browser session, so export what you love.</p>
+      <p>Coming in Stage 6: leaf-by-leaf hand editing and drag-arranged bouquets.</p>
+    </details>
+  </div>
+</main>
+
+<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red</footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+const TAU = Math.PI * 2;
+const SAMPLES = 1440;
+const UP = -Math.PI / 2;
+
+/* ---------- seeded noise ---------- */
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function makeNoise(rng, maxFreq, terms){
+  const parts = [];
+  let total = 0;
+  for (let i = 0; i < terms; i++){
+    const amp = 0.4 + rng();
+    parts.push([1 + Math.floor(rng() * maxFreq), amp, rng() * TAU]);
+    total += amp;
+  }
+  return th => {
+    let v = 0;
+    for (const [f, a, p] of parts) v += a * Math.sin(f * th + p);
+    return v / total;
+  };
+}
+
+function angDiff(a, b){
+  let d = (a - b) % TAU;
+  if (d > Math.PI) d -= TAU;
+  if (d < -Math.PI) d += TAU;
+  return d;
+}
+
+function bump(u){
+  const t = Math.abs(u);
+  return t >= 1 ? 0 : Math.cos(t * Math.PI / 2);
+}
+
+/* ---------- radius profiles ---------- */
+
+function familyProfile(st, family){
+  const R = st.dia / 2;
+  const k = st.petals;
+
+  if (family === "rose"){
+    return th => R * ((1 - st.valley) + st.valley * Math.pow(Math.abs(Math.cos(k * th / 2)), st.sharp));
+  }
+  if (family === "harm"){
+    let mn = Infinity, mx = -Infinity;
+    for (let i = 0; i < SAMPLES; i++){
+      const th = i / SAMPLES * TAU;
+      const v = 1 + st.a1 * Math.cos(k * th) + st.a2 * Math.cos(2 * k * th) + st.a3 * Math.cos(3 * k * th);
+      if (v < mn) mn = v;
+      if (v > mx) mx = v;
+    }
+    const span = (mx - mn) || 1;
+    return th => {
+      const v = 1 + st.a1 * Math.cos(k * th) + st.a2 * Math.cos(2 * k * th) + st.a3 * Math.cos(3 * k * th);
+      return R * ((1 - st.depth) + st.depth * (v - mn) / span);
+    };
+  }
+  if (family === "super"){
+    const raw = th => {
+      const t1 = Math.pow(Math.abs(Math.cos(k * th / 4)), st.n2);
+      const t2 = Math.pow(Math.abs(Math.sin(k * th / 4)), st.n3);
+      const d = t1 + t2;
+      const v = d > 1e-9 ? Math.pow(d, -1 / st.n1) : 0;
+      return isFinite(v) ? v : 0;
+    };
+    let mx = 0;
+    for (let i = 0; i < SAMPLES; i++) mx = Math.max(mx, raw(i / SAMPLES * TAU));
+    const inv = mx > 0 ? 1 / mx : 1;
+    return th => R * Math.max(raw(th) * inv, 0.02);
+  }
+  if (family === "fan"){
+    const P = Math.max(2, k);
+    const S = st.spread * Math.PI / 180;
+    const slot = S / (P - 1);
+    const beta = st.fwidth * slot * 0.75;
+    const mid = (P - 1) / 2;
+    const mus = [], lens = [];
+    for (let i = 0; i < P; i++){
+      mus.push(UP + S * (i / (P - 1) - 0.5));
+      const t = mid > 0 ? Math.abs(i - mid) / mid : 0;
+      lens.push(R * (1 - 0.22 * t * t));
+    }
+    const baseR = st.fbase * R;
+    const baseHalf = S / 2 + beta;
+    return th => {
+      let r = baseR * Math.pow(bump(angDiff(th, UP) / baseHalf), 0.8);
+      for (let i = 0; i < P; i++){
+        const c = lens[i] * Math.pow(bump(angDiff(th, mus[i]) / beta), st.ftip);
+        if (c > r) r = c;
+      }
+      return r;
+    };
+  }
+  // leaf
+  const beta = st.lwidth;
+  return th => {
+    const d = angDiff(th, UP);
+    const u = Math.abs(d) / beta;
+    if (u >= 1) return 0;
+    let r = R * Math.pow(bump(u), st.ltip);
+    if (st.lobes > 0){
+      const fade = Math.min(1, u * 2.5);
+      r *= 1 - st.lobedepth * fade * (0.5 + 0.5 * Math.sin(u * st.lobes * Math.PI * 2));
+    }
+    return r;
+  };
+}
+
+function makeProfile(st){
+  const primary = familyProfile(st, st.mode);
+  const useBlend = st.blend && st.blend !== "off" && st.mode !== "fan" && st.mode !== "leaf";
+  if (!useBlend) return primary;
+  const secondary = familyProfile(st, st.blend);
+  const m = Math.min(1, Math.max(0, st.mix == null ? 0.5 : st.mix));
+  return th => (1 - m) * primary(th) + m * secondary(th);
+}
+
+function sampleRadii(st){
+  const profile = makeProfile(st);
+  const radii = new Array(SAMPLES);
+  const nat = st.nat || 0;
+  if (nat > 0.001){
+    const k = Math.max(2, st.mode === "leaf" ? 6 : st.petals);
+    const rng = mulberry32((st.seed || 1) >>> 0);
+    const warpN = makeNoise(rng, Math.max(2, Math.round(k * 0.9)), 3);
+    const ampN  = makeNoise(rng, k + 2, 3);
+    const wAmp = st.mode === "leaf" ? nat * 0.10
+               : st.mode === "fan"  ? nat * 0.25 * (st.spread * Math.PI / 180) / Math.max(2, st.petals)
+               : nat * 0.38 * TAU / Math.max(k, 4);
+    for (let i = 0; i < SAMPLES; i++){
+      const th = i / SAMPLES * TAU;
+      radii[i] = Math.max(0, profile(th + wAmp * warpN(th)) * (1 + 0.28 * nat * ampN(th)));
+    }
+  } else {
+    for (let i = 0; i < SAMPLES; i++) radii[i] = Math.max(0, profile(i / SAMPLES * TAU));
+  }
+  return radii;
+}
+
+/* ---------- oriented emission ---------- */
+
+function makeFrame(ox, oy, rot, spin, sqx, sqy, bendAmt, refR){
+  const cr = Math.cos(rot), sr = Math.sin(rot);
+  const b = bendAmt || 0;
+  const rr = refR || 1;
+  return (th, r) => {
+    const a = th + spin;
+    let lx = r * Math.cos(a) * sqx;
+    const ly = r * Math.sin(a) * sqy;
+    if (b) lx += b * (ly * ly) / rr * 0.8;
+    return [ox + lx * cr - ly * sr, oy + lx * sr + ly * cr];
+  };
+}
+
+function ringLoop(radii, frame){
+  const pts = new Array(SAMPLES);
+  for (let i = 0; i < SAMPLES; i++) pts[i] = frame(i / SAMPLES * TAU, radii[i]);
+  return pts;
+}
+
+function radiusIdx(th){
+  const t = ((th % TAU) + TAU) % TAU;
+  return Math.min(SAMPLES - 1, Math.round(t / TAU * SAMPLES)) % SAMPLES;
+}
+
+function slopeFactor(radii, i, dth){
+  const r = radii[i];
+  if (r <= 0.5) return 1;
+  const rp = (radii[(i + 1) % SAMPLES] - radii[(i - 1 + SAMPLES) % SAMPLES]) / (2 * dth);
+  return Math.min(4, Math.sqrt(r * r + rp * rp) / r);
+}
+
+function latticeHoles(radii, opts, frame){
+  const holes = [];
+  const sq = Math.max(0.3, opts.squash || 1);
+  const minmat = opts.minmat / sq;
+  const hub = opts.hub / 2;
+  const rim = Math.max(opts.rim, minmat);
+  const rayw = Math.max(opts.rayw, minmat);
+  const N = opts.rays;
+  const minWindow = Math.max(2, opts.minmat * 1.2) / sq;
+  let alpha = (rayw / 2) / Math.max(hub, 2);
+  alpha = Math.min(alpha, (TAU / N) * 0.42);
+  const dth = TAU / SAMPLES;
+
+  const rEff = new Array(SAMPLES);
+  for (let i = 0; i < SAMPLES; i++) rEff[i] = radii[i] - rim * slopeFactor(radii, i, dth);
+
+  const stepsPerGap = Math.max(10, Math.ceil(SAMPLES / N));
+  for (let j = 0; j < N; j++){
+    const gA = (j / N) * TAU + alpha;
+    const gB = ((j + 1) / N) * TAU - alpha;
+    if (gB <= gA) continue;
+    let run = [];
+    const flush = () => {
+      if (run.length >= 3){
+        const pts = [];
+        for (let s = 0; s < run.length; s++) pts.push(frame(run[s][0], run[s][1]));
+        for (let s = run.length - 1; s >= 0; s--) pts.push(frame(run[s][0], hub));
+        holes.push(pts);
+      }
+      run = [];
+    };
+    for (let s = 0; s <= stepsPerGap; s++){
+      const th = gA + (gB - gA) * (s / stepsPerGap);
+      const ro = rEff[radiusIdx(th)];
+      if (ro >= hub + minWindow) run.push([th, ro]);
+      else flush();
+    }
+    flush();
+  }
+  return holes;
+}
+
+/* Hollow a shape to a band: inner edge is the slope-corrected inset,
+   smoothed so crease points in the silhouette (fan petal valleys) don't
+   make the inner edge oscillate, and collapsed to solid wherever the
+   hollow would be thinner than the minimum material. */
+function outlineInner(radii, thick, minmat){
+  const dth = TAU / SAMPLES;
+  const raw = new Array(SAMPLES);
+  for (let i = 0; i < SAMPLES; i++){
+    raw[i] = radii[i] - thick * slopeFactor(radii, i, dth);
+  }
+  // boxcar smooth ±4 samples, two passes
+  let a = raw;
+  for (let pass = 0; pass < 2; pass++){
+    const b = new Array(SAMPLES);
+    for (let i = 0; i < SAMPLES; i++){
+      let s = 0;
+      for (let j = -4; j <= 4; j++) s += a[(i + j + SAMPLES) % SAMPLES];
+      b[i] = s / 9;
+    }
+    a = b;
+  }
+  const floor = Math.max(1.5, minmat || 1.5);
+  const inner = new Array(SAMPLES);
+  for (let i = 0; i < SAMPLES; i++){
+    const r = radii[i];
+    const band = Math.max(floor, thick * 0.5);
+    let v = Math.min(a[i], r - band); // the band is never thinner than `band`
+    if (v < floor) v = 0;             // hollow too small to cut → solid to the centre
+    inner[i] = Math.max(0, v);
+  }
+  return inner;
+}
+
+/* ---------- heads (flower or leaf) ---------- */
+
+/* Places a flower head relative to a stem tip. Solid heads sit centred on
+   the tip (the stem reads as passing behind). Lattice and outline heads slide
+   down the stem so it terminates INSIDE the rim/band at the petal edge —
+   never crossing windows or intruding into the hollow. */
+function flowerHeadAt(st, scale, tip, seedBump){
+  const fst = { mode: st.mode, blend: st.blend, mix: st.mix,
+                dia: st.dia * scale, petals: st.petals,
+                sharp: st.sharp, valley: st.valley,
+                a1: st.a1, a2: st.a2, a3: st.a3, depth: st.depth,
+                n1: st.n1, n2: st.n2, n3: st.n3,
+                spread: st.spread, fwidth: st.fwidth, ftip: st.ftip, fbase: st.fbase,
+                nat: st.natF, seed: (st.seedF || 1) + (st.natF > 0.001 ? seedBump : 0) };
+  const radii = sampleRadii(fst);
+  const sq = Math.max(0.25, Math.cos((st.ftilt || 0) * Math.PI / 180));
+  const spinRad = (st.fspin || 0) * Math.PI / 180;
+  let ox = tip.x, oy = tip.y, ext;
+  if (st.fstyle === "lattice" || st.fstyle === "outline"){
+    const rDown = radii[radiusIdx(Math.PI / 2 - spinRad)] * sq; // head radius back toward the stem
+    const band = st.fstyle === "lattice" ? Math.max(st.rim, st.minmat) : Math.max(st.othick, st.minmat);
+    const overlap = Math.max(band * 0.85, st.minmat * 2, 4);
+    const d = Math.max(0, rDown - overlap);
+    ox = tip.x + d * Math.cos(tip.h);
+    oy = tip.y + d * Math.sin(tip.h);
+    ext = d > 1 ? 0 : Math.min(st.dia * scale * 0.3, 7); // fan-like heads keep centre attach
+  } else {
+    ext = Math.min(st.dia * scale * 0.3, Math.max(7, 6));
+  }
+  const frame = makeFrame(ox, oy, tip.h - UP, spinRad, 1, sq, 0, 1);
+  const loops = [ringLoop(radii, frame)];
+  let holes = 0;
+  if (st.fstyle === "lattice"){
+    const N = st.latlayout === "perpetal" ? Math.max(2, st.petals) * Math.max(1, st.raysper | 0) : st.rays;
+    const hs = latticeHoles(radii,
+      { hub: st.hub * scale, rim: st.rim, rayw: st.rayw, rays: N, minmat: st.minmat, squash: sq }, frame);
+    holes = hs.length;
+    loops.push(...hs);
+  } else if (st.fstyle === "outline"){
+    const thick = Math.max(st.othick, st.minmat) / sq;
+    loops.push(ringLoop(outlineInner(radii, thick, st.minmat), frame));
+    holes = 1;
+  }
+  return { part: { loops, colour: "bloom" }, holes, ext };
+}
+
+function flowerHead(st, scale, ox, oy, rot, seedBump){
+  const fst = { mode: st.mode, blend: st.blend, mix: st.mix,
+                dia: st.dia * scale, petals: st.petals,
+                sharp: st.sharp, valley: st.valley,
+                a1: st.a1, a2: st.a2, a3: st.a3, depth: st.depth,
+                n1: st.n1, n2: st.n2, n3: st.n3,
+                spread: st.spread, fwidth: st.fwidth, ftip: st.ftip, fbase: st.fbase,
+                nat: st.natF, seed: (st.seedF || 1) + (st.natF > 0.001 ? seedBump : 0) };
+  const radii = sampleRadii(fst);
+  const sq = Math.max(0.25, Math.cos((st.ftilt || 0) * Math.PI / 180));
+  const frame = makeFrame(ox, oy, rot, (st.fspin || 0) * Math.PI / 180, 1, sq, 0, 1);
+  const loops = [ringLoop(radii, frame)];
+  let holes = 0;
+  if (st.fstyle === "lattice"){
+    const N = st.latlayout === "perpetal" ? Math.max(2, st.petals) * Math.max(1, st.raysper | 0) : st.rays;
+    const hs = latticeHoles(radii,
+      { hub: st.hub * scale, rim: st.rim, rayw: st.rayw, rays: N, minmat: st.minmat, squash: sq }, frame);
+    holes = hs.length;
+    loops.push(...hs);
+  } else if (st.fstyle === "outline"){
+    const thick = Math.max(st.othick, st.minmat) / sq;
+    loops.push(ringLoop(outlineInner(radii, thick, st.minmat), frame));
+    holes = 1;
+  }
+  return { part: { loops, colour: "bloom" }, holes };
+}
+
+function leafHead(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
+  const lst = { mode: "leaf", dia: size * 2, lwidth: st.lwidth, ltip: st.ltip,
+                lobes: st.lobes, lobedepth: st.lobedepth, petals: 6,
+                nat: natAmt, seed: (st.seedL || 1) + seedBump };
+  const radii = sampleRadii(lst);
+  const sq = Math.max(0.25, Math.cos((st.ltilt || 0) * Math.PI / 180));
+  const bendAmt = (st.lbend || 0) * (bendSign || 1);
+  const frame = makeFrame(ox, oy, dir - UP, 0, sq, 1, bendAmt, size);
+  const loops = [ringLoop(radii, frame)];
+  let holes = 0;
+  if (st.lstyle === "veins"){
+    const hs = latticeHoles(radii,
+      { hub: Math.max(4, size * 0.14), rim: Math.max(2.5, st.minmat * 1.6),
+        rayw: Math.max(1.6, st.minmat), rays: Math.max(4, st.veins | 0),
+        minmat: st.minmat, squash: sq }, frame);
+    holes = hs.length;
+    loops.push(...hs);
+  } else if (st.lstyle === "outline"){
+    const thick = Math.max(st.lthick, st.minmat) / sq;
+    loops.push(ringLoop(outlineInner(radii, thick, st.minmat), frame));
+    holes = 1;
+  }
+  return { part: { loops, colour: "leaf" }, holes };
+}
+
+/* ---------- stems ---------- */
+
+function growStem(len, x0, y0, h0, curve, bendv, natNoise){
+  const steps = Math.max(24, Math.round(len / 2));
+  const pts = [];
+  let x = x0, y = y0;
+  for (let i = 0; i <= steps; i++){
+    const t = i / steps;
+    let h = h0 + curve * 1.1 * t + bendv * 0.9 * Math.sin(Math.PI * t);
+    if (natNoise) h += natNoise(t);
+    pts.push({ x, y, h });
+    x += (len / steps) * Math.cos(h);
+    y += (len / steps) * Math.sin(h);
+  }
+  pts.push({ x, y, h: pts[pts.length - 1].h });
+  return pts;
+}
+
+function stemPolygon(cl, baseW, tipW){
+  const left = [], right = [];
+  for (let i = 0; i < cl.length; i++){
+    const t = i / (cl.length - 1);
+    const w = (baseW + (tipW - baseW) * t) / 2;
+    const n = cl[i].h + Math.PI / 2;
+    left.push([cl[i].x + w * Math.cos(n), cl[i].y + w * Math.sin(n)]);
+    right.push([cl[i].x - w * Math.cos(n), cl[i].y - w * Math.sin(n)]);
+  }
+  return left.concat(right.reverse());
+}
+
+function extendInto(cl, ext){
+  const tip = cl[cl.length - 1];
+  const out = cl.slice();
+  for (let e = 1; e <= 4; e++){
+    out.push({ x: tip.x + (ext * e / 4) * Math.cos(tip.h),
+               y: tip.y + (ext * e / 4) * Math.sin(tip.h), h: tip.h });
+  }
+  return out;
+}
+
+function headExt(st, headSize, tipW, isFlower){
+  if (isFlower && st.fstyle === "outline") return Math.max(5, st.othick + 3);
+  if (!isFlower && st.lstyle === "outline") return Math.max(5, st.lthick + 3);
+  return Math.min(headSize * 0.3, Math.max(7, tipW * 2));
+}
+
+/* ---------- leaf placement ---------- */
+
+function leafSpots(n, arrange, rngL, natL){
+  // returns [{t, side}]
+  const spots = [];
+  if (arrange === "opposite"){
+    const pairs = Math.ceil(n / 2);
+    for (let p = 0; p < pairs; p++){
+      const t = 0.2 + 0.55 * ((p + 0.6) / pairs);
+      spots.push({ t, side: 1 });
+      if (spots.length < n) spots.push({ t, side: -1 });
+    }
+  } else if (arrange === "wild"){
+    for (let j = 0; j < n; j++){
+      spots.push({ t: 0.12 + 0.72 * rngL(), side: rngL() < 0.5 ? 1 : -1 });
+    }
+    spots.sort((a, b) => a.t - b.t);
+  } else { // alternate
+    for (let j = 0; j < n; j++){
+      spots.push({ t: 0.18 + 0.6 * ((j + 0.6) / n), side: j % 2 === 0 ? 1 : -1 });
+    }
+  }
+  return spots.map(s => {
+    let t = s.t;
+    if (natL > 0.001 && arrange !== "wild") t += (rngL() - 0.5) * 0.08 * natL;
+    return { t: Math.min(0.88, Math.max(0.06, t)), side: s.side };
+  });
+}
+
+function addLeavesAlong(st, cl, spots, parts, counter, seedBase){
+  const rngL = mulberry32(((st.seedL || 1) + seedBase + 5) >>> 0);
+  for (let j = 0; j < spots.length; j++){
+    const { t, side } = spots[j];
+    let size = st.leafsize;
+    let ang = st.leafangle * Math.PI / 180;
+    if (st.natL > 0.001){
+      size *= 1 + (rngL() - 0.5) * 0.45 * st.natL;
+      ang *= 1 + (rngL() - 0.5) * 0.35 * st.natL;
+    }
+    const at = cl[Math.round(t * (cl.length - 1))];
+    const lp = leafHead(st, size, at.x, at.y, at.h + side * ang, st.natL * 0.6, seedBase + 31 * (j + 1), side);
+    counter.holes += lp.holes;
+    parts.push(lp.part);
+  }
+}
+
+/* ---------- plant assembly ---------- */
+
+function buildPlant(st){
+  const minmat = st.minmat || 1.6;
+  const nFlowers = Math.max(0, st.flowers | 0);
+  const nStems = Math.max(1, st.stems | 0);
+  const nLeaves = Math.max(0, st.leaves | 0);
+  const flowerOn = nFlowers > 0;
+  const leavesOn = nLeaves > 0;
+  const parts = [];
+  const counter = { holes: 0 };
+  const rngS = mulberry32(((st.seedS || 1) + 7) >>> 0);
+
+  const hasStem = st.stemlen >= 10;
+
+  if (!hasStem){
+    // no stem: a single specimen — one bloom, or one leaf
+    if (flowerOn){
+      const fh = flowerHead(st, 1, 0, 0, 0, 0);
+      counter.holes += fh.holes;
+      parts.push(fh.part);
+    } else {
+      const lh = leafHead(st, st.leafsize * 1.6, 0, 0, UP, (st.natL || 0) * 0.6, 3, 1);
+      counter.holes += lh.holes;
+      parts.push(lh.part);
+    }
+  } else {
+    // grow the bunch: stems fan out from a shared base
+    const mid = (nStems - 1) / 2;
+    const stemInfos = [];
+    for (let s = 0; s < nStems; s++){
+      const off = s - mid;
+      let len = st.stemlen * (1 - 0.12 * Math.abs(off));
+      let splay = off * 0.24;
+      let curve = st.curve + off * 0.18;
+      if (st.natS > 0.001){
+        len *= 1 + (rngS() - 0.5) * 0.3 * st.natS;
+        splay += (rngS() - 0.5) * 0.15 * st.natS;
+      }
+      let noise = null;
+      if (st.natS > 0.001){
+        const n = makeNoise(rngS, 3, 2);
+        noise = t => st.natS * 0.22 * n(t * TAU * 0.5);
+      }
+      const cl = growStem(len, 0, 0, UP + splay, curve, st.bend, noise);
+      stemInfos.push({ cl, len, s });
+    }
+
+    // distribute leaves across stems (round robin)
+    const perStemLeaves = new Array(nStems).fill(0);
+    for (let j = 0; j < nLeaves; j++) perStemLeaves[j % nStems]++;
+
+    // flowers: one per stem tip first, extras branch off host stems
+    const tipsWithBlooms = Math.min(nFlowers, nStems);
+    const extras = Math.max(0, nFlowers - nStems);
+
+    const baseW = Math.max(st.stemw, minmat * 1.2);
+    const tipW = Math.max(baseW * 0.55, minmat, 1.5);
+
+    for (let s = 0; s < nStems; s++){
+      const { cl } = stemInfos[s];
+      const tip = cl[cl.length - 1];
+      const bloomAtTip = s < tipsWithBlooms;
+      let fh = null;
+      let ext;
+      if (bloomAtTip){
+        fh = flowerHeadAt(st, 1, tip, s * 11);
+        ext = fh.ext;
+      } else {
+        ext = headExt(st, st.leafsize * 2, tipW, false);
+      }
+      parts.push({ loops: [stemPolygon(extendInto(cl, ext), baseW, tipW)], colour: "leaf" });
+
+      if (bloomAtTip){
+        counter.holes += fh.holes;
+        parts.push(fh.part);
+      } else if (leavesOn){
+        const lh = leafHead(st, st.leafsize * 1.3, tip.x, tip.y, tip.h, (st.natL || 0) * 0.6, 900 + s, 1);
+        counter.holes += lh.holes;
+        parts.push(lh.part);
+      }
+
+      if (leavesOn && perStemLeaves[s] > 0){
+        const rngPlace = mulberry32(((st.seedL || 1) + 13 + s * 7) >>> 0);
+        const spots = leafSpots(perStemLeaves[s], st.arrange, rngPlace, st.natL);
+        addLeavesAlong(st, cl, spots, parts, counter, s * 100);
+      }
+    }
+
+    // extra blooms on auto-branches
+    const rngB = mulberry32(((st.seedS || 1) + 101) >>> 0);
+    for (let e = 0; e < extras; e++){
+      const host = stemInfos[e % nStems];
+      const cl = host.cl;
+      let bt = 0.45 + 0.3 * ((e / Math.max(1, nStems)) % 1 ? rngB() : rngB());
+      const side = e % 2 === 0 ? 1 : -1;
+      let bAng = side * (0.55 + 0.35 * rngB());
+      let bLen = host.len * (0.35 + 0.15 * rngB());
+      bt = Math.min(0.8, Math.max(0.3, bt));
+      const at = cl[Math.round(bt * (cl.length - 1))];
+      let bNoise = null;
+      if (st.natS > 0.001){
+        const n = makeNoise(rngB, 3, 2);
+        bNoise = t => st.natS * 0.2 * n(t * TAU * 0.5);
+      }
+      const bcl = growStem(bLen, at.x, at.y, at.h + bAng, st.curve * 0.5 - side * 0.25, st.bend * 0.5, bNoise);
+      const btip = bcl[bcl.length - 1];
+      const bBaseW = Math.max(minmat * 1.2, baseW * 0.75);
+      const bTipW = Math.max(bBaseW * 0.55, minmat, 1.3);
+      const scale = st.branchscale || 0.55;
+      const fh = flowerHeadAt(st, scale, btip, 500 + 17 * e);
+      parts.push({ loops: [stemPolygon(extendInto(bcl, fh.ext), bBaseW, bTipW)], colour: "leaf" });
+      counter.holes += fh.holes;
+      parts.push(fh.part);
+    }
+  }
+
+  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+  for (const p of parts) for (const loop of p.loops) for (const [x, y] of loop){
+    if (x < minx) minx = x; if (x > maxx) maxx = x;
+    if (y < miny) miny = y; if (y > maxy) maxy = y;
+  }
+  const margin = 6;
+  const W = (maxx - minx) + 2 * margin;
+  const H = (maxy - miny) + 2 * margin;
+  for (const p of parts) for (const loop of p.loops) for (const pt of loop){
+    pt[0] += margin - minx;
+    pt[1] += margin - miny;
+  }
+  return { parts, W, H, holeCount: counter.holes,
+           anchor: [margin - minx, margin - miny] };
+}
+
+/* ---------- raster union + contour trace ---------- */
+
+function fillPartToGrid(part, grid, gw, gh, res){
+  const edges = [];
+  for (const loop of part.loops){
+    for (let i = 0; i < loop.length; i++){
+      const a = loop[i], b = loop[(i + 1) % loop.length];
+      if (a[1] !== b[1]) edges.push([a[0], a[1], b[0], b[1]]);
+    }
+  }
+  for (let gy = 0; gy < gh; gy++){
+    const y = (gy + 0.5) * res;
+    const xs = [];
+    for (const [x1, y1, x2, y2] of edges){
+      if ((y1 <= y && y2 > y) || (y2 <= y && y1 > y)){
+        xs.push(x1 + (y - y1) / (y2 - y1) * (x2 - x1));
+      }
+    }
+    xs.sort((a, b) => a - b);
+    for (let k = 0; k + 1 < xs.length; k += 2){
+      const x0 = Math.max(0, Math.ceil(xs[k] / res - 0.5));
+      const x1 = Math.min(gw - 1, Math.floor(xs[k + 1] / res - 0.5));
+      for (let gx = x0; gx <= x1; gx++) grid[gy * gw + gx] = 1;
+    }
+  }
+}
+
+function traceContours(grid, gw, gh){
+  const filled = (x, y) => (x >= 0 && y >= 0 && x < gw && y < gh) ? grid[y * gw + x] : 0;
+  const stride = gw + 2;
+  const key = (x, y, d) => ((y * stride + x) << 2) | d;
+  const visited = new Set();
+  const loops = [];
+  const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1];
+  const cap = 4 * gw * gh;
+
+  function walk(sx, sy){
+    const pts = [];
+    let x = sx, y = sy, d = 0;
+    while (true){
+      if (pts.length && x === sx && y === sy && d === 0) break;
+      if (pts.length > cap) return null;
+      visited.add(key(x, y, d));
+      pts.push([x, y]);
+      x += DX[d]; y += DY[d];
+      const tl = filled(x - 1, y - 1), tr = filled(x, y - 1),
+            bl = filled(x - 1, y),     br = filled(x, y);
+      const valid = [br && !tr, bl && !br, tl && !bl, tr && !tl];
+      let nd = -1;
+      for (const cand of [(d + 1) & 3, d, (d + 3) & 3]){
+        if (valid[cand]){ nd = cand; break; }
+      }
+      if (nd < 0) return null;
+      d = nd;
+    }
+    return pts;
+  }
+
+  for (let y = 0; y < gh; y++){
+    for (let x = 0; x < gw; x++){
+      if (grid[y * gw + x] && !filled(x, y - 1) && !visited.has(key(x, y, 0))){
+        const loop = walk(x, y);
+        if (loop && loop.length >= 4) loops.push(loop);
+      }
+    }
+  }
+  return loops;
+}
+
+function chaikin(pts){
+  const out = [];
+  for (let i = 0; i < pts.length; i++){
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    out.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]]);
+    out.push([0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]);
+  }
+  return out;
+}
+
+function simplify(pts, eps){
+  const out = [];
+  const n = pts.length;
+  for (let i = 0; i < n; i++){
+    const p = out.length ? out[out.length - 1] : pts[(i - 1 + n) % n];
+    const c = pts[i], q = pts[(i + 1) % n];
+    const dx = q[0] - p[0], dy = q[1] - p[1];
+    const len = Math.hypot(dx, dy) || 1;
+    const dist = Math.abs(dy * c[0] - dx * c[1] + q[0] * p[1] - q[1] * p[0]) / len;
+    if (dist > eps) out.push(c);
+  }
+  return out.length >= 3 ? out : pts;
+}
+
+/* Despeckle: drop material fragments and fill enclosed voids smaller than
+   anything cuttable. Degenerate geometry (loops collapsing through a point)
+   can shed sub-millimetre even-odd slivers; this removes them all. */
+function despeckle(grid, gw, gh, maxPx){
+  const seen = new Int32Array(grid.length).fill(-1);
+  const stack = [];
+  for (let start = 0; start < grid.length; start++){
+    if (seen[start] >= 0) continue;
+    const val = grid[start];
+    stack.length = 0; stack.push(start);
+    seen[start] = 1;
+    const cells = [start];
+    let touchesBorder = false;
+    while (stack.length){
+      const i = stack.pop();
+      const x = i % gw, y = (i / gw) | 0;
+      if (x === 0 || y === 0 || x === gw - 1 || y === gh - 1) touchesBorder = true;
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < gw && ny < gh){
+          const j = ny * gw + nx;
+          if (seen[j] < 0 && grid[j] === val){
+            seen[j] = 1; stack.push(j); cells.push(j);
+            if (cells.length > maxPx) { /* big enough, keep flooding to mark */ }
+          }
+        }
+      }
+    }
+    if (cells.length <= maxPx){
+      // tiny material fragment → erase; tiny enclosed void → fill
+      if (val === 1) for (const c of cells) grid[c] = 0;
+      else if (!touchesBorder) for (const c of cells) grid[c] = 1;
+    }
+  }
+}
+
+function weldParts(parts, W, H){
+  const res = Math.min(0.6, Math.max(0.22, Math.max(W, H) / 1100));
+  const gw = Math.ceil(W / res) + 2, gh = Math.ceil(H / res) + 2;
+  const grid = new Uint8Array(gw * gh);
+  for (const part of parts) fillPartToGrid(part, grid, gw, gh, res);
+  despeckle(grid, gw, gh, Math.max(9, Math.ceil(1.2 / (res * res))));
+  const raw = traceContours(grid, gw, gh);
+  const out = [];
+  for (const loop of raw){
+    let pts = loop.map(([x, y]) => [x * res, y * res]);
+    let per = 0;
+    for (let i = 0; i < pts.length; i++){
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      per += Math.hypot(b[0] - a[0], b[1] - a[1]);
+    }
+    if (per < 5) continue;
+    pts = chaikin(chaikin(chaikin(pts)));
+    pts = simplify(pts, res * 0.4);
+    out.push(pts);
+  }
+  return { loops: out, grid, gw, gh, res };
+}
+
+/* ---------- SVG builders ---------- */
+
+function fmt(n){ return (Math.round(n * 100) / 100).toString(); }
+
+function loopToD(pts){
+  let d = "";
+  for (let i = 0; i < pts.length; i++) d += (i === 0 ? "M" : "L") + fmt(pts[i][0]) + " " + fmt(pts[i][1]);
+  return d + "Z";
+}
+
+function shade(hex, f){
+  const n = parseInt(hex.slice(1), 16);
+  return "rgb(" + Math.round(((n >> 16) & 255) * f) + "," + Math.round(((n >> 8) & 255) * f) + "," + Math.round((n & 255) * f) + ")";
+}
+
+function colourOf(part, st){
+  return part.colour === "leaf" ? (st.leafcol || "#8a9a70") : (st.bloomcol || "#c98a5b");
+}
+
+function layeredPaths(plant, st, forExport){
+  let s = "";
+  for (const part of plant.parts){
+    const fill = colourOf(part, st);
+    const d = part.loops.map(loopToD).join("");
+    s += '<path d="' + d + '" fill="' + fill + '" fill-rule="evenodd" stroke="' + shade(fill, 0.72) +
+         '" stroke-width="' + (forExport ? 0.3 : Math.max(0.3, Math.max(plant.W, plant.H) / 500)) + '"/>';
+  }
+  return s;
+}
+
+function buildPreviewSVG(plant, st){
+  return '<svg viewBox="0 0 ' + fmt(plant.W) + ' ' + fmt(plant.H) + '" role="img" aria-label="Plant preview">' +
+    '<g style="filter:drop-shadow(0 ' + plant.H / 140 + 'px ' + plant.H / 100 + 'px rgba(80,60,30,.25))">' +
+    layeredPaths(plant, st, false) + '</g></svg>';
+}
+
+function buildColourSVG(plant, st){
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<!-- The Infinite Flower Creator · Curiosity.diy · colour render -->\n' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="' + fmt(plant.W) + 'mm" height="' + fmt(plant.H) + 'mm" viewBox="0 0 ' + fmt(plant.W) + ' ' + fmt(plant.H) + '">\n' +
+    layeredPaths(plant, st, true) + '\n</svg>\n';
+}
+
+function buildCutSVG(plant, st){
+  let d;
+  if (plant.parts.length === 1){
+    d = plant.parts[0].loops.map(loopToD).join("");
+  } else {
+    d = weldParts(plant.parts, plant.W, plant.H).loops.map(loopToD).join("");
+  }
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<!-- The Infinite Flower Creator · Curiosity.diy · seeds F' + (st.seedF || 1) + ' L' + (st.seedL || 1) + ' S' + (st.seedS || 1) + ' -->\n' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="' + fmt(plant.W) + 'mm" height="' + fmt(plant.H) + 'mm" viewBox="0 0 ' + fmt(plant.W) + ' ' + fmt(plant.H) + '">\n' +
+    '<path d="' + d + '" fill="none" stroke="#ff0000" stroke-width="0.1"/>\n' +
+    '</svg>\n';
+}
+
+
+/* ---------- the bouquet ---------- */
+
+const PALETTE = ["#c98a5b","#b0563f","#c9a53f","#8a5f8f","#5f7d99","#b46a84","#8f9a4f","#7d5a43"];
+
+function vasePolygon(mouthW, h){
+  // classic urn: [height fraction, half-width as fraction of mouth width]
+  const prof = [[0, 0.5],[0.1, 0.41],[0.34, 0.57],[0.6, 0.5],[0.8, 0.28],[0.9, 0.3],[0.96, 0.38],[1, 0.42]];
+  const right = prof.map(([t, f]) => [f * mouthW, t * h]);
+  const left = right.slice().reverse().map(([x, y]) => [-x, y]);
+  return right.concat(left);
+}
+
+/* Compose saved plants into a vase scene. Plants fan from the mouth;
+   the vase is drawn last so the stems disappear into it. */
+function buildBouquetScene(states){
+  const built = states.map(st => ({ st, plant: buildPlant(st) }));
+  const n = built.length;
+  const order = i => i === 0 ? 0 : (i % 2 ? -Math.ceil(i / 2) : Math.ceil(i / 2));
+  const mouthW = Math.max(80, 24 * n + 40);
+  let maxH = 0;
+  for (const b of built) maxH = Math.max(maxH, b.plant.H);
+  const items = built.map((b, i) => {
+    const off = order(i);
+    const ang = off * 0.16;
+    const dx = off * mouthW * 0.17;
+    const [ax, ay] = b.plant.anchor;
+    const c = Math.cos(ang), s = Math.sin(ang);
+    const parts = b.plant.parts.map(p => ({
+      colour: p.colour,
+      loops: p.loops.map(l => l.map(pt => {
+        const x = pt[0] - ax, y = pt[1] - ay;
+        return [dx + x * c - y * s, 8 + x * s + y * c];
+      }))
+    }));
+    return { parts, idx: i, leafcol: b.st.leafcol || "#8a9a70" };
+  });
+  const vaseH = Math.max(70, maxH * 0.42);
+  const vase = vasePolygon(mouthW, vaseH);
+  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+  const eat = pt => {
+    if (pt[0] < minx) minx = pt[0]; if (pt[0] > maxx) maxx = pt[0];
+    if (pt[1] < miny) miny = pt[1]; if (pt[1] > maxy) maxy = pt[1];
+  };
+  for (const it of items) for (const p of it.parts) for (const l of p.loops) for (const pt of l) eat(pt);
+  for (const pt of vase) eat(pt);
+  const margin = 8;
+  const shift = pt => [pt[0] + margin - minx, pt[1] + margin - miny];
+  for (const it of items) for (const p of it.parts) p.loops = p.loops.map(l => l.map(shift));
+  const vaseShifted = vase.map(shift);
+  return { items, vase: vaseShifted, W: (maxx - minx) + 2 * margin, H: (maxy - miny) + 2 * margin };
+}
+
+function buildBouquetColourSVG(states){
+  const sc = buildBouquetScene(states);
+  let body = "";
+  for (const it of sc.items){
+    for (const p of it.parts){
+      const fill = p.colour === "bloom" ? PALETTE[it.idx % PALETTE.length] : it.leafcol;
+      body += '<path d="' + p.loops.map(loopToD).join("") + '" fill="' + fill +
+              '" fill-rule="evenodd" stroke="' + shade(fill, 0.72) + '" stroke-width="0.3"/>';
+    }
+  }
+  body += '<path d="' + loopToD(sc.vase) + '" fill="#3b342a" stroke="none"/>';
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<!-- The Infinite Flower Creator · bouquet of ' + states.length + ' -->\n' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="' + fmt(sc.W) + 'mm" height="' + fmt(sc.H) + 'mm" viewBox="0 0 ' + fmt(sc.W) + ' ' + fmt(sc.H) + '">\n' + body + '\n</svg>\n';
+}
+
+/* ---------- nesting onto sheets ---------- */
+
+function normalisePiece(loops){
+  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+  for (const l of loops) for (const [x, y] of l){
+    if (x < minx) minx = x; if (x > maxx) maxx = x;
+    if (y < miny) miny = y; if (y > maxy) maxy = y;
+  }
+  return { loops: loops.map(l => l.map(([x, y]) => [x - minx, y - miny])),
+           w: maxx - minx, h: maxy - miny };
+}
+
+function rotatePiece90(p){
+  return { loops: p.loops.map(l => l.map(([x, y]) => [p.h - y, x])), w: p.h, h: p.w };
+}
+
+/* shelf packing with optional 90° rotation; oversized pieces get a
+   custom-sized sheet of their own */
+function nestPieces(pieces, shW, shH){
+  const margin = 8, gap = 6;
+  const usableW = shW - 2 * margin, usableH = shH - 2 * margin;
+  const items = pieces.map((p, i) => ({ p, i }));
+  items.sort((a, b) => Math.max(b.p.w, b.p.h) - Math.max(a.p.w, a.p.h));
+  const sheets = [];
+  const newSheet = (w, h) => { const s = { w, h, x: 0, y: 0, rowH: 0, placements: [] }; sheets.push(s); return s; };
+
+  for (const it of items){
+    let p = it.p;
+    if (p.h > usableH && p.w <= usableH) p = rotatePiece90(p);
+    if (p.w > usableW && p.h <= usableW) p = rotatePiece90(p);
+    if (p.w > usableW || p.h > usableH){
+      const s = newSheet(p.w + 2 * margin, p.h + 2 * margin); // custom oversized sheet
+      s.placements.push({ p, x: margin, y: margin, i: it.i });
+      s.x = usableW + 1; // full
+      continue;
+    }
+    let placed = false;
+    for (const s of sheets){
+      if (s.w !== shW || s.h !== shH) continue;
+      // fits in current row?
+      if (s.x + p.w <= usableW && s.y + p.h <= usableH){
+        s.placements.push({ p, x: margin + s.x, y: margin + s.y, i: it.i });
+        s.x += p.w + gap;
+        s.rowH = Math.max(s.rowH, p.h);
+        placed = true; break;
+      }
+      // new row?
+      if (s.y + s.rowH + gap + p.h <= usableH){
+        s.y += s.rowH + gap; s.x = 0; s.rowH = 0;
+        s.placements.push({ p, x: margin + s.x, y: margin + s.y, i: it.i });
+        s.x += p.w + gap;
+        s.rowH = p.h;
+        placed = true; break;
+      }
+    }
+    if (!placed){
+      const s = newSheet(shW, shH);
+      s.placements.push({ p, x: margin, y: margin, i: it.i });
+      s.x = p.w + gap;
+      s.rowH = p.h;
+    }
+  }
+  return sheets;
+}
+
+function pieceFromState(st){
+  const plant = buildPlant(st);
+  const loops = plant.parts.length === 1
+    ? plant.parts[0].loops
+    : weldParts(plant.parts, plant.W, plant.H).loops;
+  return normalisePiece(loops);
+}
+
+function buildNestedCutSVG(states, shW, shH, withVase){
+  const pieces = states.map(pieceFromState);
+  if (withVase){
+    const mouthW = Math.max(80, 24 * states.length + 40);
+    let maxH = 0;
+    for (const st of states) maxH = Math.max(maxH, buildPlant(st).H);
+    pieces.push(normalisePiece([vasePolygon(mouthW, Math.max(70, maxH * 0.42))]));
+  }
+  const sheets = nestPieces(pieces, shW, shH);
+  const sheetGap = 15;
+  let ox = 0, maxSheetH = 0, body = "";
+  for (const s of sheets){
+    body += '<rect x="' + fmt(ox) + '" y="0" width="' + fmt(s.w) + '" height="' + fmt(s.h) +
+            '" fill="none" stroke="#0066ff" stroke-width="0.1"/>';
+    for (const pl of s.placements){
+      const d = pl.p.loops.map(l =>
+        loopToD(l.map(([x, y]) => [x + ox + pl.x, y + pl.y]))).join("");
+      body += '<path d="' + d + '" fill="none" stroke="#ff0000" stroke-width="0.1"/>';
+    }
+    ox += s.w + sheetGap;
+    maxSheetH = Math.max(maxSheetH, s.h);
+  }
+  const W = ox - sheetGap, H = maxSheetH;
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<!-- The Infinite Flower Creator · ' + pieces.length + ' pieces nested on ' + sheets.length +
+    ' sheet(s) · red = cut, blue = sheet guide -->\n' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="' + fmt(W) + 'mm" height="' + fmt(H) + 'mm" viewBox="0 0 ' + fmt(W) + ' ' + fmt(H) + '">\n' + body + '\n</svg>\n';
+}
+
+if (typeof globalThis !== "undefined"){
+  globalThis.__flower = { sampleRadii, buildPlant, weldParts, buildCutSVG, buildColourSVG, buildPreviewSVG,
+                          traceContours, makeProfile, buildBouquetScene, buildBouquetColourSVG,
+                          buildNestedCutSVG, nestPieces, pieceFromState, vasePolygon, PALETTE };
+}
+
+/* ---------- UI ---------- */
+
+if (typeof document !== "undefined" && document.getElementById){
+
+  const $ = id => document.getElementById(id);
+  const sliders = ["dia","petals","sharp","valley","a1","a2","a3","depth","n1","n2","n3",
+                   "spread","fwidth","ftip","fbase","ftilt","fspin","mix",
+                   "lwidth","ltip","lobes","lobedepth","ltilt","lbend",
+                   "natF","natL","natS",
+                   "stemlen","stemw","curve","bend","branchscale",
+                   "flowers","stems","leaves","leafsize","leafangle",
+                   "hub","rim","rayw","rays","raysper","othick","veins","lthick","minmat"];
+  const twins = { flowers: "flowers2", leaves: "leaves2" };
+  let mode = "rose";
+  let blend = "off";
+  let fstyle = "lattice";
+  let latlayout = "free";
+  let lstyle = "veins";
+  let arrange = "alternate";
+  const seeds = { F: 12345, L: 54321, S: 11111 };
+  const hist = { F: [], L: [], S: [] };
+
+  function readState(){
+    const st = { mode, blend, fstyle, latlayout, lstyle, arrange,
+                 seedF: seeds.F, seedL: seeds.L, seedS: seeds.S };
+    for (const s of sliders) st[s] = parseFloat($("in-" + s).value);
+    st.bloomcol = $("in-bloomcol").value;
+    st.leafcol = $("in-leafcol").value;
+    return st;
+  }
+
+  function updateOutputs(){
+    const v = id => $("in-" + id).value;
+    const f2 = id => (+v(id)).toFixed(2);
+    const f1 = id => (+v(id)).toFixed(1);
+    const set = (id, val) => $("out-" + id).textContent = val;
+    set("dia", v("dia") + " mm"); set("petals", v("petals"));
+    set("sharp", f1("sharp")); set("valley", f2("valley"));
+    set("a1", f2("a1")); set("a2", f2("a2")); set("a3", f2("a3")); set("depth", f2("depth"));
+    set("n1", f1("n1")); set("n2", f1("n2")); set("n3", f1("n3"));
+    set("spread", v("spread") + "°"); set("fwidth", f2("fwidth")); set("ftip", f1("ftip")); set("fbase", f2("fbase"));
+    set("ftilt", v("ftilt") + "°"); set("fspin", v("fspin") + "°");
+    const mixPct = Math.round((+v("mix")) * 100);
+    const engName = { rose:"Daisy", harm:"Waves", super:"Super", fan:"Fan" };
+    set("mix", blend === "off" ? "—" : (100 - mixPct) + "% " + engName[mode] + " · " + mixPct + "% " + engName[blend]);
+    set("flowers", v("flowers")); set("flowers2", v("flowers"));
+    set("stems", v("stems")); set("leaves2", v("leaves"));
+    set("lwidth", f2("lwidth")); set("ltip", f1("ltip")); set("lobes", v("lobes")); set("lobedepth", f2("lobedepth"));
+    set("ltilt", v("ltilt") + "°"); set("lbend", f2("lbend"));
+    set("stemlen", v("stemlen") + " mm"); set("stemw", f1("stemw") + " mm");
+    set("curve", f2("curve")); set("bend", f2("bend"));
+    set("branchscale", f2("branchscale"));
+    set("leaves", v("leaves")); set("leafsize", v("leafsize") + " mm"); set("leafangle", v("leafangle") + "°");
+    set("hub", v("hub") + " mm"); set("rim", f1("rim") + " mm"); set("rayw", f1("rayw") + " mm");
+    set("rays", v("rays")); set("raysper", v("raysper"));
+    set("othick", f1("othick") + " mm"); set("veins", v("veins")); set("lthick", f1("lthick") + " mm");
+    set("minmat", f1("minmat") + " mm");
+  }
+
+  function showGroups(){
+    const flowerOn = parseInt($("in-flowers").value) > 0;
+    const leavesOn = parseInt($("in-leaves").value) > 0;
+    const nF = parseInt($("in-flowers").value), nS = parseInt($("in-stems").value);
+    document.querySelectorAll("[data-group]").forEach(el => {
+      el.classList.toggle("hidden", el.getAttribute("data-group") !== mode);
+    });
+    document.querySelectorAll("[data-fs]").forEach(el => {
+      el.classList.toggle("hidden", el.getAttribute("data-fs") !== fstyle);
+    });
+    ["rose","harm","super","fan"].forEach(m => $("mode-" + m).classList.toggle("on", mode === m));
+    if (blend === mode) blend = "off"; // blending an engine with itself is a no-op
+    ["off","rose","harm","super"].forEach(b => {
+      const el = $("blend-" + b);
+      el.classList.toggle("on", blend === b);
+      el.classList.toggle("hidden", b === mode); // hide the flavour that matches the engine
+    });
+    $("blend-wrap").classList.toggle("hidden", mode === "fan");
+    $("mix-ctl").classList.toggle("hidden", blend === "off" || mode === "fan");
+    $("fs-solid").classList.toggle("on", fstyle === "solid");
+    $("fs-lattice").classList.toggle("on", fstyle === "lattice");
+    $("fs-outline").classList.toggle("on", fstyle === "outline");
+    $("lay-free").classList.toggle("on", latlayout === "free");
+    $("lay-per").classList.toggle("on", latlayout === "perpetal");
+    $("rays-ctl").classList.toggle("hidden", latlayout === "perpetal");
+    $("raysper-ctl").classList.toggle("hidden", latlayout === "free");
+    $("ls-solid").classList.toggle("on", lstyle === "solid");
+    $("ls-veins").classList.toggle("on", lstyle === "veins");
+    $("ls-outline").classList.toggle("on", lstyle === "outline");
+    $("veins-ctl").classList.toggle("hidden", lstyle !== "veins");
+    $("lthick-ctl").classList.toggle("hidden", lstyle !== "outline");
+    $("ar-alt").classList.toggle("on", arrange === "alternate");
+    $("ar-opp").classList.toggle("on", arrange === "opposite");
+    $("ar-wild").classList.toggle("on", arrange === "wild");
+    $("flower-body").classList.toggle("hidden", !flowerOn);
+    $("flower-hint").classList.toggle("hidden", flowerOn);
+    $("leaf-body").classList.toggle("hidden", !leavesOn);
+    $("leaf-hint").classList.toggle("hidden", leavesOn);
+    $("branchsize-ctl").classList.toggle("hidden", nF <= nS);
+  }
+
+  const modeNames = { rose:"daisy curve", harm:"wave petals", super:"superformula", fan:"fan bloom" };
+
+  function render(){
+    updateOutputs();
+    if (view === "bouquet" && bouquet.length){ renderBouquet(); return; }
+    const st = readState();
+    const plant = buildPlant(st);
+    $("preview").innerHTML = buildPreviewSVG(plant, st);
+    const bits = [Math.round(plant.W) + "×" + Math.round(plant.H) + " mm"];
+    if (st.flowers > 0){
+      let f = st.flowers + (st.flowers === 1 ? " bloom · " : " blooms · ") + modeNames[st.mode];
+      if (st.blend !== "off" && st.mode !== "fan") f += " × " + modeNames[st.blend];
+      if (st.ftilt > 0) f += " · tilted " + st.ftilt + "°";
+      bits.push(f);
+    }
+    if (st.stemlen >= 10) bits.push(st.stems + (st.stems === 1 ? " stem" : " stems"));
+    if (st.leaves > 0) bits.push(st.leaves + " leaves");
+    bits.push(plant.holeCount > 0 ? plant.holeCount + " windows · min material " + st.minmat.toFixed(1) + " mm" : "solid");
+    $("statline").textContent = bits.join(" · ");
+  }
+
+  /* seg wiring */
+  for (const main in twins){
+    const a = $("in-" + main), b = $("in-" + twins[main]);
+    a.addEventListener("input", () => { b.value = a.value; });
+    b.addEventListener("input", () => { a.value = b.value; showGroups(); render(); });
+  }
+  ["rose","harm","super","fan"].forEach(m => $("mode-" + m).addEventListener("click", () => { mode = m; showGroups(); render(); }));
+  ["off","rose","harm","super"].forEach(b => $("blend-" + b).addEventListener("click", () => { blend = b; showGroups(); render(); }));
+  $("fs-solid").addEventListener("click", () => { fstyle = "solid"; showGroups(); render(); });
+  $("fs-lattice").addEventListener("click", () => { fstyle = "lattice"; showGroups(); render(); });
+  $("fs-outline").addEventListener("click", () => { fstyle = "outline"; showGroups(); render(); });
+  $("lay-free").addEventListener("click", () => { latlayout = "free"; showGroups(); render(); });
+  $("lay-per").addEventListener("click", () => { latlayout = "perpetal"; showGroups(); render(); });
+  $("ls-solid").addEventListener("click", () => { lstyle = "solid"; showGroups(); render(); });
+  $("ls-veins").addEventListener("click", () => { lstyle = "veins"; showGroups(); render(); });
+  $("ls-outline").addEventListener("click", () => { lstyle = "outline"; showGroups(); render(); });
+  $("ar-alt").addEventListener("click", () => { arrange = "alternate"; showGroups(); render(); });
+  $("ar-opp").addEventListener("click", () => { arrange = "opposite"; showGroups(); render(); });
+  $("ar-wild").addEventListener("click", () => { arrange = "wild"; showGroups(); render(); });
+
+  for (const s of sliders) $("in-" + s).addEventListener("input", () => { if (view === "bouquet"){ view = "plant"; bqUI(); } showGroups(); render(); });
+  $("in-bloomcol").addEventListener("input", render);
+  $("in-leafcol").addEventListener("input", render);
+
+  let toastTimer = null;
+  function toast(msg){
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  function naturise(sec){
+    hist[sec].push({ seed: seeds[sec], amt: $("in-nat" + sec).value });
+    if (hist[sec].length > 10) hist[sec].shift();
+    seeds[sec] = Math.floor(Math.random() * 1e9);
+    if (parseFloat($("in-nat" + sec).value) < 0.05) $("in-nat" + sec).value = 0.5;
+    render();
+  }
+  function undo(sec){
+    const prev = hist[sec].pop();
+    if (!prev){ toast("Nothing to undo"); return; }
+    seeds[sec] = prev.seed;
+    $("in-nat" + sec).value = prev.amt;
+    render();
+    toast("Rolled back");
+  }
+  ["F","L","S"].forEach(sec => {
+    $("nat-" + sec).addEventListener("click", () => naturise(sec));
+    $("undo-" + sec).addEventListener("click", () => undo(sec));
+  });
+
+  /* packets */
+  function applyValues(p){
+    if (p.mode){ mode = p.mode; blend = "off"; }
+    for (const key in p){
+      if (key === "mode") continue;
+      const el = $("in-" + key);
+      if (el) el.value = p[key];
+    }
+    showGroups();
+    render();
+  }
+
+  const flowerPacks = {
+    daisy:      { mode:"rose",  petals:12, sharp:1.2, valley:0.38, dia:140 },
+    cosmos:     { mode:"rose",  petals:8,  sharp:0.7, valley:0.30, dia:140 },
+    poppy:      { mode:"harm",  petals:5,  a1:0.55, a2:-0.2, a3:0.1, depth:0.45, dia:130 },
+    starburst:  { mode:"super", petals:14, n1:0.8, n2:3, n3:3, dia:160 },
+    gumblossom: { mode:"super", petals:18, n1:4, n2:12, n3:12, dia:130 },
+    tuliphead:  { mode:"fan",   petals:3, spread:75, fwidth:1.15, ftip:1.2, fbase:0.3, dia:110 },
+    lilyhead:   { mode:"fan",   petals:5, spread:170, fwidth:0.7, ftip:2.8, fbase:0.18, dia:150 }
+  };
+  const leafPacks = {
+    simple: { lwidth:0.42, ltip:1.8, lobes:0, lobedepth:0.2 },
+    oak:    { lwidth:0.6,  ltip:1.1, lobes:7, lobedepth:0.3 },
+    gum:    { lwidth:0.2,  ltip:2.2, lobes:0, lobedepth:0.2 },
+    willow: { lwidth:0.28, ltip:3.2, lobes:0, lobedepth:0.2 }
+  };
+  document.querySelectorAll("[data-flower]").forEach(ch =>
+    ch.addEventListener("click", () => applyValues(flowerPacks[ch.getAttribute("data-flower")])));
+  document.querySelectorAll("[data-leaf]").forEach(ch =>
+    ch.addEventListener("click", () => applyValues(leafPacks[ch.getAttribute("data-leaf")])));
+
+  /* surprise me */
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  $("btn-random").addEventListener("click", () => {
+    ["F","L","S"].forEach(sec => {
+      hist[sec].push({ seed: seeds[sec], amt: $("in-nat" + sec).value });
+      if (hist[sec].length > 10) hist[sec].shift();
+      seeds[sec] = Math.floor(Math.random() * 1e9);
+    });
+    $("in-flowers").value = Math.random() < 0.12 ? 0 : Math.floor(rnd(1, 6));
+    $("in-stems").value = Math.floor(rnd(1, 4));
+    $("in-leaves").value = Math.floor(rnd(0, 9));
+    $("in-flowers2").value = $("in-flowers").value;
+    $("in-leaves2").value = $("in-leaves").value;
+    mode = ["rose","harm","super","fan"][Math.floor(Math.random() * 4)];
+    blend = mode !== "fan" && Math.random() < 0.35 ? ["rose","harm","super"][Math.floor(Math.random() * 3)] : "off";
+    if (blend === mode) blend = "off";
+    fstyle = ["solid","lattice","lattice","outline"][Math.floor(Math.random() * 4)];
+    latlayout = Math.random() < 0.5 ? "free" : "perpetal";
+    lstyle = ["solid","veins","veins","outline"][Math.floor(Math.random() * 4)];
+    arrange = ["alternate","opposite","wild"][Math.floor(Math.random() * 3)];
+    $("in-mix").value = rnd(0.25, 0.75).toFixed(2);
+    $("in-petals").value = Math.floor(rnd(3, 19));
+    $("in-dia").value = Math.round(rnd(80, 200) / 5) * 5;
+    $("in-sharp").value = rnd(0.4, 4).toFixed(1);
+    $("in-valley").value = rnd(0.2, 0.7).toFixed(2);
+    $("in-a1").value = rnd(-0.9, 0.9).toFixed(2);
+    $("in-a2").value = rnd(-0.6, 0.6).toFixed(2);
+    $("in-a3").value = rnd(-0.4, 0.4).toFixed(2);
+    $("in-depth").value = rnd(0.3, 0.75).toFixed(2);
+    $("in-n1").value = rnd(0.5, 8).toFixed(1);
+    $("in-n2").value = rnd(1, 15).toFixed(1);
+    $("in-n3").value = rnd(1, 15).toFixed(1);
+    $("in-spread").value = Math.round(rnd(50, 200) / 5) * 5;
+    $("in-fwidth").value = rnd(0.5, 1.4).toFixed(2);
+    $("in-ftip").value = rnd(0.7, 3.2).toFixed(1);
+    $("in-fbase").value = rnd(0.1, 0.4).toFixed(2);
+    $("in-ftilt").value = Math.random() < 0.5 ? 0 : Math.floor(rnd(10, 55));
+    $("in-fspin").value = Math.floor(rnd(0, 72)) * 5;
+    $("in-lwidth").value = rnd(0.18, 0.75).toFixed(2);
+    $("in-ltip").value = rnd(0.8, 3.5).toFixed(1);
+    $("in-lbend").value = rnd(-0.7, 0.7).toFixed(2);
+    $("in-lobes").value = Math.random() < 0.5 ? 0 : Math.floor(rnd(3, 11));
+    $("in-lobedepth").value = rnd(0.1, 0.4).toFixed(2);
+    $("in-ltilt").value = Math.random() < 0.6 ? 0 : Math.floor(rnd(10, 50));
+    $("in-natF").value = rnd(0, 0.6).toFixed(2);
+    $("in-natL").value = rnd(0, 0.6).toFixed(2);
+    $("in-natS").value = rnd(0, 0.5).toFixed(2);
+    $("in-stemlen").value = Math.random() < 0.15 ? 0 : Math.round(rnd(80, 240) / 5) * 5;
+    $("in-curve").value = rnd(-0.6, 0.6).toFixed(2);
+    $("in-bend").value = rnd(-0.6, 0.6).toFixed(2);
+    $("in-branchscale").value = rnd(0.4, 0.75).toFixed(2);
+    $("in-leafsize").value = Math.round(rnd(30, 80) / 5) * 5;
+    $("in-leafangle").value = Math.round(rnd(30, 70) / 5) * 5;
+    $("in-veins").value = Math.floor(rnd(6, 20));
+    showGroups();
+    render();
+  });
+
+  /* ---------- bouquet ---------- */
+  const bouquet = [];
+  let view = "plant";
+  let sheet = [300, 300];
+  let withVase = true;
+  const modeShort = { rose:"Daisy", harm:"Waves", super:"Super", fan:"Fan" };
+
+  function bqChips(){
+    const box = $("bq-chips");
+    box.innerHTML = "";
+    bouquet.forEach((st, i) => {
+      const chip = document.createElement("button");
+      chip.className = "chip";
+      chip.style.borderColor = PALETTE[i % PALETTE.length];
+      chip.style.color = PALETTE[i % PALETTE.length];
+      const label = st.flowers > 0 ? modeShort[st.mode] + (st.flowers > 1 ? " ×" + st.flowers : "") : "Foliage";
+      chip.textContent = (i + 1) + " · " + label + "  ✕";
+      chip.title = "Click to load back into the editor; ✕ end removes";
+      chip.addEventListener("click", ev => {
+        // clicking the right edge (the ✕) removes; elsewhere loads
+        const r = chip.getBoundingClientRect();
+        if (ev.clientX > r.right - 24){
+          bouquet.splice(i, 1);
+          if (!bouquet.length) view = "plant";
+          bqUI(); render();
+        } else {
+          loadState(st);
+          toast("Loaded bloom " + (i + 1) + " into the editor");
+        }
+      });
+      box.appendChild(chip);
+    });
+    $("bq-hint").textContent = bouquet.length
+      ? bouquet.length + " of 8 saved — tap a chip to edit it again, or its ✕ to remove."
+      : "Happy with a plant? Add it with the ＋ button under the preview — up to 8 make a bouquet.";
+  }
+
+  function bqUI(){
+    bqChips();
+    $("viewseg").classList.toggle("hidden", bouquet.length === 0);
+    $("bq-controls").classList.toggle("hidden", bouquet.length === 0);
+    $("view-plant").classList.toggle("on", view === "plant");
+    $("view-bouquet").classList.toggle("on", view === "bouquet");
+    $("tog-vase").classList.toggle("on", withVase);
+    $("tog-vase").textContent = withVase ? "Vase ✓" : "Vase ✗";
+    $("sheet-300").classList.toggle("on", sheet[0] === 300);
+    $("sheet-450").classList.toggle("on", sheet[0] === 450);
+    $("sheet-600").classList.toggle("on", sheet[0] === 600);
+  }
+
+  function loadState(st){
+    mode = st.mode; blend = st.blend; fstyle = st.fstyle; latlayout = st.latlayout;
+    lstyle = st.lstyle; arrange = st.arrange;
+    seeds.F = st.seedF; seeds.L = st.seedL; seeds.S = st.seedS;
+    for (const s of sliders){ const el = $("in-" + s); if (el && st[s] != null) el.value = st[s]; }
+    $("in-flowers2").value = st.flowers; $("in-leaves2").value = st.leaves;
+    $("in-bloomcol").value = st.bloomcol; $("in-leafcol").value = st.leafcol;
+    view = "plant";
+    showGroups(); bqUI(); render();
+  }
+
+  $("btn-addbq").addEventListener("click", () => {
+    if (bouquet.length >= 8){ toast("The bouquet is full — 8 is a good bunch"); return; }
+    bouquet.push(readState());
+    view = "bouquet";
+    bqUI(); render();
+    toast("Added to the bouquet (" + bouquet.length + " of 8)");
+  });
+  $("view-plant").addEventListener("click", () => { view = "plant"; bqUI(); render(); });
+  $("view-bouquet").addEventListener("click", () => { view = "bouquet"; bqUI(); render(); });
+  $("tog-vase").addEventListener("click", () => { withVase = !withVase; bqUI(); render(); });
+  $("sheet-300").addEventListener("click", () => { sheet = [300, 300]; bqUI(); });
+  $("sheet-450").addEventListener("click", () => { sheet = [450, 300]; bqUI(); });
+  $("sheet-600").addEventListener("click", () => { sheet = [600, 400]; bqUI(); });
+
+  function renderBouquet(){
+    const sc = buildBouquetScene(bouquet);
+    let body = "";
+    for (const it of sc.items){
+      for (const p of it.parts){
+        const fill = p.colour === "bloom" ? PALETTE[it.idx % PALETTE.length] : it.leafcol;
+        body += '<path d="' + p.loops.map(loopToD).join("") + '" fill="' + fill +
+                '" fill-rule="evenodd" stroke="' + shade(fill, 0.72) + '" stroke-width="' + Math.max(0.3, sc.W / 500) + '"/>';
+      }
+    }
+    if (withVase) body += '<path d="' + loopToD(sc.vase) + '" fill="#3b342a"/>';
+    $("preview").innerHTML = '<svg viewBox="0 0 ' + fmt(sc.W) + ' ' + fmt(sc.H) +
+      '" role="img" aria-label="Bouquet preview"><g style="filter:drop-shadow(0 ' + sc.H / 140 +
+      'px ' + sc.H / 100 + 'px rgba(80,60,30,.25))">' + body + '</g></svg>';
+    $("statline").textContent = "Bouquet · " + bouquet.length + (bouquet.length === 1 ? " plant" : " plants") +
+      " · " + Math.round(sc.W) + "×" + Math.round(sc.H) + " mm arranged" + (withVase ? " · vase" : "");
+  }
+
+  $("btn-bqcolour").addEventListener("click", () => {
+    if (!bouquet.length){ toast("Add some plants first"); return; }
+    saveSVG(buildBouquetColourSVG(bouquet), "bouquet-" + bouquet.length + "-colour.svg", "Bouquet saved");
+  });
+  $("btn-bqcut").addEventListener("click", () => {
+    if (!bouquet.length){ toast("Add some plants first"); return; }
+    toast("Welding and nesting — a moment…");
+    setTimeout(() => {
+      saveSVG(buildNestedCutSVG(bouquet, sheet[0], sheet[1], withVase),
+              "bouquet-" + bouquet.length + "-nested-" + sheet[0] + "x" + sheet[1] + ".svg",
+              "Nested cut sheet saved");
+    }, 50);
+  });
+
+  /* export */
+  function filename(kind){
+    const st = readState();
+    const what = st.flowers === 0 ? "foliage" : (st.stems > 1 || st.flowers > 1 ? "bunch" : (st.stemlen >= 10 ? "plant" : "flower"));
+    return "infinite-" + what + "-" + st.mode + (kind === "colour" ? "-colour" : "") + ".svg";
+  }
+
+  async function saveSVG(svg, name, doneMsg){
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    if (window.showSaveFilePicker){
+      try{
+        const handle = await window.showSaveFilePicker({
+          suggestedName: name,
+          types: [{ description: "SVG file", accept: { "image/svg+xml": [".svg"] } }]
+        });
+        const w = await handle.createWritable();
+        await w.write(blob);
+        await w.close();
+        toast(doneMsg);
+        return;
+      } catch(e){
+        if (e && e.name === "AbortError") return;
+      }
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast(doneMsg);
+  }
+
+  $("btn-save").addEventListener("click", () => {
+    const st = readState();
+    saveSVG(buildCutSVG(buildPlant(st), st), filename("cut"), "Saved — happy cutting");
+  });
+  $("btn-savecolour").addEventListener("click", () => {
+    const st = readState();
+    saveSVG(buildColourSVG(buildPlant(st), st), filename("colour"), "Colour SVG saved");
+  });
+  $("btn-copy").addEventListener("click", async () => {
+    try{
+      const st = readState();
+      await navigator.clipboard.writeText(buildCutSVG(buildPlant(st), st));
+      toast("Cut SVG copied to clipboard");
+    } catch(e){
+      toast("Couldn't copy — try Download instead");
+    }
+  });
+
+  showGroups();
+  bqUI();
+  render();
+}
+</script>
+</body>
+</html>
