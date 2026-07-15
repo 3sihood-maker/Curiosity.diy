@@ -626,7 +626,7 @@
   </div>
 </main>
 
-<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh13, 15 July 2026</footer>
+<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh14, 15 July 2026</footer>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -1347,14 +1347,11 @@ function leafHead(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
     loops.push(...hs);
   } else if (st.lstyle === "outline"){
     const thick = Math.max(st.lthick, st.minmat);
-    const pr = Math.max(st.minmat * 1.8, thick * 1.6, size * 0.055);
-    const hole = insetLoop(loops[0], thick, ox, oy, pr * 1.1 + thick);
+    // keep the hollow well clear of the base so the leaf's stalk end stays solid
+    // (this is what welds it to the stem) — no separate disc, so no visible ring
+    const keepOut = Math.max(st.minmat * 3, thick * 2.4, size * 0.12);
+    const hole = insetLoop(loops[0], thick, ox, oy, keepOut);
     if (hole){ loops.push(hole); holes = 1; }
-    // a petiole disc, pushed a little into the blade, welds the tapered base solid
-    const px = ox + Math.cos(dir) * pr * 0.35, py = oy + Math.sin(dir) * pr * 0.35; // straddles the attach point
-    return { parts: [{ loops, colour: "leaf" },
-                     { loops: [circleLoop(px, py, pr)], colour: "leaf" }],
-             holes };
   }
   return { parts: [{ loops, colour: "leaf" }], holes };
 }
@@ -2327,7 +2324,7 @@ if (typeof document !== "undefined" && document.getElementById){
     if (st.leaves > 0) bits.push(st.leaves + " leaves");
     bits.push(plant.holeCount > 0 ? plant.holeCount + " windows · min material " + st.minmat.toFixed(1) + " mm" : "solid");
     if (st.ltype === "frond" && st.leaves > 0 && (st.lscroll || 0) > 0.02) bits.push("fronds curling ↻");
-    bits.push("v.fh13");
+    bits.push("v.fh14");
     $("statline").textContent = bits.join(" · ");
   }
 
