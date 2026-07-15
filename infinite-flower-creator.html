@@ -609,11 +609,12 @@
       <p><b>Stamens.</b> Thin filaments fan from the flower's centre, each tipped with an anther dot, built inside the head's own frame so tilt and spin carry them — the crown of a hellebore or the reach of a hibiscus. <b>Extra blooms</b> can grow on branches, be strung along the stem (wattle, kangaroo paw), or cluster at the tip (a lily bunch). <b>Tip scroll</b> curls a frond's midrib into a fiddlehead spiral. The Sheets view shows exactly how everything nests before you commit to cutting.</p>
       <p><b>The bouquet.</b> Save up to eight plants you love with ＋ Bouquet — each is snapshotted with its seeds, so it regrows identically. Bouquet view arranges them fanned in a silhouette vase, every plant's blooms in its own colour. Nested cut SVG welds each plant into its own piece and shelf-packs them (rotating where it helps) onto sheets, vase included — red lines cut, blue lines are sheet guides. Clicking a saved chip loads it back into the editor; × lets it go. The bouquet lives for this browser session, so export what you love.</p>
       <p>Coming in Stage 6: leaf-by-leaf hand editing and drag-arranged bouquets.</p>
+      <p class="mini-label">Build: fiddlehead · 15 July 2026 — if this line is missing, you're looking at a cached older copy.</p>
     </details>
   </div>
 </main>
 
-<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red</footer>
+<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh5, 15 July 2026</footer>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -1073,36 +1074,62 @@ function buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
     const n = makeNoise(rng, 3, 2);
     noise = t => natAmt * 0.18 * n(t * TAU * 0.5);
   }
-  const curl = (st.lbend || 0) * (bendSign || 1) * 0.9;
-  const cl = growStem(size, ox, oy, dir, curl, 0, noise);
-  const origLast = cl.length - 1;
   const scroll = st.lscroll || 0;
+  const bs = bendSign || 1;
+
+  // ── ONE continuous midrib: a straight (gently leaning) base that flows into
+  //    a tightening spiral at the tip. Built as a single centreline so leaflets
+  //    can ride the whole thing, base to curl, fanning around the bend. ──
+  const curl = (st.lbend || 0) * bs * 0.9;
+  const baseFrac = 1 - 0.55 * scroll;          // more scroll → shorter straight run, longer coil
+  const cl = growStem(size * baseFrac, ox, oy, dir, curl, 0, noise);
+  const coilStartLen = cl.length;              // index where the spiral begins
   if (scroll > 0.02){
-    // fiddlehead: spiral the midrib tip inward
-    const steps = 34;
-    const turns = scroll * 1.7 * TAU * (bendSign || 1);
+    const Ls = size * 0.62 * scroll;           // arc length spent in the spiral
+    const steps = 60;
+    const turns = scroll * 1.15 * TAU * bs;     // up to ~1.15 turns — an open crook, no blobby overlap
+    const q = 0.972;                            // slow taper → the coil stays open, not a tight knot
+    let ds = Ls * (1 - q) / (1 - Math.pow(q, steps));
     let { x, y, h } = cl[cl.length - 1];
-    let ds = Math.max(0.8, size * 0.02);
     for (let k = 0; k < steps; k++){
       h += turns / steps;
       x += ds * Math.cos(h);
       y += ds * Math.sin(h);
       cl.push({ x, y, h });
-      ds = Math.max(0.5, ds * 0.93);
+      ds *= q;
     }
   }
-  const mw = Math.max(st.minmat * 1.1, size * 0.018 + 1);
-  const parts = [{ loops: [stemPolygon(cl, mw, Math.max(st.minmat, 0.9))], colour: "leaf" }];
-  const nP = Math.max(4, st.leaflets | 0);
+  const last = cl.length - 1;
+
+  // midrib tapers from base to a fine point at the very tip of the coil
+  const mwBase = Math.max(st.minmat * 1.15, size * 0.02 + 1);
+  const parts = [{ loops: [stemPolygon(cl, mwBase, Math.max(st.minmat, 0.8))], colour: "leaf" }];
+
+  // ── leaflet pairs along the ENTIRE midrib, shrinking toward the tip so the
+  //    frond narrows into the coil; each rides its point's local heading, so
+  //    around the spiral they fan outward naturally. ──
+  // extra leaflets packed toward the tip so the coil stays clothed
+  const nP = Math.max(4, st.leaflets | 0) + (scroll > 0.3 ? 4 : 0);
   for (let i = 0; i < nP; i++){
-    const t = 0.08 + 0.88 * (i / (nP - 1));
-    const taper = Math.pow(bump((t - 0.30) / 0.78), 0.7);
-    let llen = size * 0.30 * taper;
+    let u = i / (nP - 1);                        // 0 at base … 1 at coil tip
+    u = u * u * 0.4 + u * 0.6;                    // bias sampling toward the tip
+    const t = 0.06 + 0.92 * u;
+    const idxAt = tt => Math.round(tt * last);
+    // size taper: full through the body, tapering to a point along the coil
+    const bodyTaper = Math.pow(bump((t - 0.12) / 0.95), 0.5);
+    // leaflets shrink markedly along the coil so it ends in a fine curled point
+    const coilU = coilStartLen > 0 ? Math.max(0, (idxAt(t) - coilStartLen) / Math.max(1, last - coilStartLen)) : 0;
+    const tipTaper = (1 - Math.pow(u, 1.8) * 0.35) * (1 - Math.pow(coilU, 0.7) * 0.72);
+    let llen = size * 0.32 * bodyTaper * tipTaper;
     if (natAmt > 0.001) llen *= 1 + (rng() - 0.5) * 0.35 * natAmt;
-    if (llen < 3) continue;
-    const at = cl[Math.round(t * origLast)];
+    if (llen < 1.6) continue;
+    const idx = idxAt(t);
+    const at = cl[idx];
+    const inCoil = idx >= coilStartLen;
     for (const side of [1, -1]){
-      let ang = at.h + side * (1.05 - 0.25 * t);
+      // leaflets sit closer to perpendicular along the coil (they splay from the curl)
+      let spread = inCoil ? 1.15 : (1.05 - 0.25 * t);
+      let ang = at.h + side * spread;
       if (natAmt > 0.001) ang += (rng() - 0.5) * 0.3 * natAmt;
       const lst = { mode: "leaf", dia: llen * 2, lwidth: st.lwidth, ltip: st.ltip,
                     lobes: st.lobes, lobedepth: st.lobedepth, petals: 6,
@@ -1111,12 +1138,6 @@ function buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
       parts.push({ loops: [ringLoop(radii, makeFrame(at.x, at.y, ang - UP, 0, 1, 1, 0, 1))], colour: "leaf" });
     }
   }
-  // tip leaflet, anchored a little back along the midrib so it welds
-  if (scroll > 0.15) return { parts, holes: 0 };
-  const tipEnd = cl[Math.round(0.95 * origLast)];
-  const tst = { mode: "leaf", dia: size * 0.22, lwidth: st.lwidth, ltip: st.ltip,
-                lobes: st.lobes, lobedepth: st.lobedepth, petals: 6, nat: 0, seed: 1 };
-  parts.push({ loops: [ringLoop(sampleRadii(tst, 96), makeFrame(tipEnd.x, tipEnd.y, tipEnd.h - UP, 0, 1, 1, 0, 1))], colour: "leaf" });
   return { parts, holes: 0 };
 }
 
@@ -2184,6 +2205,8 @@ if (typeof document !== "undefined" && document.getElementById){
     if (st.stemlen >= 10) bits.push(st.stems + (st.stems === 1 ? " stem" : " stems"));
     if (st.leaves > 0) bits.push(st.leaves + " leaves");
     bits.push(plant.holeCount > 0 ? plant.holeCount + " windows · min material " + st.minmat.toFixed(1) + " mm" : "solid");
+    if (st.ltype === "frond" && st.leaves > 0 && (st.lscroll || 0) > 0.02) bits.push("fronds curling ↻");
+    bits.push("v.fh5");
     $("statline").textContent = bits.join(" · ");
   }
 
