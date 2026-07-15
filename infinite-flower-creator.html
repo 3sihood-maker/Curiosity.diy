@@ -126,6 +126,12 @@
   .btn.ghost:hover{background:var(--accent-soft)}
   .btn.sage{background:var(--sage);color:#fff}
   .btn.sage:hover{background:#616e4d}
+  .toggle{
+    border:1px solid var(--line);background:#fff;color:var(--ink-soft);
+    border-radius:10px;padding:9px 14px;font-size:.84rem;cursor:pointer;
+  }
+  .toggle.on{background:var(--sage);border-color:var(--sage);color:#fff}
+  .toggle:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
   .nat-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
   .nat-row .btn{flex:0 0 auto}
   .nat-row input[type=range]{flex:1}
@@ -550,6 +556,10 @@
         <label for="in-lthick">Outline thickness <output id="out-lthick">3 mm</output></label>
         <input type="range" id="in-lthick" min="1.5" max="12" step="0.5" value="3">
       </div>
+      <div style="margin-top:12px">
+        <button class="toggle" id="tog-leavesfront">Leaves in front of blooms</button>
+        <p class="mini-label">Off (default): blooms sit in front of the foliage. On: leaves overlap the blooms, for a wilder, tangled look.</p>
+      </div>
       </div><!-- /leaf-body -->
       <div class="nat-row">
         <button class="btn sage small" id="nat-L">Naturise foliage</button>
@@ -616,7 +626,7 @@
   </div>
 </main>
 
-<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh12, 15 July 2026</footer>
+<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh13, 15 July 2026</footer>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -1944,8 +1954,20 @@ function colourOf(part, st){
 }
 
 function layeredPaths(plant, st, forExport){
+  // Draw order = visual stacking. By default blooms sit IN FRONT of foliage
+  // (leaves drawn first, blooms last). "Leaves in front" flips it. Stable sort
+  // preserves each group's internal order (stems before their own heads, etc).
+  const leavesFront = !!st.leavesfront;
+  const rank = p => {
+    const isBloom = p.colour === "bloom";
+    return leavesFront ? (isBloom ? 0 : 1) : (isBloom ? 1 : 0);
+  };
+  const ordered = plant.parts
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => rank(a.p) - rank(b.p) || a.i - b.i)
+    .map(o => o.p);
   let s = "";
-  for (const part of plant.parts){
+  for (const part of ordered){
     const fill = colourOf(part, st);
     const d = smoothLoops(part.loops, st.smoothing || 0).map(loopToD).join("");
     s += '<path d="' + d + '" fill="' + fill + '" fill-rule="evenodd" stroke="' + shade(fill, 0.72) +
@@ -2183,12 +2205,13 @@ if (typeof document !== "undefined" && document.getElementById){
   let lstyle = "veins";
   let ltype = "blade";
   let xmode = "branch";
+  let leavesfront = false;
   let arrange = "alternate";
   const seeds = { F: 12345, L: 54321, S: 11111 };
   const hist = { F: [], L: [], S: [] };
 
   function readState(){
-    const st = { mode, blend, fstyle, latlayout, lstyle, ltype, xmode, arrange,
+    const st = { mode, blend, fstyle, latlayout, lstyle, ltype, xmode, arrange, leavesfront,
                  seedF: seeds.F, seedL: seeds.L, seedS: seeds.S };
     for (const s of sliders) st[s] = parseFloat($("in-" + s).value);
     st.bloomcol = $("in-bloomcol").value;
@@ -2257,6 +2280,7 @@ if (typeof document !== "undefined" && document.getElementById){
     $("rays-ctl").classList.toggle("hidden", latlayout === "perpetal");
     $("raysper-ctl").classList.toggle("hidden", latlayout === "free");
     $("lt-blade").classList.toggle("on", ltype === "blade");
+    $("tog-leavesfront").classList.toggle("on", leavesfront);
     $("lt-frond").classList.toggle("on", ltype === "frond");
     $("leaflets-ctl").classList.toggle("hidden", ltype !== "frond");
     $("frond-style-note").classList.toggle("hidden", ltype !== "frond");
@@ -2303,7 +2327,7 @@ if (typeof document !== "undefined" && document.getElementById){
     if (st.leaves > 0) bits.push(st.leaves + " leaves");
     bits.push(plant.holeCount > 0 ? plant.holeCount + " windows · min material " + st.minmat.toFixed(1) + " mm" : "solid");
     if (st.ltype === "frond" && st.leaves > 0 && (st.lscroll || 0) > 0.02) bits.push("fronds curling ↻");
-    bits.push("v.fh12");
+    bits.push("v.fh13");
     $("statline").textContent = bits.join(" · ");
   }
 
@@ -2324,6 +2348,7 @@ if (typeof document !== "undefined" && document.getElementById){
   $("xm-along").addEventListener("click", () => { xmode = "along"; showGroups(); render(); });
   $("xm-cluster").addEventListener("click", () => { xmode = "cluster"; showGroups(); render(); });
   $("lt-blade").addEventListener("click", () => { ltype = "blade"; showGroups(); render(); });
+  $("tog-leavesfront").addEventListener("click", () => { leavesfront = !leavesfront; showGroups(); render(); });
   $("lt-frond").addEventListener("click", () => { ltype = "frond"; showGroups(); render(); });
   $("ls-solid").addEventListener("click", () => { lstyle = "solid"; showGroups(); render(); });
   $("ls-veins").addEventListener("click", () => { lstyle = "veins"; showGroups(); render(); });
@@ -2559,6 +2584,7 @@ if (typeof document !== "undefined" && document.getElementById){
   function loadState(st){
     mode = st.mode; blend = st.blend; fstyle = st.fstyle; latlayout = st.latlayout;
     lstyle = st.lstyle; ltype = st.ltype || "blade"; xmode = st.xmode || "branch"; arrange = st.arrange;
+    leavesfront = !!st.leavesfront;
     seeds.F = st.seedF; seeds.L = st.seedL; seeds.S = st.seedS;
     for (const s of sliders){ const el = $("in-" + s); if (el && st[s] != null) el.value = st[s]; }
     $("in-flowers2").value = st.flowers; $("in-leaves2").value = st.leaves;
