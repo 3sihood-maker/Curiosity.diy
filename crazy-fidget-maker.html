@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crazy Fidget Maker · Curiosity.diy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4ecdd; --card:#fbf6ea; --ink:#2e2218; --ink-soft:#6b5a47;
+  --rust:#b0502e; --rust-deep:#8f3c1f; --tan:#c8a87c; --line:#e2d5bc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1060px;margin:0 auto;padding:28px 20px 64px}
+.eyebrow{font-size:11px;letter-spacing:.18em;color:var(--rust);text-transform:uppercase;font-weight:600}
+h1{font-family:'Fraunces',Georgia,serif;font-weight:650;font-size:clamp(30px,5vw,44px);
+  letter-spacing:-.01em;margin:.25em 0 .3em}
+.lede{color:var(--ink-soft);max-width:62ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card h2{font-family:'Fraunces',Georgia,serif;font-weight:650;font-size:19px;margin-bottom:12px}
+.pin{position:sticky;top:10px;z-index:30;margin-top:22px}
+.pin .card{box-shadow:0 6px 22px #2e221822}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:18px;margin-top:18px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff8}
+.seg button{flex:1;border:0;background:transparent;padding:9px 10px;font:inherit;font-size:12.5px;
+  color:var(--ink-soft);cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--ink);color:var(--card);font-weight:600}
+.seg.mini button{padding:7px 2px}
+.tbtn{height:34px;min-width:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line);
+  background:#fff8;font:inherit;font-size:14px;color:var(--ink);cursor:pointer;user-select:none;touch-action:manipulation}
+.tbtn:active{background:var(--tan)}
+.tbtn.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.spacer{flex:1}
+#shrinkBtn{display:none}
+@media(max-width:860px){#shrinkBtn{display:inline-block}}
+canvas{width:100%;height:380px;display:block;border-radius:10px;background:
+  radial-gradient(ellipse at 50% 35%, #fffaf0 0%, #f3ead7 75%);touch-action:none;cursor:grab}
+.compact canvas{height:190px}
+.hint{font-size:11px;color:var(--ink-soft);text-align:center;margin-top:6px}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-size:12px;background:#fff8}
+.chip b{font-weight:600}
+.chip.good{border-color:#4a8d85;color:#33645e}
+.chip.warn{border-color:var(--rust);color:var(--rust-deep)}
+.row{margin-top:16px}
+.row label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.row label b{color:var(--ink);font-weight:600}
+.slider{display:flex;align-items:center;gap:8px}
+.slider input[type=range]{flex:1;accent-color:var(--rust);height:22px}
+.step{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#fff8;
+  font:inherit;font-size:16px;line-height:1;color:var(--ink);cursor:pointer;user-select:none;touch-action:manipulation}
+.step:active{background:var(--tan)}
+.status{margin-top:14px;font-size:12px;color:var(--ink-soft);min-height:18px}
+.status.err{color:var(--rust-deep)}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:10px;padding:12px 18px;
+  font:inherit;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--rust);color:#fff8f0}
+.btn.primary:hover{background:var(--rust-deep)}
+.btn.ghost{background:transparent;border:1.5px solid var(--ink);color:var(--ink)}
+.btn.ghost:hover{background:var(--ink);color:var(--card)}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.legend{margin-top:10px;font-size:12.5px}
+.legend li{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted var(--line);list-style:none}
+.legend .ticks{letter-spacing:2px;color:var(--rust)}
+.note{font-size:12.5px;color:var(--ink-soft);margin-top:10px}
+.explain h3{font-family:'Fraunces',Georgia,serif;font-size:17px;margin:16px 0 6px}
+.explain p{color:var(--ink-soft);max-width:70ch;margin-bottom:8px}
+.filefx{font-size:11.5px;color:var(--ink-soft);margin-top:8px;word-break:break-all}
+footer{margin-top:40px;font-size:12px;color:var(--ink-soft)}
+footer a{color:var(--rust)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Curiosity.diy · Bench 03 — 3D Printing</div>
+  <h1>Crazy Fidget Maker</h1>
+  <p class="lede">Print-in-place mechanisms that come off the bed already assembled — a cycloidal drive
+  spinner and a herringbone planetary gear set. Dial in your printer's tolerance with the built-in
+  test print, then every fidget you generate is tuned to your machine.</p>
+
+  <div class="pin" id="pinWrap">
+    <div class="card" id="previewCard">
+      <div class="toolbar">
+        <div class="seg" id="viewSeg">
+          <button data-v="solid" class="on">Solid</button>
+          <button data-v="bones">Skeleton</button>
+        </div>
+        <button class="tbtn" id="playBtn" title="Play or pause the mechanism">⏸</button>
+        <span class="spacer"></span>
+        <button class="tbtn" id="zoomOut" title="Zoom out">−</button>
+        <button class="tbtn" id="zoomIn" title="Zoom in">+</button>
+        <button class="tbtn" id="shrinkBtn" title="Shrink or grow the preview">⇱</button>
+      </div>
+      <canvas id="cv"></canvas>
+      <div class="hint">drag to orbit · pinch or the buttons to zoom</div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Mechanism</h2>
+        <div class="seg" id="mechSeg">
+          <button data-m="cyc" class="on">Cycloidal drive</button>
+          <button data-m="pl">Planetary gears</button>
+        </div>
+
+        <div class="row">
+          <label><span>Diameter</span><b><span id="diaV">60</span> mm</b></label>
+          <div class="slider">
+            <button class="step" data-t="dia" data-d="-1">−</button>
+            <input type="range" id="dia" min="45" max="85" step="1" value="60">
+            <button class="step" data-t="dia" data-d="1">+</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <label><span>Height</span><b><span id="heightV">14</span> mm</b></label>
+          <div class="slider">
+            <button class="step" data-t="height" data-d="-0.5">−</button>
+            <input type="range" id="height" min="10" max="18" step="0.5" value="14">
+            <button class="step" data-t="height" data-d="0.5">+</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <label><span>Printer tolerance</span><b><span id="tolV">0.25</span> mm</b></label>
+          <div class="slider">
+            <button class="step" data-t="tol" data-d="-0.01">−</button>
+            <input type="range" id="tol" min="0.15" max="0.4" step="0.01" value="0.25">
+            <button class="step" data-t="tol" data-d="0.01">+</button>
+          </div>
+        </div>
+
+        <div id="cycCtl">
+          <div class="row">
+            <label><span>Lobes</span><b><span id="lobesV">7</span></b></label>
+            <div class="slider">
+              <button class="step" data-t="lobes" data-d="-1">−</button>
+              <input type="range" id="lobes" min="5" max="11" step="1" value="7">
+              <button class="step" data-t="lobes" data-d="1">+</button>
+            </div>
+          </div>
+          <div class="row">
+            <label><span>Wobble</span><b><span id="wobbleV">55</span>%</b></label>
+            <div class="slider">
+              <button class="step" data-t="wobble" data-d="-1">−</button>
+              <input type="range" id="wobble" min="35" max="75" step="1" value="55">
+              <button class="step" data-t="wobble" data-d="1">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="plCtl" style="display:none">
+          <div class="row">
+            <label><span>Planets</span><b><span id="planetsV">4</span></b></label>
+            <div class="seg mini" id="planetSeg">
+              <button data-p="3">3</button>
+              <button data-p="4" class="on">4</button>
+              <button data-p="5">5</button>
+              <button data-p="6">6</button>
+            </div>
+          </div>
+          <div class="row">
+            <label><span>Helix angle</span><b><span id="helixV">25</span>°</b></label>
+            <div class="slider">
+              <button class="step" data-t="helix" data-d="-1">−</button>
+              <input type="range" id="helix" min="15" max="35" step="1" value="25">
+              <button class="step" data-t="helix" data-d="1">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="status" id="status"></div>
+        <div class="btnrow">
+          <button class="btn primary" id="dlSTL">Download STL</button>
+        </div>
+        <div class="filefx" id="fname"></div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <h2>Test print</h2>
+        <p class="note">Six captive spinners, each printed at a different clearance. Snap each one
+        loose — the <b>smallest gap that spins smoothly</b> is your printer's tolerance. Type it
+        into the slider above. Count the tick marks on top to identify each spinner:</p>
+        <ul class="legend">
+          <li><span class="ticks">•</span><span>0.15 mm</span></li>
+          <li><span class="ticks">••</span><span>0.20 mm</span></li>
+          <li><span class="ticks">•••</span><span>0.25 mm</span></li>
+          <li><span class="ticks">••••</span><span>0.30 mm</span></li>
+          <li><span class="ticks">•••••</span><span>0.35 mm</span></li>
+          <li><span class="ticks">••••••</span><span>0.40 mm</span></li>
+        </ul>
+        <div class="btnrow">
+          <button class="btn ghost" id="dlTest">Download test print STL</button>
+        </div>
+        <p class="note">Prints in about 20 minutes. If two spinners both feel good, choose the larger
+        value for reliability, the smaller for crispness.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card explain">
+        <h2>Workshop notes</h2>
+        <h3>Why tolerance is everything</h3>
+        <p>A print-in-place mechanism is printed already assembled, so the gap between moving parts
+        is decided at design time — too small and the parts fuse into a paperweight, too large and
+        the action feels sloppy. Every printer, nozzle and filament lands differently, which is why
+        this tool asks for <em>your</em> number rather than guessing.</p>
+        <h3>The cycloidal drive</h3>
+        <p>A lobed disc rolls around a ring of pins, driven by an eccentric cam under the knob. One
+        full turn of the knob advances the disc by a single lobe — a quietly hypnotic reduction of
+        <span id="ratioCyc">7:1</span>. The disc is captured under the wall lip and the knob, so
+        nothing escapes. The preview animates exactly this: the disc's drunken wobble is the
+        mechanism working.</p>
+        <h3>The planetary gears</h3>
+        <p>A sun gear, a ring gear and a set of planets, all cut as herringbones. The chevron teeth
+        lock the parts together vertically — no pins, no caps — which is what makes the set
+        printable in one piece. Spin the sun knob and the planets orbit, each spinning on its own
+        axis as it goes.</p>
+        <h3>Printing</h3>
+        <p>PLA or PETG, 0.2 mm layers, no supports, no brim needed. After printing, work each part
+        loose gently — a few firm twists breaks the first-layer bond. If it will not free, print the
+        test plate and move one step looser.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>Part of the <a href="https://curiosity.diy">Curiosity.diy</a> workshop · Bench 03 ·
+  All geometry is generated in your browser; nothing is uploaded.</footer>
+</div>
+
+<script>
+/* Crazy Fidget Maker — geometry engine
+   Curiosity.diy · zero dependencies · watertight by construction.
+   Runs in Node (verification) and the browser (inlined). */
+(function (root) {
+'use strict';
+const TAU = Math.PI * 2;
+
+/* ---------- mesh helpers ---------- */
+function newPart(name, colour) { return { name, colour, tris: [] }; }
+function tri(part, a, b, c) { part.tris.push([a, b, c]); }
+
+function signedVolume(tris) {
+  let v = 0;
+  for (const [a, b, c] of tris) {
+    v += (a[0] * (b[1] * c[2] - c[1] * b[2])
+        - a[1] * (b[0] * c[2] - c[0] * b[2])
+        + a[2] * (b[0] * c[1] - c[0] * b[1])) / 6;
+  }
+  return v;
+}
+function flip(part) { part.tris = part.tris.map(([a, b, c]) => [a, c, b]); }
+function ensureOutward(part) { if (signedVolume(part.tris) < 0) flip(part); return part; }
+
+function translate(part, dx, dy, dz) {
+  part.tris = part.tris.map(t => t.map(p => [p[0] + dx, p[1] + dy, p[2] + dz]));
+  return part;
+}
+function rotateZ(part, ang, cx = 0, cy = 0) {
+  const s = Math.sin(ang), c = Math.cos(ang);
+  part.tris = part.tris.map(t => t.map(p => {
+    const x = p[0] - cx, y = p[1] - cy;
+    return [cx + x * c - y * s, cy + x * s + y * c, p[2]];
+  }));
+  return part;
+}
+
+/* ---------- 2D profile helpers ---------- */
+function circlePts(r, seg, cx = 0, cy = 0, phase = 0) {
+  const pts = [];
+  for (let i = 0; i < seg; i++) {
+    const a = phase + (i / seg) * TAU;
+    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+  }
+  return pts; // CCW
+}
+function area2D(pts) {
+  let a = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i], q = pts[(i + 1) % pts.length];
+    a += p[0] * q[1] - q[0] * p[1];
+  }
+  return a / 2;
+}
+function ensureCCW(pts) { return area2D(pts) < 0 ? pts.slice().reverse() : pts; }
+
+/* Offset a closed CCW contour along its local normals (positive = outward). */
+function offsetContour(pts, d) {
+  const n = pts.length, out = [];
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n];
+    let ax = p1[0] - p0[0], ay = p1[1] - p0[1];
+    let bx = p2[0] - p1[0], by = p2[1] - p1[1];
+    const la = Math.hypot(ax, ay) || 1, lb = Math.hypot(bx, by) || 1;
+    // outward normals of the two edges (CCW polygon → outward = (dy,-dx))
+    const n1x = ay / la, n1y = -ax / la, n2x = by / lb, n2y = -bx / lb;
+    let nx = n1x + n2x, ny = n1y + n2y;
+    const l = Math.hypot(nx, ny);
+    if (l < 1e-9) { nx = n1x; ny = n1y; } else { nx /= l; ny /= l; }
+    // mitre compensation, clamped
+    const dot = Math.max(0.4, (1 + (n1x * n2x + n1y * n2y)) / 2);
+    const k = Math.min(1 / dot, 2.0);
+    out.push([p1[0] + nx * d * k, p1[1] + ny * d * k]);
+  }
+  return out;
+}
+
+/* Cycloidal disc profile (epitrochoid offset by pin radius).
+   N = pin count, R = pin circle radius, Rr = pin radius, E = eccentricity.
+   Produces N-1 lobes. Standard cycloidal-drive equations. */
+function cycloidDisc(N, R, Rr, E, steps) {
+  const pts = [];
+  for (let i = 0; i < steps; i++) {
+    const t = (i / steps) * TAU;
+    const psi = Math.atan2(Math.sin((1 - N) * t), (R / (E * N)) - Math.cos((1 - N) * t));
+    const x = R * Math.cos(t) - Rr * Math.cos(t + psi) - E * Math.cos(N * t);
+    const y = -R * Math.sin(t) + Rr * Math.sin(t + psi) + E * Math.sin(N * t);
+    pts.push([x, y]);
+  }
+  return ensureCCW(pts);
+}
+
+/* Involute external gear profile. z teeth, module m, pressure angle pa (rad).
+   addF/dedF are addendum/dedendum factors. Tooth centred on angle 0. */
+function involuteGear(z, m, pa, addF, dedF, ptsPerFlank) {
+  const rp = m * z / 2;
+  const rb = rp * Math.cos(pa);
+  const ra = rp + addF * m;
+  const rd = Math.max(rp - dedF * m, rb * 0.5);
+  const invAt = r => { const c = Math.sqrt(Math.max(r * r - rb * rb, 0)) / rb; return c - Math.atan(c); };
+  const halfToothAtPitch = Math.PI / (2 * z); // half tooth thickness angle at pitch circle
+  const toothCentreOffset = invAt(rp);        // involute angle at pitch radius
+  const pitch = TAU / z;
+  const pts = [];
+  for (let k = 0; k < z; k++) {
+    const c = k * pitch; // tooth centre angle
+    // rising flank: root → tip
+    const flank = [];
+    for (let i = 0; i <= ptsPerFlank; i++) {
+      const r = Math.max(rd, rb) + (i / ptsPerFlank) * (ra - Math.max(rd, rb));
+      const ang = c - (halfToothAtPitch + toothCentreOffset - invAt(r));
+      flank.push([r * Math.cos(ang), r * Math.sin(ang)]);
+    }
+    // root arc from previous tooth's falling flank to this rising flank
+    const prevFall = c - pitch + (halfToothAtPitch + toothCentreOffset - invAt(Math.max(rd, rb)));
+    const thisRise = c - (halfToothAtPitch + toothCentreOffset - invAt(Math.max(rd, rb)));
+    const rootSteps = 4;
+    for (let i = 1; i < rootSteps; i++) {
+      const a = prevFall + (i / rootSteps) * (thisRise - prevFall);
+      pts.push([rd * Math.cos(a), rd * Math.sin(a)]);
+    }
+    // rising flank
+    for (const p of flank) pts.push(p);
+    // tip arc
+    const tipA = c - (halfToothAtPitch + toothCentreOffset - invAt(ra));
+    const tipB = c + (halfToothAtPitch + toothCentreOffset - invAt(ra));
+    const tipSteps = 3;
+    for (let i = 1; i < tipSteps; i++) {
+      const a = tipA + (i / tipSteps) * (tipB - tipA);
+      pts.push([ra * Math.cos(a), ra * Math.sin(a)]);
+    }
+    // falling flank: tip → root
+    for (let i = ptsPerFlank; i >= 0; i--) {
+      const r = Math.max(rd, rb) + (i / ptsPerFlank) * (ra - Math.max(rd, rb));
+      const ang = c + (halfToothAtPitch + toothCentreOffset - invAt(r));
+      pts.push([r * Math.cos(ang), r * Math.sin(ang)]);
+    }
+  }
+  return ensureCCW(pts);
+}
+
+/* ---------- solid builders (all watertight by construction) ---------- */
+
+/* Extrude a closed CCW contour into a solid, fan-capped from centroid.
+   Optional twist about (cx,cy): twistFn(zFrac) → rotation in radians. */
+function extrudeSolid(part, pts0, z0, z1, opts = {}) {
+  const slices = opts.slices || 1;
+  const twistFn = opts.twistFn || null;
+  const cx = opts.cx || 0, cy = opts.cy || 0;
+  const n = pts0.length;
+  const ring = f => {
+    const a = twistFn ? twistFn(f) : 0;
+    const s = Math.sin(a), c = Math.cos(a);
+    const z = z0 + f * (z1 - z0);
+    return pts0.map(p => {
+      const x = p[0] - cx, y = p[1] - cy;
+      return [cx + x * c - y * s, cy + x * s + y * c, z];
+    });
+  };
+  const rings = [];
+  for (let i = 0; i <= slices; i++) rings.push(ring(i / slices));
+  // walls
+  for (let i = 0; i < slices; i++) {
+    const A = rings[i], B = rings[i + 1];
+    for (let j = 0; j < n; j++) {
+      const j2 = (j + 1) % n;
+      tri(part, A[j], A[j2], B[j2]);
+      tri(part, A[j], B[j2], B[j]);
+    }
+  }
+  // caps (fan from centroid — contours are star-shaped about their centroid here)
+  const cap = (r, up) => {
+    let mx = 0, my = 0;
+    for (const p of r) { mx += p[0]; my += p[1]; }
+    const C = [mx / n, my / n, r[0][2]];
+    for (let j = 0; j < n; j++) {
+      const j2 = (j + 1) % n;
+      if (up) tri(part, C, r[j], r[j2]); else tri(part, C, r[j2], r[j]);
+    }
+  };
+  cap(rings[0], false);
+  cap(rings[slices], true);
+  return part;
+}
+
+/* Extrude an annulus: CCW outer contour + CCW inner contour (hole), both with
+   the SAME point count, strip-capped. Optional twist applied to inner only,
+   or both, via opts. */
+function extrudeAnnulus(part, outer0, inner0, z0, z1, opts = {}) {
+  if (outer0.length !== inner0.length) throw new Error('annulus contours must match length');
+  const n = outer0.length;
+  const slices = opts.slices || 1;
+  const twistInner = opts.twistInner || null;
+  const twistOuter = opts.twistOuter || null;
+  const rot = (pts, a) => {
+    if (!a) return pts;
+    const s = Math.sin(a), c = Math.cos(a);
+    return pts.map(p => [p[0] * c - p[1] * s, p[0] * s + p[1] * c]);
+  };
+  const rings = [];
+  for (let i = 0; i <= slices; i++) {
+    const f = i / slices, z = z0 + f * (z1 - z0);
+    const o = rot(outer0, twistOuter ? twistOuter(f) : 0);
+    const inr = rot(inner0, twistInner ? twistInner(f) : 0);
+    rings.push({ o: o.map(p => [p[0], p[1], z]), i: inr.map(p => [p[0], p[1], z]) });
+  }
+  for (let s = 0; s < slices; s++) {
+    const A = rings[s], B = rings[s + 1];
+    for (let j = 0; j < n; j++) {
+      const j2 = (j + 1) % n;
+      // outer wall (outward)
+      tri(part, A.o[j], A.o[j2], B.o[j2]); tri(part, A.o[j], B.o[j2], B.o[j]);
+      // inner wall (faces inward → reversed)
+      tri(part, A.i[j], B.i[j2], A.i[j2]); tri(part, A.i[j], B.i[j], B.i[j2]);
+    }
+  }
+  const top = rings[slices], bot = rings[0];
+  for (let j = 0; j < n; j++) {
+    const j2 = (j + 1) % n;
+    // top cap (+z)
+    tri(part, top.o[j], top.o[j2], top.i[j2]); tri(part, top.o[j], top.i[j2], top.i[j]);
+    // bottom cap (−z)
+    tri(part, bot.o[j], bot.i[j2], bot.o[j2]); tri(part, bot.o[j], bot.i[j], bot.i[j2]);
+  }
+  return part;
+}
+
+/* Revolve a closed polygon in the r–z plane about the z axis.
+   Points with r≈0 collapse to the axis (degenerate tris skipped). */
+function revolve(part, profile, seg) {
+  const n = profile.length;
+  const P = (j, i) => {
+    const [r, z] = profile[j];
+    const a = (i / seg) * TAU;
+    return [r * Math.cos(a), r * Math.sin(a), z];
+  };
+  const deg = (a, b, c) => {
+    const eq = (p, q) => Math.abs(p[0] - q[0]) < 1e-9 && Math.abs(p[1] - q[1]) < 1e-9 && Math.abs(p[2] - q[2]) < 1e-9;
+    return eq(a, b) || eq(b, c) || eq(a, c);
+  };
+  for (let j = 0; j < n; j++) {
+    const j2 = (j + 1) % n;
+    for (let i = 0; i < seg; i++) {
+      const i2 = (i + 1) % seg;
+      const a = P(j, i), b = P(j2, i), c = P(j2, i2), d = P(j, i2);
+      if (!deg(a, b, c)) tri(part, a, b, c);
+      if (!deg(a, c, d)) tri(part, a, c, d);
+    }
+  }
+  return ensureOutward(part);
+}
+
+function cylinder(part, cx, cy, z0, z1, r, seg) {
+  return extrudeSolid(part, circlePts(r, seg, cx, cy), z0, z1);
+}
+function box(part, x0, y0, z0, x1, y1, z1) {
+  const p = [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+  return extrudeSolid(part, p, z0, z1);
+}
+
+/* ---------- min distance between two 2D contours ---------- */
+function segPointDist(px, py, ax, ay, bx, by) {
+  const vx = bx - ax, vy = by - ay;
+  const L2 = vx * vx + vy * vy || 1e-12;
+  let t = ((px - ax) * vx + (py - ay) * vy) / L2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + t * vx), py - (ay + t * vy));
+}
+function contourMinDist(A, B) {
+  let best = Infinity;
+  const n = A.length, m = B.length;
+  for (let i = 0; i < n; i++) {
+    const p = A[i];
+    for (let j = 0; j < m; j++) {
+      const a = B[j], b = B[(j + 1) % m];
+      const d = segPointDist(p[0], p[1], a[0], a[1], b[0], b[1]);
+      if (d < best) best = d;
+    }
+  }
+  for (let j = 0; j < m; j++) {
+    const p = B[j];
+    for (let i = 0; i < n; i++) {
+      const a = A[i], b = A[(i + 1) % n];
+      const d = segPointDist(p[0], p[1], a[0], a[1], b[0], b[1]);
+      if (d < best) best = d;
+    }
+  }
+  return best;
+}
+function pointInPoly(px, py, pts) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i][0], yi = pts[i][1], xj = pts[j][0], yj = pts[j][1];
+    if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+function contoursIntersect(A, B) {
+  // cheap overlap test: any vertex of one inside the other
+  for (const p of A) if (pointInPoly(p[0], p[1], B)) return true;
+  for (const p of B) if (pointInPoly(p[0], p[1], A)) return true;
+  return false;
+}
+
+/* Robust contour crossing test: any edge of A properly crosses any edge of B.
+   Radial prefilter about (cx,cy) keeps it fast for gear-vs-gear tests. */
+function segsCross(a1, a2, b1, b2) {
+  const o = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
+  const o1 = o(a1, a2, b1), o2 = o(a1, a2, b2), o3 = o(b1, b2, a1), o4 = o(b1, b2, a2);
+  return o1 !== o2 && o3 !== o4 && o1 !== 0 && o2 !== 0 && o3 !== 0 && o4 !== 0
+    ? true
+    : (o1 !== o2 && o3 !== o4); // treat collinear touches as non-crossing
+}
+function contoursCross(A, B, cx = 0, cy = 0) {
+  const rOf = p => Math.hypot(p[0] - cx, p[1] - cy);
+  const rA = A.map(rOf), rB = B.map(rOf);
+  const minB = Math.min(...rB), maxB = Math.max(...rB);
+  const n = A.length, m = B.length;
+  for (let i = 0; i < n; i++) {
+    const i2 = (i + 1) % n;
+    const lo = Math.min(rA[i], rA[i2]) - 1e-9, hi = Math.max(rA[i], rA[i2]) + 1e-9;
+    if (hi < minB || lo > maxB) continue;   // edge entirely inside/outside B's radial band
+    for (let j = 0; j < m; j++) {
+      const j2 = (j + 1) % m;
+      const lo2 = Math.min(rB[j], rB[j2]), hi2 = Math.max(rB[j], rB[j2]);
+      if (hi < lo2 || lo > hi2) continue;
+      if (segsCross(A[i], A[i2], B[j], B[j2])) return true;
+    }
+  }
+  return false;
+}
+/* Internal-mesh clash test: part must sit fully INSIDE hole, and no hole
+   vertex may sit inside the part. (contoursIntersect is wrong here: the part
+   being inside the hole polygon trips its vertex-in-polygon test by design.) */
+function internalMeshClash(partPts, holePts) {
+  for (const p of partPts) if (!pointInPoly(p[0], p[1], holePts)) return 'outside';
+  for (const q of holePts) if (pointInPoly(q[0], q[1], partPts)) return 'clash';
+  return null;
+}
+
+/* ---------- CYCLOIDAL SPINNER ---------- */
+function buildCycloidal(P) {
+  // P: { dia, lobes, wobble(0.3-0.8), tol, height, seg }
+  const seg = P.seg || 96;
+  const N = P.lobes + 1;                 // pin count
+  const rim = 3.5;
+  const Rwall = P.dia / 2;               // outer wall radius
+  const chordAt = R => 2 * R * Math.sin(Math.PI / N);
+  let R = Rwall - rim - 2.0;
+  let Rr = Math.max(1.4, Math.min(0.38 * chordAt(R), 3.2));
+  R = Rwall - rim - Rr - 0.8;
+  Rr = Math.max(1.4, Math.min(0.38 * chordAt(R), 3.2));
+  const Emax = R / N;
+  const E = Math.max(0.5, P.wobble * Emax);
+  const tol = P.tol;
+
+  const tb = 2.6;                        // base thickness
+  const vgap = 0.32;                     // vertical print gap
+  const discT = Math.max(4, P.height - tb - 4.2);
+  const discZ0 = tb + vgap, discZ1 = discZ0 + discT;
+  const pinTop = discZ1 + 0.5;
+  const lipZ0 = pinTop + 0.3;
+  const wallTop = lipZ0 + 1.8;
+
+  // disc profile with tolerance shaved off (adaptive: extreme wobble creates
+  // tight lobe roots where a plain offset is not enough)
+  const disc0 = cycloidDisc(N, R, Rr, E, seg * 2);
+  let disc = offsetContour(disc0, -tol);
+
+  // cam sizing
+  const rc = Math.max(4, 2 * E + 2.2);   // eccentric cam radius
+  const holeR = rc + tol;                // disc bore
+  const flangeR = rc + E + 2.0;
+  const baseHoleR = flangeR + Math.max(tol, 0.3);
+
+  // pick the disc print offset empirically: try +E, -E, 0 against pins
+  const pinCentres = Array.from({ length: N }, (_, k) =>
+    [R * Math.cos(k / N * TAU), R * Math.sin(k / N * TAU)]);
+  const pinPoly = c => circlePts(Rr, 32, c[0], c[1]);
+  const evalOffset = (dx) => {
+    const moved = disc.map(p => [p[0] + dx, p[1]]);
+    let minD = Infinity, hit = false;
+    for (const c of pinCentres) {
+      const pp = pinPoly(c);
+      if (contoursIntersect(moved, pp)) hit = true;
+      const d = contourMinDist(moved, pp);
+      if (d < minD) minD = d;
+    }
+    return { minD, hit };
+  };
+  const pickOffset = () => {
+    let dxBest = E, rBest = evalOffset(E);
+    for (const dx of [-E, 0]) {
+      const r = evalOffset(dx);
+      const better = (!r.hit && rBest.hit) || (!r.hit && !rBest.hit && Math.abs(r.minD - tol) < Math.abs(rBest.minD - tol));
+      if (better) { dxBest = dx; rBest = r; }
+    }
+    return { dxBest, rBest };
+  };
+  let printDx, best;
+  for (let extra = 0; extra <= 0.6; extra += 0.03) {
+    disc = offsetContour(disc0, -(tol + extra));
+    const { dxBest, rBest } = pickOffset();
+    printDx = dxBest; best = rBest;
+    if (!best.hit && best.minD >= 0.7 * tol) break;
+  }
+  const discPrint = disc.map(p => [p[0] + printDx, p[1]]);
+  const discMaxR = Math.max(...discPrint.map(p => Math.hypot(p[0], p[1])));
+
+  const parts = [];
+
+  // base: annulus with a central well for the cam flange
+  const base = newPart('base', '#cfa671');
+  extrudeAnnulus(base, circlePts(Rwall, seg), circlePts(baseHoleR, seg), 0, tb);
+  parts.push(base);
+
+  // wall + lip (revolve), fused into base by 0.2 overlap.
+  // The lip underside rides a 45-degree cone so the printable bridge is <= 2.5mm.
+  const wallIn = R + Rr + 1.0;
+  const lipIn = discMaxR - 1.6;   // always captures the disc
+  const coneEndR = Math.min(lipIn + 2.5, wallIn);
+  const lipZ1 = lipZ0 + (wallIn - coneEndR);   // 45-degree rise
+  const wallTop2 = lipZ1 + 1.8;
+  const wall = newPart('wall', '#cfa671');
+  revolve(wall, [
+    [Rwall, tb - 0.2], [Rwall, wallTop2], [lipIn, wallTop2],
+    [lipIn, lipZ1], [coneEndR, lipZ1], [wallIn, lipZ0], [wallIn, tb - 0.2]
+  ], seg);
+  parts.push(wall);
+
+  // pins
+  const pins = newPart('pins', '#cfa671');
+  for (const c of pinCentres) cylinder(pins, c[0], c[1], tb - 0.2, pinTop, Rr, 28);
+  parts.push(pins);
+
+  // disc (lobed outer, round bore); bore sits at the disc's own centre (centroid)
+  let cxD = 0, cyD = 0;
+  for (const p of discPrint) { cxD += p[0]; cyD += p[1]; }
+  cxD /= discPrint.length; cyD /= discPrint.length;
+  const discPart = newPart('disc', '#d96f2e');
+  extrudeAnnulus(discPart, discPrint, circlePts(holeR, discPrint.length, cxD, cyD), discZ0, discZ1);
+  parts.push(discPart);
+
+  // cam: flange in the base well (on the bed), eccentric shaft through bore, knob cap
+  const cam = newPart('cam', '#2e6f66');
+  cylinder(cam, 0, 0, 0, tb, flangeR, seg);                          // flange on bed, inside base well
+  cylinder(cam, cxD, cyD, tb - 0.2, discZ1 + vgap + 1.0, rc, seg);   // eccentric section through bore, rising into knob
+  const ecc = Math.hypot(cxD, cyD);
+  const knobR = rc + ecc + 3.0;
+  cylinder(cam, 0, 0, discZ1 + vgap, discZ1 + vgap + 3.6, knobR, seg); // knob (bridges vgap over disc)
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * TAU;
+    cylinder(cam, (knobR - 1.4) * Math.cos(a), (knobR - 1.4) * Math.sin(a),
+      discZ1 + vgap + 3.4, discZ1 + vgap + 4.4, 1.1, 12);
+  }
+  parts.push(cam);
+
+  const bridge = coneEndR - lipIn;
+  const stats = { N, R, Rr, E, Emax, tol, printDx, ecc, bridge, discClearance: best.minD, discIntersects: best.hit,
+    discMaxR, holeR, rc, flangeR, baseHoleR, wallIn, lipIn,
+    heights: { tb, discZ0, discZ1, pinTop, lipZ0, wallTop: wallTop2 },
+    discProfile: discPrint, pinCentres };
+  return { parts, stats };
+}
+
+/* Multi-shell parts: each closed shell inside was built outward already;
+   global flip would wreck mixed shells, so trust construction. */
+function ensureOutwardMulti(part) { return part; }
+
+/* ---------- PLANETARY (herringbone gear bearing) ---------- */
+const PLANET_TABLE = {
+  3: { Zs: 9,  Zp: 6,  n: 3 },
+  4: { Zs: 8,  Zp: 6,  n: 4 },
+  5: { Zs: 10, Zp: 10, n: 5 },
+  6: { Zs: 12, Zp: 6,  n: 6 }
+};
+function buildPlanetary(P) {
+  // P: { dia, planets, helix(deg), tol, height, seg }
+  const t = PLANET_TABLE[P.planets];
+  const Zs = t.Zs, Zp = t.Zp, Zr = Zs + 2 * Zp;
+  const rimW = 3.0;
+  const pa = 25 * Math.PI / 180;         // high pressure angle suits low tooth counts
+  const H = P.height;
+  const tol = P.tol;
+  const beta = P.helix * Math.PI / 180;
+  const flankPts = P.flankPts || 8;
+  const searchPts = 4;   // coarse profiles for the phase search
+  const mod = (P.dia / 2 - rimW) / (Zr / 2 + 1.25);
+
+  const rpS = mod * Zs / 2, rpP = mod * Zp / 2, rpR = mod * Zr / 2;
+  const Rc = mod * (Zs + Zp) / 2;        // planet centre radius
+
+  const rotPts = (pts, a, cx = 0, cy = 0) => {
+    const s = Math.sin(a), c = Math.cos(a);
+    return pts.map(p => { const x = p[0] - cx, y = p[1] - cy; return [cx + x * c - y * s, cy + x * s + y * c]; });
+  };
+  const herr = f => (f < 0.5 ? f : 1 - f);
+  const twistAngle = (rp, sign, f) => sign * Math.tan(beta) * H / rp * herr(f);
+
+  // base profiles: stubbed external teeth, roomy ring gullets, short ring teeth.
+  // Ring phase: with an even-toothed planet, the planet shows a tooth GAP to both
+  // sun and ring, so the ring hole must be clocked by half a ring pitch to present
+  // a tooth (hole gullet) on the planet line. Odd-toothed planets need no clocking.
+  const sunBase = involuteGear(Zs, mod, pa, 0.85, 1.25, flankPts);
+  const plBase = involuteGear(Zp, mod, pa, 0.85, 1.25, flankPts);
+  const ringPhase = (Zp % 2 === 0) ? Math.PI / Zr : 0;
+  const rhBase = rotPts(involuteGear(Zr, mod, pa, 1.25, 0.85, flankPts), ringPhase);
+  const sunLo = involuteGear(Zs, mod, pa, 0.85, 1.25, searchPts);
+  const plLo = involuteGear(Zp, mod, pa, 0.85, 1.25, searchPts);
+  const rhLo = rotPts(involuteGear(Zr, mod, pa, 1.25, 0.85, searchPts), ringPhase);
+
+  // adaptive fit: shave external gears / grow ring hole until the mesh is
+  // provably clean (no crossings, planet contained in ring hole,
+  // clearance >= 0.6*tol) at several twist planes; the ring gets its own phase
+  const zSamples = [0, 0.25, 0.5];
+  let fit = null;
+  for (let shave = 0; shave <= 0.5 && !fit; shave += 0.05) {
+    const sun = offsetContour(sunLo, -(tol / 2 + shave));
+    const planet0 = offsetContour(plLo, -(tol / 2 + shave));
+    const ringHole0 = offsetContour(rhLo, tol / 2 + shave);
+    const pitchP = TAU / Zp, pitchR = TAU / Zr;
+    // pass 1: planet phases clean against the sun (untwisted)
+    const sunClean = [];
+    for (let i = 0; i < 90; i++) {
+      const ph = (i / 90) * pitchP;
+      const pl = rotPts(planet0, ph).map(p => [p[0] + Rc, p[1]]);
+      if (contoursCross(pl, sun)) continue;
+      if (pointInPoly(pl[0][0], pl[0][1], sun)) continue;
+      const d = contourMinDist(pl, sun);
+      if (d >= tol * 0.6) sunClean.push({ ph, pl, d });
+    }
+    sunClean.sort((a, b) => b.d - a.d);
+    if (sunClean.length > 14) sunClean.length = 14;
+    // pass 2: for each sun-clean phase, search ring phase; validate twist planes
+    let best = null;
+    for (const cand of sunClean) {
+      for (let j = 0; j < 36; j++) {
+        const phr = (j / 36) * pitchR;
+        let minScore = Infinity, dead = false;
+        for (const f of zSamples) {
+          const sunR = rotPts(sun, twistAngle(rpS, +1, f));
+          const plR = rotPts(cand.pl, twistAngle(rpP, -1, f), Rc, 0);
+          const rhR = rotPts(ringHole0, phr + twistAngle(rpR, -1, f));
+          if (contoursCross(plR, sunR)) { dead = true; break; }
+          if (contoursCross(plR, rhR)) { dead = true; break; }
+          if (!pointInPoly(plR[0][0], plR[0][1], rhR)) { dead = true; break; } // containment (no crossings ⇒ one vertex decides)
+          minScore = Math.min(minScore, contourMinDist(plR, sunR), contourMinDist(plR, rhR));
+        }
+        if (dead || minScore < tol * 0.6) continue;
+        if (!best || minScore > best.score) best = { score: minScore, ph: cand.ph, phr };
+      }
+    }
+    if (best) {
+      // rebuild at full resolution with the found phases and re-validate
+      const sunHi = offsetContour(sunBase, -(tol / 2 + shave));
+      const plHi = offsetContour(plBase, -(tol / 2 + shave));
+      const rhHi0 = offsetContour(rhBase, tol / 2 + shave);
+      const planetPlaced = rotPts(plHi, best.ph).map(p => [p[0] + Rc, p[1]]);
+      const ringHole = rotPts(rhHi0, best.phr);
+      let clean = true, minScore = Infinity;
+      for (const f of [0, 0.25, 0.5, 0.75]) {
+        const sunR = rotPts(sunHi, twistAngle(rpS, +1, f));
+        const plR = rotPts(planetPlaced, twistAngle(rpP, -1, f), Rc, 0);
+        const rhR = rotPts(ringHole, twistAngle(rpR, -1, f));
+        if (contoursCross(plR, sunR) || contoursCross(plR, rhR) ||
+            !pointInPoly(plR[0][0], plR[0][1], rhR)) { clean = false; break; }
+        minScore = Math.min(minScore, contourMinDist(plR, sunR), contourMinDist(plR, rhR));
+      }
+      if (clean && minScore >= tol * 0.55) {
+        fit = { sun: sunHi, planetPlaced, ringHole, bestPhase: best.ph, ringPhase: best.phr,
+          clearance: minScore, shave };
+      }
+    }
+  }
+  if (!fit) throw new Error('planetary: could not find a clean mesh');
+  const { sun, planetPlaced, ringHole } = fit;
+
+  const slices = P.slices || 14;
+  const seg = P.seg || 64;
+  const parts = [];
+
+  // ring: two overlapping shells so only the toothed bore pays for twist slices —
+  // (a) plain outer annulus, 1 slice; (b) tooth shell around the twisted hole
+  const ringOuterR = rpR + 1.25 * mod + rimW;
+  const gulletR = Math.max(...ringHole.map(p => Math.hypot(p[0], p[1])));
+  const midR = gulletR + 0.6;
+  const ring = newPart('ring', '#cfa671');
+  extrudeAnnulus(ring, circlePts(ringOuterR, 96), circlePts(midR, 96), 0, H);
+  extrudeAnnulus(ring, circlePts(midR + 0.5, ringHole.length), ringHole, 0, H, {
+    slices: 10, twistInner: f => twistAngle(rpR, -1, f)
+  });
+  parts.push(ring);
+
+  // sun (+ hand) with knob
+  const sunPart = newPart('sun', '#2e6f66');
+  extrudeSolid(sunPart, sun, 0, H, { slices, twistFn: f => twistAngle(rpS, +1, f) });
+  const rootS = rpS - 1.25 * mod;
+  const neckR = Math.max(rootS * 0.8, 3);
+  const planetTipReach = Rc - (rpP + 0.85 * mod);
+  const capR = Math.max(Math.min(planetTipReach - 0.8, rpS * 0.85), neckR + 0.5);
+  cylinder(sunPart, 0, 0, H - 0.5, H + 0.8, neckR, 48);
+  cylinder(sunPart, 0, 0, H + 0.6, H + 3.8, capR, 48);
+  for (let k = 0; k < 6; k++) {
+    const a = k / 6 * TAU, rr = capR - 1.3;
+    cylinder(sunPart, rr * Math.cos(a), rr * Math.sin(a), H + 3.6, H + 4.6, 1.0, 12);
+  }
+  parts.push(sunPart);
+
+  // planets (− hand), rotated copies
+  for (let k = 0; k < P.planets; k++) {
+    const a = (k / P.planets) * TAU;
+    const pl = newPart('planet' + k, '#d96f2e');
+    extrudeSolid(pl, planetPlaced, 0, H, { slices, twistFn: f => twistAngle(rpP, -1, f), cx: Rc, cy: 0 });
+    rotateZ(pl, a);
+    parts.push(pl);
+  }
+
+  const stats = { Zs, Zp, Zr, mod, Rc, rpS, rpP, rpR,
+    dSun: fit.clearance, dRing: fit.clearance, clearance: fit.clearance,
+    shave: fit.shave, bestPhase: fit.bestPhase, ringOuterR, capR,
+    profiles: { sun, planetPlaced, ringHole } };
+  return { parts, stats };
+}
+
+/* ---------- TOLERANCE TESTER ---------- */
+function buildTester(P) {
+  // P: { tols: [..], seg }
+  const tols = P.tols || [0.15, 0.20, 0.25, 0.30, 0.35, 0.40];
+  const seg = P.seg || 48;
+  const ru = 7.2;         // ring outer radius
+  const h = 5.2;          // ring height
+  const lipT = 1.2;       // lip thickness (top and bottom)
+  const stemBase = 3.2;   // stem radius before clearance
+  const flangeBase = 5.4; // flange radius before clearance
+  const spacing = 16.5;
+  const parts = [];
+  const stats = [];
+  tols.forEach((g, idx) => {
+    const cx = idx * spacing;
+    const lipIn = stemBase + g;          // lip bore = stem + gap
+    const rin = flangeBase + g;          // ring bore at flange level
+    // ring: revolve, then translate
+    const ring = newPart('ring' + idx, '#cfa671');
+    revolve(ring, [
+      [ru, 0], [ru, h], [lipIn, h], [lipIn, h - lipT],
+      [rin, h - lipT], [rin, lipT], [lipIn, lipT], [lipIn, 0]
+    ], seg);
+    translate(ring, cx, 0, 0);
+    parts.push(ring);
+    // spinner: revolve mushroom (stem full height, flange mid)
+    const sp = newPart('spin' + idx, '#d96f2e');
+    revolve(sp, [
+      [0, 0], [stemBase, 0], [stemBase, lipT + 0.3],
+      [flangeBase, lipT + 0.3], [flangeBase, h - lipT - 0.3],
+      [stemBase, h - lipT - 0.3], [stemBase, h + 1.8], [0, h + 1.8]
+    ], seg);
+    translate(sp, cx, 0, 0);
+    parts.push(sp);
+    // tick marks: idx+1 bumps on top
+    const ticks = newPart('tick' + idx, '#2e6f66');
+    const nT = idx + 1;
+    for (let k = 0; k < nT; k++) {
+      const a = (k / Math.max(nT, 1)) * TAU + Math.PI / 2;
+      const rr = nT === 1 ? 0 : 1.9;
+      cylinder(ticks, cx + rr * Math.cos(a), rr * Math.sin(a), h + 1.7, h + 2.4, 0.75, 10);
+    }
+    parts.push(ensureOutward(ticks));
+    // connector bar to next unit
+    if (idx < tols.length - 1) {
+      const bar = newPart('bar' + idx, '#cfa671');
+      box(bar, cx + ru - 0.6, -2, 0, cx + spacing - ru + 0.6, 2, 2.0);
+      parts.push(ensureOutward(bar));
+    }
+    stats.push({ tol: g, lipIn, rin });
+  });
+  return { parts, stats };
+}
+
+/* ---------- STL ---------- */
+function stlBinary(parts) {
+  let count = 0;
+  for (const p of parts) count += p.tris.length;
+  const buf = new ArrayBuffer(84 + count * 50);
+  const dv = new DataView(buf);
+  let off = 80;
+  dv.setUint32(off, count, true); off += 4;
+  for (const p of parts) for (const [a, b, c] of p.tris) {
+    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+    const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
+    dv.setFloat32(off, nx, true); dv.setFloat32(off + 4, ny, true); dv.setFloat32(off + 8, nz, true); off += 12;
+    for (const v of [a, b, c]) {
+      dv.setFloat32(off, v[0], true); dv.setFloat32(off + 4, v[1], true); dv.setFloat32(off + 8, v[2], true); off += 12;
+    }
+    dv.setUint16(off, 0, true); off += 2;
+  }
+  return buf;
+}
+
+/* ---------- verification ---------- */
+function verifyPart(part) {
+  const key = p => p.map(v => Math.round(v * 1e5) / 1e5).join(',');
+  const edges = new Map();
+  let nan = 0, degen = 0;
+  for (const [a, b, c] of part.tris) {
+    for (const v of [a, b, c]) if (v.some(x => !isFinite(x))) nan++;
+    const ka = key(a), kb = key(b), kc = key(c);
+    if (ka === kb || kb === kc || ka === kc) { degen++; continue; }
+    for (const [p, q] of [[ka, kb], [kb, kc], [kc, ka]]) {
+      const ek = p < q ? p + '|' + q : q + '|' + p;
+      const dir = p < q ? 1 : -1;
+      const e = edges.get(ek) || { count: 0, dirSum: 0 };
+      e.count++; e.dirSum += dir;
+      edges.set(ek, e);
+    }
+  }
+  let bad = 0, badOrient = 0;
+  for (const e of edges.values()) {
+    if (e.count !== 2) bad++;
+    else if (e.dirSum !== 0) badOrient++;
+  }
+  return { tris: part.tris.length, badEdges: bad, badOrient, nan, degen, volume: signedVolume(part.tris) };
+}
+
+const API = { buildCycloidal, buildPlanetary, buildTester, stlBinary, verifyPart, translate,
+  cycloidDisc, involuteGear, offsetContour, contourMinDist, circlePts, contoursIntersect, internalMeshClash, pointInPoly, signedVolume };
+if (typeof module !== 'undefined' && module.exports) module.exports = API;
+else root.FidgetGeom = API;
+})(typeof self !== 'undefined' ? self : this);
+
+</script>
+<script>
+(function(){
+'use strict';
+const G = window.FidgetGeom;
+const $ = id => document.getElementById(id);
+
+const state = { mech:'cyc', dia:60, height:14, tol:0.25, lobes:7, wobble:55, planets:4, helix:25 };
+let model = null;
+let building = false, queued = false;
+
+/* ---------- build ---------- */
+function params(){
+  return state.mech==='cyc'
+    ? { dia:state.dia, lobes:state.lobes, wobble:state.wobble/100, tol:state.tol, height:state.height, seg:64 }
+    : { dia:state.dia, planets:state.planets, helix:state.helix, tol:state.tol, height:state.height, seg:48, flankPts:6, slices:10 };
+}
+function rebuild(){
+  if(building){ queued = true; return; }
+  building = true;
+  $('status').textContent = 'Rebuilding…'; $('status').classList.remove('err');
+  setTimeout(()=>{
+    try{
+      const p = params();
+      model = state.mech==='cyc' ? G.buildCycloidal(p) : G.buildPlanetary(p);
+      prepRender(model);
+      updateStats();
+      $('status').textContent = '';
+    }catch(e){
+      $('status').textContent = 'That combination would not mesh cleanly — try a small change.';
+      $('status').classList.add('err');
+    }
+    building = false;
+    if(queued){ queued=false; rebuild(); }
+  }, 20);
+}
+let debounceT = null;
+function rebuildSoon(){ clearTimeout(debounceT); debounceT = setTimeout(rebuild, 220); }
+
+/* ---------- stats ---------- */
+function updateStats(){
+  if(!model) return;
+  let tris=0, vol=0, maxR=0;
+  for(const p of model.parts){
+    tris += p.tris.length;
+    let v=0;
+    for(const [a,b,c] of p.tris){
+      v += (a[0]*(b[1]*c[2]-c[1]*b[2]) - a[1]*(b[0]*c[2]-c[0]*b[2]) + a[2]*(b[0]*c[1]-c[0]*b[1]))/6;
+    }
+    vol += Math.abs(v);
+    for(const t of p.tris) for(const q of t){ const r=Math.hypot(q[0],q[1]); if(r>maxR)maxR=r; }
+  }
+  const grams = vol/1000*1.24;
+  const ext = maxR*2;
+  let bed, cls='good';
+  if(ext<=170) bed='fits a 180 mm bed';
+  else if(ext<=210) bed='fits a 220 mm bed';
+  else if(ext<=246) bed='fits a 256 mm bed';
+  else { bed='exceeds common beds'; cls='warn'; }
+  $('stats').innerHTML =
+    `<span class="chip"><b>${(tris/1000).toFixed(1)}k</b>&nbsp;triangles</span>`+
+    `<span class="chip"><b>≈${grams.toFixed(0)} g</b>&nbsp;PLA</span>`+
+    `<span class="chip ${cls}">${bed}</span>`+
+    (state.mech==='pl' && model.stats ? `<span class="chip">teeth <b>${model.stats.Zs}/${model.stats.Zp}/${model.stats.Zr}</b></span>`:'')+
+    (state.mech==='cyc' ? `<span class="chip">reduction <b>${state.lobes}:1</b></span>`:'');
+  $('fname').textContent = 'File: ' + fileName();
+  $('ratioCyc').textContent = state.lobes + ':1';
+}
+function fileName(){
+  return state.mech==='cyc'
+    ? `crazy-fidget-cycloidal-${state.dia}mm-${state.lobes}lobe-t${state.tol.toFixed(2)}.stl`
+    : `crazy-fidget-planetary-${state.dia}mm-${state.planets}planet-t${state.tol.toFixed(2)}.stl`;
+}
+
+/* ---------- renderer ---------- */
+const cv = $('cv'), ctx = cv.getContext('2d');
+let rparts = [];        // per part: {col, ink, faces:[{v, n, adj[3], crease[3]}], kin}
+let bounds = {r:40, zc:8};
+let yaw=-0.7, pitch=0.95, zoom=1;
+let viewMode='solid';
+let playing = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let theta = 0, lastT = 0, needsDraw = true;
+
+function hex(h){ return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]; }
+function inkOf(c){ return `rgb(${c[0]*.45|0},${c[1]*.45|0},${c[2]*.45|0})`; }
+const keyV = p => (Math.round(p[0]*1e4)) + ',' + (Math.round(p[1]*1e4)) + ',' + (Math.round(p[2]*1e4));
+
+function prepRender(m){
+  const parts = m.parts;
+  rparts = [];
+  let maxR=1, zmin=1e9, zmax=-1e9;
+  const kin = kinematics(m);
+  for(const p of parts){
+    const faces = p.tris.map(t=>({v:t, adj:[-1,-1,-1], crease:[false,false,false], n:null, _front:false}));
+    for(const f of faces){
+      const a=f.v[0], b=f.v[1], c=f.v[2];
+      const e1=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], e2=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+      const n=[e1[1]*e2[2]-e1[2]*e2[1], e1[2]*e2[0]-e1[0]*e2[2], e1[0]*e2[1]-e1[1]*e2[0]];
+      const l=Math.hypot(n[0],n[1],n[2])||1;
+      f.n=[n[0]/l,n[1]/l,n[2]/l];
+    }
+    const emap = new Map();
+    faces.forEach((f,fi)=>{
+      for(let e=0;e<3;e++){
+        const p1=keyV(f.v[e]), p2=keyV(f.v[(e+1)%3]);
+        const k = p1<p2 ? p1+'|'+p2 : p2+'|'+p1;
+        const prev = emap.get(k);
+        if(prev){ f.adj[e]=prev[0]; faces[prev[0]].adj[prev[1]]=fi; }
+        else emap.set(k,[fi,e]);
+      }
+    });
+    faces.forEach(f=>{
+      for(let e=0;e<3;e++){
+        const a=f.adj[e];
+        if(a<0){ f.crease[e]=true; continue; }
+        const n2=faces[a].n;
+        const d=f.n[0]*n2[0]+f.n[1]*n2[1]+f.n[2]*n2[2];
+        if(d<0.93) f.crease[e]=true;
+      }
+    });
+    for(const t of p.tris) for(const q of t){
+      const r=Math.hypot(q[0],q[1]); if(r>maxR)maxR=r;
+      if(q[2]<zmin)zmin=q[2]; if(q[2]>zmax)zmax=q[2];
+    }
+    rparts.push({ col:hex(p.colour), ink:inkOf(hex(p.colour)), faces, kin:kin(p.name) });
+  }
+  bounds = { r: Math.max(maxR,(zmax-zmin)*0.7), zc:(zmin+zmax)/2 };
+  needsDraw = true;
+}
+
+/* per-part motion */
+function kinematics(m){
+  if(state.mech==='cyc'){
+    const prof = m.stats.discProfile;
+    let cx=0, cy=0;
+    for(const q of prof){ cx+=q[0]; cy+=q[1]; }
+    cx/=prof.length; cy/=prof.length;
+    const L = state.lobes;
+    return name=>{
+      if(name==='cam') return {mode:'spin', ratio:1};
+      if(name==='disc') return {mode:'orbit', c0:[cx,cy], orbit:1, self:-1/L};
+      return {mode:'static'};
+    };
+  }else{
+    const s = m.stats;
+    const carrier = s.Zs/(s.Zs+s.Zr);
+    const n = state.planets;
+    return name=>{
+      if(name==='sun') return {mode:'spin', ratio:1};
+      if(name.indexOf('planet')===0){
+        const k = parseInt(name.slice(6),10)||0;
+        const a = k/n*Math.PI*2;
+        const c0 = [s.Rc*Math.cos(a), s.Rc*Math.sin(a)];
+        return {mode:'orbit', c0, orbit:carrier, self:-((s.Zs+s.Zp)/s.Zp)*carrier};
+      }
+      return {mode:'static'};
+    };
+  }
+}
+
+function resize(){
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if(cv.width!==w*dpr||cv.height!==h*dpr){ cv.width=w*dpr; cv.height=h*dpr; }
+}
+function norm3(v){ const l=Math.hypot(v[0],v[1],v[2])||1; return [v[0]/l,v[1]/l,v[2]/l]; }
+
+function draw(){
+  resize();
+  const W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const cyw=Math.cos(yaw), syw=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
+  const scale = Math.min(W,H)/(bounds.r*2.5)*zoom;
+  const cxs=W/2, cys=H/2 + H*0.04;
+  const L = norm3([-0.3,0.45,0.85]);
+  const bones = viewMode==='bones';
+  const out=[];
+  for(let pi=0; pi<rparts.length; pi++){
+    const P = rparts[pi], k = P.kin;
+    let rot0=0, rc=[0,0], rot1=0;
+    if(k.mode==='spin'){ rot0 = theta*k.ratio; }
+    else if(k.mode==='orbit'){
+      rot0 = theta*k.orbit;
+      const c=Math.cos(rot0), s=Math.sin(rot0);
+      rc = [k.c0[0]*c-k.c0[1]*s, k.c0[0]*s+k.c0[1]*c];
+      rot1 = theta*k.self - rot0;   // extra spin about own centre beyond the orbit rotation
+    }
+    const c0=Math.cos(rot0), s0=Math.sin(rot0), c1=Math.cos(rot1), s1=Math.sin(rot1);
+    const rotN = rot0 + rot1;
+    const cn=Math.cos(rotN), sn=Math.sin(rotN);
+    for(const f of P.faces){
+      const S=[]; let depth=0;
+      for(let i=0;i<3;i++){
+        const q=f.v[i];
+        let X = q[0]*c0-q[1]*s0, Y = q[0]*s0+q[1]*c0;
+        if(rot1){
+          const dx=X-rc[0], dy=Y-rc[1];
+          X = rc[0]+dx*c1-dy*s1; Y = rc[1]+dx*s1+dy*c1;
+        }
+        const z=q[2]-bounds.zc;
+        const x1=X*cyw - Y*syw, y1=X*syw + Y*cyw;
+        const y2=y1*cp - z*sp, z2=y1*sp + z*cp;
+        S.push([cxs + x1*scale, cys + y2*scale]);
+        depth += z2;
+      }
+      const ux=S[1][0]-S[0][0], uy=S[1][1]-S[0][1], vx=S[2][0]-S[0][0], vy=S[2][1]-S[0][1];
+      const front = (ux*vy-uy*vx) < 0;
+      f._front = front;
+      if(!front) continue;
+      let sh=1;
+      if(!bones){
+        const nx = f.n[0]*cn - f.n[1]*sn, ny = f.n[0]*sn + f.n[1]*cn, nz = f.n[2];
+        const nx1=nx*cyw-ny*syw, ny1=nx*syw+ny*cyw;
+        const nz2=ny1*sp+nz*cp, ny2=ny1*cp-nz*sp;
+        const lam=Math.max(0, nx1*L[0]+ny2*L[1]+nz2*L[2]);
+        sh = 0.62 + 0.38*lam;
+      }
+      out.push({d:depth, S, pi, f, sh});
+    }
+  }
+  out.sort((a,b)=>a.d-b.d);
+  ctx.lineJoin='round';
+  for(const o of out){
+    const P=rparts[o.pi];
+    ctx.beginPath();
+    ctx.moveTo(o.S[0][0],o.S[0][1]); ctx.lineTo(o.S[1][0],o.S[1][1]); ctx.lineTo(o.S[2][0],o.S[2][1]);
+    ctx.closePath();
+    if(!(viewMode==='bones')){
+      const c=P.col, s=o.sh;
+      const col=`rgb(${c[0]*s|0},${c[1]*s|0},${c[2]*s|0})`;
+      ctx.fillStyle=col; ctx.strokeStyle=col; ctx.lineWidth=1;
+      ctx.fill(); ctx.stroke();          // stroke seals painter seams
+      // skeletal outline over the solid: crease + silhouette edges in part ink
+      ctx.strokeStyle=P.ink; ctx.lineWidth=1.05;
+      ctx.beginPath();
+      let drew=false;
+      for(let e=0;e<3;e++){
+        const a=o.f.adj[e];
+        const sil = a>=0 && !P.faces[a]._front;
+        if(o.f.crease[e] || a<0 || sil){
+          const e2=(e+1)%3;
+          ctx.moveTo(o.S[e][0],o.S[e][1]);
+          ctx.lineTo(o.S[e2][0],o.S[e2][1]);
+          drew=true;
+        }
+      }
+      if(drew) ctx.stroke();
+    }else{
+      ctx.fillStyle='#f7f0df'; ctx.strokeStyle='#f7f0df'; ctx.lineWidth=1;
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle=P.ink; ctx.lineWidth=1.1;
+      ctx.beginPath();
+      let drew=false;
+      for(let e=0;e<3;e++){
+        const a=o.f.adj[e];
+        const sil = a>=0 && !P.faces[a]._front;
+        if(o.f.crease[e] || a<0 || sil){
+          const e2=(e+1)%3;
+          ctx.moveTo(o.S[e][0],o.S[e][1]);
+          ctx.lineTo(o.S[e2][0],o.S[e2][1]);
+          drew=true;
+        }
+      }
+      if(drew) ctx.stroke();
+    }
+  }
+}
+
+/* ---------- animation loop ---------- */
+function loop(t){
+  const dt = Math.min((t-lastT)/1000, 0.05); lastT=t;
+  if(playing && rparts.length){
+    theta += dt * (state.mech==='cyc' ? 1.4 : 1.1);
+    needsDraw = true;
+  }
+  if(needsDraw){ needsDraw=false; draw(); }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(t=>{ lastT=t; requestAnimationFrame(loop); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ playing=false; syncPlayBtn(); } });
+
+function syncPlayBtn(){ $('playBtn').textContent = playing ? '⏸' : '▶'; $('playBtn').classList.toggle('on', playing); }
+$('playBtn').addEventListener('click', ()=>{ playing=!playing; syncPlayBtn(); });
+syncPlayBtn();
+
+/* ---------- preview controls ---------- */
+$('viewSeg').addEventListener('click', e=>{
+  const v=e.target.dataset.v; if(!v) return;
+  viewMode=v;
+  document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+  needsDraw=true;
+});
+$('zoomIn').addEventListener('click', ()=>{ zoom=Math.min(3, zoom*1.2); needsDraw=true; });
+$('zoomOut').addEventListener('click', ()=>{ zoom=Math.max(.5, zoom/1.2); needsDraw=true; });
+$('shrinkBtn').addEventListener('click', ()=>{
+  const c=$('previewCard').classList.toggle('compact');
+  $('shrinkBtn').textContent = c ? '⇲' : '⇱';
+  needsDraw=true;
+});
+
+let dragging=false, px=0, py=0, pinch0=0, zoom0=1;
+cv.addEventListener('pointerdown', e=>{ dragging=true; px=e.clientX; py=e.clientY; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  yaw += (e.clientX-px)*0.01; pitch += (e.clientY-py)*0.008;
+  pitch = Math.max(0.1, Math.min(1.5, pitch));
+  px=e.clientX; py=e.clientY;
+  needsDraw=true;
+});
+cv.addEventListener('pointerup', ()=>dragging=false);
+cv.addEventListener('wheel', e=>{ e.preventDefault(); zoom=Math.max(.5,Math.min(3,zoom*(e.deltaY<0?1.08:0.92))); needsDraw=true; }, {passive:false});
+cv.addEventListener('touchstart', e=>{ if(e.touches.length===2){ pinch0=dist2(e.touches); zoom0=zoom; } }, {passive:true});
+cv.addEventListener('touchmove', e=>{ if(e.touches.length===2){ zoom=Math.max(.5,Math.min(3, zoom0*dist2(e.touches)/pinch0)); needsDraw=true; } }, {passive:true});
+function dist2(t){ return Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY); }
+window.addEventListener('resize', ()=>needsDraw=true);
+
+/* ---------- parameter controls ---------- */
+function bindSlider(id, fmt){
+  const el = $(id);
+  el.addEventListener('input', ()=>{
+    state[id] = parseFloat(el.value);
+    $(id+'V').textContent = fmt ? fmt(state[id]) : state[id];
+    rebuildSoon();
+  });
+}
+bindSlider('dia');
+bindSlider('height', v=>v%1?v.toFixed(1):v);
+bindSlider('tol', v=>v.toFixed(2));
+bindSlider('lobes');
+bindSlider('wobble');
+bindSlider('helix');
+
+document.querySelectorAll('.step').forEach(b=>{
+  const t=b.dataset.t, d=parseFloat(b.dataset.d);
+  let iv=null, to=null;
+  const fire=()=>{
+    const el=$(t);
+    el.value = (parseFloat(el.value)+d).toFixed(3);
+    el.dispatchEvent(new Event('input'));
+  };
+  const down=e=>{ e.preventDefault(); fire(); to=setTimeout(()=>{ iv=setInterval(fire,70); },380); };
+  const up=()=>{ clearTimeout(to); clearInterval(iv); iv=to=null; };
+  b.addEventListener('pointerdown',down);
+  b.addEventListener('pointerup',up); b.addEventListener('pointerleave',up); b.addEventListener('pointercancel',up);
+});
+
+$('mechSeg').addEventListener('click', e=>{
+  const m = e.target.dataset.m; if(!m) return;
+  state.mech = m; theta = 0;
+  document.querySelectorAll('#mechSeg button').forEach(b=>b.classList.toggle('on', b.dataset.m===m));
+  $('cycCtl').style.display = m==='cyc'?'':'none';
+  $('plCtl').style.display = m==='pl'?'':'none';
+  rebuild();
+});
+$('planetSeg').addEventListener('click', e=>{
+  const p = e.target.dataset.p; if(!p) return;
+  state.planets = parseInt(p,10);
+  document.querySelectorAll('#planetSeg button').forEach(b=>b.classList.toggle('on', b.dataset.p===p));
+  $('planetsV').textContent = p;
+  rebuild();
+});
+
+/* ---------- downloads ---------- */
+function saveSTL(parts, name){
+  const buf = G.stlBinary(parts);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([buf], {type:'model/stl'}));
+  a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+}
+$('dlSTL').addEventListener('click', ()=>{ if(model) saveSTL(model.parts, fileName()); });
+$('dlTest').addEventListener('click', ()=>{
+  const t = G.buildTester({});
+  saveSTL(t.parts, 'tolerance-test-print.stl');
+});
+
+/* ---------- go ---------- */
+rebuild();
+})();
+</script>
+</body>
+</html>
