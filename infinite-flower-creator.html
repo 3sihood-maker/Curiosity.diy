@@ -81,6 +81,7 @@
     flex:1;min-width:70px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);
     border-radius:9px;padding:8px 6px;font-size:.82rem;cursor:pointer;
   }
+  .seg button.disabled-look{opacity:.4}
   .seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
   .seg button:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
   .seg.sagey button.on{background:var(--sage);border-color:var(--sage)}
@@ -540,6 +541,7 @@
         <button id="ls-veins" class="on">Veins</button>
         <button id="ls-outline">Outline</button>
       </div>
+      <p class="mini-label hidden" id="frond-style-note">Fronds are always cut solid — their leaflets are too fine for vein windows or an outline. Switch to Blade to use those styles.</p>
       <div class="ctl" id="veins-ctl">
         <label for="in-veins">Veins <output id="out-veins">12</output></label>
         <input type="range" id="in-veins" min="4" max="28" step="1" value="12">
@@ -614,7 +616,7 @@
   </div>
 </main>
 
-<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh6, 15 July 2026</footer>
+<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh12, 15 July 2026</footer>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -1077,20 +1079,44 @@ function buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   const scroll = st.lscroll || 0;
   const bs = bendSign || 1;
 
-  // ── ONE continuous midrib: a straight base, then the tip lifts into a clear
-  //    open coil that stands proud of the leaflets. ──
-  const curl = (st.lbend || 0) * bs * 0.9;
-  const baseFrac = 1 - 0.42 * scroll;          // keep a decent leafy body; the coil is the tip gesture
-  const cl = growStem(size * baseFrac, ox, oy, dir, curl, 0, noise);
-  const coilStartLen = cl.length;              // index where the spiral begins
+  // ── The WHOLE frond arcs. Rather than a straight midrib that suddenly
+  //    spirals, the entire tip sweeps in a continuous curve that accelerates
+  //    into the coil — like a real fiddlehead (and the koru). At scroll 0 the
+  //    body is straight; as scroll rises the arc deepens and the coil grows. ──
+  const baseCurl = (st.lbend || 0) * bs * 0.9;
+  // the body gains a gentle progressive lean, growing with scroll
+  // curlAmt ramps SMOOTHLY from 0 — so a tiny scroll gives a tiny curl and there
+  // is never a sudden structural jump as the coil "switches on".
+  const curlAmt = scroll <= 0 ? 0 : scroll * scroll * (3 - 2 * scroll); // smoothstep, overall
+  // the tight inner spiral only begins above ~0.22, ramping smoothly to full
+  const spiralT = scroll <= 0.22 ? 0 : (scroll - 0.22) / 0.78;
+  const spiralAmt = spiralT * spiralT * (3 - 2 * spiralT);
+  const bodyArcCurl = baseCurl + bs * (0.05 + curlAmt * 0.5);
+  const cl = growStem(size, ox, oy, dir, bodyArcCurl, 0, noise);  // full body, always
+  const bodyLen = cl.length;
+
+  if (curlAmt > 0.001){
+    // EXTENSION: length + sweep both scale from zero with curlAmt
+    const ext = size * 0.5 * curlAmt;   // from zero, fully proportional
+    const eSteps = Math.max(6, Math.round(ext / 2.5));
+    let { x, y, h } = cl[cl.length - 1];
+    const extTurn = curlAmt * 0.5 * TAU * bs;
+    for (let k = 0; k < eSteps; k++){
+      h += extTurn / eSteps;
+      x += (ext / eSteps) * Math.cos(h);
+      y += (ext / eSteps) * Math.sin(h);
+      cl.push({ x, y, h });
+    }
+  }
+  const coilStartLen = cl.length;
   let coilR0 = 0;
-  if (scroll > 0.02){
-    const Ls = size * 0.78 * scroll;           // a long, generous coil
-    const steps = 72;
-    const turns = scroll * 1.35 * TAU * bs;     // up to ~1.35 turns
-    const q = 0.985;                            // very slow taper → wide open spiral, never a knot
+  if (curlAmt > 0.001){
+    const Ls = size * 0.62 * spiralAmt;        // inner spiral only above ~0.22
+    const steps = 64;
+    const turns = (0.25 * curlAmt + 0.9 * spiralAmt) * TAU * bs;  // gentle hook early, full coil later
+    const q = 0.985;
     let ds = Ls * (1 - q) / (1 - Math.pow(q, steps));
-    coilR0 = ds * steps / Math.max(0.3, turns); // rough opening radius, for leaflet clearance
+    coilR0 = ds * steps / Math.max(0.3, turns);
     let { x, y, h } = cl[cl.length - 1];
     for (let k = 0; k < steps; k++){
       h += turns / steps;
@@ -1103,8 +1129,9 @@ function buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   const last = cl.length - 1;
 
   // midrib tapers from base to a fine point at the very tip of the coil
-  const mwBase = Math.max(st.minmat * 1.15, size * 0.02 + 1);
-  const parts = [{ loops: [stemPolygon(cl, mwBase, Math.max(st.minmat, 0.8))], colour: "leaf" }];
+  const mwBase = Math.max(st.minmat * 1.2, size * 0.022 + 1.2);
+  const mwTip = Math.max(st.minmat * 1.25, 2.0);  // blunt-ish tip: always welds, reads as a fine point once leaflets cover it
+  const parts = [{ loops: [stemPolygon(cl, mwBase, mwTip)], colour: "leaf" }];
 
   const mkLeaflet = (at, ang, llen, seed) => {
     const lst = { mode: "leaf", dia: llen * 2, lwidth: st.lwidth, ltip: st.ltip,
@@ -1113,37 +1140,97 @@ function buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
     parts.push({ loops: [ringLoop(sampleRadii(lst, 120), makeFrame(at.x, at.y, ang - UP, 0, 1, 1, 0, 1))], colour: "leaf" });
   };
 
-  // ── BODY leaflets: full-size pairs along the straight part of the midrib ──
-  const nP = Math.max(4, st.leaflets | 0);
-  const bodyEnd = coilStartLen - 1;
-  for (let i = 0; i < nP; i++){
-    const t = i / (nP - 1);                        // 0…1 along the straight body
-    const taper = Math.pow(bump((t - 0.06) / 0.97), 0.55);
-    let llen = size * 0.32 * taper;
-    if (natAmt > 0.001) llen *= 1 + (rng() - 0.5) * 0.35 * natAmt;
-    if (llen < 2) continue;
-    const at = cl[Math.round(t * bodyEnd)];
-    for (const side of [1, -1]){
-      let ang = at.h + side * (1.05 - 0.25 * t);
-      if (natAmt > 0.001) ang += (rng() - 0.5) * 0.3 * natAmt;
-      mkLeaflet(at, ang, llen, (st.seedL || 1) + seedBump + i * 13 + (side > 0 ? 0 : 7));
+  // ── ONE continuous run of leaflet pairs from base to spiral centre. Size
+  //    tapers smoothly with distance travelled, and each leaflet leans a
+  //    little more forward as it climbs the coil — the graceful gradient of a
+  //    real unfurling fern, not an abrupt body/coil split. ──
+
+  // arc-length of every centreline point, so spacing is even along the curl
+  const arc = [0];
+  for (let i = 1; i <= last; i++)
+    arc[i] = arc[i - 1] + Math.hypot(cl[i].x - cl[i - 1].x, cl[i].y - cl[i - 1].y);
+  const totalArc = arc[last] || 1;
+  const bodyArc = arc[Math.max(0, coilStartLen - 1)];
+
+  // Constant leaflet PITCH along the whole midrib: derive spacing from the base
+  // leaflet count over the body, then keep that same spacing all the way up the
+  // extension and coil. Density therefore stays even everywhere and there is no
+  // sparse zone at low scroll — leaflets simply continue as the frond grows.
+  const baseCount = Math.max(4, st.leaflets | 0);
+  const pitch = bodyArc / baseCount;                 // arc-length between leaflets
+  // gentle crowding toward the very tip: shrink pitch slightly along the arc
+  const spacingTargets = [];
+  {
+    let a = pitch * 0.6;
+    while (a < totalArc * 0.99 && spacingTargets.length < 200){
+      spacingTargets.push(a);
+      const frac = a / totalArc;
+      a += pitch * (1 - 0.35 * frac);                // ~35% closer near the tip
     }
   }
+  const nP = spacingTargets.length;
+  let seg = 0;
+  for (let i = 0; i <= last && seg < nP; i++){
+    if (arc[i] < spacingTargets[seg]) continue;
+    const at = cl[i];
+    const s01 = arc[i] / totalArc;                 // 0 at base … 1 at spiral centre
+    const onCoil = arc[i] > bodyArc;
+    const coil01 = onCoil ? (arc[i] - bodyArc) / Math.max(1, totalArc - bodyArc) : 0;
 
-  // ── COIL leaflets: smaller, on the OUTER edge of the spiral only, shrinking
-  //    to a point at the very tip — so the curl reads as a clean gesture ──
-  if (scroll > 0.02){
-    const coilPts = last - coilStartLen;
-    const nC = Math.max(5, Math.round(coilPts / 6));
-    for (let i = 0; i < nC; i++){
-      const c = i / (nC - 1);                       // 0 at coil start … 1 at tip
-      const idx = coilStartLen + Math.round(c * coilPts);
+    // body leaflets stay lush, but the last stretch ALWAYS tapers to a fine
+    // point (fixes the blunt tip at scroll 0); beyond the body the taper
+    // continues smoothly into the coil.
+    const bodyFrac = bodyLen / last;
+    let taper;
+    if (s01 <= bodyFrac){
+      // full through the body, then ease steadily to a point over the last 35%
+      const bodyPos = s01 / Math.max(0.001, bodyFrac);   // 0..1 within the body
+      const tipEase = bodyPos > 0.65 ? 0.28 + 0.72 * Math.pow((1 - bodyPos) / 0.35, 0.7) : 1;
+      taper = (0.82 + 0.18 * (1 - bodyPos)) * tipEase;
+    } else {
+      const beyond = (s01 - bodyFrac) / Math.max(0.001, 1 - bodyFrac);
+      taper = 0.7 * Math.pow(1 - beyond, 0.9);
+    }
+    let llen = size * 0.34 * taper;
+    if (natAmt > 0.001) llen *= 1 + (rng() - 0.5) * 0.35 * natAmt;
+
+    // leaflets angle: perpendicular-ish, leaning forward more as they climb the coil
+    const lean = 1.02 - 0.30 * s01;
+    // as the coil tightens, drop the INNER leaflet (it would jam into the centre)
+    const dropInner = coil01 > 0.45;
+    for (const side of [1, -1]){
+      const inner = (side === -bs);              // the side facing the coil's inside
+      if (dropInner && inner) continue;
+      // inner-side leaflets shrink faster even before being dropped
+      let l = llen * (inner ? 1 - coil01 * 0.6 : 1);
+      if (l < 1.3) continue;
+      l = Math.max(l, mwBase * 1.4);   // guarantee the leaflet root overlaps the midrib → always welds
+      let ang = at.h + side * lean;
+      if (natAmt > 0.001) ang += (rng() - 0.5) * 0.3 * natAmt;
+      mkLeaflet(at, ang, l, (st.seedL || 1) + seedBump + seg * 13 + (side > 0 ? 0 : 7));
+    }
+    seg++;
+  }
+  // Terminal cap: a run of small leaflets from the last placed pair up to the
+  // very tip, guaranteeing the tip is always covered and welded (no gap, no bare
+  // hook), at any scroll/size/leaflet-count.
+  {
+    const lastSeg = seg;
+    const lastArc = lastSeg > 0 ? spacingTargets[lastSeg - 1] : 0;
+    const gap = totalArc - lastArc;
+    const capN = Math.max(2, Math.ceil(gap / Math.max(3, pitch * 0.6)));
+    const tipArc = arc[last];
+    for (let c = 1; c <= capN; c++){
+      // stop a little short of the exact tip so the last blob overlaps the midrib
+      const a = Math.min(tipArc - mwBase, lastArc + (gap * c) / (capN + 0.4));
+      let idx = last;
+      for (let i = 0; i <= last; i++){ if (arc[i] >= a){ idx = i; break; } }
       const at = cl[Math.min(last, idx)];
-      const llen = size * 0.24 * (1 - Math.pow(c, 1.3) * 0.85); // shrink to a point
-      if (llen < 1.4) continue;
-      // one leaflet per point, on the OUTER side of the curl (opposite the turn)
-      const ang = at.h - bs * (Math.PI / 2) * 0.92;
-      mkLeaflet(at, ang, llen, (st.seedL || 1) + seedBump + 200 + i * 5);
+      const llen = Math.max(size * 0.10, mwBase * 2.6, 4) * (1 - 0.45 * (c / capN));
+      // straddle the midrib: a leaflet each side, so the cap always welds
+      for (const side of [1, -1]){
+        mkLeaflet(at, at.h + side * 0.5, Math.max(llen, mwBase * 2), (st.seedL || 1) + seedBump + 900 + c * 2 + (side > 0 ? 0 : 1));
+      }
     }
   }
   return { parts, holes: 0 };
@@ -2086,7 +2173,7 @@ if (typeof document !== "undefined" && document.getElementById){
                    "lwidth","ltip","lobes","lobedepth","ltilt","lbend",
                    "natF","natL","natS",
                    "stemlen","stemw","curve","bend","branchscale","declutter","smoothing",
-                   "flowers","stems","leaves","leafsize","leafangle","lsizevar","lscatter","leaflets",
+                   "flowers","stems","leaves","leafsize","leafangle","lsizevar","lscatter","leaflets","lscroll",
                    "hub","rim","rayw","rays","raysper","othick","veins","lthick","minmat"];
   const twins = { flowers: "flowers2", leaves: "leaves2" };
   let mode = "rose";
@@ -2172,6 +2259,8 @@ if (typeof document !== "undefined" && document.getElementById){
     $("lt-blade").classList.toggle("on", ltype === "blade");
     $("lt-frond").classList.toggle("on", ltype === "frond");
     $("leaflets-ctl").classList.toggle("hidden", ltype !== "frond");
+    $("frond-style-note").classList.toggle("hidden", ltype !== "frond");
+    ["ls-solid","ls-veins","ls-outline"].forEach(id => $(id).classList.toggle("disabled-look", ltype === "frond"));
     $("stamlen-ctl").classList.toggle("hidden", parseInt($("in-stamens").value) === 0);
     ["branch","along","cluster"].forEach(m => {
       const map = { branch:"xm-branch", along:"xm-along", cluster:"xm-cluster" };
@@ -2214,7 +2303,7 @@ if (typeof document !== "undefined" && document.getElementById){
     if (st.leaves > 0) bits.push(st.leaves + " leaves");
     bits.push(plant.holeCount > 0 ? plant.holeCount + " windows · min material " + st.minmat.toFixed(1) + " mm" : "solid");
     if (st.ltype === "frond" && st.leaves > 0 && (st.lscroll || 0) > 0.02) bits.push("fronds curling ↻");
-    bits.push("v.fh6");
+    bits.push("v.fh12");
     $("statline").textContent = bits.join(" · ");
   }
 
