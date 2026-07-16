@@ -82,6 +82,7 @@
     border-radius:9px;padding:8px 6px;font-size:.82rem;cursor:pointer;
   }
   .seg button.disabled-look{opacity:.4}
+  .ctl.dimmed{opacity:.38;pointer-events:none}
   .seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
   .seg button:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
   .seg.sagey button.on{background:var(--sage);border-color:var(--sage)}
@@ -113,6 +114,8 @@
   .chip:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
   .chip.leafchip{border-color:#cdd6bd;color:var(--sage)}
   .chip.leafchip:hover{background:var(--sage-soft)}
+  .chip.leafchip.on{background:var(--sage);border-color:var(--sage);color:#fff}
+  .chip.leafchip.drift{background:var(--sage-soft);border-color:var(--sage);color:var(--sage)}
   .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .btn{
     border:none;border-radius:10px;padding:11px 14px;font-size:.88rem;cursor:pointer;
@@ -222,6 +225,7 @@
       <div class="actions">
         <button class="btn ghost small" id="btn-exportproj">Export project</button>
         <button class="btn ghost small" id="btn-importproj">Import flowers</button>
+        <button class="btn ghost small" id="btn-clearproj">Clear flowers</button>
         <input type="file" id="in-projfile" accept=".json,application/json" class="hidden">
       </div>
     </div>
@@ -330,6 +334,10 @@
       <div class="ctl">
         <label for="in-petals">Petals <output id="out-petals">8</output></label>
         <input type="range" id="in-petals" min="2" max="24" step="1" value="8">
+      </div>
+      <div class="ctl">
+        <label for="in-petalsquare">Petal squareness (round → cornered) <output id="out-petalsquare">0.00</output></label>
+        <input type="range" id="in-petalsquare" min="0" max="1" step="0.05" value="0">
       </div>
 
       <div data-group="rose">
@@ -475,13 +483,18 @@
       </div>
       <p class="mini-label hidden" id="leaf-hint">No leaves yet — slide the count up to grow some.</p>
       <div id="leaf-body">
+      <div class="mini-label">Leaf types</div>
       <div class="presets">
         <button class="chip leafchip" data-leaf="simple">Simple</button>
         <button class="chip leafchip" data-leaf="oak">Oak</button>
         <button class="chip leafchip" data-leaf="gum">Gum</button>
         <button class="chip leafchip" data-leaf="willow">Willow</button>
         <button class="chip leafchip" data-leaf="fern">Fern</button>
+        <button class="chip leafchip" data-leaf="clover">Clover</button>
+        <button class="chip leafchip" data-leaf="palm">Palm</button>
+        <button class="chip leafchip" data-leaf="wildfern">Wild fern</button>
       </div>
+      <p class="mini-label">Solid = on the recipe · tinted = you've customised it · tap again to reset the leaf.</p>
       <div class="ctl">
         <label for="in-leafsize">Leaf size <output id="out-leafsize">55 mm</output></label>
         <input type="range" id="in-leafsize" min="20" max="160" step="5" value="55">
@@ -493,11 +506,6 @@
       <div class="ctl">
         <label for="in-leafangle">Leaf angle <output id="out-leafangle">50°</output></label>
         <input type="range" id="in-leafangle" min="20" max="80" step="5" value="50">
-      </div>
-      <div class="mini-label">Leaf type</div>
-      <div class="seg sagey" role="group" aria-label="Leaf type">
-        <button id="lt-blade" class="on">Blade</button>
-        <button id="lt-frond">Frond</button>
       </div>
       <div class="ctl hidden" id="leaflets-ctl">
         <label for="in-leaflets">Leaflet pairs <output id="out-leaflets">10</output></label>
@@ -518,6 +526,18 @@
         <button id="ar-wild">Wild</button>
       </div>
       <div class="ctl">
+        <label for="in-lpos">Leaf position (base ↔ spread ↔ tip) <output id="out-lpos">0.50</output></label>
+        <input type="range" id="in-lpos" min="0" max="1" step="0.05" value="0.5">
+      </div>
+      <div class="ctl" id="blades-ctl">
+        <label for="in-blades">Blades per leaf (1 = simple) <output id="out-blades">1</output></label>
+        <input type="range" id="in-blades" min="1" max="7" step="1" value="1">
+      </div>
+      <div class="ctl hidden" id="bladespread-ctl">
+        <label for="in-bladespread">Blade spread <output id="out-bladespread">90°</output></label>
+        <input type="range" id="in-bladespread" min="20" max="200" step="5" value="90">
+      </div>
+      <div class="ctl">
         <label for="in-lwidth">Leaf width <output id="out-lwidth">0.42</output></label>
         <input type="range" id="in-lwidth" min="0.15" max="0.9" step="0.01" value="0.42">
       </div>
@@ -529,13 +549,34 @@
         <label for="in-lbend">Leaf bend <output id="out-lbend">0.00</output></label>
         <input type="range" id="in-lbend" min="-1" max="1" step="0.05" value="0">
       </div>
-      <div class="ctl">
-        <label for="in-lobes">Edge lobes <output id="out-lobes">0</output></label>
-        <input type="range" id="in-lobes" min="0" max="12" step="1" value="0">
+      <div style="margin-top:12px">
+        <button class="toggle" id="tog-lobes">Edge lobes</button>
       </div>
-      <div class="ctl">
-        <label for="in-lobedepth">Lobe depth <output id="out-lobedepth">0.20</output></label>
-        <input type="range" id="in-lobedepth" min="0.05" max="0.5" step="0.01" value="0.2">
+      <div id="lobes-section" class="hidden">
+        <div class="ctl">
+          <label for="in-lobes">Lobe count <output id="out-lobes">5</output></label>
+          <input type="range" id="in-lobes" min="2" max="24" step="1" value="5">
+        </div>
+        <div class="ctl">
+          <label for="in-lobedepth">Lobe depth <output id="out-lobedepth">0.20</output></label>
+          <input type="range" id="in-lobedepth" min="0.05" max="0.8" step="0.01" value="0.2">
+        </div>
+        <div class="ctl">
+          <label for="in-lobebulge">Lobe bulge (cut in ↔ push out) <output id="out-lobebulge">0.00</output></label>
+          <input type="range" id="in-lobebulge" min="0" max="1" step="0.05" value="0">
+        </div>
+        <div class="ctl">
+          <label for="in-lobesharp">Lobe shape (rounded → sharp teeth) <output id="out-lobesharp">0.00</output></label>
+          <input type="range" id="in-lobesharp" min="0" max="1" step="0.05" value="0">
+        </div>
+        <div class="ctl">
+          <label for="in-lobedir">Lobe direction (fan ↔ straight out) <output id="out-lobedir">0.00</output></label>
+          <input type="range" id="in-lobedir" min="0" max="1" step="0.05" value="0">
+        </div>
+        <div class="ctl">
+          <label for="in-lobevar">Lobe variety (even ↔ mixed sizes) <output id="out-lobevar">0.00</output></label>
+          <input type="range" id="in-lobevar" min="0" max="1" step="0.05" value="0">
+        </div>
       </div>
       <div class="ctl">
         <label for="in-ltilt">Turn (flat → edge-on) <output id="out-ltilt">0°</output></label>
@@ -601,7 +642,6 @@
           <button id="sheet-600">600×400</button>
         </div>
         <div class="actions">
-          <button class="toggle on" id="tog-vase" style="flex:0 0 auto;padding:8px 14px">Vase ✓</button>
           <button class="btn ghost" id="btn-bqcolour">Bouquet colour SVG</button>
           <button class="btn primary" id="btn-bqcut">Nested cut SVG</button>
         </div>
@@ -626,7 +666,7 @@
   </div>
 </main>
 
-<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh14, 15 July 2026</footer>
+<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh23, 15 July 2026</footer>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -674,6 +714,18 @@ function bump(u){
 }
 
 /* ---------- radius profiles ---------- */
+
+function lobeWave(st, u){
+  // w: 0 at lobe crest … 1 at sinus floor. Shape sharpens the LOBE (material),
+  // so the slider reads true: 0 = rounded scallops, 1 = narrow pointed teeth.
+  let w = 0.5 + 0.5 * Math.sin(u * st.lobes * Math.PI * 2);
+  const shp = st.lobesharp || 0;
+  if (shp > 0.001){
+    const v = Math.pow(1 - w, 1 + 5 * shp);   // material wave, sharpened
+    w = 1 - v;
+  }
+  return w;
+}
 
 function familyProfile(st, family){
   const R = st.dia / 2;
@@ -741,7 +793,25 @@ function familyProfile(st, family){
     let r = R * Math.pow(bump(u), st.ltip);
     if (st.lobes > 0){
       const fade = Math.min(1, u * 2.5);
-      r *= 1 - st.lobedepth * fade * (0.5 + 0.5 * Math.sin(u * st.lobes * Math.PI * 2));
+      const w = lobeWave(st, u);
+      // depth guard: dense lobes on a small blade must not sever it — cap the
+      // cut so the trough keeps a solid core (more lobes → shallower max cut)
+      const maxCut = Math.min(st.lobedepth, 0.85 - 0.022 * st.lobes);
+      const bulge = st.lobebulge || 0;
+      // variety: alternate lobes grow/shrink (half-frequency modulation), the
+      // organic irregularity of a real oak
+      const vary = st.lobevar || 0;
+      // variety modulates only the OUTWARD growth of each lobe (never the cut),
+      // so uneven lobes can never sever the blade
+      const outMod = 1 - vary * 0.6 * (0.5 + 0.5 * Math.sin(u * st.lobes * Math.PI + 0.7));
+      // cut and bulge have SEPARATE amplitudes: the cut can never exceed the
+      // severing guard, while the bulge grows generously outward
+      const cutAmp = Math.max(0.05, maxCut) * fade;
+      const shpTrim = 1 - 0.35 * (st.lobesharp || 0);
+      let outTerm = cutAmp * bulge * 1.0 * outMod * shpTrim;
+      // capped by lobe spacing so dense lobes can't become thin spikes
+      outTerm = Math.min(outTerm, (beta / Math.max(1, st.lobes)) * 2.0);
+      r *= 1 - cutAmp * w + outTerm;
     }
     return r;
   };
@@ -775,6 +845,27 @@ function sampleRadii(st, n){
     }
   } else {
     for (let i = 0; i < n; i++) radii[i] = Math.max(0, profile(i / n * TAU));
+  }
+  // petal squareness: (in development — see notes) currently a gentle widening
+  // only; a full rounded-rectangle petal engine is planned for a later build.
+  const sq = st.petalsquare || 0;
+  if (sq > 0.001 && st.mode !== "leaf" && st.mode !== "fan" && (st.petals | 0) >= 2){
+    const k = st.petals | 0;
+    let rmin = Infinity, rmax = -Infinity;
+    for (let i = 0; i < n; i++){ if (radii[i] < rmin) rmin = radii[i]; if (radii[i] > rmax) rmax = radii[i]; }
+    const span = (rmax - rmin) || 1;
+    const out = new Array(n);
+    for (let i = 0; i < n; i++){
+      const th = i / n * TAU;
+      const ph = ((th * k / TAU) % 1 + 1) % 1;
+      const edge = Math.abs(ph - 0.5) * 2;
+      const norm = (radii[i] - rmin) / span;
+      const plateau = edge < (0.55 + 0.25 * sq) ? 1 : Math.max(0, 1 - Math.pow((edge - (0.55 + 0.25 * sq)) / (1 - (0.55 + 0.25 * sq)), 0.8));
+      const gate = Math.min(1, Math.max(0, (norm - 0.2) / 0.8));
+      const target = rmin + span * Math.max(norm, plateau);
+      out[i] = Math.max(0, radii[i] * (1 - sq * gate) + target * (sq * gate));
+    }
+    return out;
   }
   return radii;
 }
@@ -867,6 +958,82 @@ function slopeFactor(radii, i, dth, cap){
   const n = radii.length;
   const rp = (radii[(i + 1) % n] - radii[(i - 1 + n) % n]) / (2 * dth);
   return Math.min(cap || 4, Math.sqrt(r * r + rp * rp) / r);
+}
+
+function herringboneHoles(radii, opts, frame){
+  // Herringbone leaf veins. Local space: leaf points UP from the origin.
+  // We march up the midrib and cut a slanted window on each side, between
+  // consecutive side-veins. Windows are mapped back through frame().
+  const holes = [];
+  const minmat = opts.minmat;
+  const midribW = Math.max(opts.rayw, minmat) * 1.2;    // half-width of central midrib
+  const veinW   = Math.max(opts.rayw * 0.85, minmat);   // half-width of each side vein
+  const rim     = Math.max(opts.rim, minmat);           // leaf-edge border
+  const nPairs  = Math.max(3, opts.rays | 0);
+  const minWin  = Math.max(2, minmat * 1.2);
+
+  // Build a height→halfwidth table by scanning the polar profile once.
+  // A polar sample (th, r) with a = angle off UP maps to local:
+  //   alongUp = r*cos(a)   (height toward tip), across = r*sin(a)
+  const tipR = radii[radiusIdx(UP)];
+  const nB = 200;
+  const ys = [], ws = [];
+  for (let b = 0; b <= nB; b++){
+    // sample both sides, take the outline: for each height bucket keep max across
+  }
+  // Simpler robust approach: sample fine angles on ONE side, record (alongUp, across).
+  const samplesUp = [], samplesW = [];
+  for (let deg = 0.5; deg < 89.5; deg += 0.5){
+    const a = deg * Math.PI / 180;
+    const th = UP + a;                    // one side
+    const r = radii[radiusIdx(th)];
+    if (r <= 0) continue;
+    samplesUp.push(r * Math.cos(a));
+    samplesW.push(r * Math.sin(a));
+  }
+  if (samplesUp.length < 4) return holes;
+  const yMax = Math.max(...samplesUp);
+  const halfWidthAt = (y) => {
+    // linear interpolate across nearby samples by height
+    let best = 0;
+    for (let i = 0; i < samplesUp.length; i++){
+      if (Math.abs(samplesUp[i] - y) < yMax * 0.04) best = Math.max(best, samplesW[i]);
+    }
+    return best;
+  };
+
+  const yTip  = yMax - rim * 1.6;
+  const yBase = rim * 1.6;               // start a little above the origin/base
+  if (yTip - yBase < minWin * 3) return holes;
+
+  for (const side of [1, -1]){
+    for (let p = 0; p < nPairs; p++){
+      const f0 = p / nPairs, f1 = (p + 1) / nPairs;
+      const yA = yBase + (yTip - yBase) * f0;   // lower (toward base)
+      const yB = yBase + (yTip - yBase) * f1;   // upper (toward tip)
+      const wA = halfWidthAt(yA), wB = halfWidthAt(yB);
+      const inX = midribW + veinW;
+      // outer edge clamped to the NARROWER of the two heights minus a full rim,
+      // so the slant can't breach the margin on wide leaves
+      const outerLimit = Math.min(wA, wB) - rim * 1.4;
+      const outA = Math.min(wA - rim, outerLimit), outB = Math.min(wB - rim, outerLimit);
+      if (Math.min(outA, outB) <= inX + minWin) continue;
+      const slant = (yB - yA) * 0.5;
+      const poly = [
+        [side * inX,  yA + veinW],
+        [side * outA, yA + veinW + slant],
+        [side * outB, yB - veinW + slant * 0.15],
+        [side * inX,  yB - veinW]
+      ];
+      const mapped = poly.map(([x, y]) => {
+        const r = Math.hypot(x, y);
+        const th = UP + Math.atan2(x, y);
+        return frame(th, r);
+      });
+      holes.push(mapped);
+    }
+  }
+  return holes;
 }
 
 function latticeHoles(radii, opts, frame){
@@ -1143,11 +1310,57 @@ function buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   const mwTip = Math.max(st.minmat * 1.25, 2.0);  // blunt-ish tip: always welds, reads as a fine point once leaflets cover it
   const parts = [{ loops: [stemPolygon(cl, mwBase, mwTip)], colour: "leaf" }];
 
-  const mkLeaflet = (at, ang, llen, seed) => {
+  const mkOne = (at, ang, llen, seed) => {
     const lst = { mode: "leaf", dia: llen * 2, lwidth: st.lwidth, ltip: st.ltip,
-                  lobes: st.lobes, lobedepth: st.lobedepth, petals: 6,
+                  lobes: st.lobes, lobedepth: st.lobedepth, lobesharp: st.lobesharp, lobebulge: st.lobebulge, lobedir: st.lobedir, lobevar: st.lobevar, petals: 6,
                   nat: natAmt * 0.5, seed };
     parts.push({ loops: [ringLoop(sampleRadii(lst, 120), makeFrame(at.x, at.y, ang - UP, 0, 1, 1, 0, 1))], colour: "leaf" });
+  };
+  const nSub = Math.max(1, Math.min(7, st.blades | 0 || 1));
+  const mkMiniFrond = (at, ang, llen, seed) => {
+    // a true bipinnate leaflet: its own mini midrib growing out at ang, with
+    // small paired leaflets along it — a frond within the frond.
+    const mLen = llen * 1.25;                        // reach further: a proper comb
+    const steps = 10;
+    const mini = [];
+    let { x, y } = at;
+    const bendM = 0.22 * bs;                         // gentle sympathetic curve
+    let h = ang;
+    for (let k = 0; k <= steps; k++){
+      mini.push({ x, y, h });
+      h += bendM / steps;
+      x += (mLen / steps) * Math.cos(h);
+      y += (mLen / steps) * Math.sin(h);
+    }
+    const mw = Math.max(st.minmat * 1.05, mLen * 0.045 + 0.8);
+    parts.push({ loops: [stemPolygon(mini, mw, Math.max(st.minmat * 0.9, 1.2))], colour: "leaf" });
+    const nSubL = Math.max(4, Math.min(7, Math.round(mLen / 8)));
+    for (let j = 0; j < nSubL; j++){
+      const t = 0.14 + 0.78 * (j / Math.max(1, nSubL - 1));
+      const seat = mini[Math.round(t * steps)];
+      // slim ovals, shrinking toward the mini-frond tip
+      const subLen = mLen * 0.26 * (1 - 0.5 * Math.pow(t, 1.5));
+      if (subLen < 1.6) continue;
+      for (const sd of [1, -1]){
+        mkOne(seat, seat.h + sd * 1.12, subLen, seed + j * 7 + (sd > 0 ? 0 : 3));
+      }
+    }
+    const tipSeat = mini[steps - 1];
+    mkOne(tipSeat, tipSeat.h, Math.max(mLen * 0.13, mw * 2.2), seed + 99);
+  };
+  const mkLeaflet = (at, ang, llen, seed, plain) => {
+    if (!plain && st.subfrond && llen >= 8){ mkMiniFrond(at, ang, llen, seed); return; }
+    if (plain || nSub === 1 || llen < 4){ mkOne(at, ang, llen, seed); return; }
+    // bipinnate fan: this leaflet becomes a little fan of sub-blades sharing the
+    // same attachment point on the midrib — welds exactly like a palmate leaf
+    const sub = Math.min(nSub, 3 + Math.floor(llen / 8));   // tiny leaflets get fewer
+    const spr = ((st.bladespread == null ? 90 : st.bladespread) * Math.PI / 180) * 0.55;
+    for (let b = 0; b < sub; b++){
+      const f = sub === 1 ? 0.5 : b / (sub - 1);
+      const off = (f - 0.5) * spr;
+      const taper = 1 - 0.3 * Math.pow(Math.abs(f - 0.5) * 2, 1.4);
+      mkOne(at, ang + off, llen * taper * 0.92, seed + b * 17);
+    }
   };
 
   // ── ONE continuous run of leaflet pairs from base to spiral centre. Size
@@ -1166,7 +1379,9 @@ function buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   // leaflet count over the body, then keep that same spacing all the way up the
   // extension and coil. Density therefore stays even everywhere and there is no
   // sparse zone at low scroll — leaflets simply continue as the frond grows.
-  const baseCount = Math.max(4, st.leaflets | 0);
+  const baseCount0 = Math.max(4, st.leaflets | 0);
+  // mini-fronds are whole structures — halve the count so they stand apart
+  const baseCount = st.subfrond ? Math.max(3, Math.round(baseCount0 * 0.55)) : baseCount0;
   const pitch = bodyArc / baseCount;                 // arc-length between leaflets
   // gentle crowding toward the very tip: shrink pitch slightly along the arc
   const spacingTargets = [];
@@ -1239,7 +1454,7 @@ function buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
       const llen = Math.max(size * 0.10, mwBase * 2.6, 4) * (1 - 0.45 * (c / capN));
       // straddle the midrib: a leaflet each side, so the cap always welds
       for (const side of [1, -1]){
-        mkLeaflet(at, at.h + side * 0.5, Math.max(llen, mwBase * 2), (st.seedL || 1) + seedBump + 900 + c * 2 + (side > 0 ? 0 : 1));
+        mkLeaflet(at, at.h + side * 0.5, Math.max(llen, mwBase * 2), (st.seedL || 1) + seedBump + 900 + c * 2 + (side > 0 ? 0 : 1), true);
       }
     }
   }
@@ -1308,8 +1523,31 @@ function insetLoop(pts, inset, kx, ky, keepR){
 
 function leafHead(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   if (st.ltype === "frond") return buildFrond(st, size, ox, oy, dir, natAmt, seedBump, bendSign);
+  const nBlades = Math.max(1, Math.min(7, st.blades | 0 || 1));
+  if (nBlades > 1){
+    // ── palmate: several blades fanned from the one attachment point.
+    //    Middle blade full-size; outer blades shorten slightly, like a hand. ──
+    const spreadDeg = st.bladespread == null ? 90 : st.bladespread;
+    const spread = Math.max(15, Math.min(200, spreadDeg)) * Math.PI / 180;
+    const parts = [];
+    let holes = 0;
+    for (let b = 0; b < nBlades; b++){
+      const f = nBlades === 1 ? 0.5 : b / (nBlades - 1);          // 0..1 across the fan
+      const off = (f - 0.5) * spread;                              // angle offset
+      const taper = 1 - 0.28 * Math.pow(Math.abs(f - 0.5) * 2, 1.4); // outer blades smaller
+      const one = singleBlade(st, size * taper, ox, oy, dir + off, natAmt,
+                              seedBump + b * 31, bendSign);
+      holes += one.holes;
+      parts.push(...one.parts);
+    }
+    return { parts, holes };
+  }
+  return singleBlade(st, size, ox, oy, dir, natAmt, seedBump, bendSign);
+}
+
+function singleBlade(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   const lst = { mode: "leaf", dia: size * 2, lwidth: st.lwidth, ltip: st.ltip,
-                lobes: st.lobes, lobedepth: st.lobedepth, petals: 6,
+                lobes: st.lobes, lobedepth: st.lobedepth, lobesharp: st.lobesharp, lobebulge: st.lobebulge, lobedir: st.lobedir, lobevar: st.lobevar, petals: 6,
                 nat: natAmt, seed: (st.seedL || 1) + seedBump };
   const radii = sampleRadii(lst);
   const sq = Math.max(0.25, Math.cos((st.ltilt || 0) * Math.PI / 180));
@@ -1336,7 +1574,62 @@ function leafHead(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   } else {
     frame = makeFrame(ox, oy, dir - UP, 0, sq, 1, bendAmt, size);
   }
-  const loops = [ringLoop(radii, frame)];
+  if ((st.lobes | 0) > 0 && (st.lstyle === "veins" || st.lstyle === "outline")){
+    // trough envelope: slide a minimum over one lobe half-period so windows and
+    // hollows stay clear of even the deepest, sharpest notch
+    const N = featureRadii.length;
+    const beta = st.lwidth;
+    const halfWin = Math.max(2, Math.ceil((beta / Math.max(1, st.lobes)) / TAU * N * (0.55 + 0.35 * (st.lobesharp || 0))));
+    const er = new Array(N);
+    for (let i = 0; i < N; i++){
+      let m = Infinity;
+      for (let j = -halfWin; j <= halfWin; j++) m = Math.min(m, featureRadii[(i + j + N) % N]);
+      er[i] = m;
+    }
+    featureRadii = er;
+  }
+  let outer;
+  const ldir = st.lobedir || 0;
+  if ((st.lobes | 0) > 0 && ldir > 0.001){
+    // sideways lobes: widen the blade at each lobe crest, perpendicular to the
+    // midrib — lobes stand straight out instead of fanning from the base
+    const N = radii.length;
+    const beta = st.lwidth;
+    outer = new Array(N);
+    for (let i = 0; i < N; i++){
+      const th = i / N * TAU;
+      const r = radii[i];
+      const a = angDiff(th, UP);
+      const u = Math.abs(a) / beta;
+      if (r <= 0 || u >= 1){ outer[i] = frame(th, r); continue; }
+      const along = r * Math.cos(a);
+      let across = r * Math.sin(a);
+      const fade = Math.min(1, u * 2.5);
+      const v = 1 - lobeWave(st, u);                       // 1 at lobe crest
+      const vary = st.lobevar || 0;
+      const ampMod = 1 - vary * 0.45 * (0.5 + 0.5 * Math.sin(u * st.lobes * Math.PI + 0.7));
+      // sideways reads best on bulged, rounded lobes; fade it out for sharp
+      // cut-in teeth where it would smear thin slivers diagonally
+      const blg = st.lobebulge || 0;
+      // sharp teeth never push sideways much (they'd smear into slivers), and
+      // dense lobes push less (spacing cap already applies, this softens more)
+      const shpG = 1 - 0.8 * (st.lobesharp || 0);
+      const denseG = Math.min(1, 9 / Math.max(1, st.lobes));
+      const blgG = (0.35 + 0.65 * blg) * denseG;
+      let dAcross = Math.abs(across) * ldir * (st.lobedepth || 0.2) * 1.5 * fade * Math.pow(v, 0.85) * ampMod * shpG * blgG;
+      // cap the push to a fraction of the local lobe arc-spacing so the warp
+      // can never fold the outline over itself (keeps the polygon simple)
+      const lobeArc = r * beta / Math.max(1, st.lobes);
+      dAcross = Math.min(dAcross, lobeArc * 0.85);
+      across += Math.sign(across) * dAcross;
+      const r2 = Math.hypot(along, across);
+      const th2 = UP + Math.atan2(across, along);
+      outer[i] = frame(th2, r2);
+    }
+  } else {
+    outer = ringLoop(radii, frame);
+  }
+  const loops = [outer];
   let holes = 0;
   if (st.lstyle === "veins"){
     const hs = latticeHoles(featureRadii,
@@ -1350,7 +1643,10 @@ function leafHead(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
     // keep the hollow well clear of the base so the leaf's stalk end stays solid
     // (this is what welds it to the stem) — no separate disc, so no visible ring
     const keepOut = Math.max(st.minmat * 3, thick * 2.4, size * 0.12);
-    const hole = insetLoop(loops[0], thick, ox, oy, keepOut);
+    // for lobed/serrated leaves, inset from the eroded (trough) silhouette so
+    // the band never gets cut through by a notch
+    const srcLoop = ((st.lobes | 0) > 0) ? ringLoop(featureRadii, frame) : loops[0];
+    const hole = insetLoop(srcLoop, thick, ox, oy, keepOut);
     if (hole){ loops.push(hole); holes = 1; }
   }
   return { parts: [{ loops, colour: "leaf" }], holes };
@@ -1414,7 +1710,7 @@ function headExt(st, headSize, tipW, isFlower){
 
 /* ---------- leaf placement ---------- */
 
-function leafSpots(n, arrange, rngL, natL, scatter){
+function leafSpots(n, arrange, rngL, natL, scatter, lpos){
   // returns [{t, side}]
   const spots = [];
   if (arrange === "opposite"){
@@ -1438,7 +1734,14 @@ function leafSpots(n, arrange, rngL, natL, scatter){
     let t = s.t;
     if (natL > 0.001 && arrange !== "wild") t += (rngL() - 0.5) * 0.08 * natL;
     if (scatter > 0.001) t += (rngL() - 0.5) * 0.22 * scatter;
-    return { t: Math.min(0.88, Math.max(0.06, t)), side: s.side };
+    // leaf position bias: lp 0.5 = spread (default); 0 = fan at base; 1 = fan at tip
+    const lp = (lpos == null) ? 0.5 : lpos;
+    if (Math.abs(lp - 0.5) > 0.001){
+      const anchor = lp < 0.5 ? 0.12 : 0.86;              // where the fan pins
+      const pull = Math.pow(Math.abs(lp - 0.5) * 2, 1.3); // 0..1 strength
+      t = t + (anchor - t) * pull;
+    }
+    return { t: Math.min(0.9, Math.max(0.06, t)), side: s.side };
   });
 }
 
@@ -1634,7 +1937,10 @@ function buildPlant(st){
         counter.holes += fh.holes;
         parts.push(...fh.parts);
         obstacles.push({ x: tip.x, y: tip.y, r: st.dia / 2 * 0.8 });
-      } else if (leavesOn){
+      } else if (leavesOn && perStemLeaves[s] > 0){
+        // the tip leaf is leaf number one — it comes out of the count, so the
+        // Leaves slider is literal (1 leaf = a single leaf crowning the stem)
+        perStemLeaves[s]--;
         const lh = leafHead(st, st.leafsize * 1.3, tip.x, tip.y, tip.h, (st.natL || 0) * 0.6, 900 + s, 1);
         counter.holes += lh.holes;
         parts.push(...lh.parts);
@@ -1642,7 +1948,7 @@ function buildPlant(st){
 
       if (leavesOn && perStemLeaves[s] > 0){
         const rngPlace = mulberry32(((st.seedL || 1) + 13 + s * 7) >>> 0);
-        const spots = leafSpots(perStemLeaves[s], st.arrange, rngPlace, st.natL, st.lscatter || 0);
+        const spots = leafSpots(perStemLeaves[s], st.arrange, rngPlace, st.natL, st.lscatter || 0, st.lpos);
         leafPlans.push(...planLeavesAlong(st, cl, spots, s * 100));
       }
     }
@@ -2187,12 +2493,12 @@ if (typeof globalThis !== "undefined"){
 if (typeof document !== "undefined" && document.getElementById){
 
   const $ = id => document.getElementById(id);
-  const sliders = ["dia","petals","sharp","valley","a1","a2","a3","depth","n1","n2","n3",
+  const sliders = ["dia","petals","petalsquare","sharp","valley","a1","a2","a3","depth","n1","n2","n3",
                    "spread","fwidth","ftip","fbase","ftilt","fspin","mix","calyx","stamens","stamlen",
                    "lwidth","ltip","lobes","lobedepth","ltilt","lbend",
                    "natF","natL","natS",
                    "stemlen","stemw","curve","bend","branchscale","declutter","smoothing",
-                   "flowers","stems","leaves","leafsize","leafangle","lsizevar","lscatter","leaflets","lscroll",
+                   "flowers","stems","leaves","leafsize","leafangle","lsizevar","lscatter","leaflets","lscroll","lpos","blades","bladespread","lobesharp","lobebulge","lobedir","lobevar",
                    "hub","rim","rayw","rays","raysper","othick","veins","lthick","minmat"];
   const twins = { flowers: "flowers2", leaves: "leaves2" };
   let mode = "rose";
@@ -2203,14 +2509,18 @@ if (typeof document !== "undefined" && document.getElementById){
   let ltype = "blade";
   let xmode = "branch";
   let leavesfront = false;
+  let subfrond = 0;
+  let activeLeafPack = null;
+  let lobesOn = false;
   let arrange = "alternate";
   const seeds = { F: 12345, L: 54321, S: 11111 };
   const hist = { F: [], L: [], S: [] };
 
   function readState(){
-    const st = { mode, blend, fstyle, latlayout, lstyle, ltype, xmode, arrange, leavesfront,
+    const st = { mode, blend, fstyle, latlayout, lstyle, ltype, xmode, arrange, leavesfront, subfrond, lobesOn,
                  seedF: seeds.F, seedL: seeds.L, seedS: seeds.S };
     for (const s of sliders) st[s] = parseFloat($("in-" + s).value);
+    if (!lobesOn) st.lobes = 0;
     st.bloomcol = $("in-bloomcol").value;
     st.leafcol = $("in-leafcol").value;
     return st;
@@ -2222,7 +2532,7 @@ if (typeof document !== "undefined" && document.getElementById){
     const f1 = id => (+v(id)).toFixed(1);
     const set = (id, val) => $("out-" + id).textContent = val;
     set("dia", v("dia") + " mm"); set("petals", v("petals"));
-    set("sharp", f1("sharp")); set("valley", f2("valley"));
+    set("sharp", f1("sharp")); set("valley", f2("valley")); set("petalsquare", f2("petalsquare"));
     set("a1", f2("a1")); set("a2", f2("a2")); set("a3", f2("a3")); set("depth", f2("depth"));
     set("n1", f1("n1")); set("n2", f1("n2")); set("n3", f1("n3"));
     set("spread", v("spread") + "°"); set("fwidth", f2("fwidth")); set("ftip", f1("ftip")); set("fbase", f2("fbase"));
@@ -2231,13 +2541,14 @@ if (typeof document !== "undefined" && document.getElementById){
     set("stamens", v("stamens")); set("stamlen", f2("stamlen"));
     set("lscroll", f2("lscroll"));
     set("lsizevar", f2("lsizevar"));
-    set("lscatter", f2("lscatter")); set("leaflets", v("leaflets"));
+    set("lscatter", f2("lscatter")); set("leaflets", v("leaflets")); set("lpos", f2("lpos"));
+    set("blades", v("blades")); set("bladespread", v("bladespread") + "°");
     const mixPct = Math.round((+v("mix")) * 100);
     const engName = { rose:"Daisy", harm:"Waves", super:"Super", fan:"Fan" };
     set("mix", blend === "off" ? "—" : (100 - mixPct) + "% " + engName[mode] + " · " + mixPct + "% " + engName[blend]);
     set("flowers", v("flowers")); set("flowers2", v("flowers"));
     set("stems", v("stems")); set("leaves2", v("leaves"));
-    set("lwidth", f2("lwidth")); set("ltip", f1("ltip")); set("lobes", v("lobes")); set("lobedepth", f2("lobedepth"));
+    set("lwidth", f2("lwidth")); set("ltip", f1("ltip")); set("lobes", v("lobes")); set("lobedepth", f2("lobedepth")); set("lobesharp", f2("lobesharp")); set("lobebulge", f2("lobebulge")); set("lobedir", f2("lobedir")); set("lobevar", f2("lobevar"));
     set("ltilt", v("ltilt") + "°"); set("lbend", f2("lbend"));
     set("stemlen", v("stemlen") + " mm"); set("stemw", f1("stemw") + " mm");
     set("curve", f2("curve")); set("bend", f2("bend"));
@@ -2276,11 +2587,31 @@ if (typeof document !== "undefined" && document.getElementById){
     $("lay-per").classList.toggle("on", latlayout === "perpetal");
     $("rays-ctl").classList.toggle("hidden", latlayout === "perpetal");
     $("raysper-ctl").classList.toggle("hidden", latlayout === "free");
-    $("lt-blade").classList.toggle("on", ltype === "blade");
     $("tog-leavesfront").classList.toggle("on", leavesfront);
-    $("lt-frond").classList.toggle("on", ltype === "frond");
     $("leaflets-ctl").classList.toggle("hidden", ltype !== "frond");
     $("frond-style-note").classList.toggle("hidden", ltype !== "frond");
+    $("bladespread-ctl").classList.toggle("hidden", !subfrond && parseInt($("in-blades").value) < 2);
+    // leaf-chip highlight: solid when on the pure recipe, tinted once customised
+    document.querySelectorAll("[data-leaf]").forEach(ch => {
+      const name = ch.getAttribute("data-leaf");
+      ch.classList.remove("on", "drift");
+      if (name !== activeLeafPack) return;
+      const p = leafPacks[name];
+      let match = (p.ltype || "blade") === ltype && (p.subfrond || 0) === (subfrond || 0)
+                  && (!!p.lobesOn) === (!!lobesOn);
+      for (const key in p){
+        if (key === "ltype" || key === "subfrond" || key === "lobesOn") continue;
+        const el = $("in-" + key);
+        if (el && Math.abs(parseFloat(el.value) - p[key]) > 1e-6) match = false;
+      }
+      ch.classList.add(match ? "on" : "drift");
+    });
+    $("tog-lobes").classList.toggle("on", lobesOn);
+    $("lobes-section").classList.toggle("hidden", !lobesOn);
+    $("blades-ctl").classList.toggle("dimmed", !!subfrond);
+    $("bladespread-ctl").classList.toggle("dimmed", !!subfrond);
+    $("in-blades").disabled = !!subfrond;
+    $("in-bladespread").disabled = !!subfrond;
     ["ls-solid","ls-veins","ls-outline"].forEach(id => $(id).classList.toggle("disabled-look", ltype === "frond"));
     $("stamlen-ctl").classList.toggle("hidden", parseInt($("in-stamens").value) === 0);
     ["branch","along","cluster"].forEach(m => {
@@ -2324,7 +2655,7 @@ if (typeof document !== "undefined" && document.getElementById){
     if (st.leaves > 0) bits.push(st.leaves + " leaves");
     bits.push(plant.holeCount > 0 ? plant.holeCount + " windows · min material " + st.minmat.toFixed(1) + " mm" : "solid");
     if (st.ltype === "frond" && st.leaves > 0 && (st.lscroll || 0) > 0.02) bits.push("fronds curling ↻");
-    bits.push("v.fh14");
+    bits.push("v.fh23");
     $("statline").textContent = bits.join(" · ");
   }
 
@@ -2344,9 +2675,8 @@ if (typeof document !== "undefined" && document.getElementById){
   $("xm-branch").addEventListener("click", () => { xmode = "branch"; showGroups(); render(); });
   $("xm-along").addEventListener("click", () => { xmode = "along"; showGroups(); render(); });
   $("xm-cluster").addEventListener("click", () => { xmode = "cluster"; showGroups(); render(); });
-  $("lt-blade").addEventListener("click", () => { ltype = "blade"; showGroups(); render(); });
   $("tog-leavesfront").addEventListener("click", () => { leavesfront = !leavesfront; showGroups(); render(); });
-  $("lt-frond").addEventListener("click", () => { ltype = "frond"; showGroups(); render(); });
+  $("tog-lobes").addEventListener("click", () => { lobesOn = !lobesOn; showGroups(); render(); });
   $("ls-solid").addEventListener("click", () => { lstyle = "solid"; showGroups(); render(); });
   $("ls-veins").addEventListener("click", () => { lstyle = "veins"; showGroups(); render(); });
   $("ls-outline").addEventListener("click", () => { lstyle = "outline"; showGroups(); render(); });
@@ -2391,6 +2721,8 @@ if (typeof document !== "undefined" && document.getElementById){
   function applyValues(p){
     if (p.mode){ mode = p.mode; blend = "off"; }
     if (p.ltype) ltype = p.ltype;
+    if (p.subfrond != null) subfrond = p.subfrond;
+    if (p.lobesOn != null) lobesOn = !!p.lobesOn;
     if (p.xmode) xmode = p.xmode;
     for (const key in p){
       if (key === "mode") continue;
@@ -2417,16 +2749,22 @@ if (typeof document !== "undefined" && document.getElementById){
                   flowers:5, stems:1, xmode:"along", branchscale:0.9 }
   };
   const leafPacks = {
-    simple: { lwidth:0.42, ltip:1.8, lobes:0, lobedepth:0.2, ltype:"blade" },
-    oak:    { lwidth:0.6,  ltip:1.1, lobes:7, lobedepth:0.3, ltype:"blade" },
-    gum:    { lwidth:0.2,  ltip:2.2, lobes:0, lobedepth:0.2, ltype:"blade" },
-    willow: { lwidth:0.28, ltip:3.2, lobes:0, lobedepth:0.2, ltype:"blade" },
-    fern:   { lwidth:0.5,  ltip:1.4, lobes:4, lobedepth:0.28, ltype:"frond", leaflets:12, lbend:0.25 }
+    simple: { lwidth:0.42, ltip:1.8, lobedepth:0.2, ltype:"blade", blades:1, subfrond:0, lobesOn:0 },
+    oak:    { lwidth:0.6, ltip:0.95, lobes:4, lobedepth:0.45, lobebulge:1.0, lobesharp:0.1, lobedir:0.65, lobevar:0.3, ltype:"blade", blades:1, subfrond:0, lobesOn:1 },
+    gum:    { lwidth:0.2,  ltip:2.2, lobedepth:0.2, ltype:"blade", blades:1, subfrond:0, lobesOn:0 },
+    willow: { lwidth:0.28, ltip:3.2, lobedepth:0.2, ltype:"blade", blades:1, subfrond:0, lobesOn:0 },
+    fern:   { lwidth:0.5,  ltip:1.4, lobes:4, lobedepth:0.28, ltype:"frond", leaflets:12, lbend:0.25, subfrond:0, blades:1 },
+    clover: { lwidth:0.62, ltip:0.9, lobes:0, lobedepth:0.2, ltype:"blade", blades:3, bladespread:110, subfrond:0 },
+    palm:   { lwidth:0.3,  ltip:2.0, lobes:0, lobedepth:0.2, ltype:"blade", blades:6, bladespread:150, subfrond:0 },
+    wildfern: { lwidth:0.42, ltip:1.5, lobes:0, lobedepth:0.2, ltype:"frond", leaflets:9, lbend:0.2, subfrond:1, blades:1, lscroll:0.5 }
   };
   document.querySelectorAll("[data-flower]").forEach(ch =>
     ch.addEventListener("click", () => applyValues(flowerPacks[ch.getAttribute("data-flower")])));
   document.querySelectorAll("[data-leaf]").forEach(ch =>
-    ch.addEventListener("click", () => applyValues(leafPacks[ch.getAttribute("data-leaf")])));
+    ch.addEventListener("click", () => {
+      activeLeafPack = ch.getAttribute("data-leaf");
+      applyValues(leafPacks[activeLeafPack]);   // re-tapping = reset to the recipe
+    }));
 
   /* surprise me */
   const rnd = (a, b) => a + Math.random() * (b - a);
@@ -2554,8 +2892,6 @@ if (typeof document !== "undefined" && document.getElementById){
     $("view-plant").classList.toggle("on", view === "plant");
     $("view-bouquet").classList.toggle("on", view === "bouquet");
     $("view-sheets").classList.toggle("on", view === "sheets");
-    $("tog-vase").classList.toggle("on", withVase);
-    $("tog-vase").textContent = withVase ? "Vase ✓" : "Vase ✗";
     $("sheet-300").classList.toggle("on", sheet[0] === 300);
     $("sheet-450").classList.toggle("on", sheet[0] === 450);
     $("sheet-600").classList.toggle("on", sheet[0] === 600);
@@ -2582,6 +2918,8 @@ if (typeof document !== "undefined" && document.getElementById){
     mode = st.mode; blend = st.blend; fstyle = st.fstyle; latlayout = st.latlayout;
     lstyle = st.lstyle; ltype = st.ltype || "blade"; xmode = st.xmode || "branch"; arrange = st.arrange;
     leavesfront = !!st.leavesfront;
+    subfrond = st.subfrond ? 1 : 0;
+    lobesOn = !!st.lobesOn || (st.lobes | 0) > 0;
     seeds.F = st.seedF; seeds.L = st.seedL; seeds.S = st.seedS;
     for (const s of sliders){ const el = $("in-" + s); if (el && st[s] != null) el.value = st[s]; }
     $("in-flowers2").value = st.flowers; $("in-leaves2").value = st.leaves;
@@ -2610,7 +2948,6 @@ if (typeof document !== "undefined" && document.getElementById){
     toast("Welding and nesting — a moment…");
     setTimeout(render, 40);
   });
-  $("tog-vase").addEventListener("click", () => { withVase = !withVase; binderUI(); render(); });
   $("sheet-300").addEventListener("click", () => { sheet = [300, 300]; binderUI(); });
   $("sheet-450").addEventListener("click", () => { sheet = [450, 300]; binderUI(); });
   $("sheet-600").addEventListener("click", () => { sheet = [600, 400]; binderUI(); });
@@ -2622,6 +2959,21 @@ if (typeof document !== "undefined" && document.getElementById){
     saveSVG_any(projectToJSON(), "flower-project.json", "application/json", "Project exported");
   });
   $("btn-importproj").addEventListener("click", () => $("in-projfile").click());
+  $("btn-clearproj").addEventListener("click", () => {
+    const anyFilled = slots.some(Boolean);
+    if (anyFilled){
+      const wantSave = confirm("Clear all flowers from the binder?\n\nTap OK to export a backup .json first, or Cancel to clear without saving.");
+      if (wantSave){
+        saveToSlot(activeSlot); binderUI();
+        saveSVG_any(projectToJSON(), "flower-project.json", "application/json", "Backup exported");
+      }
+    }
+    const reallyClear = confirm("This will empty every binder tab. Are you sure?");
+    if (!reallyClear) return;
+    for (let i = 0; i < slots.length; i++) slots[i] = null;
+    activeSlot = 0;
+    persist(); binderUI(); render();
+  });
   $("in-projfile").addEventListener("change", async ev => {
     const f = ev.target.files[0];
     if (!f) return;
@@ -2651,7 +3003,7 @@ if (typeof document !== "undefined" && document.getElementById){
   });
 
   function renderSheets(){
-    const { sheets } = nestLayout(filled(), sheet[0], sheet[1], withVase);
+    const { sheets } = nestLayout(filled(), sheet[0], sheet[1], false);
     const gap = 15;
     let ox = 0, maxH = 0, body = "";
     let pieceCount = 0;
@@ -2670,7 +3022,7 @@ if (typeof document !== "undefined" && document.getElementById){
     $("preview").innerHTML = '<svg viewBox="-4 -4 ' + fmt(W + 8) + ' ' + fmt(H + 8) +
       '" role="img" aria-label="Nested sheets preview">' + body + '</svg>';
     $("statline").textContent = "Sheets · " + pieceCount + " pieces on " + sheets.length +
-      (sheets.length === 1 ? " sheet" : " sheets") + " of " + sheet[0] + "×" + sheet[1] + " mm" + (withVase ? " · vase included" : "");
+      (sheets.length === 1 ? " sheet" : " sheets") + " of " + sheet[0] + "×" + sheet[1] + " mm";
   }
 
   function renderBouquet(){
@@ -2683,12 +3035,12 @@ if (typeof document !== "undefined" && document.getElementById){
                 '" fill-rule="evenodd" stroke="' + shade(fill, 0.72) + '" stroke-width="' + Math.max(0.3, sc.W / 500) + '"/>';
       }
     }
-    if (withVase) body += '<path d="' + loopToD(sc.vase) + '" fill="#3b342a"/>';
+    body += '<path d="' + loopToD(sc.vase) + '" fill="#3b342a"/>';
     $("preview").innerHTML = '<svg viewBox="0 0 ' + fmt(sc.W) + ' ' + fmt(sc.H) +
       '" role="img" aria-label="Bouquet preview"><g style="filter:drop-shadow(0 ' + sc.H / 140 +
       'px ' + sc.H / 100 + 'px rgba(80,60,30,.25))">' + body + '</g></svg>';
     $("statline").textContent = "Bouquet · " + filled().length + (filled().length === 1 ? " plant" : " plants") +
-      " · " + Math.round(sc.W) + "×" + Math.round(sc.H) + " mm arranged" + (withVase ? " · vase" : "");
+      " · " + Math.round(sc.W) + "×" + Math.round(sc.H) + " mm arranged · vase";
   }
 
   $("btn-bqcolour").addEventListener("click", () => {
@@ -2701,7 +3053,7 @@ if (typeof document !== "undefined" && document.getElementById){
     if (!filled().length){ toast("Save some flowers first"); return; }
     toast("Welding and nesting — a moment…");
     setTimeout(() => {
-      saveSVG(buildNestedCutSVG(filled(), sheet[0], sheet[1], withVase),
+      saveSVG(buildNestedCutSVG(filled(), sheet[0], sheet[1], false),
               "bouquet-" + filled().length + "-nested-" + sheet[0] + "x" + sheet[1] + ".svg",
               "Nested cut sheet saved");
     }, 50);
