@@ -689,7 +689,7 @@
   </div>
 </main>
 
-<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh24, 16 July 2026</footer>
+<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh25, 17 July 2026</footer>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -2294,6 +2294,158 @@ function loopToD(pts){
   return d + "Z";
 }
 
+/* ---- node reduction + smooth-curve emission ----------------------------------
+   The radial engine samples each loop at up to SAMPLES points. Emitted raw, that
+   is thousands of tiny straight segments: heavy files and visibly faceted,
+   jagged cut lines. finishLoops rounds (optional, via the smoothing slider),
+   protects the genuine corners, decimates the redundant points with a
+   Douglas–Peucker pass, then emits smooth cubic Béziers through what remains.
+   The curve follows the original outline within `tol` mm, so the single welded
+   piece stays closed and simple — just with far fewer, cleaner nodes. */
+
+function dedupeLoop(pts, minSeg){
+  // collapse near-coincident points (e.g. the leaf base, where the silhouette
+  // pinches to a point and the sampler stacks many samples on the origin) —
+  // these otherwise read as noise "corners" and block decimation
+  const n = pts.length;
+  if (n < 4) return pts;
+  const out = [pts[0]];
+  for (let i = 1; i < n; i++){
+    const a = out[out.length - 1], b = pts[i];
+    if (Math.hypot(b[0]-a[0], b[1]-a[1]) >= minSeg) out.push(b);
+  }
+  while (out.length > 3 && Math.hypot(out[out.length-1][0]-out[0][0], out[out.length-1][1]-out[0][1]) < minSeg) out.pop();
+  return out.length >= 3 ? out : pts;
+}
+
+function prepLoop(pts, amt){
+  let p = dedupeLoop(pts, 0.12);
+  if (p.length >= 6 && amt > 0.01) p = smoothOneLoop(p, amt);
+  return p;
+}
+
+function smoothOneLoop(pts, amount){
+  const n = pts.length;
+  const w = 2 * Math.round(amount * 4) + 1;         // 3..9 point window
+  if (n < w * 3 || w < 3) return pts;
+  const h = (w - 1) / 2;
+  const out = new Array(n);
+  for (let i = 0; i < n; i++){
+    let sx = 0, sy = 0;
+    for (let j = -h; j <= h; j++){ const p = pts[(i + j + n) % n]; sx += p[0]; sy += p[1]; }
+    out[i] = [sx / w, sy / w];
+  }
+  return out;
+}
+
+function cornerFlags(pts, cosThresh){
+  // mark points where the outline turns sharply — petal tips, fan-valley
+  // creases, tooth points — so they survive smoothing and decimation crisp
+  const n = pts.length, flag = new Uint8Array(n);
+  for (let i = 0; i < n; i++){
+    const a = pts[(i - 1 + n) % n], b = pts[i], c = pts[(i + 1) % n];
+    const v1x = b[0]-a[0], v1y = b[1]-a[1], v2x = c[0]-b[0], v2y = c[1]-b[1];
+    const l1 = Math.hypot(v1x,v1y)||1, l2 = Math.hypot(v2x,v2y)||1;
+    if ((v1x*v2x + v1y*v2y)/(l1*l2) < cosThresh) flag[i] = 1;
+  }
+  return flag;
+}
+
+function dpKeep(pts, eps, keep, lo, hi){
+  // recursive Douglas–Peucker over the open index range [lo,hi]
+  if (hi <= lo + 1) return;
+  const a = pts[lo], b = pts[hi];
+  const dx = b[0]-a[0], dy = b[1]-a[1], len = Math.hypot(dx,dy) || 1;
+  let far = -1, fd = eps;
+  for (let i = lo + 1; i < hi; i++){
+    if (keep[i]){ dpKeep(pts, eps, keep, lo, i); dpKeep(pts, eps, keep, i, hi); return; }
+    const c = pts[i];
+    const d = Math.abs(dy*c[0] - dx*c[1] + b[0]*a[1] - b[1]*a[0]) / len;
+    if (d > fd){ fd = d; far = i; }
+  }
+  if (far >= 0){ keep[far] = 1; dpKeep(pts, eps, keep, lo, far); dpKeep(pts, eps, keep, far, hi); }
+}
+
+function decimateRing(pts, eps, corners){
+  const n = pts.length;
+  if (n < 6) return pts.map((p,i)=>({ p, corner: corners ? !!corners[i] : false }));
+  const keep = new Uint8Array(n);
+  let anchors = [];
+  for (let i = 0; i < n; i++) if (corners && corners[i]){ keep[i] = 1; anchors.push(i); }
+  if (anchors.length < 2){
+    let far = 0, fd = -1;
+    for (let i = 1; i < n; i++){ const d = Math.hypot(pts[i][0]-pts[0][0], pts[i][1]-pts[0][1]); if (d>fd){fd=d;far=i;} }
+    keep[0] = 1; keep[far] = 1; anchors = [0, far].sort((a,b)=>a-b);
+  }
+  for (let k = 0; k < anchors.length; k++){
+    const lo = anchors[k], hi = anchors[(k+1) % anchors.length];
+    if (hi > lo){ dpKeep(pts, eps, keep, lo, hi); }
+    else {
+      const seg = [], idx = [];
+      for (let i = lo; i < n; i++){ seg.push(pts[i]); idx.push(i); }
+      for (let i = 0; i <= hi; i++){ seg.push(pts[i]); idx.push(i); }
+      const kseg = new Uint8Array(seg.length); kseg[0]=1; kseg[seg.length-1]=1;
+      dpKeep(seg, eps, kseg, 0, seg.length-1);
+      for (let s = 0; s < seg.length; s++) if (kseg[s]) keep[idx[s]] = 1;
+    }
+  }
+  const out = [];
+  for (let i = 0; i < n; i++) if (keep[i]) out.push({ p: pts[i], corner: !!(corners && corners[i]) });
+  return out;
+}
+
+function finishLoops(loops, st){
+  const amt = st.smoothing || 0;
+  const tol = 0.05 + amt * 0.5;                       // mm deviation budget
+  const cosThresh = Math.cos(46 * Math.PI / 180);     // ~46° turn counts as a corner
+  return loops.map(pts => {
+    if (pts.length < 6) return pts.map(p => ({ p, corner: true }));
+    const sm = prepLoop(pts, amt);
+    if (sm.length < 6) return sm.map(p => ({ p, corner: true }));
+    return decimateRing(sm, tol, cornerFlags(sm, cosThresh));
+  });
+}
+
+function decimatePlain(loops, st){
+  // same node reduction as finishLoops but returns plain [x,y] loops, for the
+  // bouquet nesting/transform plumbing (which translates and rotates points).
+  const amt = st.smoothing || 0;
+  const tol = 0.05 + amt * 0.5;
+  const cosThresh = Math.cos(46 * Math.PI / 180);
+  return loops.map(pts => {
+    if (pts.length < 6) return pts;
+    const sm = prepLoop(pts, amt);
+    if (sm.length < 6) return sm;
+    return decimateRing(sm, tol, cornerFlags(sm, cosThresh)).map(nd => nd.p);
+  });
+}
+
+function nodesToSmoothD(nodes){
+  const n = nodes.length;
+  if (n < 3){ let d=""; nodes.forEach((nd,i)=> d += (i?"L":"M")+fmt(nd.p[0])+" "+fmt(nd.p[1])); return d+"Z"; }
+  const P = nodes.map(nd => nd.p), isC = nodes.map(nd => nd.corner);
+  const tan = new Array(n);
+  for (let i = 0; i < n; i++){
+    if (isC[i]){ tan[i] = [0,0]; continue; }         // zero tangent = crisp corner
+    const a = P[(i-1+n)%n], b = P[(i+1)%n];
+    let tx = (b[0]-a[0])/6, ty = (b[1]-a[1])/6;
+    // guard only gross overshoot (keeps the curve from looping between very
+    // unevenly spaced nodes); generous cap so normal curvature is untouched
+    const cap = 0.9 * Math.min(Math.hypot(P[i][0]-a[0], P[i][1]-a[1]), Math.hypot(b[0]-P[i][0], b[1]-P[i][1]));
+    const tl = Math.hypot(tx, ty);
+    if (tl > cap && tl > 1e-9){ const s = cap / tl; tx *= s; ty *= s; }
+    tan[i] = [tx, ty];
+  }
+  let d = "M" + fmt(P[0][0]) + " " + fmt(P[0][1]);
+  for (let i = 0; i < n; i++){
+    const j = (i+1)%n;
+    const c1 = [P[i][0]+tan[i][0], P[i][1]+tan[i][1]];
+    const c2 = [P[j][0]-tan[j][0], P[j][1]-tan[j][1]];
+    d += "C" + fmt(c1[0])+" "+fmt(c1[1])+" "+fmt(c2[0])+" "+fmt(c2[1])+" "+fmt(P[j][0])+" "+fmt(P[j][1]);
+  }
+  return d + "Z";
+}
+
 function shade(hex, f){
   const n = parseInt(hex.slice(1), 16);
   return "rgb(" + Math.round(((n >> 16) & 255) * f) + "," + Math.round(((n >> 8) & 255) * f) + "," + Math.round((n & 255) * f) + ")";
@@ -2319,7 +2471,7 @@ function layeredPaths(plant, st, forExport){
   let s = "";
   for (const part of ordered){
     const fill = colourOf(part, st);
-    const d = smoothLoops(part.loops, st.smoothing || 0).map(loopToD).join("");
+    const d = finishLoops(part.loops, st).map(nodesToSmoothD).join("");
     s += '<path d="' + d + '" fill="' + fill + '" fill-rule="evenodd" stroke="' + shade(fill, 0.72) +
          '" stroke-width="' + (forExport ? 0.3 : Math.max(0.3, Math.max(plant.W, plant.H) / 500)) + '"/>';
   }
@@ -2346,7 +2498,7 @@ function buildCutSVG(plant, st){
   } else {
     loops = weldParts(plant.parts, plant.W, plant.H).loops;
   }
-  const d = smoothLoops(loops, st.smoothing || 0).map(loopToD).join("");
+  const d = finishLoops(loops, st).map(nodesToSmoothD).join("");
   return '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<!-- The Infinite Flower Creator · Curiosity.diy · seeds F' + (st.seedF || 1) + ' L' + (st.seedL || 1) + ' S' + (st.seedS || 1) + ' -->\n' +
     '<svg xmlns="http://www.w3.org/2000/svg" width="' + fmt(plant.W) + 'mm" height="' + fmt(plant.H) + 'mm" viewBox="0 0 ' + fmt(plant.W) + ' ' + fmt(plant.H) + '">\n' +
@@ -2493,7 +2645,7 @@ function pieceFromState(st){
   const loops = plant.parts.length === 1
     ? plant.parts[0].loops
     : weldParts(plant.parts, plant.W, plant.H).loops;
-  return normalisePiece(smoothLoops(loops, st.smoothing || 0));
+  return normalisePiece(decimatePlain(loops, st));
 }
 
 function nestLayout(states, shW, shH, withVase){
@@ -2702,7 +2854,7 @@ if (typeof document !== "undefined" && document.getElementById){
     if (st.leaves > 0) bits.push(st.leaves + " leaves");
     bits.push(plant.holeCount > 0 ? plant.holeCount + " windows · min material " + st.minmat.toFixed(1) + " mm" : "solid");
     if (st.ltype === "frond" && st.leaves > 0 && (st.lscroll || 0) > 0.02) bits.push("fronds curling ↻");
-    bits.push("v.fh24");
+    bits.push("v.fh25");
     $("statline").textContent = bits.join(" · ");
   }
 
