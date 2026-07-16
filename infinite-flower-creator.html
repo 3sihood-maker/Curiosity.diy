@@ -135,6 +135,24 @@
   }
   .toggle.on{background:var(--sage);border-color:var(--sage);color:#fff}
   .toggle:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+  /* Edge-lobes folder tab + sub-panel */
+  .lobebox{margin-top:14px}
+  .lobebox .lobetab{position:relative;z-index:2}
+  .lobebox .lobetab.on{
+    border-bottom-left-radius:2px;border-bottom-right-radius:2px;
+    margin-bottom:0;box-shadow:0 2px 0 var(--sage);
+  }
+  .lobepanel{
+    background:var(--sage-soft);
+    border:1.5px solid var(--sage);
+    border-radius:0 12px 12px 12px;
+    padding:4px 14px 12px;margin-top:6px;
+  }
+  .lobepanel .lobehint{
+    font-size:.72rem;color:var(--sage);letter-spacing:.04em;
+    margin:8px 0 2px;font-style:italic;
+  }
+  .lobepanel .ctl label{color:var(--ink)}
   .nat-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
   .nat-row .btn{flex:0 0 auto}
   .nat-row input[type=range]{flex:1}
@@ -549,38 +567,43 @@
         <label for="in-lbend">Leaf bend <output id="out-lbend">0.00</output></label>
         <input type="range" id="in-lbend" min="-1" max="1" step="0.05" value="0">
       </div>
-      <div style="margin-top:12px">
-        <button class="toggle" id="tog-lobes">Edge lobes</button>
-      </div>
-      <div id="lobes-section" class="hidden">
-        <div class="ctl">
-          <label for="in-lobes">Lobe count <output id="out-lobes">5</output></label>
-          <input type="range" id="in-lobes" min="2" max="24" step="1" value="5">
-        </div>
-        <div class="ctl">
-          <label for="in-lobedepth">Lobe depth <output id="out-lobedepth">0.20</output></label>
-          <input type="range" id="in-lobedepth" min="0.05" max="0.8" step="0.01" value="0.2">
-        </div>
-        <div class="ctl">
-          <label for="in-lobebulge">Lobe bulge (cut in ↔ push out) <output id="out-lobebulge">0.00</output></label>
-          <input type="range" id="in-lobebulge" min="0" max="1" step="0.05" value="0">
-        </div>
-        <div class="ctl">
-          <label for="in-lobesharp">Lobe shape (rounded → sharp teeth) <output id="out-lobesharp">0.00</output></label>
-          <input type="range" id="in-lobesharp" min="0" max="1" step="0.05" value="0">
-        </div>
-        <div class="ctl">
-          <label for="in-lobedir">Lobe direction (fan ↔ straight out) <output id="out-lobedir">0.00</output></label>
-          <input type="range" id="in-lobedir" min="0" max="1" step="0.05" value="0">
-        </div>
-        <div class="ctl">
-          <label for="in-lobevar">Lobe variety (even ↔ mixed sizes) <output id="out-lobevar">0.00</output></label>
-          <input type="range" id="in-lobevar" min="0" max="1" step="0.05" value="0">
-        </div>
+      <div class="ctl">
+        <label for="in-leafwave">Edge wave (organic wobble) <output id="out-leafwave">0.00</output></label>
+        <input type="range" id="in-leafwave" min="0" max="1" step="0.05" value="0">
       </div>
       <div class="ctl">
         <label for="in-ltilt">Turn (flat → edge-on) <output id="out-ltilt">0°</output></label>
         <input type="range" id="in-ltilt" min="0" max="70" step="1" value="0">
+      </div>
+      <div class="lobebox">
+        <button class="toggle lobetab" id="tog-lobes">Edge lobes</button>
+        <div id="lobes-section" class="lobepanel hidden">
+          <div class="lobehint">Shapes the leaf's outline — count, depth &amp; direction of the lobes.</div>
+          <div class="ctl">
+            <label for="in-lobes">Lobe count <output id="out-lobes">5</output></label>
+            <input type="range" id="in-lobes" min="2" max="24" step="1" value="5">
+          </div>
+          <div class="ctl">
+            <label for="in-lobedepth">Lobe depth <output id="out-lobedepth">0.20</output></label>
+            <input type="range" id="in-lobedepth" min="0.05" max="1" step="0.01" value="0.2">
+          </div>
+          <div class="ctl">
+            <label for="in-lobebulge">Lobe bulge (cut in ↔ push out) <output id="out-lobebulge">0.00</output></label>
+            <input type="range" id="in-lobebulge" min="0" max="1" step="0.05" value="0">
+          </div>
+          <div class="ctl">
+            <label for="in-lobesharp">Lobe shape (rounded → sharp teeth) <output id="out-lobesharp">0.00</output></label>
+            <input type="range" id="in-lobesharp" min="0" max="1" step="0.05" value="0">
+          </div>
+          <div class="ctl">
+            <label for="in-lobedir">Lobe direction (fan ↔ perpendicular) <output id="out-lobedir">0.00</output></label>
+            <input type="range" id="in-lobedir" min="0" max="1.5" step="0.05" value="0">
+          </div>
+          <div class="ctl">
+            <label for="in-lobevar">Lobe variety (even ↔ mixed sizes) <output id="out-lobevar">0.00</output></label>
+            <input type="range" id="in-lobevar" min="0" max="1" step="0.05" value="0">
+          </div>
+        </div>
       </div>
       <div class="mini-label">Leaf cut style</div>
       <div class="seg" role="group" aria-label="Leaf cut style">
@@ -666,7 +689,7 @@
   </div>
 </main>
 
-<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh23, 15 July 2026</footer>
+<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh24, 16 July 2026</footer>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -725,6 +748,19 @@ function lobeWave(st, u){
     w = 1 - v;
   }
   return w;
+}
+
+/* Organic edge wobble: a smooth multi-frequency ripple riding on the leaf
+   rim. Bounded to a small fraction of the radius and faded to zero at the
+   base (u→1) so the stalk weld is never disturbed; slightly asymmetric
+   left/right so it reads hand-drawn rather than mechanical. */
+function leafEdgeWave(st, u, d){
+  const amt = st.leafwave || 0;
+  if (amt < 0.001) return 0;
+  const wave = 0.60 * Math.sin(u * 9.0 + d * 2.0)
+             + 0.40 * Math.sin(u * 15.0 - 1.3);
+  const fade = Math.min(1, (1 - u) * 3) * Math.min(1, u * 4 + 0.25);
+  return amt * 0.09 * wave * fade;
 }
 
 function familyProfile(st, family){
@@ -795,8 +831,11 @@ function familyProfile(st, family){
       const fade = Math.min(1, u * 2.5);
       const w = lobeWave(st, u);
       // depth guard: dense lobes on a small blade must not sever it — cap the
-      // cut so the trough keeps a solid core (more lobes → shallower max cut)
-      const maxCut = Math.min(st.lobedepth, 0.85 - 0.022 * st.lobes);
+      // cut so the trough keeps a solid core (more lobes → shallower max cut).
+      // Sharpness-aware: rounded scallops (oak) may cut deep soft sinuses,
+      // while sharp teeth stay conservative so their narrow necks keep enough
+      // weldable material.
+      const maxCut = Math.min(st.lobedepth, (0.90 - 0.020 * st.lobes) - 0.14 * (st.lobesharp || 0));
       const bulge = st.lobebulge || 0;
       // variety: alternate lobes grow/shrink (half-frequency modulation), the
       // organic irregularity of a real oak
@@ -808,11 +847,15 @@ function familyProfile(st, family){
       // severing guard, while the bulge grows generously outward
       const cutAmp = Math.max(0.05, maxCut) * fade;
       const shpTrim = 1 - 0.35 * (st.lobesharp || 0);
-      let outTerm = cutAmp * bulge * 1.0 * outMod * shpTrim;
+      // rounded, bulged lobes push out into big soft oak bumps; sharp teeth
+      // stay trim (shpTrim shrinks the push toward the toothed end)
+      let outTerm = cutAmp * bulge * 1.6 * outMod * shpTrim;
       // capped by lobe spacing so dense lobes can't become thin spikes
-      outTerm = Math.min(outTerm, (beta / Math.max(1, st.lobes)) * 2.0);
+      outTerm = Math.min(outTerm, (beta / Math.max(1, st.lobes)) * 2.6);
       r *= 1 - cutAmp * w + outTerm;
     }
+    const wob = leafEdgeWave(st, u, d);
+    if (wob) r *= 1 + wob;
     return r;
   };
 }
@@ -1547,7 +1590,7 @@ function leafHead(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
 
 function singleBlade(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   const lst = { mode: "leaf", dia: size * 2, lwidth: st.lwidth, ltip: st.ltip,
-                lobes: st.lobes, lobedepth: st.lobedepth, lobesharp: st.lobesharp, lobebulge: st.lobebulge, lobedir: st.lobedir, lobevar: st.lobevar, petals: 6,
+                lobes: st.lobes, lobedepth: st.lobedepth, lobesharp: st.lobesharp, lobebulge: st.lobebulge, lobedir: st.lobedir, lobevar: st.lobevar, leafwave: st.leafwave, petals: 6,
                 nat: natAmt, seed: (st.seedL || 1) + seedBump };
   const radii = sampleRadii(lst);
   const sq = Math.max(0.25, Math.cos((st.ltilt || 0) * Math.PI / 180));
@@ -1614,13 +1657,17 @@ function singleBlade(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
       // sharp teeth never push sideways much (they'd smear into slivers), and
       // dense lobes push less (spacing cap already applies, this softens more)
       const shpG = 1 - 0.8 * (st.lobesharp || 0);
-      const denseG = Math.min(1, 9 / Math.max(1, st.lobes));
+      // dense lobes push sideways much less — perpendicular oak lobes are a
+      // few-count feature, and dense sideways pushes self-intersect. Steep
+      // taper keeps low counts (oak) fully perpendicular while dense counts
+      // stay tame.
+      const denseG = Math.pow(Math.min(1, 5 / Math.max(1, st.lobes)), 1.5);
       const blgG = (0.35 + 0.65 * blg) * denseG;
-      let dAcross = Math.abs(across) * ldir * (st.lobedepth || 0.2) * 1.5 * fade * Math.pow(v, 0.85) * ampMod * shpG * blgG;
+      let dAcross = Math.abs(across) * ldir * (st.lobedepth || 0.2) * 1.8 * fade * Math.pow(v, 0.85) * ampMod * shpG * blgG;
       // cap the push to a fraction of the local lobe arc-spacing so the warp
-      // can never fold the outline over itself (keeps the polygon simple)
+      // can never fold the outline over itself (keeps the polygon simple).
       const lobeArc = r * beta / Math.max(1, st.lobes);
-      dAcross = Math.min(dAcross, lobeArc * 0.85);
+      dAcross = Math.min(dAcross, lobeArc * 0.88);
       across += Math.sign(across) * dAcross;
       const r2 = Math.hypot(along, across);
       const th2 = UP + Math.atan2(across, along);
@@ -2495,7 +2542,7 @@ if (typeof document !== "undefined" && document.getElementById){
   const $ = id => document.getElementById(id);
   const sliders = ["dia","petals","petalsquare","sharp","valley","a1","a2","a3","depth","n1","n2","n3",
                    "spread","fwidth","ftip","fbase","ftilt","fspin","mix","calyx","stamens","stamlen",
-                   "lwidth","ltip","lobes","lobedepth","ltilt","lbend",
+                   "lwidth","ltip","lobes","lobedepth","ltilt","lbend","leafwave",
                    "natF","natL","natS",
                    "stemlen","stemw","curve","bend","branchscale","declutter","smoothing",
                    "flowers","stems","leaves","leafsize","leafangle","lsizevar","lscatter","leaflets","lscroll","lpos","blades","bladespread","lobesharp","lobebulge","lobedir","lobevar",
@@ -2549,7 +2596,7 @@ if (typeof document !== "undefined" && document.getElementById){
     set("flowers", v("flowers")); set("flowers2", v("flowers"));
     set("stems", v("stems")); set("leaves2", v("leaves"));
     set("lwidth", f2("lwidth")); set("ltip", f1("ltip")); set("lobes", v("lobes")); set("lobedepth", f2("lobedepth")); set("lobesharp", f2("lobesharp")); set("lobebulge", f2("lobebulge")); set("lobedir", f2("lobedir")); set("lobevar", f2("lobevar"));
-    set("ltilt", v("ltilt") + "°"); set("lbend", f2("lbend"));
+    set("ltilt", v("ltilt") + "°"); set("lbend", f2("lbend")); set("leafwave", f2("leafwave"));
     set("stemlen", v("stemlen") + " mm"); set("stemw", f1("stemw") + " mm");
     set("curve", f2("curve")); set("bend", f2("bend"));
     set("branchscale", f2("branchscale"));
@@ -2655,7 +2702,7 @@ if (typeof document !== "undefined" && document.getElementById){
     if (st.leaves > 0) bits.push(st.leaves + " leaves");
     bits.push(plant.holeCount > 0 ? plant.holeCount + " windows · min material " + st.minmat.toFixed(1) + " mm" : "solid");
     if (st.ltype === "frond" && st.leaves > 0 && (st.lscroll || 0) > 0.02) bits.push("fronds curling ↻");
-    bits.push("v.fh23");
+    bits.push("v.fh24");
     $("statline").textContent = bits.join(" · ");
   }
 
@@ -2750,7 +2797,7 @@ if (typeof document !== "undefined" && document.getElementById){
   };
   const leafPacks = {
     simple: { lwidth:0.42, ltip:1.8, lobedepth:0.2, ltype:"blade", blades:1, subfrond:0, lobesOn:0 },
-    oak:    { lwidth:0.6, ltip:0.95, lobes:4, lobedepth:0.45, lobebulge:1.0, lobesharp:0.1, lobedir:0.65, lobevar:0.3, ltype:"blade", blades:1, subfrond:0, lobesOn:1 },
+    oak:    { lwidth:0.6, ltip:0.95, lobes:4, lobedepth:0.62, lobebulge:1.0, lobesharp:0.05, lobedir:1.1, lobevar:0.3, leafwave:0.35, ltype:"blade", blades:1, subfrond:0, lobesOn:1 },
     gum:    { lwidth:0.2,  ltip:2.2, lobedepth:0.2, ltype:"blade", blades:1, subfrond:0, lobesOn:0 },
     willow: { lwidth:0.28, ltip:3.2, lobedepth:0.2, ltype:"blade", blades:1, subfrond:0, lobesOn:0 },
     fern:   { lwidth:0.5,  ltip:1.4, lobes:4, lobedepth:0.28, ltype:"frond", leaflets:12, lbend:0.25, subfrond:0, blades:1 },
