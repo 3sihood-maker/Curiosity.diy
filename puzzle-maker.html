@@ -143,8 +143,9 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
   <p class="sub">Design a puzzle, tune the piece shapes, and export a clean SVG where every internal join is cut exactly once — ready to drop straight into your laser software.</p>
   <div class="tabs">
     <div class="tab active" data-tab="regular">1 · Regular Puzzles</div>
-    <div class="tab" data-tab="shaped">2 · Unusual &amp; Letters</div>
+    <div class="tab" data-tab="shaped">2 · Shapes &amp; Letters</div>
     <div class="tab" data-tab="mono">3 · Monotiles</div>
+    <div class="tab" data-tab="wacky">4 · Wacky Puzzles</div>
   </div>
 </header>
 
@@ -198,7 +199,7 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
 
     <!-- ---- SHAPED ---- -->
     <div id="ctl-shaped" class="hidden">
-      <h2>Unusual &amp; Letters</h2>
+      <h2>Shapes &amp; Letters</h2>
       <p class="hint">Jigsaw pieces clipped to a shape or your own word.</p>
 
       <div class="group">
@@ -303,6 +304,52 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
       <p class="hint" id="m_covernote" style="color:var(--rust-deep);display:none">Piece size too small for this sheet — the verified patch runs out. Nudge piece size up (or sheet size down).</p>
     </div>
 
+    <!-- ---- WACKY ---- -->
+    <div id="ctl-wacky" class="hidden">
+      <h2>Wacky Puzzles</h2>
+      <p class="hint">Irregular, warped pieces on a shared-cut grid — twist the layout and mix rounded &amp; angular tabs for a proper wonky puzzle.</p>
+
+      <div class="group">
+        <p class="glabel">Sheet</p>
+        <div class="twocol">
+          <div class="field"><label>Width (mm)</label><input type="number" id="k_w" value="200" min="20" max="900"></div>
+          <div class="field"><label>Height (mm)</label><input type="number" id="k_h" value="150" min="20" max="900"></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="glabel">Piece grid</p>
+        <div class="row"><label>Columns</label><input type="range" id="k_cols" min="2" max="16" value="6"><span class="val" id="k_cols_v">6</span></div>
+        <div class="row"><label>Rows</label><input type="range" id="k_rows" min="2" max="16" value="5"><span class="val" id="k_rows_v">5</span></div>
+      </div>
+
+      <div class="group">
+        <p class="glabel">Wackiness</p>
+        <div class="row"><label>Warp</label><input type="range" id="k_warp" min="0" max="90" value="45"><span class="val" id="k_warp_v">0.45</span></div>
+        <div class="row"><label>Size variety</label><input type="range" id="k_vary" min="0" max="100" value="55"><span class="val" id="k_vary_v">0.55</span></div>
+      </div>
+
+      <div class="group">
+        <p class="glabel">Tab style</p>
+        <div class="chips" id="k_style">
+          <div class="chip" data-v="round">Rounded</div>
+          <div class="chip" data-v="angular">Angular</div>
+          <div class="chip on" data-v="mixed">Mixed</div>
+          <div class="chip" data-v="wild">Wild</div>
+        </div>
+        <p class="hint" style="margin:8px 0 0">Mixed alternates rounded balls and angular dovetails at random. Wild randomises size, neck &amp; shape on every edge.</p>
+      </div>
+
+      <div class="group">
+        <p class="glabel">Piece shape</p>
+        <div class="row"><label>Tab size</label><input type="range" id="k_tab" min="30" max="110" value="70"><span class="val" id="k_tab_v">0.70</span></div>
+        <div class="row"><label>Neck</label><input type="range" id="k_neck" min="60" max="150" value="100"><span class="val" id="k_neck_v">1.00</span></div>
+        <div class="row"><label>Seed</label><input type="number" id="k_seed" value="7" min="0" style="flex:1"></div>
+      </div>
+
+      <p class="hint" style="color:var(--rust-deep)">Wonky layouts can crowd — if the overlap warning shows, nudge Tab size or Warp down, or hit Randomise for a fresh seed.</p>
+    </div>
+
     <!-- ---- ACTIONS ---- -->
     <div class="actions" id="actions">
       <button class="btn" id="btn_rand">🎲 Randomize</button>
@@ -336,7 +383,7 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
 
 <footer>
   <span>curiosity.diy · the curious puzzle maker</span>
-  <span id="foot_ver">v0.7 · sections 1–3 live · build: sawtooth sp07 · 18 Jul 2026 — if this line is missing you're viewing a cached copy</span>
+  <span id="foot_ver">v0.8 · sections 1–4 live · build: sawtooth sp08 · 18 Jul 2026 — if this line is missing you're viewing a cached copy</span>
 </footer>
 
 <script>
@@ -980,6 +1027,74 @@ function readMono(){
     mode:monoMode,frame:+$('m_fw').value,APER:APER};
 }
 function buildMono(o){return aperPuzzle(o);}
+let wackyStyle='mixed';
+function readWacky(){
+  return {w:+$('k_w').value,h:+$('k_h').value,cols:+$('k_cols').value,rows:+$('k_rows').value,
+    warp:+$('k_warp').value/100,vary:+$('k_vary').value/100,style:wackyStyle,
+    tab:+$('k_tab').value/100,neck:+$('k_neck').value/100,seed:+$('k_seed').value};
+}
+
+/* ---- Wacky puzzles: warped grid, per-edge rounded or angular tabs ---- */
+function wackyRoundTab(P,m,k,neck,round){
+  const headR=k*(0.140+0.012*round);
+  const neckFrac=Math.max(0.16,Math.min(0.9,(0.77-0.31*round)*neck));
+  const neckW=headR*neckFrac, nl=k*(0.055+0.005*round);
+  const d=Math.sqrt(Math.max(1e-6,headR*headR-neckW*neckW)), hc=nl+d, sw=neckW+k*0.045;
+  const aL=Math.atan2(-d,-neckW), aR=Math.atan2(-d,neckW);
+  let sweep=aL-aR; sweep=((sweep%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+  const nseg=Math.max(3,Math.ceil(sweep/(Math.PI/2))), da=-sweep/nseg, kap=(4/3)*Math.tan(da/4);
+  const arc=[]; let ang=aL;
+  for(let i=0;i<nseg;i++){const b=ang+da;
+    arc.push({type:'C',c1:P(m+headR*(Math.cos(ang)-kap*Math.sin(ang)),hc+headR*(Math.sin(ang)+kap*Math.cos(ang))),
+      c2:P(m+headR*(Math.cos(b)+kap*Math.sin(b)),hc+headR*(Math.sin(b)-kap*Math.cos(b))),p:P(m+headR*Math.cos(b),hc+headR*Math.sin(b))});ang=b;}
+  return [{type:'L',p:P(m-sw,0)},{type:'C',c1:P(m-sw,nl*0.95),c2:P(m-neckW*1.02,nl*0.5),p:P(m-neckW,nl)},
+    ...arc,{type:'C',c1:P(m+neckW*1.02,nl*0.5),c2:P(m+sw,nl*0.95),p:P(m+sw,0)}];
+}
+function wackyAngularTab(P,m,k,neck){                 // straight-segment dovetail (wider at top => interlocks)
+  const Th=k*0.30, Wtop=k*0.150, sb=Wtop*Math.max(0.34,Math.min(0.85,0.6*neck)), nl=k*0.05;
+  return [{type:'L',p:P(m-sb,0)},{type:'L',p:P(m-sb,nl)},{type:'L',p:P(m-Wtop,Th)},
+          {type:'L',p:P(m+Wtop,Th)},{type:'L',p:P(m+sb,nl)},{type:'L',p:P(m+sb,0)}];
+}
+function wackyEdge(A,B,s,opts){                        // segments from A (implicit) to B, tab in the middle
+  const dx=B[0]-A[0],dy=B[1]-A[1],L=Math.hypot(dx,dy);
+  if(L<1e-6) return [{type:'L',p:B}];
+  const ux=dx/L,uy=dy/L,nx=-uy,ny=ux;
+  const P=(af,pf)=>[A[0]+ux*af*L+nx*pf*L*s, A[1]+uy*af*L+ny*pf*L*s];
+  const m=0.5+(opts.jitPos||0);
+  const segs=(opts.style==='angular')?wackyAngularTab(P,m,opts.k,opts.neck):wackyRoundTab(P,m,opts.k,opts.neck,opts.round);
+  segs.push({type:'L',p:B});
+  return segs;
+}
+function buildWacky(o){
+  const rnd=mulberry32((o.seed|0)+1);
+  const W=o.w,H=o.h,cols=Math.max(2,o.cols|0),rows=Math.max(2,o.rows|0);
+  const vary=o.vary||0, warp=o.warp||0, style=o.style||'mixed';
+  // non-uniform column / row spacing driven by "size variety"
+  const cut=(n,total)=>{const a=[];let s=0;for(let i=0;i<n;i++){const v=1-vary*0.6+rnd()*vary*1.2;a.push(v);s+=v;}
+    const x=[0];let acc=0;for(let i=0;i<n;i++){acc+=a[i]/s*total;x.push(acc);}x[n]=total;return x;};
+  const X=cut(cols,W), Y=cut(rows,H);
+  const V=[];for(let i=0;i<=rows;i++){V.push([]);for(let j=0;j<=cols;j++)V[i].push([X[j],Y[i]]);}
+  const avgW=W/cols, avgH=H/rows;
+  for(let i=1;i<rows;i++)for(let j=1;j<cols;j++)
+    V[i][j]=[X[j]+(rnd()-0.5)*warp*avgW*0.9, Y[i]+(rnd()-0.5)*warp*avgH*0.9];
+  const pick=()=>{
+    if(style==='round')return{style:'round',round:1};
+    if(style==='angular')return{style:'angular',round:0};
+    if(style==='mixed')return rnd()<0.5?{style:'round',round:1}:{style:'angular',round:0};
+    return rnd()<0.5?{style:'round',round:rnd()}:{style:'angular',round:0};   // wild
+  };
+  const opt=()=>{const st=pick(),wild=(style==='wild');
+    return {...st, k:o.tab*(wild?(0.7+rnd()*0.7):1), neck:o.neck*(wild?(0.7+rnd()*0.7):1), jitPos:(rnd()-0.5)*0.06};};
+  const paths=[];
+  for(let i=1;i<rows;i++){const start=V[i][0].slice();const segs=[];
+    for(let j=0;j<cols;j++){wackyEdge(V[i][j],V[i][j+1],rnd()>0.5?1:-1,opt()).forEach(sg=>segs.push(sg));}
+    paths.push(lineToPath({start,segs}));}
+  for(let j=1;j<cols;j++){const start=V[0][j].slice();const segs=[];
+    for(let i=0;i<rows;i++){wackyEdge(V[i][j],V[i+1][j],rnd()>0.5?1:-1,opt()).forEach(sg=>segs.push(sg));}
+    paths.push(lineToPath({start,segs}));}
+  paths.push('M '+f(0)+' '+f(0)+' L '+f(W)+' '+f(0)+' L '+f(W)+' '+f(H)+' L '+f(0)+' '+f(H)+' Z');
+  return {paths, w:W, h:H, pieces:cols*rows, bpaths:[paths.length-1]};
+}
 function readShaped(){
   return {w:+$('s_w').value,h:+$('s_h').value,piece:+$('s_piece').value,shape:shapeSel,
     detail:+$('s_detail').value,text:$('s_text').value,font:$('s_font').value,tab:+$('s_tab').value/100,
@@ -993,6 +1108,7 @@ function render(){
     else if(tab==='shaped'){current=buildShaped(readShaped());}
     else if(tab==='mono'){current=buildMono(readMono());
       $('m_covernote').style.display=(current.coverOK===false)?'block':'none';}
+    else if(tab==='wacky'){current=buildWacky(readWacky());}
     else return;
     $('svgbox').innerHTML=svgString(current,false);
     $('meta_l').innerHTML='<b>'+current.w+' × '+current.h+'</b> mm';
@@ -1049,6 +1165,17 @@ $('m_frame').querySelectorAll('button').forEach(b=>b.addEventListener('click',()
   b.classList.add('on');monoMode=b.dataset.v;
   $('m_framerow').classList.toggle('hidden',monoMode!=='frame');render();}));
 
+/* wacky bindings */
+bindVal('k_cols','k_cols_v');bindVal('k_rows','k_rows_v');
+bindVal('k_warp','k_warp_v',v=>(v/100).toFixed(2));
+bindVal('k_vary','k_vary_v',v=>(v/100).toFixed(2));
+bindVal('k_tab','k_tab_v',v=>(v/100).toFixed(2));
+bindVal('k_neck','k_neck_v',v=>(v/100).toFixed(2));
+['k_w','k_h','k_seed'].forEach(id=>$(id).addEventListener('input',render));
+$('k_style').querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  $('k_style').querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on');wackyStyle=c.dataset.v;render();}));
+
 /* frame toggle */
 $('r_frame').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
   $('r_frame').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
@@ -1073,6 +1200,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   $('ctl-regular').classList.toggle('hidden',tab!=='regular');
   $('ctl-shaped').classList.toggle('hidden',tab!=='shaped');
   $('ctl-mono').classList.toggle('hidden',tab!=='mono');
+  $('ctl-wacky').classList.toggle('hidden',tab!=='wacky');
   $('soonwrap').classList.add('hidden');
   $('panel').classList.remove('hidden');
   $('stage').classList.remove('hidden');
@@ -1090,6 +1218,7 @@ $('stage_toggle').addEventListener('click',()=>{
 $('btn_rand').addEventListener('click',()=>{
   if(tab==='regular'){$('r_seed').value=Math.floor(Math.random()*99999);}
   else if(tab==='shaped'){$('s_seed').value=Math.floor(Math.random()*99999);}
+  else if(tab==='wacky'){$('k_seed').value=Math.floor(Math.random()*99999);}
   else{$('m_ox').value=Math.floor(Math.random()*180-90);$('m_ox_v').textContent=$('m_ox').value;
        $('m_oy').value=Math.floor(Math.random()*180-90);$('m_oy_v').textContent=$('m_oy').value;}
   render();});
