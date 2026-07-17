@@ -467,11 +467,11 @@
         </div>
         <div class="ctl" id="rays-ctl">
           <label for="in-rays">Spokes <output id="out-rays">24</output></label>
-          <input type="range" id="in-rays" min="6" max="90" step="1" value="24">
+          <input type="range" id="in-rays" min="6" max="140" step="1" value="24">
         </div>
         <div class="ctl hidden" id="raysper-ctl">
           <label for="in-raysper">Spokes per petal <output id="out-raysper">3</output></label>
-          <input type="range" id="in-raysper" min="1" max="7" step="1" value="3">
+          <input type="range" id="in-raysper" min="1" max="14" step="1" value="3">
         </div>
         <div class="ctl">
           <label for="in-hub">Centre disc <output id="out-hub">12 mm</output></label>
@@ -483,7 +483,7 @@
         </div>
         <div class="ctl">
           <label for="in-rayw">Spoke width <output id="out-rayw">2.2 mm</output></label>
-          <input type="range" id="in-rayw" min="0.8" max="8" step="0.2" value="2.2">
+          <input type="range" id="in-rayw" min="0.6" max="8" step="0.1" value="2.2">
         </div>
       </div>
       <div data-fs="outline" class="hidden">
@@ -625,6 +625,13 @@
         <label for="in-veins">Veins <output id="out-veins">12</output></label>
         <input type="range" id="in-veins" min="4" max="28" step="1" value="12">
       </div>
+      <div id="veinstyle-ctl">
+        <div class="mini-label">Vein pattern</div>
+        <div class="seg" role="group" aria-label="Vein pattern">
+          <button id="vs-fan" class="on">Fan</button>
+          <button id="vs-branch">Branch</button>
+        </div>
+      </div>
       <div class="ctl hidden" id="lthick-ctl">
         <label for="in-lthick">Outline thickness <output id="out-lthick">3 mm</output></label>
         <input type="range" id="in-lthick" min="1.5" max="12" step="0.5" value="3">
@@ -698,7 +705,7 @@
   </div>
 </main>
 
-<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh29, 17 July 2026</footer>
+<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh32, 17 July 2026</footer>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -898,23 +905,30 @@ function sampleRadii(st, n){
   } else {
     for (let i = 0; i < n; i++) radii[i] = Math.max(0, profile(i / n * TAU));
   }
-  // petal squareness: (in development — see notes) currently a gentle widening
-  // only; a full rounded-rectangle petal engine is planned for a later build.
+  // Petal squareness: reshape each petal from a rounded bump toward a squared,
+  // flat-tipped, straight-sided petal. sq=0 leaves the profile untouched; sq=1
+  // gives a broad flat tip with steep shoulders and deep valleys between petals.
   const sq = st.petalsquare || 0;
   if (sq > 0.001 && st.mode !== "leaf" && st.mode !== "fan" && (st.petals | 0) >= 2){
     const k = st.petals | 0;
     let rmin = Infinity, rmax = -Infinity;
     for (let i = 0; i < n; i++){ if (radii[i] < rmin) rmin = radii[i]; if (radii[i] > rmax) rmax = radii[i]; }
     const span = (rmax - rmin) || 1;
+    const plateau  = 0.32 + 0.46 * sq;      // fraction of the half-petal that is flat tip
+    const shoulder = 1.6 + 4.5 * sq;        // how steeply the sides drop to the valley
     const out = new Array(n);
     for (let i = 0; i < n; i++){
       const th = i / n * TAU;
-      const ph = ((th * k / TAU) % 1 + 1) % 1;
-      const edge = Math.abs(ph - 0.5) * 2;
-      const norm = (radii[i] - rmin) / span;
-      const plateau = edge < (0.55 + 0.25 * sq) ? 1 : Math.max(0, 1 - Math.pow((edge - (0.55 + 0.25 * sq)) / (1 - (0.55 + 0.25 * sq)), 0.8));
-      const gate = Math.min(1, Math.max(0, (norm - 0.2) / 0.8));
-      const target = rmin + span * Math.max(norm, plateau);
+      const ph = ((th * k / TAU) % 1 + 1) % 1;      // 0..1 across a petal (0/1 = valley, 0.5 = centre)
+      const t  = Math.abs(ph - 0.5) * 2;            // 0 centre → 1 valley
+      // squared cross-section: flat across the plateau, steep drop to the valley
+      let shape = t < plateau ? 1 : Math.pow(1 - (t - plateau) / (1 - plateau), shoulder);
+      // flat tip: a straight chord across the petal end is r = Rtip / cos(offset)
+      const dAng = (ph - 0.5) * (TAU / k);
+      const sec  = 1 / Math.max(0.55, Math.cos(dAng));
+      const tipR = rmax * (t < plateau ? Math.min(sec, 1 + 0.7 * sq) : 1);
+      const target = rmin + (tipR - rmin) * shape;
+      const gate = Math.min(1, Math.max(0, (radii[i] - rmin) / span / 0.45));  // reshape petal body, keep the base
       out[i] = Math.max(0, radii[i] * (1 - sq * gate) + target * (sq * gate));
     }
     return out;
@@ -1013,76 +1027,65 @@ function slopeFactor(radii, i, dth, cap){
 }
 
 function herringboneHoles(radii, opts, frame){
-  // Herringbone leaf veins. Local space: leaf points UP from the origin.
-  // We march up the midrib and cut a slanted window on each side, between
-  // consecutive side-veins. Windows are mapped back through frame().
+  // Pinnate ("branch") leaf veins: a central midrib with side veins angling up
+  // toward the tip, the windows between them cut away so the material left
+  // behind reads as a branching vein skeleton. Local space: leaf points UP.
   const holes = [];
   const minmat = opts.minmat;
-  const midribW = Math.max(opts.rayw, minmat) * 1.2;    // half-width of central midrib
-  const veinW   = Math.max(opts.rayw * 0.85, minmat);   // half-width of each side vein
-  const rim     = Math.max(opts.rim, minmat);           // leaf-edge border
-  const nPairs  = Math.max(3, opts.rays | 0);
-  const minWin  = Math.max(2, minmat * 1.2);
+  const midribHalf = Math.max(minmat * 0.6, opts.rayw * 0.45);   // half-width of the central midrib strip
+  const veinW      = Math.max(minmat, opts.rayw * 0.6);          // vein thickness between stacked windows (>= min material)
+  const rim        = Math.max(minmat, (opts.rim || 0) * 0.35);   // edge border (>= min material)
+  const nPairs     = Math.max(5, opts.rays | 0);
+  const minWin     = minmat;                                     // narrowest window that still reads as a vein gap
 
-  // Build a height→halfwidth table by scanning the polar profile once.
-  // A polar sample (th, r) with a = angle off UP maps to local:
-  //   alongUp = r*cos(a)   (height toward tip), across = r*sin(a)
-  const tipR = radii[radiusIdx(UP)];
-  const nB = 200;
-  const ys = [], ws = [];
-  for (let b = 0; b <= nB; b++){
-    // sample both sides, take the outline: for each height bucket keep max across
-  }
-  // Simpler robust approach: sample fine angles on ONE side, record (alongUp, across).
+  // scan one side of the silhouette: height up the leaf → half-width across
   const samplesUp = [], samplesW = [];
   for (let deg = 0.5; deg < 89.5; deg += 0.5){
-    const a = deg * Math.PI / 180;
-    const th = UP + a;                    // one side
-    const r = radii[radiusIdx(th)];
+    const a = deg * Math.PI / 180, th = UP + a, r = radii[radiusIdx(th)];
     if (r <= 0) continue;
-    samplesUp.push(r * Math.cos(a));
-    samplesW.push(r * Math.sin(a));
+    samplesUp.push(r * Math.cos(a)); samplesW.push(r * Math.sin(a));
   }
   if (samplesUp.length < 4) return holes;
-  const yMax = Math.max(...samplesUp);
+  // build a monotonic height→half-width table (heights ascending) and read it
+  // with linear interpolation; taking the min across a window's span keeps every
+  // slanted window safely inside the leaf edge
+  const pairs = samplesUp.map((u, i) => [u, samplesW[i]]).sort((a, b) => a[0] - b[0]);
+  const yMax = pairs[pairs.length - 1][0];
   const halfWidthAt = (y) => {
-    // linear interpolate across nearby samples by height
-    let best = 0;
-    for (let i = 0; i < samplesUp.length; i++){
-      if (Math.abs(samplesUp[i] - y) < yMax * 0.04) best = Math.max(best, samplesW[i]);
+    if (y <= pairs[0][0]) return pairs[0][1];
+    if (y >= pairs[pairs.length - 1][0]) return pairs[pairs.length - 1][1];
+    for (let i = 1; i < pairs.length; i++){
+      if (pairs[i][0] >= y){ const a = pairs[i-1], b = pairs[i]; const t = (y - a[0]) / ((b[0] - a[0]) || 1); return a[1] + (b[1] - a[1]) * t; }
     }
-    return best;
+    return pairs[pairs.length - 1][1];
   };
 
-  const yTip  = yMax - rim * 1.6;
-  const yBase = rim * 1.6;               // start a little above the origin/base
-  if (yTip - yBase < minWin * 3) return holes;
+  const yTip  = yMax - rim * 1.3;
+  const yBase = rim * 1.1;
+  if (yTip - yBase < minWin * 2) return holes;
+  const inX = midribHalf;                      // inner edge of the windows = edge of the midrib strip
+  // never pack more pairs than the height allows (each needs a window + a vein gap)
+  const nUse = Math.max(1, Math.min(nPairs, Math.floor((yTip - yBase) / (minWin + veinW))));
 
   for (const side of [1, -1]){
-    for (let p = 0; p < nPairs; p++){
-      const f0 = p / nPairs, f1 = (p + 1) / nPairs;
-      const yA = yBase + (yTip - yBase) * f0;   // lower (toward base)
-      const yB = yBase + (yTip - yBase) * f1;   // upper (toward tip)
-      const wA = halfWidthAt(yA), wB = halfWidthAt(yB);
-      const inX = midribW + veinW;
-      // outer edge clamped to the NARROWER of the two heights minus a full rim,
-      // so the slant can't breach the margin on wide leaves
-      const outerLimit = Math.min(wA, wB) - rim * 1.4;
-      const outA = Math.min(wA - rim, outerLimit), outB = Math.min(wB - rim, outerLimit);
-      if (Math.min(outA, outB) <= inX + minWin) continue;
-      const slant = (yB - yA) * 0.5;
+    for (let p = 0; p < nUse; p++){
+      const f0 = p / nUse, f1 = (p + 1) / nUse;
+      const yA = yBase + (yTip - yBase) * f0;   // toward base
+      const yB = yBase + (yTip - yBase) * f1;   // toward tip
+      // clamp the outer edge to the MINIMUM half-width sampled across the whole
+      // span the (slanted) window occupies, so it can never breach the margin
+      let spanMin = Infinity;
+      for (let s = 0; s <= 5; s++) spanMin = Math.min(spanMin, halfWidthAt(yA + (yB - yA) * (s / 5)));
+      const outer = spanMin - rim;
+      if (outer <= inX + minWin) continue;
+      const slant = (yB - yA) * 0.4;            // side veins rise toward the tip
       const poly = [
-        [side * inX,  yA + veinW],
-        [side * outA, yA + veinW + slant],
-        [side * outB, yB - veinW + slant * 0.15],
-        [side * inX,  yB - veinW]
+        [side * inX,   yA + veinW * 0.5],
+        [side * outer, yA + veinW * 0.5 + slant],
+        [side * outer, yB - veinW * 0.5 + slant * 0.3],
+        [side * inX,   yB - veinW * 0.5]
       ];
-      const mapped = poly.map(([x, y]) => {
-        const r = Math.hypot(x, y);
-        const th = UP + Math.atan2(x, y);
-        return frame(th, r);
-      });
-      holes.push(mapped);
+      holes.push(poly.map(([x, y]) => { const r = Math.hypot(x, y); const th = UP + Math.atan2(x, y); return frame(th, r); }));
     }
   }
   return holes;
@@ -1094,11 +1097,14 @@ function latticeHoles(radii, opts, frame){
   const minmat = opts.minmat / sq;
   const hub = opts.hub / 2;
   const rim = Math.max(opts.rim, minmat);
-  const rayw = Math.max(opts.rayw, minmat);
-  const N = opts.rays;
+  const rayw = Math.max(opts.rayw, minmat);            // spoke width at the hub (>= min material)
+  const N = Math.max(3, opts.rays | 0);
   const minWindow = Math.max(2, opts.minmat * 1.2) / sq;
+  // spoke angular half-width. Based on the hub so a spoke is `rayw` wide there;
+  // capped low (28% of a sector) so spokes stay slim and windows open up wide,
+  // instead of the spoke eating up to ~half the sector as before.
   let alpha = (rayw / 2) / Math.max(hub, 2);
-  alpha = Math.min(alpha, (TAU / N) * 0.42);
+  alpha = Math.min(alpha, (TAU / N) * 0.28);
   const dth = TAU / SAMPLES;
 
   const rEff = new Array(SAMPLES);
@@ -1106,23 +1112,31 @@ function latticeHoles(radii, opts, frame){
 
   const stepsPerGap = Math.max(10, Math.ceil(SAMPLES / N));
   for (let j = 0; j < N; j++){
-    const gA = (j / N) * TAU + alpha;
-    const gB = ((j + 1) / N) * TAU - alpha;
-    if (gB <= gA) continue;
+    // taper the spoke to a roughly CONSTANT physical width `rayw`: at the rim the
+    // angular half-width must be smaller (aOut) than at the hub (aIn). rayw >=
+    // min material, so the spoke is always cuttable.
+    const base = (j / N) * TAU;
+    const rRef = rEff[radiusIdx(base + Math.PI / N)];   // radius near the rim, sector centre
+    const aIn = alpha;
+    const aOut = Math.min(alpha, (rayw / 2) / Math.max(rRef, hub + 1));
     let run = [];
     const flush = () => {
       if (run.length >= 3){
         const pts = [];
         for (let s = 0; s < run.length; s++) pts.push(frame(run[s][0], run[s][1]));
-        for (let s = run.length - 1; s >= 0; s--) pts.push(frame(run[s][0], hub));
+        for (let s = run.length - 1; s >= 0; s--) pts.push(frame(run[s][2], hub));
         holes.push(pts);
       }
       run = [];
     };
     for (let s = 0; s <= stepsPerGap; s++){
-      const th = gA + (gB - gA) * (s / stepsPerGap);
-      const ro = rEff[radiusIdx(th)];
-      if (ro >= hub + minWindow) run.push([th, ro]);
+      const f = s / stepsPerGap;
+      // outer edge uses the smaller (rim) spoke half-width → wide window at the rim
+      const thO = base + aOut + (TAU / N - 2 * aOut) * f;
+      // inner edge (at hub) uses the larger spoke half-width → spoke solid at centre
+      const thI = base + aIn + (TAU / N - 2 * aIn) * f;
+      const ro = rEff[radiusIdx(thO)];
+      if (ro >= hub + minWindow) run.push([thO, ro, thI]);
       else flush();
     }
     flush();
@@ -1220,6 +1234,7 @@ function flowerHeadAt(st, scale, tip, seedBump){
                 a1: st.a1, a2: st.a2, a3: st.a3, depth: st.depth,
                 n1: st.n1, n2: st.n2, n3: st.n3,
                 spread: st.spread, fwidth: st.fwidth, ftip: st.ftip, fbase: st.fbase,
+                petalsquare: st.petalsquare,
                 nat: st.natF, seed: (st.seedF || 1) + (st.natF > 0.001 ? seedBump : 0) };
   const radii = sampleRadii(fst);
   const sq = Math.max(0.25, Math.cos((st.ftilt || 0) * Math.PI / 180));
@@ -1688,10 +1703,17 @@ function singleBlade(st, size, ox, oy, dir, natAmt, seedBump, bendSign){
   const loops = [outer];
   let holes = 0;
   if (st.lstyle === "veins"){
-    const hs = latticeHoles(featureRadii,
-      { hub: Math.max(4, size * 0.14), rim: Math.max(2.5, st.minmat * 1.6),
-        rayw: Math.max(1.6, st.minmat), rays: Math.max(4, st.veins | 0),
-        minmat: st.minmat, squash: sq }, frame);
+    let hs;
+    if (st.veinstyle === "branch"){
+      hs = herringboneHoles(featureRadii,
+        { rayw: Math.max(1.4, st.minmat), rays: Math.max(4, st.veins | 0),
+          rim: Math.max(2.2, st.minmat * 1.5), minmat: st.minmat }, frame);
+    } else {
+      hs = latticeHoles(featureRadii,
+        { hub: Math.max(4, size * 0.14), rim: Math.max(2.5, st.minmat * 1.6),
+          rayw: Math.max(1.6, st.minmat), rays: Math.max(4, st.veins | 0),
+          minmat: st.minmat, squash: sq }, frame);
+    }
     holes = hs.length;
     loops.push(...hs);
   } else if (st.lstyle === "outline"){
@@ -3267,6 +3289,7 @@ if (typeof document !== "undefined" && document.getElementById){
   let fstyle = "lattice";
   let latlayout = "free";
   let lstyle = "veins";
+  let veinstyle = "fan";
   let ltype = "blade";
   let xmode = "branch";
   let leavesfront = false;
@@ -3278,7 +3301,7 @@ if (typeof document !== "undefined" && document.getElementById){
   const hist = { F: [], L: [], S: [] };
 
   function readState(){
-    const st = { mode, blend, fstyle, latlayout, lstyle, ltype, xmode, arrange, leavesfront, subfrond, lobesOn,
+    const st = { mode, blend, fstyle, latlayout, lstyle, veinstyle, ltype, xmode, arrange, leavesfront, subfrond, lobesOn,
                  seedF: seeds.F, seedL: seeds.L, seedS: seeds.S };
     for (const s of sliders) st[s] = parseFloat($("in-" + s).value);
     if (!lobesOn) st.lobes = 0;
@@ -3385,6 +3408,9 @@ if (typeof document !== "undefined" && document.getElementById){
     $("ls-veins").classList.toggle("on", lstyle === "veins");
     $("ls-outline").classList.toggle("on", lstyle === "outline");
     $("veins-ctl").classList.toggle("hidden", lstyle !== "veins");
+    $("veinstyle-ctl").classList.toggle("hidden", lstyle !== "veins");
+    $("vs-fan").classList.toggle("on", veinstyle === "fan");
+    $("vs-branch").classList.toggle("on", veinstyle === "branch");
     $("lthick-ctl").classList.toggle("hidden", lstyle !== "outline");
     $("ar-alt").classList.toggle("on", arrange === "alternate");
     $("ar-opp").classList.toggle("on", arrange === "opposite");
@@ -3448,7 +3474,7 @@ if (typeof document !== "undefined" && document.getElementById){
     if (st.leaves > 0) bits.push(st.leaves + " leaves");
     bits.push(plant.holeCount > 0 ? plant.holeCount + " windows · min material " + st.minmat.toFixed(1) + " mm" : "solid");
     if (st.ltype === "frond" && st.leaves > 0 && (st.lscroll || 0) > 0.02) bits.push("fronds curling ↻");
-    bits.push("v.fh29");
+    bits.push("v.fh32");
     $("statline").textContent = bits.join(" · ");
   }
 
@@ -3473,6 +3499,8 @@ if (typeof document !== "undefined" && document.getElementById){
   $("ls-solid").addEventListener("click", () => { lstyle = "solid"; showGroups(); render(); });
   $("ls-veins").addEventListener("click", () => { lstyle = "veins"; showGroups(); render(); });
   $("ls-outline").addEventListener("click", () => { lstyle = "outline"; showGroups(); render(); });
+  $("vs-fan").addEventListener("click", () => { veinstyle = "fan"; showGroups(); render(); });
+  $("vs-branch").addEventListener("click", () => { veinstyle = "branch"; showGroups(); render(); });
   $("ar-alt").addEventListener("click", () => { arrange = "alternate"; showGroups(); render(); });
   $("ar-opp").addEventListener("click", () => { arrange = "opposite"; showGroups(); render(); });
   $("ar-wild").addEventListener("click", () => { arrange = "wild"; showGroups(); render(); });
@@ -3516,6 +3544,7 @@ if (typeof document !== "undefined" && document.getElementById){
     if (p.ltype) ltype = p.ltype;
     if (p.subfrond != null) subfrond = p.subfrond;
     if (p.lobesOn != null) lobesOn = !!p.lobesOn;
+    if (p.veinstyle) veinstyle = p.veinstyle;
     if (p.xmode) xmode = p.xmode;
     for (const key in p){
       if (key === "mode") continue;
@@ -3709,7 +3738,7 @@ if (typeof document !== "undefined" && document.getElementById){
 
   function loadState(st){
     mode = st.mode; blend = st.blend; fstyle = st.fstyle; latlayout = st.latlayout;
-    lstyle = st.lstyle; ltype = st.ltype || "blade"; xmode = st.xmode || "branch"; arrange = st.arrange;
+    lstyle = st.lstyle; veinstyle = st.veinstyle || "fan"; ltype = st.ltype || "blade"; xmode = st.xmode || "branch"; arrange = st.arrange;
     leavesfront = !!st.leavesfront;
     subfrond = st.subfrond ? 1 : 0;
     lobesOn = !!st.lobesOn || (st.lobes | 0) > 0;
