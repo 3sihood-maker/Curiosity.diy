@@ -443,14 +443,41 @@
         <label for="in-calyx">Calyx (sepal cup under the bloom) <output id="out-calyx">off</output></label>
         <input type="range" id="in-calyx" min="0" max="0.4" step="0.01" value="0">
       </div>
-      <div class="mini-label">Advanced · stamens</div>
-      <div class="ctl">
-        <label for="in-stamens">Stamens <output id="out-stamens">0</output></label>
-        <input type="range" id="in-stamens" min="0" max="12" step="1" value="0">
-      </div>
-      <div class="ctl hidden" id="stamlen-ctl">
-        <label for="in-stamlen">Stamen length <output id="out-stamlen">0.75</output></label>
-        <input type="range" id="in-stamlen" min="0.3" max="1.4" step="0.05" value="0.75">
+      <div class="lobebox">
+        <button class="toggle lobetab" id="tog-stamens">Stamens</button>
+        <div id="stamens-section" class="lobepanel hidden">
+          <div class="lobehint">Filaments from the flower's centre, each tipped with an anther dot.</div>
+          <div class="ctl">
+            <label for="in-stamens">Count <output id="out-stamens">0</output></label>
+            <input type="range" id="in-stamens" min="0" max="24" step="1" value="0">
+          </div>
+          <div class="ctl">
+            <label for="in-stamlen">Length <output id="out-stamlen">0.75</output></label>
+            <input type="range" id="in-stamlen" min="0.2" max="2.2" step="0.05" value="0.75">
+          </div>
+          <div class="ctl">
+            <label for="in-stamw">Width <output id="out-stamw">1.6 mm</output></label>
+            <input type="range" id="in-stamw" min="0.8" max="10" step="0.1" value="1.6">
+          </div>
+          <div class="ctl">
+            <label for="in-stamvar">Variety (uniform → varied) <output id="out-stamvar">0.00</output></label>
+            <input type="range" id="in-stamvar" min="0" max="1" step="0.05" value="0">
+          </div>
+          <div>
+            <div class="mini-label">Spread</div>
+            <div class="seg" role="group" aria-label="Stamen spread">
+              <button id="sa-fan" class="on">Fan</button>
+              <button id="sa-full">Full circle</button>
+            </div>
+          </div>
+          <div>
+            <div class="mini-label">Style</div>
+            <div class="seg" role="group" aria-label="Stamen style">
+              <button id="sm-raised" class="on">Raised</button>
+              <button id="sm-cut">Cut-out</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="mini-label">Flower cut style</div>
@@ -705,7 +732,7 @@
   </div>
 </main>
 
-<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh32, 17 July 2026</footer>
+<footer>The Infinite Flower Creator · a Curiosity.diy tool · SVG exports in real millimetres, cut lines in red · build: fiddlehead fh34, 17 July 2026</footer>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -1180,28 +1207,45 @@ function outlineInner(radii, thick, minmat){
 
 /* ---------- heads (flower or leaf) ---------- */
 
-/* Stamens: thin filaments fanning from the flower centre, each tipped with
-   an anther dot, built in the head's local frame so tilt and spin carry them. */
-function stamenParts(st, R, mapXY){
+/* Stamens: thin filaments from the flower centre, each tipped with an anther
+   dot, built in the head's local frame so tilt and spin carry them. Spread is a
+   fan or a full 360° burst; style is raised (positive parts) or cut-out (holes
+   etched into the bloom). Cut filaments are length-clamped to stay inside. */
+function stamenParts(st, R, mapXY, innerR){
   const n = st.stamens | 0;
-  if (n < 1) return [];
-  const L = (st.stamlen || 0.75) * R;
-  const w = Math.max(st.minmat || 1.6, 1.2);
-  const arc = n > 1 ? 2.3 : 0;
-  const out = [];
+  if (n < 1) return { parts: [], holes: [] };
+  const cut  = st.stammode === "cut";
+  const full = st.stamarc === "full";
+  // width: raised filaments must be >= min material; cut slots can be a touch finer
+  const w0 = cut ? Math.max(st.stamw || 1.4, st.minmat * 0.85)
+                 : Math.max(st.stamw || 1.6, st.minmat, 1.0);
+  const L0 = (st.stamlen || 0.75) * R;
+  const vary = st.stamvar || 0;
+  const rng = mulberry32(((st.seed || 1) + 4242) >>> 0);
+  const arc = full ? TAU : (n > 1 ? 2.3 : 0);
+  const parts = [], holes = [];
+  const start = R * 0.06;
   for (let i = 0; i < n; i++){
-    const a = n > 1 ? -arc / 2 + arc * (i / (n - 1)) : 0;
-    // integrate a gently outward-bowing filament in local coords (up = -y)
+    // per-stamen variety: length, width and a little angle jitter
+    const lv = 1 + vary * (rng() * 2 - 1) * 0.7;
+    const wv = 1 + vary * (rng() * 2 - 1) * 0.55;
+    const av = vary * (rng() * 2 - 1) * 0.14;
+    let L = Math.max(R * 0.1, L0 * lv);
+    const w = Math.max(cut ? st.minmat * 0.7 : st.minmat, w0 * wv);
+    const dotR = Math.max(cut ? 1.1 : 1.6, R * 0.03, w * 0.75);   // anther grows with width
+    if (cut && innerR) L = Math.min(L, Math.max(R * 0.15, innerR - dotR - w));
+    let a, baseH;
+    if (full){ baseH = -Math.PI / 2 + (i / n) * TAU + av; a = 0; }
+    else { a = n > 1 ? -arc / 2 + arc * (i / (n - 1)) : 0; baseH = -Math.PI / 2 + a + av; }
     const steps = 12;
     const pts = [];
-    let x = 0, y = -R * 0.1, h = -Math.PI / 2 + a;
+    let x = Math.cos(baseH) * start, y = Math.sin(baseH) * start, h = baseH;
     for (let s = 0; s <= steps; s++){
       pts.push({ x, y, h });
-      h += (a * 0.5) / steps;
+      h += full ? 0 : (a * 0.5) / steps;      // fan bows gently; full burst is radial
       x += (L / steps) * Math.cos(h);
       y += (L / steps) * Math.sin(h);
     }
-    // thin strip
     const left = [], right = [];
     for (let s = 0; s < pts.length; s++){
       const ww = (w * (1 - 0.3 * s / steps)) / 2;
@@ -1209,18 +1253,14 @@ function stamenParts(st, R, mapXY){
       left.push(mapXY(pts[s].x + ww * nx, pts[s].y + ww * ny));
       right.push(mapXY(pts[s].x - ww * nx, pts[s].y - ww * ny));
     }
-    out.push({ loops: [left.concat(right.reverse())], colour: "bloom" });
-    // anther dot
+    const strip = left.concat(right.reverse());
     const end = pts[pts.length - 1];
-    const ar = Math.max(1.8, R * 0.04);
     const dot = [];
-    for (let k = 0; k < 24; k++){
-      const t = k / 24 * TAU;
-      dot.push(mapXY(end.x + ar * Math.cos(t), end.y + ar * Math.sin(t)));
-    }
-    out.push({ loops: [dot], colour: "bloom" });
+    for (let k = 0; k < 24; k++){ const t = k / 24 * TAU; dot.push(mapXY(end.x + dotR * Math.cos(t), end.y + dotR * Math.sin(t))); }
+    if (cut){ holes.push(strip); holes.push(dot); }
+    else { parts.push({ loops: [strip], colour: "bloom" }); parts.push({ loops: [dot], colour: "bloom" }); }
   }
-  return out;
+  return { parts, holes };
 }
 
 /* Places a flower head relative to a stem tip. Solid heads sit centred on
@@ -1274,7 +1314,13 @@ function flowerHeadAt(st, scale, tip, seedBump){
       const lx = xs, ly = ys * sq;
       return [ox + lx * cr - ly * sr, oy + lx * sr + ly * cr];
     };
-    parts.push(...stamenParts(st, st.dia * scale / 2, mapXY));
+    // safe inner radius (min petal reach, rim-inset) so cut-out stamens stay in
+    let rMin = Infinity;
+    for (let i = 0; i < radii.length; i++) if (radii[i] < rMin) rMin = radii[i];
+    const innerR = rMin * sq - Math.max(st.rim, st.minmat);
+    const sres = stamenParts(st, st.dia * scale / 2, mapXY, innerR);
+    parts.push(...sres.parts);
+    if (sres.holes.length){ parts[0].loops.push(...sres.holes); holes += sres.holes.length; }
   }
   return { parts, holes, ext };
 }
@@ -3277,7 +3323,7 @@ if (typeof document !== "undefined" && document.getElementById){
 
   const $ = id => document.getElementById(id);
   const sliders = ["dia","petals","petalsquare","sharp","valley","a1","a2","a3","depth","n1","n2","n3",
-                   "spread","fwidth","ftip","fbase","ftilt","fspin","mix","calyx","stamens","stamlen",
+                   "spread","fwidth","ftip","fbase","ftilt","fspin","mix","calyx","stamens","stamlen","stamw","stamvar",
                    "lwidth","ltip","lobes","lobedepth","ltilt","lbend","leafwave",
                    "natF","natL","natS",
                    "stemlen","stemw","curve","bend","branchscale","declutter","smoothing",
@@ -3290,6 +3336,9 @@ if (typeof document !== "undefined" && document.getElementById){
   let latlayout = "free";
   let lstyle = "veins";
   let veinstyle = "fan";
+  let stamarc = "fan";
+  let stammode = "raised";
+  let stamensOpen = false;
   let ltype = "blade";
   let xmode = "branch";
   let leavesfront = false;
@@ -3301,7 +3350,7 @@ if (typeof document !== "undefined" && document.getElementById){
   const hist = { F: [], L: [], S: [] };
 
   function readState(){
-    const st = { mode, blend, fstyle, latlayout, lstyle, veinstyle, ltype, xmode, arrange, leavesfront, subfrond, lobesOn,
+    const st = { mode, blend, fstyle, latlayout, lstyle, veinstyle, stamarc, stammode, ltype, xmode, arrange, leavesfront, subfrond, lobesOn,
                  seedF: seeds.F, seedL: seeds.L, seedS: seeds.S };
     for (const s of sliders) st[s] = parseFloat($("in-" + s).value);
     if (!lobesOn) st.lobes = 0;
@@ -3322,7 +3371,7 @@ if (typeof document !== "undefined" && document.getElementById){
     set("spread", v("spread") + "°"); set("fwidth", f2("fwidth")); set("ftip", f1("ftip")); set("fbase", f2("fbase"));
     set("ftilt", v("ftilt") + "°"); set("fspin", v("fspin") + "°");
     set("calyx", (+v("calyx")) < 0.01 ? "off" : f2("calyx"));
-    set("stamens", v("stamens")); set("stamlen", f2("stamlen"));
+    set("stamens", v("stamens")); set("stamlen", f2("stamlen")); set("stamw", f1("stamw") + " mm"); set("stamvar", f2("stamvar"));
     set("lscroll", f2("lscroll"));
     set("lsizevar", f2("lsizevar"));
     set("lscatter", f2("lscatter")); set("leaflets", v("leaflets")); set("lpos", f2("lpos"));
@@ -3397,7 +3446,12 @@ if (typeof document !== "undefined" && document.getElementById){
     $("in-blades").disabled = !!subfrond;
     $("in-bladespread").disabled = !!subfrond;
     ["ls-solid","ls-veins","ls-outline"].forEach(id => $(id).classList.toggle("disabled-look", ltype === "frond"));
-    $("stamlen-ctl").classList.toggle("hidden", parseInt($("in-stamens").value) === 0);
+    $("tog-stamens").classList.toggle("on", stamensOpen);
+    $("stamens-section").classList.toggle("hidden", !stamensOpen);
+    $("sa-fan").classList.toggle("on", stamarc === "fan");
+    $("sa-full").classList.toggle("on", stamarc === "full");
+    $("sm-raised").classList.toggle("on", stammode === "raised");
+    $("sm-cut").classList.toggle("on", stammode === "cut");
     ["branch","along","cluster"].forEach(m => {
       const map = { branch:"xm-branch", along:"xm-along", cluster:"xm-cluster" };
       $(map[m]).classList.toggle("on", xmode === m);
@@ -3474,7 +3528,7 @@ if (typeof document !== "undefined" && document.getElementById){
     if (st.leaves > 0) bits.push(st.leaves + " leaves");
     bits.push(plant.holeCount > 0 ? plant.holeCount + " windows · min material " + st.minmat.toFixed(1) + " mm" : "solid");
     if (st.ltype === "frond" && st.leaves > 0 && (st.lscroll || 0) > 0.02) bits.push("fronds curling ↻");
-    bits.push("v.fh32");
+    bits.push("v.fh34");
     $("statline").textContent = bits.join(" · ");
   }
 
@@ -3501,6 +3555,11 @@ if (typeof document !== "undefined" && document.getElementById){
   $("ls-outline").addEventListener("click", () => { lstyle = "outline"; showGroups(); render(); });
   $("vs-fan").addEventListener("click", () => { veinstyle = "fan"; showGroups(); render(); });
   $("vs-branch").addEventListener("click", () => { veinstyle = "branch"; showGroups(); render(); });
+  $("tog-stamens").addEventListener("click", () => { stamensOpen = !stamensOpen; showGroups(); });
+  $("sa-fan").addEventListener("click", () => { stamarc = "fan"; showGroups(); render(); });
+  $("sa-full").addEventListener("click", () => { stamarc = "full"; showGroups(); render(); });
+  $("sm-raised").addEventListener("click", () => { stammode = "raised"; showGroups(); render(); });
+  $("sm-cut").addEventListener("click", () => { stammode = "cut"; showGroups(); render(); });
   $("ar-alt").addEventListener("click", () => { arrange = "alternate"; showGroups(); render(); });
   $("ar-opp").addEventListener("click", () => { arrange = "opposite"; showGroups(); render(); });
   $("ar-wild").addEventListener("click", () => { arrange = "wild"; showGroups(); render(); });
@@ -3545,6 +3604,8 @@ if (typeof document !== "undefined" && document.getElementById){
     if (p.subfrond != null) subfrond = p.subfrond;
     if (p.lobesOn != null) lobesOn = !!p.lobesOn;
     if (p.veinstyle) veinstyle = p.veinstyle;
+    if (p.stamarc) stamarc = p.stamarc;
+    if (p.stammode) stammode = p.stammode;
     if (p.xmode) xmode = p.xmode;
     for (const key in p){
       if (key === "mode") continue;
@@ -3738,7 +3799,7 @@ if (typeof document !== "undefined" && document.getElementById){
 
   function loadState(st){
     mode = st.mode; blend = st.blend; fstyle = st.fstyle; latlayout = st.latlayout;
-    lstyle = st.lstyle; veinstyle = st.veinstyle || "fan"; ltype = st.ltype || "blade"; xmode = st.xmode || "branch"; arrange = st.arrange;
+    lstyle = st.lstyle; veinstyle = st.veinstyle || "fan"; stamarc = st.stamarc || "fan"; stammode = st.stammode || "raised"; ltype = st.ltype || "blade"; xmode = st.xmode || "branch"; arrange = st.arrange;
     leavesfront = !!st.leavesfront;
     subfrond = st.subfrond ? 1 : 0;
     lobesOn = !!st.lobesOn || (st.lobes | 0) > 0;
