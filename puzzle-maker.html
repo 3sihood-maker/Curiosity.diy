@@ -318,6 +318,22 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
       </div>
 
       <div class="group">
+        <p class="glabel">Layout</p>
+        <div class="chips" id="k_layout">
+          <div class="chip on" data-v="organic">Organic (Voronoi)</div>
+          <div class="chip" data-v="grid">Warped grid</div>
+        </div>
+      </div>
+
+      <div id="k_orgonly" class="group">
+        <p class="glabel">Organic pieces</p>
+        <div class="row"><label>Piece ~mm</label><input type="range" id="k_piece" min="14" max="70" value="26"><span class="val" id="k_piece_v">26</span></div>
+        <div class="row"><label>Chaos</label><input type="range" id="k_chaos" min="0" max="100" value="35"><span class="val" id="k_chaos_v">0.35</span></div>
+        <div class="row"><label>Rounding</label><input type="range" id="k_round" min="0" max="100" value="0"><span class="val" id="k_round_v">0.00</span></div>
+      </div>
+
+      <div id="k_gridonly" class="hidden">
+      <div class="group">
         <p class="glabel">Piece grid</p>
         <div class="row"><label>Columns</label><input type="range" id="k_cols" min="2" max="16" value="6"><span class="val" id="k_cols_v">6</span></div>
         <div class="row"><label>Rows</label><input type="range" id="k_rows" min="2" max="16" value="5"><span class="val" id="k_rows_v">5</span></div>
@@ -328,6 +344,7 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
         <div class="row"><label>Warp</label><input type="range" id="k_warp" min="0" max="90" value="45"><span class="val" id="k_warp_v">0.45</span></div>
         <div class="row"><label>Size variety</label><input type="range" id="k_vary" min="0" max="100" value="55"><span class="val" id="k_vary_v">0.55</span></div>
       </div>
+      </div><!-- /k_gridonly -->
 
       <div class="group">
         <p class="glabel">Tab style</p>
@@ -345,6 +362,15 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
         <div class="row"><label>Tab size</label><input type="range" id="k_tab" min="30" max="110" value="70"><span class="val" id="k_tab_v">0.70</span></div>
         <div class="row"><label>Neck</label><input type="range" id="k_neck" min="60" max="150" value="100"><span class="val" id="k_neck_v">1.00</span></div>
         <div class="row"><label>Seed</label><input type="number" id="k_seed" value="7" min="0" style="flex:1"></div>
+      </div>
+
+      <div class="group">
+        <p class="glabel">Outline</p>
+        <div class="seg" id="k_frame">
+          <button data-v="0" class="on">One outline</button>
+          <button data-v="1">Framed (tray)</button>
+        </div>
+        <div class="row hidden" id="k_framerow" style="margin-top:12px"><label>Frame (mm)</label><input type="range" id="k_fw" min="4" max="40" value="14"><span class="val" id="k_fw_v">14</span></div>
       </div>
 
       <p class="hint" style="color:var(--rust-deep)">Wonky layouts can crowd — if the overlap warning shows, nudge Tab size or Warp down, or hit Randomise for a fresh seed.</p>
@@ -383,7 +409,7 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
 
 <footer>
   <span>curiosity.diy · the curious puzzle maker</span>
-  <span id="foot_ver">v0.8 · sections 1–4 live · build: sawtooth sp08 · 18 Jul 2026 — if this line is missing you're viewing a cached copy</span>
+  <span id="foot_ver">v1.2 · sections 1–4 live · build: sawtooth sp12 · 18 Jul 2026 — if this line is missing you're viewing a cached copy</span>
 </footer>
 
 <script>
@@ -476,6 +502,18 @@ function lineToPolyline(line,per){                // sample bezier line to point
   return pts;
 }
 const f=n=>{const r=Math.round(n*1000)/1000;return (Object.is(r,-0)?0:r);};
+// rectangle outline with slightly rounded corners (child-safe: no sharp points)
+function roundRectPath(x,y,w,h,r){
+  r=Math.max(0,Math.min(r, w/2-0.5, h/2-0.5));
+  if(r<=0.05) return 'M '+f(x)+' '+f(y)+' L '+f(x+w)+' '+f(y)+' L '+f(x+w)+' '+f(y+h)+' L '+f(x)+' '+f(y+h)+' Z';
+  const x2=x+w, y2=y+h;
+  return 'M '+f(x+r)+' '+f(y)+
+    ' L '+f(x2-r)+' '+f(y)+' Q '+f(x2)+' '+f(y)+' '+f(x2)+' '+f(y+r)+
+    ' L '+f(x2)+' '+f(y2-r)+' Q '+f(x2)+' '+f(y2)+' '+f(x2-r)+' '+f(y2)+
+    ' L '+f(x+r)+' '+f(y2)+' Q '+f(x)+' '+f(y2)+' '+f(x)+' '+f(y2-r)+
+    ' L '+f(x)+' '+f(y+r)+' Q '+f(x)+' '+f(y)+' '+f(x+r)+' '+f(y)+' Z';
+}
+const cornerR=(W,H)=>Math.min(3, Math.min(W,H)/16);   // very slight radius, scales down on tiny sheets
 
 /* ---------- boundary shapes (unit, then fitted) ---------- */
 function shapePoly(name,detail,n){
@@ -596,14 +634,14 @@ function polyToPath(pl,close){let d='M '+f(pl[0][0])+' '+f(pl[0][1]);
    BUILD  ->  {paths:[d,...], w, h, pieces}
 =================================================================*/
 function buildRegular(o){
-  const paths=[]; const rnd=mulberry32((o.seed|0)+1);
+  const paths=[]; const rnd=mulberry32((o.seed|0)+1); const cr=cornerR(o.w,o.h);
   if(o.frame){
     const fw=o.fw, iw=o.w-2*fw, ih=o.h-2*fw;
-    paths.push('M 0 0 L '+f(o.w)+' 0 L '+f(o.w)+' '+f(o.h)+' L 0 '+f(o.h)+' Z');   // outer
-    paths.push('M '+f(fw)+' '+f(fw)+' L '+f(fw+iw)+' '+f(fw)+' L '+f(fw+iw)+' '+f(fw+ih)+' L '+f(fw)+' '+f(fw+ih)+' Z'); // inner
+    paths.push(roundRectPath(0,0,o.w,o.h,cr));   // outer
+    paths.push(roundRectPath(fw,fw,iw,ih,cr));   // inner
     gridLines(fw,fw,iw,ih,o.cols,o.rows,o.tab,o.neck,o.jit,rnd,o.round).forEach(l=>paths.push(lineToPath(l)));
   }else{
-    paths.push('M 0 0 L '+f(o.w)+' 0 L '+f(o.w)+' '+f(o.h)+' L 0 '+f(o.h)+' Z');
+    paths.push(roundRectPath(0,0,o.w,o.h,cr));
     gridLines(0,0,o.w,o.h,o.cols,o.rows,o.tab,o.neck,o.jit,rnd,o.round).forEach(l=>paths.push(lineToPath(l)));
   }
   return {paths,w:o.w,h:o.h,pieces:o.cols*o.rows,bpaths:(o.frame?[0,1]:[0])};
@@ -1027,10 +1065,12 @@ function readMono(){
     mode:monoMode,frame:+$('m_fw').value,APER:APER};
 }
 function buildMono(o){return aperPuzzle(o);}
-let wackyStyle='mixed';
+let wackyStyle='mixed', wackyLayout='organic', wackyFrame=0;
 function readWacky(){
   return {w:+$('k_w').value,h:+$('k_h').value,cols:+$('k_cols').value,rows:+$('k_rows').value,
     warp:+$('k_warp').value/100,vary:+$('k_vary').value/100,style:wackyStyle,
+    piece:+$('k_piece').value,chaos:+$('k_chaos').value/100,round:+$('k_round').value/100,
+    frame:wackyFrame,fw:+$('k_fw').value,
     tab:+$('k_tab').value/100,neck:+$('k_neck').value/100,seed:+$('k_seed').value};
 }
 
@@ -1068,15 +1108,17 @@ function wackyEdge(A,B,s,opts){                        // segments from A (impli
 function buildWacky(o){
   const rnd=mulberry32((o.seed|0)+1);
   const W=o.w,H=o.h,cols=Math.max(2,o.cols|0),rows=Math.max(2,o.rows|0);
+  const fw=o.frame?Math.max(2,Math.min(o.fw||14,Math.min(W,H)/2-6)):0;
+  const WW=W-2*fw, HH=H-2*fw, ox=fw, oy=fw;
   const vary=o.vary||0, warp=o.warp||0, style=o.style||'mixed';
   // non-uniform column / row spacing driven by "size variety"
   const cut=(n,total)=>{const a=[];let s=0;for(let i=0;i<n;i++){const v=1-vary*0.6+rnd()*vary*1.2;a.push(v);s+=v;}
     const x=[0];let acc=0;for(let i=0;i<n;i++){acc+=a[i]/s*total;x.push(acc);}x[n]=total;return x;};
-  const X=cut(cols,W), Y=cut(rows,H);
-  const V=[];for(let i=0;i<=rows;i++){V.push([]);for(let j=0;j<=cols;j++)V[i].push([X[j],Y[i]]);}
-  const avgW=W/cols, avgH=H/rows;
+  const X=cut(cols,WW), Y=cut(rows,HH);
+  const V=[];for(let i=0;i<=rows;i++){V.push([]);for(let j=0;j<=cols;j++)V[i].push([X[j]+ox,Y[i]+oy]);}
+  const avgW=WW/cols, avgH=HH/rows;
   for(let i=1;i<rows;i++)for(let j=1;j<cols;j++)
-    V[i][j]=[X[j]+(rnd()-0.5)*warp*avgW*0.9, Y[i]+(rnd()-0.5)*warp*avgH*0.9];
+    V[i][j]=[X[j]+ox+(rnd()-0.5)*warp*avgW*0.9, Y[i]+oy+(rnd()-0.5)*warp*avgH*0.9];
   const pick=()=>{
     if(style==='round')return{style:'round',round:1};
     if(style==='angular')return{style:'angular',round:0};
@@ -1092,9 +1134,135 @@ function buildWacky(o){
   for(let j=1;j<cols;j++){const start=V[0][j].slice();const segs=[];
     for(let i=0;i<rows;i++){wackyEdge(V[i][j],V[i+1][j],rnd()>0.5?1:-1,opt()).forEach(sg=>segs.push(sg));}
     paths.push(lineToPath({start,segs}));}
-  paths.push('M '+f(0)+' '+f(0)+' L '+f(W)+' '+f(0)+' L '+f(W)+' '+f(H)+' L '+f(0)+' '+f(H)+' Z');
-  return {paths, w:W, h:H, pieces:cols*rows, bpaths:[paths.length-1]};
+  const cr=cornerR(W,H); const rect=(x,y,w2,h2)=>roundRectPath(x,y,w2,h2,cr);
+  let bpaths;
+  if(fw){ paths.push(rect(0,0,W,H)); paths.push(rect(ox,oy,WW,HH)); bpaths=[paths.length-2,paths.length-1]; }
+  else  { paths.push(rect(0,0,W,H)); bpaths=[paths.length-1]; }
+  return {paths, w:W, h:H, pieces:cols*rows, bpaths};
 }
+
+/* ---- Organic (Voronoi) wacky layout ---- */
+function vPoisson(W,H,r,rnd,k){
+  k=k||25; const cell=r/Math.SQRT2, gw=Math.ceil(W/cell), gh=Math.ceil(H/cell);
+  const grid=new Array(gw*gh).fill(-1), pts=[], active=[];
+  const gi=(x,y)=>Math.floor(x/cell)+Math.floor(y/cell)*gw;
+  const add=p=>{pts.push(p);active.push(pts.length-1);grid[gi(p[0],p[1])]=pts.length-1;};
+  add([rnd()*W, rnd()*H]);
+  while(active.length){
+    const ai=(rnd()*active.length)|0, p=pts[active[ai]]; let placed=false;
+    for(let s=0;s<k;s++){
+      const ang=rnd()*2*Math.PI, rad=r*(1+rnd()), nx=p[0]+Math.cos(ang)*rad, ny=p[1]+Math.sin(ang)*rad;
+      if(nx<0||ny<0||nx>=W||ny>=H)continue;
+      const cx=Math.floor(nx/cell), cy=Math.floor(ny/cell); let ok=true;
+      for(let ax=Math.max(0,cx-2);ax<=Math.min(gw-1,cx+2)&&ok;ax++)
+        for(let ay=Math.max(0,cy-2);ay<=Math.min(gh-1,cy+2)&&ok;ay++){
+          const q=grid[ax+ay*gw]; if(q>=0){const dx=pts[q][0]-nx,dy=pts[q][1]-ny;if(dx*dx+dy*dy<r*r)ok=false;}}
+      if(ok){add([nx,ny]);placed=true;break;}
+    }
+    if(!placed)active.splice(ai,1);
+  }
+  return pts;
+}
+function vCircum(a,b,c){
+  const ax=a[0],ay=a[1],bx=b[0],by=b[1],cx=c[0],cy=c[1];
+  const d=2*(ax*(by-cy)+bx*(cy-ay)+cx*(ay-by)); if(Math.abs(d)<1e-12)return null;
+  const a2=ax*ax+ay*ay,b2=bx*bx+by*by,c2=cx*cx+cy*cy;
+  return [(a2*(by-cy)+b2*(cy-ay)+c2*(ay-by))/d, (a2*(cx-bx)+b2*(ax-cx)+c2*(bx-ax))/d];
+}
+function vInCirc(a,b,c,p){const cc=vCircum(a,b,c);if(!cc)return false;const r2=(cc[0]-a[0])**2+(cc[1]-a[1])**2,d2=(cc[0]-p[0])**2+(cc[1]-p[1])**2;return d2<r2-1e-9;}
+function vDelaunay(pts){
+  let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9;
+  for(const p of pts){mnx=Math.min(mnx,p[0]);mny=Math.min(mny,p[1]);mxx=Math.max(mxx,p[0]);mxy=Math.max(mxy,p[1]);}
+  const dm=Math.max(mxx-mnx,mxy-mny)*20||100, mx=(mnx+mxx)/2,my=(mny+mxy)/2;
+  const P=pts.concat([[mx-2*dm,my-dm],[mx,my+2*dm],[mx+2*dm,my-dm]]), n=pts.length;
+  let tris=[[n,n+1,n+2]];
+  const hasEdge=(t,a,b)=>((t[0]===a||t[1]===a||t[2]===a)&&(t[0]===b||t[1]===b||t[2]===b));
+  for(let i=0;i<n;i++){const p=P[i], bad=[];
+    for(const t of tris)if(vInCirc(P[t[0]],P[t[1]],P[t[2]],p))bad.push(t);
+    const edges=[];
+    for(const t of bad){const es=[[t[0],t[1]],[t[1],t[2]],[t[2],t[0]]];
+      for(const e of es){let sh=false;for(const t2 of bad){if(t2===t)continue;if(hasEdge(t2,e[0],e[1])){sh=true;break;}}if(!sh)edges.push(e);}}
+    const bs=new Set(bad); tris=tris.filter(t=>!bs.has(t));
+    for(const e of edges)tris.push([e[0],e[1],i]);}
+  return {tris:tris.filter(t=>t[0]<n&&t[1]<n&&t[2]<n), P};
+}
+function vCells(realPts,W,H,r){
+  const ghosts=[], pad=r*1.6, step=r;
+  for(let x=-pad;x<=W+pad;x+=step){ghosts.push([x,-pad]);ghosts.push([x,H+pad]);}
+  for(let y=-pad;y<=H+pad;y+=step){ghosts.push([-pad,y]);ghosts.push([W+pad,y]);}
+  const all=realPts.concat(ghosts), nReal=realPts.length, {tris}=vDelaunay(all);
+  const inc=new Map(); for(let i=0;i<nReal;i++)inc.set(i,[]);
+  for(const t of tris){const cc=vCircum(all[t[0]],all[t[1]],all[t[2]]);if(!cc)continue;for(const v of t)if(v<nReal)inc.get(v).push(cc);}
+  const cells=[];
+  for(let i=0;i<nReal;i++){const cc=inc.get(i);if(cc.length<3)continue;const p=realPts[i];
+    cc.sort((A,B)=>Math.atan2(A[1]-p[1],A[0]-p[0])-Math.atan2(B[1]-p[1],B[0]-p[0]));cells.push(cc);}
+  return cells;
+}
+function vClipRect(poly,W,H){
+  const clip=(pts,inside,inter)=>{const out=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length],ia=inside(a),ib=inside(b);
+    if(ia){out.push(a);if(!ib)out.push(inter(a,b));}else if(ib)out.push(inter(a,b));}return out;};
+  let p=poly;
+  p=clip(p,q=>q[0]>=0,(a,b)=>{const t=(0-a[0])/(b[0]-a[0]);return[0,a[1]+t*(b[1]-a[1])];});
+  p=clip(p,q=>q[0]<=W,(a,b)=>{const t=(W-a[0])/(b[0]-a[0]);return[W,a[1]+t*(b[1]-a[1])];});
+  p=clip(p,q=>q[1]>=0,(a,b)=>{const t=(0-a[1])/(b[1]-a[1]);return[a[0]+t*(b[0]-a[0]),0];});
+  p=clip(p,q=>q[1]<=H,(a,b)=>{const t=(H-a[1])/(b[1]-a[1]);return[a[0]+t*(b[0]-a[0]),H];});
+  return p;
+}
+function vEdges(cells,W,H){
+  const eps=0.02, side=p=>({L:Math.abs(p[0])<eps,R:Math.abs(p[0]-W)<eps,B:Math.abs(p[1])<eps,T:Math.abs(p[1]-H)<eps});
+  const perim=(a,b)=>{const sa=side(a),sb=side(b);return(sa.L&&sb.L)||(sa.R&&sb.R)||(sa.B&&sb.B)||(sa.T&&sb.T);};
+  const key=p=>Math.round(p[0]*50)/50+','+Math.round(p[1]*50)/50;
+  const ek=(a,b)=>{const ka=key(a),kb=key(b);return ka<kb?ka+'|'+kb:kb+'|'+ka;};
+  const map=new Map();
+  for(const poly of cells)for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length];
+    if(Math.hypot(a[0]-b[0],a[1]-b[1])<1e-6||perim(a,b))continue;
+    const k=ek(a,b); if(!map.has(k))map.set(k,{a,b,count:1}); else map.get(k).count++;}
+  const internal=[]; for(const [,e] of map)if(e.count===2)internal.push(e);
+  return internal;
+}
+function buildVoronoi(o){
+  const rnd=mulberry32((o.seed|0)+1), W=o.w,H=o.h;
+  const fw=o.frame?Math.max(2,Math.min(o.fw||14,Math.min(W,H)/2-6)):0;   // frame inset
+  const WW=W-2*fw, HH=H-2*fw, ox=fw, oy=fw;
+  const r=Math.max(10,o.piece), chaos=o.chaos||0;
+  let pts=vPoisson(WW,HH,r,rnd);
+  if(chaos>0)pts=pts.map(p=>[Math.max(0.5,Math.min(WW-0.5,p[0]+(rnd()-0.5)*chaos*r*0.7)),Math.max(0.5,Math.min(HH-0.5,p[1]+(rnd()-0.5)*chaos*r*0.7))]);
+  const cells=vCells(pts,WW,HH,r).map(c=>vClipRect(c,WW,HH)).filter(c=>c.length>=3);
+  const internal=vEdges(cells,WW,HH);
+  const lens=internal.map(e=>Math.hypot(e.a[0]-e.b[0],e.a[1]-e.b[1]));
+  const med=lens.slice().sort((a,b)=>a-b)[(lens.length/2)|0]||10, Lmin=Math.max(9,med*0.5);
+  const style=o.style||'mixed';
+  const round=o.round||0;
+  const pick=()=>{if(style==='round')return{style:'round',round:1};if(style==='angular')return{style:'angular',round:0};
+    if(style==='mixed')return rnd()<0.5?{style:'round',round:1}:{style:'angular',round:0};
+    return rnd()<0.5?{style:'round',round:rnd()}:{style:'angular',round:0};};
+  const bowSeg=(from,to,perp,bow)=>({type:'C',
+    c1:[from[0]+(to[0]-from[0])/3+perp[0]*bow, from[1]+(to[1]-from[1])/3+perp[1]*bow],
+    c2:[from[0]+(to[0]-from[0])*2/3+perp[0]*bow, from[1]+(to[1]-from[1])*2/3+perp[1]*bow], p:to});
+  const paths=[];
+  for(const e of internal){
+    const A=[e.a[0]+ox,e.a[1]+oy],B=[e.b[0]+ox,e.b[1]+oy], dx=B[0]-A[0],dy=B[1]-A[1], L=Math.hypot(dx,dy);
+    const perp=[-dy/L, dx/L], sgn=(rnd()<0.5?-1:1), bow=round*L*0.16*sgn;
+    if(L<Lmin){
+      paths.push(lineToPath({start:A, segs:[ round>0 ? bowSeg(A,B,perp,bow) : {type:'L',p:B} ]}));
+      continue;
+    }
+    const st=pick(),wild=(style==='wild');
+    const opts={...st,k:o.tab*(wild?(0.7+rnd()*0.6):1),neck:o.neck*(wild?(0.7+rnd()*0.7):1),jitPos:(rnd()-0.5)*0.05};
+    const segs=wackyEdge(A,B,rnd()>0.5?1:-1,opts);
+    if(round>0){                                   // bow the two baseline flanks to match
+      const s0=segs[0].p; segs[0]=bowSeg(A,s0,perp,bow*0.55);
+      const li=segs.length-1; segs[li]=bowSeg(segs[li-1].p,B,perp,bow*0.55);
+    }
+    paths.push(lineToPath({start:A, segs}));
+  }
+  const cr=cornerR(W,H); const rect=(x,y,w2,h2)=>roundRectPath(x,y,w2,h2,cr);
+  let bpaths;
+  if(fw){ paths.push(rect(0,0,W,H)); paths.push(rect(ox,oy,WW,HH)); bpaths=[paths.length-2,paths.length-1]; }
+  else  { paths.push(rect(0,0,W,H)); bpaths=[paths.length-1]; }
+  return {paths, w:W, h:H, pieces:cells.length, bpaths};
+}
+
 function readShaped(){
   return {w:+$('s_w').value,h:+$('s_h').value,piece:+$('s_piece').value,shape:shapeSel,
     detail:+$('s_detail').value,text:$('s_text').value,font:$('s_font').value,tab:+$('s_tab').value/100,
@@ -1108,7 +1276,7 @@ function render(){
     else if(tab==='shaped'){current=buildShaped(readShaped());}
     else if(tab==='mono'){current=buildMono(readMono());
       $('m_covernote').style.display=(current.coverOK===false)?'block':'none';}
-    else if(tab==='wacky'){current=buildWacky(readWacky());}
+    else if(tab==='wacky'){current=(wackyLayout==='organic')?buildVoronoi(readWacky()):buildWacky(readWacky());}
     else return;
     $('svgbox').innerHTML=svgString(current,false);
     $('meta_l').innerHTML='<b>'+current.w+' × '+current.h+'</b> mm';
@@ -1169,12 +1337,26 @@ $('m_frame').querySelectorAll('button').forEach(b=>b.addEventListener('click',()
 bindVal('k_cols','k_cols_v');bindVal('k_rows','k_rows_v');
 bindVal('k_warp','k_warp_v',v=>(v/100).toFixed(2));
 bindVal('k_vary','k_vary_v',v=>(v/100).toFixed(2));
+bindVal('k_piece','k_piece_v');
+bindVal('k_chaos','k_chaos_v',v=>(v/100).toFixed(2));
+bindVal('k_round','k_round_v',v=>(v/100).toFixed(2));
 bindVal('k_tab','k_tab_v',v=>(v/100).toFixed(2));
 bindVal('k_neck','k_neck_v',v=>(v/100).toFixed(2));
+bindVal('k_fw','k_fw_v');
+$('k_frame').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+  $('k_frame').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');wackyFrame=+b.dataset.v;
+  $('k_framerow').classList.toggle('hidden',!wackyFrame);render();}));
 ['k_w','k_h','k_seed'].forEach(id=>$(id).addEventListener('input',render));
 $('k_style').querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
   $('k_style').querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
   c.classList.add('on');wackyStyle=c.dataset.v;render();}));
+$('k_layout').querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  $('k_layout').querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on');wackyLayout=c.dataset.v;
+  $('k_orgonly').classList.toggle('hidden',wackyLayout!=='organic');
+  $('k_gridonly').classList.toggle('hidden',wackyLayout!=='grid');
+  render();}));
 
 /* frame toggle */
 $('r_frame').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
