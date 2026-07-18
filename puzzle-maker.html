@@ -110,7 +110,7 @@ input[type=text]{font-family:var(--font-head);font-size:1.1rem;font-weight:600}
    repeating-linear-gradient(45deg,#0000 0 11px,#00000006 11px 12px),
    var(--card2);
   border:1px solid var(--tan);border-radius:12px;padding:14px;min-height:340px;
-  display:flex;flex-direction:column}
+  display:flex;flex-direction:column;position:relative}
 .stage .meta{display:flex;justify-content:space-between;align-items:center;
   font-family:var(--font-mono);font-size:.72rem;color:var(--ink-soft);margin-bottom:10px;flex-wrap:wrap;gap:6px}
 .stage .meta b{color:var(--rust-deep);font-weight:600}
@@ -119,6 +119,9 @@ input[type=text]{font-family:var(--font-head);font-size:1.1rem;font-weight:600}
   background:var(--rust);color:#fff;font-family:var(--font-mono);font-size:.74rem;font-weight:600;
   padding:7px 14px;border-radius:9px;box-shadow:0 3px 10px rgba(90,30,10,.45);
   z-index:6;white-space:nowrap;pointer-events:none;letter-spacing:.02em}
+.piececount{position:absolute;bottom:8px;right:10px;
+  background:rgba(60,40,25,.5);color:#fdf6ec;font-family:var(--font-mono);font-size:.68rem;font-weight:600;
+  padding:4px 9px;border-radius:7px;z-index:6;white-space:nowrap;pointer-events:none;letter-spacing:.02em}
 .svgbox svg{max-width:100%;max-height:66vh;height:auto;filter:drop-shadow(0 8px 18px rgba(60,40,20,.18))}
 .note{font-size:.78rem;color:var(--ink-soft);margin-top:12px;line-height:1.45}
 .note code{font-family:var(--font-mono);background:#fff7;padding:1px 5px;border-radius:5px;border:1px solid var(--line)}
@@ -126,6 +129,8 @@ input[type=text]{font-family:var(--font-head);font-size:1.1rem;font-weight:600}
 .soonwrap h2{font-family:var(--font-head);color:var(--ink);font-size:1.6rem;margin-bottom:8px}
 footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint);
   font-family:var(--font-mono);font-size:.72rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.homelink{color:inherit;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:1px}
+.homelink:hover{color:var(--rust-deep)}
 .stagetoggle{display:none;align-items:center;gap:5px;font-family:var(--font-mono);font-size:.7rem;
   border:1px solid var(--tan);background:var(--card);color:var(--rust-deep);
   padding:5px 11px;border-radius:8px;cursor:pointer;transition:.12s}
@@ -136,7 +141,7 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
 <body>
 <header class="site">
   <div class="brand">
-    <span class="dot">curiosity.diy · workshop bench</span>
+    <span class="dot"><a href="https://curiosity.diy" class="homelink">curiosity.diy</a> · workshop bench</span>
   </div>
   <h1>The Curious Puzzle Maker</h1>
   <p class="tagline">Interlocking cut-out puzzles for your laser, all pieces nested in one sheet.</p>
@@ -391,6 +396,7 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
       <button class="stagetoggle" id="stage_toggle" aria-label="Hide or show preview">▾ Hide preview</button>
     </div>
     <div class="svgbox" id="svgbox"></div>
+    <div class="piececount" id="piececount"></div>
     <div class="overlapwarn hidden" id="overlapwarn">⚠ Warning: overlapping lines</div>
     <div class="note" id="note">
       Cut lines export as hairline vectors (<code>0.1&nbsp;mm</code>) at true finished size. Every internal join is a single shared cut — no doubled lines. In your laser software, set all vectors to <b>cut</b>.
@@ -408,8 +414,8 @@ footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint)
 </div>
 
 <footer>
-  <span>curiosity.diy · the curious puzzle maker</span>
-  <span id="foot_ver">v1.2 · sections 1–4 live · build: sawtooth sp12 · 18 Jul 2026 — if this line is missing you're viewing a cached copy</span>
+  <span><a href="https://curiosity.diy" class="homelink">curiosity.diy</a> · the curious puzzle maker</span>
+  <span id="foot_ver">v1.3 · sections 1–4 live · build: sawtooth sp13 · 18 Jul 2026 — if this line is missing you're viewing a cached copy</span>
 </footer>
 
 <script>
@@ -503,15 +509,23 @@ function lineToPolyline(line,per){                // sample bezier line to point
 }
 const f=n=>{const r=Math.round(n*1000)/1000;return (Object.is(r,-0)?0:r);};
 // rectangle outline with slightly rounded corners (child-safe: no sharp points)
+// r may be a number (uniform) or [rTL,rTR,rBR,rBL]
 function roundRectPath(x,y,w,h,r){
-  r=Math.max(0,Math.min(r, w/2-0.5, h/2-0.5));
-  if(r<=0.05) return 'M '+f(x)+' '+f(y)+' L '+f(x+w)+' '+f(y)+' L '+f(x+w)+' '+f(y+h)+' L '+f(x)+' '+f(y+h)+' Z';
-  const x2=x+w, y2=y+h;
-  return 'M '+f(x+r)+' '+f(y)+
-    ' L '+f(x2-r)+' '+f(y)+' Q '+f(x2)+' '+f(y)+' '+f(x2)+' '+f(y+r)+
-    ' L '+f(x2)+' '+f(y2-r)+' Q '+f(x2)+' '+f(y2)+' '+f(x2-r)+' '+f(y2)+
-    ' L '+f(x+r)+' '+f(y2)+' Q '+f(x)+' '+f(y2)+' '+f(x)+' '+f(y2-r)+
-    ' L '+f(x)+' '+f(y+r)+' Q '+f(x)+' '+f(y)+' '+f(x+r)+' '+f(y)+' Z';
+  let rTL,rTR,rBR,rBL;
+  if(Array.isArray(r)){rTL=r[0];rTR=r[1];rBR=r[2];rBL=r[3];} else {rTL=rTR=rBR=rBL=r;}
+  const cl=v=>Math.max(0,Math.min(v, w/2-0.5, h/2-0.5));
+  rTL=cl(rTL);rTR=cl(rTR);rBR=cl(rBR);rBL=cl(rBL);
+  const x2=x+w,y2=y+h, e=0.05;
+  return 'M '+f(x+rTL)+' '+f(y)+
+    ' L '+f(x2-rTR)+' '+f(y)+(rTR>e?' Q '+f(x2)+' '+f(y)+' '+f(x2)+' '+f(y+rTR):' L '+f(x2)+' '+f(y))+
+    ' L '+f(x2)+' '+f(y2-rBR)+(rBR>e?' Q '+f(x2)+' '+f(y2)+' '+f(x2-rBR)+' '+f(y2):' L '+f(x2)+' '+f(y2))+
+    ' L '+f(x+rBL)+' '+f(y2)+(rBL>e?' Q '+f(x)+' '+f(y2)+' '+f(x)+' '+f(y2-rBL):' L '+f(x)+' '+f(y2))+
+    ' L '+f(x)+' '+f(y+rTL)+(rTL>e?' Q '+f(x)+' '+f(y)+' '+f(x+rTL):' L '+f(x)+' '+f(y))+' Z';
+}
+// per-corner radius that never reaches the nearest interior cut touching the boundary
+function safeCornerRadii(pts,x,y,w,h,maxR){
+  const corners=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];   // TL,TR,BR,BL
+  return corners.map(c=>{let dmin=maxR/0.7;for(const p of pts){const dd=Math.hypot(p[0]-c[0],p[1]-c[1]);if(dd<dmin)dmin=dd;}return Math.min(maxR,dmin*0.7);});
 }
 const cornerR=(W,H)=>Math.min(3, Math.min(W,H)/16);   // very slight radius, scales down on tiny sheets
 
@@ -1079,7 +1093,7 @@ function wackyRoundTab(P,m,k,neck,round){
   const headR=k*(0.140+0.012*round);
   const neckFrac=Math.max(0.16,Math.min(0.9,(0.77-0.31*round)*neck));
   const neckW=headR*neckFrac, nl=k*(0.055+0.005*round);
-  const d=Math.sqrt(Math.max(1e-6,headR*headR-neckW*neckW)), hc=nl+d, sw=neckW+k*0.045;
+  const d=Math.sqrt(Math.max(1e-6,headR*headR-neckW*neckW)), hc=nl+d, sw=neckW+k*0.10;
   const aL=Math.atan2(-d,-neckW), aR=Math.atan2(-d,neckW);
   let sweep=aL-aR; sweep=((sweep%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
   const nseg=Math.max(3,Math.ceil(sweep/(Math.PI/2))), da=-sweep/nseg, kap=(4/3)*Math.tan(da/4);
@@ -1087,8 +1101,9 @@ function wackyRoundTab(P,m,k,neck,round){
   for(let i=0;i<nseg;i++){const b=ang+da;
     arc.push({type:'C',c1:P(m+headR*(Math.cos(ang)-kap*Math.sin(ang)),hc+headR*(Math.sin(ang)+kap*Math.cos(ang))),
       c2:P(m+headR*(Math.cos(b)+kap*Math.sin(b)),hc+headR*(Math.sin(b)-kap*Math.cos(b))),p:P(m+headR*Math.cos(b),hc+headR*Math.sin(b))});ang=b;}
-  return [{type:'L',p:P(m-sw,0)},{type:'C',c1:P(m-sw,nl*0.95),c2:P(m-neckW*1.02,nl*0.5),p:P(m-neckW,nl)},
-    ...arc,{type:'C',c1:P(m+neckW*1.02,nl*0.5),c2:P(m+sw,nl*0.95),p:P(m+sw,0)}];
+  const t1=nl*0.55, t2=(sw-neckW)*0.6;    // concave armpit: leaves baseline horizontally, meets neck vertically
+  return [{type:'L',p:P(m-sw,0)},{type:'C',c1:P(m-sw+t2,0),c2:P(m-neckW,nl-t1),p:P(m-neckW,nl)},
+    ...arc,{type:'C',c1:P(m+neckW,nl-t1),c2:P(m+sw-t2,0),p:P(m+sw,0)}];
 }
 function wackyAngularTab(P,m,k,neck){                 // straight-segment dovetail (wider at top => interlocks)
   const Th=k*0.30, Wtop=k*0.150, sb=Wtop*Math.max(0.34,Math.min(0.85,0.6*neck)), nl=k*0.05;
@@ -1134,10 +1149,14 @@ function buildWacky(o){
   for(let j=1;j<cols;j++){const start=V[0][j].slice();const segs=[];
     for(let i=0;i<rows;i++){wackyEdge(V[i][j],V[i+1][j],rnd()>0.5?1:-1,opt()).forEach(sg=>segs.push(sg));}
     paths.push(lineToPath({start,segs}));}
-  const cr=cornerR(W,H); const rect=(x,y,w2,h2)=>roundRectPath(x,y,w2,h2,cr);
+  const cr=cornerR(W,H);
+  const bpts=[];    // grid line endpoints on the puzzle boundary (left/right/top/bottom vertices)
+  for(let i=1;i<rows;i++){bpts.push(V[i][0]);bpts.push(V[i][cols]);}
+  for(let j=1;j<cols;j++){bpts.push(V[0][j]);bpts.push(V[rows][j]);}
+  const rin=safeCornerRadii(bpts, ox,oy,WW,HH, cr);
   let bpaths;
-  if(fw){ paths.push(rect(0,0,W,H)); paths.push(rect(ox,oy,WW,HH)); bpaths=[paths.length-2,paths.length-1]; }
-  else  { paths.push(rect(0,0,W,H)); bpaths=[paths.length-1]; }
+  if(fw){ paths.push(roundRectPath(0,0,W,H,cr)); paths.push(roundRectPath(ox,oy,WW,HH,rin)); bpaths=[paths.length-2,paths.length-1]; }
+  else  { paths.push(roundRectPath(0,0,W,H,rin)); bpaths=[paths.length-1]; }
   return {paths, w:W, h:H, pieces:cols*rows, bpaths};
 }
 
@@ -1256,10 +1275,14 @@ function buildVoronoi(o){
     }
     paths.push(lineToPath({start:A, segs}));
   }
-  const cr=cornerR(W,H); const rect=(x,y,w2,h2)=>roundRectPath(x,y,w2,h2,cr);
+  const cr=cornerR(W,H);
+  const eps=0.1, bpts=[];               // cut endpoints that land on the puzzle boundary
+  for(const e of internal)for(const p of [e.a,e.b])
+    if(Math.abs(p[0])<eps||Math.abs(p[0]-WW)<eps||Math.abs(p[1])<eps||Math.abs(p[1]-HH)<eps) bpts.push([p[0]+ox,p[1]+oy]);
+  const rin=safeCornerRadii(bpts, ox,oy,WW,HH, cr);   // never round past the nearest cut
   let bpaths;
-  if(fw){ paths.push(rect(0,0,W,H)); paths.push(rect(ox,oy,WW,HH)); bpaths=[paths.length-2,paths.length-1]; }
-  else  { paths.push(rect(0,0,W,H)); bpaths=[paths.length-1]; }
+  if(fw){ paths.push(roundRectPath(0,0,W,H,cr)); paths.push(roundRectPath(ox,oy,WW,HH,rin)); bpaths=[paths.length-2,paths.length-1]; }
+  else  { paths.push(roundRectPath(0,0,W,H,rin)); bpaths=[paths.length-1]; }
   return {paths, w:W, h:H, pieces:cells.length, bpaths};
 }
 
@@ -1281,6 +1304,7 @@ function render(){
     $('svgbox').innerHTML=svgString(current,false);
     $('meta_l').innerHTML='<b>'+current.w+' × '+current.h+'</b> mm';
     $('meta_r').innerHTML='≈ <b>'+current.pieces+'</b> pieces';
+    $('piececount').textContent=current.pieces+(current.pieces===1?' piece':' pieces');
     let over=false; try{ over=detectOverlap(current.paths, new Set(current.bpaths||[])); }catch(_){ over=false; }
     $('overlapwarn').classList.toggle('hidden', !over);
   }catch(e){$('svgbox').innerHTML='<div style="color:#9c3f1e;font-family:monospace;padding:20px">'+e.message+'</div>';console.error(e);}
