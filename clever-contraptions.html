@@ -165,10 +165,11 @@
   #cutSheetView{max-height:40vh;overflow:auto}
   .controls{grid-area:controls;display:flex;flex-direction:column;gap:16px;min-width:0}
   @media (max-width:900px){
-    .ccmain{grid-template-columns:minmax(0,1fr);grid-template-areas:"left" "controls";gap:12px;margin-top:8px}
-    .leftcol{position:static}
-    .hero{position:sticky;top:0;z-index:30;background:var(--paper);padding:6px 0 8px;
+    .ccmain{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "controls" "cut";gap:12px;margin-top:8px}
+    .leftcol{display:contents}
+    .hero{grid-area:hero;position:sticky;top:0;z-index:30;background:var(--paper);padding:6px 0 8px;
       box-shadow:0 10px 14px -12px rgba(35,32,26,.5)}
+    #cutSheetPanel{grid-area:cut}
     .hero .stage{max-height:40vh}
     .hero.compact .stage{max-height:20vh;transition:max-height .2s ease}
     .shrinkBtn{display:flex !important}
@@ -192,7 +193,8 @@
   .cstage .cnm{font-weight:600;font-size:13px;flex:1;min-width:80px}
   .cstage input{width:52px;padding:3px 4px;border:1.2px solid var(--ink);border-radius:3px;background:var(--paper);font-family:'Space Mono',monospace;font-size:12px}
   .cstep{display:inline-flex;align-items:stretch;border:1.2px solid var(--ink);border-radius:3px;overflow:hidden}
-  .cstep input{width:38px;border:none;border-left:1px solid var(--ink);border-right:1px solid var(--ink);border-radius:0;text-align:center}
+  .cstep input{width:56px;border:none;border-left:1px solid var(--ink);border-right:1px solid var(--ink);border-radius:0;text-align:center;font-size:13px;padding:0 2px;-webkit-appearance:none;-moz-appearance:textfield;appearance:textfield}
+  .cstep input::-webkit-outer-spin-button,.cstep input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .cstep button{border:none;background:var(--paper-2);width:24px;font-size:15px;font-weight:700;line-height:1;padding:0;cursor:pointer;color:var(--ink)}
   .cstep button:hover{background:var(--brass);color:var(--paper)}
   .cstage .clab{font-size:11px;opacity:.7}
@@ -1104,7 +1106,7 @@ const S={ unit:'mm', size:6, gears:[18,30], bend:0, pa:20, thick:6, kerf:0.15,
   fbCpFrac:0.5, fbCpOff:18, fbTrace:true, dowelD:6,
   chain:[{type:'planetary',Ns:18,Np:12},{type:'gearing',Nin:12,Nout:36},{type:'cam',lift:16}],
   addType:'gearing', cmpLayout:'row', cmpGap:1, cmpCouple:'belt',
-  cx:{ nextId:4, sel:1, m:6, converters:[], edges:[], linkW:12, split:{mode:'off',maxW:600,maxH:400,overlap:18}, bearing:{mode:'none',od:22}, gears:[
+  cx:{ nextId:4, sel:1, m:6, converters:[], edges:[], linkW:12, split:{mode:'off',maxW:600,maxH:400,overlap:10}, bearing:{mode:'none',od:22}, gears:[
     {id:0,N:12,kind:'driver',layer:0},
     {id:1,N:36,kind:'mesh',parent:0,dir:0},
     {id:2,N:12,kind:'compound',parent:1},
@@ -2634,7 +2636,7 @@ function cxBaseHole(){ const B=S.cx.bearing; return (B&&B.mode==='seat')?B.od:bo
 function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], buy=[];
   const gc={}; c.gears.forEach(g=>{gc[g.N]=(gc[g.N]||0)+1;});
   Object.keys(gc).map(Number).sort((a,b)=>a-b).forEach(N=>cut.push([`gear ${N}T`,gc[N],`⌀${fmt(m*(N+2))} · ${t}mm`]));
-  if(c.pen&&c.pen.joints.length){ const lens=[]; c.pen.joints.forEach(j=>{lens.push(j.la,j.lb);}); cut.push([`linkage arm`,lens.length,`${lens.map(l=>fmt(l)).join(', ')} long · ${cxLinkW()}mm wide · ${t}mm`]); }
+  if(c.pen&&c.pen.joints.length){ const lens=[]; c.pen.joints.forEach(j=>{lens.push(j.la,j.lb);}); const aMax=cxArmMax(); let pcs=0; lens.forEach(l=>pcs+=cxArmSplice(l,aMax,28).length); cut.push([`linkage arm`,pcs,`${lens.map(l=>fmt(l)).join(', ')} long · ${cxLinkW()}mm wide · ${t}mm${pcs>lens.length?' · long ones spliced to fit bed (overlap-glue + pins)':''}`]); }
   const cv={}; S.cx.converters.forEach(v=>{ if(c.byId[v.gear])cv[v.type]=(cv[v.type]||0)+1; });
   if(cv.crank){ cut.push([`crank arm`,cv.crank,`${t}mm`],[`con-rod`,cv.crank,`${cxLinkW()}mm wide · ${t}mm`],[`slider block`,cv.crank,`${t}mm`]); }
   if(cv.cam){ cut.push([`cam disc`,cv.cam,`${t}mm`],[`cam follower`,cv.cam,`${t}mm`]); }
@@ -2651,19 +2653,25 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
   if(S.cx.bearing&&S.cx.bearing.mode==='seat')buy.push([`bearing`,nsh,`⌀${S.cx.bearing.od} outer · ⌀${fmt(boreDia())} bore`]);
   return {cut,buy}; }
 function cxBOMText(){ const b=cxBOM(); return 'CUTTING PREPARATION — The Clever Contraptions Corner\n\nLASER-CUT (wood, '+S.thick+'mm):\n'+b.cut.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n')+'\n\nBUY SEPARATELY:\n'+b.buy.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n'); }
+function cxArmMax(){ const P=S.cx.split; return (P&&P.mode!=='off')?Math.max(P.maxW||600,P.maxH||400):1e9; }
+function cxArmSplice(al,armMax,ov){ ov=ov||28; if(!(armMax>0)||al<=armMax)return [{start:0,len:al,pivS:true,pivE:true,aligns:[]}];
+  const n=Math.max(2,Math.ceil((al-ov)/(armMax-ov))), segLen=(al+(n-1)*ov)/n, step=segLen-ov, out=[];
+  for(let i=0;i<n;i++){ const aligns=[]; if(i>0)aligns.push(ov*0.3,ov*0.7); if(i<n-1)aligns.push(step+ov*0.3,step+ov*0.7);
+    out.push({start:i*step,len:segLen,pivS:i===0,pivE:i===n-1,aligns,idx:i,n}); } return out; }
 function cxJoinEdge(ax,ay,bx,by,mode,depth){ if(mode!=='finger'&&mode!=='dovetail')return [[ax,ay],[bx,by]];
-  const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy); if(L<30)return [[ax,ay],[bx,by]];
-  const ux=dx/L,uy=dy/L,nx=-uy,ny=ux, N=Math.max(2,Math.round(L/55)), nSeg=2*N, seg=L/nSeg;
-  const dv=mode==='dovetail'?Math.min(seg*0.32,depth):0, P=(t,o)=>[ax+ux*t+nx*o,ay+uy*t+ny*o], out=[[ax,ay]];
-  for(let k=0;k<nSeg;k++){ const t0=k*seg,t1=(k+1)*seg,off=(k%2===0)?depth:-depth;
-    if(dv>0){ out.push(P(t0+dv,0),P(t0,off),P(t1,off),P(t1-dv,0)); } // dovetail: wide head, narrow neck → undercut locks (jigsaw)
+  const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy);
+  const pad=Math.max(depth+4,12), span=L-2*pad; if(L<70||span<36)return [[ax,ay],[bx,by]];
+  const ux=dx/L,uy=dy/L,nx=-uy,ny=ux, N=Math.max(2,Math.round(span/38)), nSeg=2*N, seg=span/nSeg;
+  const dv=mode==='dovetail'?Math.min(seg*0.32,depth):0, P=(t,o)=>[ax+ux*t+nx*o,ay+uy*t+ny*o], out=[[ax,ay],P(pad,0)];
+  for(let k=0;k<nSeg;k++){ const t0=pad+k*seg,t1=pad+(k+1)*seg,off=(k%2===0)?depth:-depth;
+    if(dv>0){ out.push(P(t0+dv,0),P(t0,off),P(t1,off),P(t1-dv,0)); } // dovetail: wide head, narrow neck → undercut locks
     else { out.push(P(t0,off),P(t1,off)); } }
-  out.push([bx,by]); return out; }
+  out.push(P(L-pad,0),[bx,by]); return out; }
 function cxTileBoard(bw,bh,holes,opts){ const mode=(opts&&opts.mode)||'off';
   let cols=1,rows=1; if(mode!=='off'){ cols=Math.max(1,Math.ceil(bw/(opts.maxW||600))); rows=Math.max(1,Math.ceil(bh/(opts.maxH||400))); }
   if(cols*rows<=1)return [{poly:null,holes:holes.slice(),w:bw,h:bh,single:true,mnx:0,mny:0}];
   const xE=[],yE=[]; for(let i=0;i<=cols;i++)xE.push(bw*i/cols); for(let j=0;j<=rows;j++)yE.push(bh*j/rows);
-  const dep=Math.min(opts.overlap||18,Math.min(bw/cols,bh/rows)*0.28), tiles=[], vB={}, hB={};
+  const dep=Math.min(opts.overlap||10,Math.min(bw/cols,bh/rows)*0.2), tiles=[], vB={}, hB={};
   for(let i=1;i<cols;i++)for(let j=0;j<rows;j++)vB[i+'_'+j]=cxJoinEdge(xE[i],yE[j],xE[i],yE[j+1],mode,dep);
   for(let j=1;j<rows;j++)for(let i=0;i<cols;i++)hB[j+'_'+i]=cxJoinEdge(xE[i],yE[j],xE[i+1],yE[j],mode,dep);
   for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ let x0=xE[i],x1=xE[i+1],y0=yE[j],y1=yE[j+1], poly;
@@ -2703,8 +2711,11 @@ function sceneFromComplex(){
   if(c.pen){ c.pen.pins.forEach(pn=>{ const g=c.byId[pn.g]; if(!g)return; const r=pn.r, yo=-(g.layer)*LG-t*0.7;
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.6),16))],0,0,t*1.7,yo),col:'#bf3a2b',pose:s=>({x:(g.x-ox)+r*Math.cos(g.phase+g.rate*s),z:(g.y-oy)+r*Math.sin(g.phase+g.rate*s),rot:0})}); });
     const yLink=-(c.layers)*LG-t*0.5, barW=cxLinkW(), OFF=99999;
+    const aMaxS=cxArmMax();
     c.pen.joints.forEach((j,ji)=>{ [[j.a,j.la],[j.b,j.lb]].forEach(rl=>{ const ref=rl[0], L=rl[1];
-      parts.push({tris:plateMesh([flipY(rodLoop(L,barW))],0,0,t*0.55,yLink),col:'#8a6a3c',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; return {x:A[0]-ox,z:A[1]-oy,rot:Math.atan2(B[1]-A[1],B[0]-A[0])}; }}); }); });
+      cxArmSplice(L,aMaxS,28).forEach(pc=>{ const loops=[flipY(rodLoop(pc.len,barW))];
+        pc.aligns.forEach(d=>loops.push(flipY(circleLoop(Math.max(cxBore()/2,1.2),12).map(p=>[p[0]+d,p[1]]))));
+        parts.push({tris:plateMesh(loops,0,0,t*0.55,yLink-pc.idx*0.4),col:'#8a6a3c',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*pc.start-ox,z:A[1]+Math.sin(ang)*pc.start-oy,rot:ang}; }}); }); }); });
     c.pen.joints.forEach((j,ji)=>{ const isLast=ji===c.pen.joints.length-1;
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.6,2.2),14))],0,0,t*1.2,yLink-t*0.3),col:'#5a4632',pose:s=>{ const st=cxPenAt(c,s), J=st?st.jointPos[ji]:null; if(!J)return {x:OFF,z:OFF,rot:0}; return {x:J[0]-ox,z:J[1]-oy,rot:0}; }}); });
     parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }}); }
@@ -2860,13 +2871,14 @@ function exportComplex(){
     parts.push(`<path d="${svgCircle(boreR,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     parts.push(txt(cx,cy,`#${g.id}·${g.N}T·L${g.layer}`,SCORE,m*0.8));
     x=cx+go.ra+gap; rowH=Math.max(rowH,2*go.ra+gap*2); });
-  if(c.pen){ const armLens=[]; c.pen.joints.forEach(j=>{armLens.push(j.la,j.lb);}); const w=boreDia()+8;
-    armLens.forEach((al,k)=>{ const cy=w/2+gap;
-      parts.push(`<path d="${pathFrom(rodLoop(al,w),x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-      parts.push(`<path d="${svgCircle(boreR,x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-      parts.push(`<path d="${svgCircle(boreR,x+al,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-      parts.push(txt(x+al/2,cy,`arm ${k+1} · ${fmt(al)}`,SCORE,3));
-      x=x+al+gap+w; rowH=Math.max(rowH,w+gap*2); }); }
+  if(c.pen){ const armLens=[]; c.pen.joints.forEach(j=>{armLens.push(j.la,j.lb);}); const w=boreDia()+8, aMax=cxArmMax();
+    armLens.forEach((al,k)=>{ cxArmSplice(al,aMax,28).forEach(pc=>{ const cy=w/2+gap;
+      parts.push(`<path d="${pathFrom(rodLoop(pc.len,w),x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+      if(pc.pivS)parts.push(`<path d="${svgCircle(boreR,x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+      if(pc.pivE)parts.push(`<path d="${svgCircle(boreR,x+pc.len,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+      pc.aligns.forEach(d=>parts.push(`<path d="${svgCircle(boreR,x+d,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
+      parts.push(txt(x+pc.len/2,cy,pc.n>1?`arm ${k+1} · pc ${pc.idx+1}/${pc.n} · splice-glue`:`arm ${k+1} · ${fmt(al)}`,SCORE,3));
+      x=x+pc.len+gap+w; rowH=Math.max(rowH,w+gap*2); }); }); }
   { const sp=cxSpacers(c), rO=Math.max(boreDia()/2+4,4)+kh, rI=boreR;
     sp.list.forEach(sh=>{ for(let n=0;n<sh.count;n++){ const cy=rO+gap, cx=x+rO;
       parts.push(`<path d="${svgCircle(rO,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
