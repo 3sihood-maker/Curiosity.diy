@@ -134,7 +134,8 @@
 <style>
   /* ---- unified two-column layout with pinned hero ---- */
   .cchead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-top:6px}
-  .movetabs{display:flex;gap:8px;overflow-x:auto;padding:10px;margin-top:10px;background:var(--paper-3);border:1.5px solid var(--ink);border-radius:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .movetabs{display:flex;flex-wrap:wrap;gap:8px;padding:10px;margin-top:10px;background:var(--paper-3);border:1.5px solid var(--ink);border-radius:6px}
+  .movetabs .mtab{flex:1 1 46%;min-width:150px}
   .cxmajor{font-family:"Space Mono",monospace;font-weight:700;font-size:14px;letter-spacing:.09em;text-transform:uppercase;color:var(--brass);border-top:3px solid var(--ink);padding:14px 10px 4px;margin-top:18px;display:flex;justify-content:space-between;align-items:baseline}
   .cxmajor small{font-weight:400;font-size:10px;letter-spacing:.02em;color:var(--ink-mute);text-transform:none}
   .movenav{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
@@ -149,21 +150,23 @@
   .csheet{border:1.5px solid var(--ink);border-radius:4px;padding:6px;background:#efe9da;overflow:auto;max-height:64vh}
   .csheet svg{display:block;width:100%;height:auto}
   .movetabs::-webkit-scrollbar{display:none}
-  .mtab{flex:0 0 auto;display:flex;flex-direction:column;gap:1px;text-align:left;padding:8px 13px;border:1.5px solid var(--ink);background:var(--paper-2);cursor:pointer;border-radius:3px;font-family:inherit;color:var(--ink)}
-  .mtab b{font-family:"Space Mono",monospace;font-size:12.5px;letter-spacing:.01em}
-  .mtab span{font-family:"Space Mono",monospace;font-size:9.5px;color:var(--ink-mute);white-space:nowrap}
+  .mtab{flex:0 0 auto;display:flex;flex-direction:column;gap:1px;text-align:left;padding:8px 13px;border:1.5px solid var(--ink);background:var(--paper-2);cursor:pointer;border-radius:3px;font-family:inherit;color:var(--ink);overflow:hidden}
+  .mtab b{font-family:"Space Mono",monospace;font-size:12.5px;letter-spacing:.01em;overflow-wrap:break-word}
+  .mtab span{font-family:"Space Mono",monospace;font-size:9.5px;color:var(--ink-mute);white-space:normal;overflow-wrap:break-word;line-height:1.25}
   .mtab.active{background:var(--ink);color:var(--paper)}
   .mtab.active span{color:#c9bfa6}
   .mtab.soon{opacity:.5;cursor:not-allowed;border-style:dashed}
   .mtab:not(.active):not(.soon):hover{border-color:var(--brass)}
-  .ccmain{max-width:1520px;margin:14px auto 34px;padding:0 18px;display:grid;
-    grid-template-columns:minmax(0,1fr) 440px;grid-template-areas:"hero controls" "cut controls";gap:24px;align-items:start}
-  .hero{grid-area:hero;min-width:0;align-self:stretch}
-  .plate{position:sticky;top:14px;z-index:6}
-  #cutSheetPanel{grid-area:cut;min-width:0}
+  .ccmain{max-width:1560px;margin:14px auto 34px;padding:0 18px;display:grid;
+    grid-template-columns:minmax(0,1fr) 460px;grid-template-areas:"left controls";gap:24px;align-items:start}
+  .leftcol{grid-area:left;min-width:0;position:sticky;top:14px;align-self:start;display:flex;flex-direction:column;gap:14px}
+  .hero{min-width:0}
+  #cutSheetPanel{min-width:0}
+  #cutSheetView{max-height:40vh;overflow:auto}
   .controls{grid-area:controls;display:flex;flex-direction:column;gap:16px;min-width:0}
   @media (max-width:900px){
-    .ccmain{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "controls" "cut";gap:12px;margin-top:8px}
+    .ccmain{grid-template-columns:minmax(0,1fr);grid-template-areas:"left" "controls";gap:12px;margin-top:8px}
+    .leftcol{position:static}
     .hero{position:sticky;top:0;z-index:30;background:var(--paper);padding:6px 0 8px;
       box-shadow:0 10px 14px -12px rgba(35,32,26,.5)}
     .hero .stage{max-height:40vh}
@@ -267,8 +270,8 @@
   <section class="controls">
     <nav class="movenav" id="moveNav" aria-label="Choose what to build">
       <div class="modeseg" id="modeSeg" role="tablist">
-        <button data-mode="single" aria-pressed="true"><b>Single movements</b><span>use or build one part</span></button>
-        <button data-mode="combine" aria-pressed="false"><b>Combining parts</b><span>chain parts into a machine</span></button>
+        <button data-mode="single" aria-pressed="true"><b>Single movements</b><span>Build one mechanism on its own — a gear pair, a cam, a crank, a rack…</span></button>
+        <button data-mode="combine" aria-pressed="false"><b>Combining parts</b><span>Chain several parts into one machine on a shared baseplate</span></button>
       </div>
       <div class="movetabs" id="singleTabs">
         <button class="mtab active" data-m="gearing" aria-pressed="true"><b>Spur gearing</b><span>pair &amp; trains · rotary→rotary</span></button>
@@ -3692,7 +3695,8 @@ document.getElementById('modeSeg').addEventListener('click',e=>{const b=e.target
 /* mobile: shrink / grow the pinned preview so controls get the screen */
 document.getElementById('shrinkBtn').addEventListener('click',()=>{document.querySelector('.hero').classList.toggle('compact');if(GL&&GL.ok)GL.draw();});
 
-(function(){const p=document.getElementById('cutSheetPanel'),m=document.querySelector('.ccmain');if(p&&m)m.appendChild(p);})();
+(function(){const cm=document.querySelector('.ccmain'),hero=document.querySelector('.hero'),csp=document.getElementById('cutSheetPanel');
+  if(cm&&hero){const col=document.createElement('div');col.className='leftcol';cm.insertBefore(col,hero);col.appendChild(hero);if(csp)col.appendChild(csp);}})();
 renderGearList();refreshBolts();syncSizeUI();updateReadout();applySize();applyView();
 </script>
 </body>
