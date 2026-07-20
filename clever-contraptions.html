@@ -2581,8 +2581,8 @@ function cxPenAt(c,ang){ const P=c.pen; if(!P||!P.pins||!P.joints||P.pins.length
   return {pinPos,jointPos,weldPos,pen}; }
 function cxPenTrace(c){ const P=c.pen; if(!P)return {pts:[],reachable:true,period:1};
   const rates=P.pins.map(pn=>{const g=c.byId[pn.g];return g?g.rate:0;});
-  let T=200; for(let t=1;t<=200;t++){ if(rates.every(r=>cxFrac(t*r)<2e-3)){T=t;break;} }
-  const N=Math.min(5000,Math.max(600,150*T)), pts=[]; let miss=0;
+  let T; if(P.runTurns&&P.runTurns>0){ T=P.runTurns; } else { T=200; for(let t=1;t<=200;t++){ if(rates.every(r=>cxFrac(t*r)<2e-3)){T=t;break;} } }
+  const N=Math.min(9000,Math.max(600,120*T)), pts=[]; let miss=0;
   for(let i=0;i<=N;i++){ const st=cxPenAt(c,2*Math.PI*T*i/N); if(st&&st.pen)pts.push(st.pen); else {pts.push(null);miss++;} }
   return {pts,reachable:miss<N*0.03,period:T}; }
 function cxTraceBBox(pts){ let a=1e9,b=-1e9,cc=1e9,dd=-1e9; pts.forEach(p=>{if(p){a=Math.min(a,p[0]);b=Math.max(b,p[0]);cc=Math.min(cc,p[1]);dd=Math.max(dd,p[1]);}});
@@ -2594,14 +2594,18 @@ function cxCloses(c){ const P=c.pen; if(!P||!P.pins)return {closes:true,period:1
   const rates=P.pins.map(pn=>{const g=c.byId[pn.g];return g?g.rate:0;});
   if(P.paper&&P.paper.gear!=null){const g=c.byId[P.paper.gear];if(g)rates.push(g.rate);}
   S.cx.converters.forEach(v=>{ if(v.drive==='paper'||v.drive==='pen'){const g=c.byId[v.gear]; if(g)rates.push(g.rate);} });
-  for(let t=1;t<=200;t++){ if(rates.every(r=>cxFrac(t*r)<2e-3))return {closes:true,period:t}; }
-  return {closes:false,period:200}; }
+  for(let t=1;t<=300;t++){ if(rates.every(r=>cxFrac(t*r)<5e-4))return {closes:true,period:t}; }
+  // not a clean small period — find the exact (possibly huge) period = LCM of rate denominators
+  const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){const t=b;b=a%b;a=t;}return a;};
+  let L=1, ok=true;
+  for(const r of rates){ if(Math.abs(r)<1e-9)continue; let q=0; for(let d=1;d<=20000;d++){ if(Math.abs(r*d-Math.round(r*d))<1e-7){q=d;break;} } if(!q){ok=false;break;} L=L/gcd(L,q)*q; if(L>1e12){ok=false;break;} }
+  return {closes:false, period:ok?Math.round(L):null}; }
 function cxDrawing(c,coarseN){ const P=c.pen; if(!P)return {ink:[],mode:'fixed',reachable:true,period:1};
   const G=(P.paper&&P.paper.gear!=null)?c.byId[P.paper.gear]:null, mode=G?'gear':'fixed';
   const rates=P.pins.map(pn=>{const g=c.byId[pn.g];return g?g.rate:0;}); if(G)rates.push(G.rate);
   S.cx.converters.forEach(v=>{ if(v.drive==='paper'||v.drive==='pen'){const g=c.byId[v.gear]; if(g)rates.push(g.rate);} });
-  let T=200; for(let t=1;t<=200;t++){ if(rates.every(r=>cxFrac(t*r)<2e-3)){T=t;break;} }
-  const N=coarseN?Math.min(coarseN,160*T+1):Math.min(6000,Math.max(700,160*T)), ink=[], C=G?[G.x,G.y]:null; let miss=0;
+  let T; if(P.runTurns&&P.runTurns>0){ T=P.runTurns; } else { T=200; for(let t=1;t<=200;t++){ if(rates.every(r=>cxFrac(t*r)<2e-3)){T=t;break;} } }
+  const N=coarseN?Math.min(coarseN,160*T+1):Math.min(14000,Math.max(700,120*T)), ink=[], C=G?[G.x,G.y]:null; let miss=0;
   for(let i=0;i<=N;i++){ const a=2*Math.PI*T*i/N, st=cxPenAt(c,a);
     if(!st||!st.pen){ink.push(null);miss++;continue;}
     const po=cxCoupleOffset(c,a,'paper'), px=st.pen[0]-po[0], py=st.pen[1]-po[1];
@@ -2613,15 +2617,15 @@ function cxDrawing(c,coarseN){ const P=c.pen; if(!P)return {ink:[],mode:'fixed',
 function cxLoadExample(){
   S.cx.m=3;
   S.cx.gears=[{id:0,N:15,kind:'driver',layer:0},
-    {id:1,N:40,kind:'mesh',parent:0,dir:0},
-    {id:2,N:48,kind:'mesh',parent:0,dir:125},
-    {id:3,N:50,kind:'mesh',parent:0,dir:245}];
+    {id:1,N:35,kind:'mesh',parent:0,dir:0},
+    {id:2,N:50,kind:'mesh',parent:0,dir:125},
+    {id:3,N:60,kind:'mesh',parent:0,dir:245}];
   S.cx.nextId=4; S.cx.sel=1; S.cx.converters=[]; S.cx.edges=[];
   const c=computeComplex(), g1=c.byId[1], g2=c.byId[2], g3=c.byId[3], T=[g3.x,g3.y];
-  const la=Math.round(Math.hypot(g1.x-T[0],g1.y-T[1])*0.95), lb=Math.round(Math.hypot(g2.x-T[0],g2.y-T[1])*0.8);
-  S.cx.pen={pins:[{g:1,r:Math.round(g1.rp*0.6)},{g:2,r:Math.round(g2.rp*0.4)}],
+  const la=Math.round(Math.hypot(g1.x-T[0],g1.y-T[1])*1.05), lb=Math.round(Math.hypot(g2.x-T[0],g2.y-T[1])*0.7);
+  S.cx.pen={pins:[{g:1,r:Math.round(g1.rp*0.7)},{g:2,r:Math.round(g2.rp*0.3)}],
     joints:[{a:'p0',la,b:'p1',lb,branch:1}],
-    welds:[{base:{on:'j0',side:'a',t:0.6},len:55,ang:90}],
+    welds:[{base:{on:'j0',side:'a',t:0.5},len:70,ang:60}],
     penRef:'w0', paper:{mode:'fit',w:200,h:200,gear:3,conv:null}}; }
 function cxPaperBox(c,tb){ const P=c.pen; if(!P||!tb)return null; const pp=P.paper||{mode:'fit'};
   if(pp.mode==='custom'){ const w=pp.w||200,h=pp.h||200; return {minX:tb.cx-w/2,maxX:tb.cx+w/2,minY:tb.cy-h/2,maxY:tb.cy+h/2,w,h,cx:tb.cx,cy:tb.cy}; }
@@ -3122,8 +3126,10 @@ function renderComplexUI(){
       const penBlock=`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label></div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="hint">The pen sticks to this arm as you add or adjust others. Choose a joint, a branch tip, or a point part-way along any arm.</div>`;
       const custom=P.paper&&P.paper.mode==='custom';
       const paperCtl=`<div class="lab" style="margin-top:10px"><label>Paper</label></div><div class="cstage-top" style="margin-bottom:8px"><span class="clab">attach to</span><select class="selin" id="cxPaperGear" style="width:auto">${'<option value="fixed"'+((P.paper&&P.paper.gear!=null)?'':' selected')+'>fixed / moving bed</option>'+c.gears.map(g=>`<option value="g${g.id}"${(P.paper&&P.paper.gear===g.id)?' selected':''}>turntable on #${g.id}</option>`).join('')}</select></div><div class="seg" id="cxPaperSeg"><button data-pm="fit" aria-pressed="${custom?'false':'true'}">Fit to drawing</button><button data-pm="custom" aria-pressed="${custom?'true':'false'}">Custom</button></div>`+(custom?`<div class="cstage-top" style="margin-top:8px"><span class="clab">size</span><select class="selin" id="cxPaperPreset" style="width:auto"><option value="">preset…</option><option value="297x210">A4 · 297×210</option><option value="210x148">A5 · 210×148</option><option value="420x297">A3 · 420×297</option><option value="200x200">square 200</option><option value="300x300">square 300</option></select></div><div class="cstage-top" style="margin-top:6px"><span class="clab">W×H</span><span class="cstep"><button data-cxpaper="w" data-d="-10">−</button><input type="number" value="${P.paper.w}" id="cxPaperW" min="20" step="10"><button data-cxpaper="w" data-d="10">＋</button></span><span class="cstep"><button data-cxpaper="h" data-d="-10">−</button><input type="number" value="${P.paper.h}" id="cxPaperH" min="20" step="10"><button data-cxpaper="h" data-d="10">＋</button></span></div><button class="btn" id="cxFitPaper" style="margin-top:8px">⤢ fit drawing to this paper</button><div class="hint" style="margin-top:4px">Sizes the pins &amp; arms so the pattern fills the sheet.</div>`:'');
-      pen.innerHTML=`<div class="lab"><label>Drawing pen (linkage)</label><span class="val">${!tr.reachable?'⚠ arms short':(cl.closes?`closes in ${cl.period} turn${cl.period>1?'s':''} ✓`:'⚠ open — spirals')}</span></div>
-      ${(tr.reachable&&!cl.closes)?`<div class="hint" style="color:#bf3a2b">The gear ratios don't share a common factor, so the figure never repeats — it slowly spirals instead of closing. For a clean, closed rosette, nudge a gear's teeth so the pen gears and the paper turntable share a <b>simple</b> ratio (small numbers with a common factor).</div>`:''}
+      pen.innerHTML=`<div class="lab"><label>Drawing pen (linkage)</label><span class="val">${!tr.reachable?'⚠ arms short':(cl.closes?'closed ✓':'open — weaves')}</span></div>
+      <div class="hint" style="margin-top:4px${!tr.reachable?';color:#bf3a2b':''}">${!tr.reachable?'⚠ The arms can\'t reach through a full turn — lengthen them or move the pins closer.':(cl.closes?`✔ <b>Closed figure</b> — repeats exactly after ${cl.period} turn${cl.period>1?'s':''}, so it retraces the same lines.`:(cl.period?`<b>Open figure</b> — only repeats after ${cl.period.toLocaleString()} turns, so it slowly precesses and <b>weaves denser the longer it runs</b>. Set the run length and stop where it looks best.`:`<b>Open figure</b> — never exactly repeats, so it slowly precesses and <b>weaves denser the longer it runs</b>. Set the run length and stop where it looks best.`))}</div>
+      ${tr.reachable?`<div class="cstage-top" style="margin-top:6px"><span class="clab">run for</span><span class="cstep"><button data-cxrun="-10">−</button><input type="number" value="${P.runTurns||cl.period||140}" id="cxRunTurns" min="2" max="4000" step="10"><button data-cxrun="10">＋</button></span><span class="clab">turns</span>${P.runTurns?'<button data-cxrun="auto" style="margin-left:4px">auto</button>':'<span class="clab" style="color:#9a7220">auto</span>'}</div><div class="hint">${P.runTurns?`Drawing a fixed <b>${P.runTurns} turns</b> (⟳ auto = ${cl.closes?'one full closed figure':'a default run'}). `:''}More turns → denser weave. This is how you "stop the machine" on an open figure to freeze an evolving design.</div>`:''}`;
+      pen.innerHTML+=`
       <div class="lab" style="margin-top:6px"><label>Pins (driven by gears)</label></div><div style="display:flex;flex-direction:column;gap:8px">${pinRows}</div><div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddPinBtn">＋ pin</button>${P.pins.length>2?'<button class="btn ghost" id="cxRmPinBtn">− pin</button>':''}</div>
       <div class="lab" style="margin-top:6px"><label>Joints (two arms meet)</label></div><div style="display:flex;flex-direction:column;gap:8px">${jointRows}</div><div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddJointBtn">＋ joint (hinge two arms)</button>${P.joints.length>1?'<button class="btn ghost" id="cxRmJointBtn">− joint</button>':''}</div>
       <div class="lab" style="margin-top:6px"><label>Branches (one arm off another)</label></div>${W.length?`<div style="display:flex;flex-direction:column;gap:8px">${weldRows}</div>`:'<div class="hint">A branch is a single arm fixed part-way along another arm — hang the pen on its tip, or attach more to it.</div>'}<div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddArmBtn">＋ arm (branch)</button>${W.length?'<button class="btn ghost" id="cxRmArmBtn">− arm</button>':''}</div>
@@ -3730,6 +3736,7 @@ document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.c
   if(b.dataset.cxjflip!=null){const i=+b.dataset.cxjflip;P.joints[i].branch=-(P.joints[i].branch||1);renderComplexUI();everything();return;}
   if(b.dataset.cxt){ const kind=b.dataset.cxt, d=+b.dataset.d; let ref=kind==='pen'?P.penRef:kind==='wb'?((P.welds[+b.dataset.i]||{}).base):(P.joints[+b.dataset.i]||{})[kind==='ja'?'a':'b'];
     if(ref&&ref.on){ ref.t=Math.max(0,Math.min(1,(ref.t==null?0.5:ref.t)+d/100)); renderComplexUI();everything(); } return; }
+  if(b.dataset.cxrun){ if(b.dataset.cxrun==='auto'){P.runTurns=null;} else { const cur=P.runTurns||cxCloses(computeComplex()).period||140; P.runTurns=Math.max(2,Math.min(4000,cur+(+b.dataset.cxrun))); } renderComplexUI();everything();return; }
   if(b.dataset.cxpaper){P.paper=P.paper||{mode:'custom',w:200,h:200};P.paper[b.dataset.cxpaper]=Math.max(20,(P.paper[b.dataset.cxpaper]||200)+(+b.dataset.d));renderComplexUI();everything();return;}
   if(b.id==='cxFitPaper'){cxFitToPaper();renderComplexUI();everything();return;}});
 document.getElementById('cxPen').addEventListener('change',e=>{const t=e.target;if(!S.cx.pen)return;const P=S.cx.pen;
@@ -3743,6 +3750,7 @@ document.getElementById('cxPen').addEventListener('change',e=>{const t=e.target;
   else if(t.classList.contains('cxTnum')){const kind=t.dataset.t;let ref=kind==='pen'?P.penRef:kind==='wb'?((P.welds[+t.dataset.i]||{}).base):(P.joints[+t.dataset.i]||{})[kind==='ja'?'a':'b'];if(ref&&ref.on){ref.t=Math.max(0,Math.min(1,(Math.round(+t.value)||0)/100));renderComplexUI();everything();}}
   else if(t.classList.contains('cxJla')){P.joints[+t.dataset.i].la=Math.max(10,Math.round(+t.value)||P.joints[+t.dataset.i].la);renderComplexUI();everything();}
   else if(t.classList.contains('cxJlb')){P.joints[+t.dataset.i].lb=Math.max(10,Math.round(+t.value)||P.joints[+t.dataset.i].lb);renderComplexUI();everything();}
+  else if(t.id==='cxRunTurns'){P.runTurns=Math.max(2,Math.min(4000,Math.round(+t.value)||P.runTurns||140));renderComplexUI();everything();}
   else if(t.id==='cxPaperGear'){P.paper=P.paper||{mode:'fit',w:200,h:200};P.paper.conv=null;P.paper.gear=(t.value==='fixed')?null:+t.value.slice(1);renderComplexUI();everything();}
   else if(t.id==='cxPaperPreset'){if(t.value){const wh=t.value.split('x').map(Number);P.paper.w=wh[0];P.paper.h=wh[1];renderComplexUI();everything();}}
   else if(t.id==='cxPaperW'){P.paper.w=Math.max(20,Math.round(+t.value)||P.paper.w);renderComplexUI();everything();}
