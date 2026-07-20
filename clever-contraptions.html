@@ -134,14 +134,17 @@
 <style>
   /* ---- unified two-column layout with pinned hero ---- */
   .cchead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-top:6px}
-  .movetabs{display:flex;gap:8px;overflow-x:auto;padding:12px 0 2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .movetabs{display:flex;gap:8px;overflow-x:auto;padding:10px;margin-top:10px;background:var(--paper-3);border:1.5px solid var(--ink);border-radius:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .cxmajor{font-family:"Space Mono",monospace;font-weight:700;font-size:14px;letter-spacing:.09em;text-transform:uppercase;color:var(--brass);border-top:3px solid var(--ink);padding:14px 10px 4px;margin-top:18px;display:flex;justify-content:space-between;align-items:baseline}
+  .cxmajor small{font-weight:400;font-size:10px;letter-spacing:.02em;color:var(--ink-mute);text-transform:none}
   .movenav{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
   .modeseg{display:flex;gap:8px}
-  .modeseg button{flex:1 1 0;display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:10px 14px;border:1.5px solid var(--ink);background:var(--paper-2);border-radius:4px;cursor:pointer;color:var(--ink);font-family:inherit}
-  .modeseg button b{font-family:"Space Mono",monospace;font-size:13px;letter-spacing:.01em}
-  .modeseg button span{font-family:"Space Mono",monospace;font-size:9.5px;color:var(--ink-mute)}
-  .modeseg button[aria-pressed="true"]{background:var(--brass);color:var(--paper);border-color:var(--brass)}
-  .modeseg button[aria-pressed="true"] span{color:#f0e7d4}
+  .modeseg button{flex:1 1 0;display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding:14px 18px;border:2px solid var(--ink);background:var(--paper-2);border-radius:6px;cursor:pointer;color:var(--ink);font-family:inherit}
+  .modeseg button b{font-family:"Space Mono",monospace;font-size:15.5px;letter-spacing:.01em}
+  .modeseg button span{font-family:"Space Mono",monospace;font-size:10.5px;color:var(--ink-mute)}
+  .modeseg button[aria-pressed="true"]{background:var(--brass);color:#fff8ea;border-color:var(--brass);box-shadow:0 2px 0 rgba(35,32,26,.28)}
+  .modeseg button[aria-pressed="true"] b{color:#fff8ea}
+  .modeseg button[aria-pressed="true"] span{color:#f4e7cc}
   .selin{width:100%;padding:7px 8px;border:1.5px solid var(--ink);border-radius:4px;background:var(--paper);font-family:"Space Mono",monospace;font-size:12.5px;color:var(--ink)}
   .csheet{border:1.5px solid var(--ink);border-radius:4px;padding:6px;background:#efe9da;overflow:auto;max-height:64vh}
   .csheet svg{display:block;width:100%;height:auto}
@@ -153,9 +156,10 @@
   .mtab.active span{color:#c9bfa6}
   .mtab.soon{opacity:.5;cursor:not-allowed;border-style:dashed}
   .mtab:not(.active):not(.soon):hover{border-color:var(--brass)}
-  .ccmain{max-width:1180px;margin:14px auto 34px;padding:0 18px;display:grid;
-    grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"hero controls" "cut controls";gap:20px;align-items:start}
-  .hero{grid-area:hero}
+  .ccmain{max-width:1520px;margin:14px auto 34px;padding:0 18px;display:grid;
+    grid-template-columns:minmax(0,1fr) 440px;grid-template-areas:"hero controls" "cut controls";gap:24px;align-items:start}
+  .hero{grid-area:hero;min-width:0;align-self:stretch}
+  .plate{position:sticky;top:14px;z-index:6}
   #cutSheetPanel{grid-area:cut;min-width:0}
   .controls{grid-area:controls;display:flex;flex-direction:column;gap:16px;min-width:0}
   @media (max-width:900px){
@@ -586,7 +590,8 @@
             <div id="cxPen" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
             <div id="cxConv" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
             <div id="cxEdge" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
-            <div id="cxBearing" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
+            <div class="cxmajor">Preparation for Cutting<small>bearings · board tiling · parts list</small></div>
+            <div id="cxBearing" style="margin-top:12px;padding-top:4px"></div>
             <div id="cxSplit" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
             <div id="cxBOM" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
           </div>
@@ -2920,12 +2925,15 @@ function renderComplexUI(){
   host.innerHTML=c.gears.map(g=>{ const isSel=g.id===S.cx.sel;
     const dirCtl=g.kind==='mesh'?`<span class="clab">dir</span><span class="cstep"><button data-cxdir="-1" data-id="${g.id}">−</button><input type="number" value="${g.dir}" data-cxdirn="${g.id}" min="0" max="345" step="15"><button data-cxdir="1" data-id="${g.id}">＋</button></span>`:'';
     return `<div class="cstage" style="${isSel?'border-color:var(--brass);border-width:2px':''}">
-      <div class="cstage-top"><button class="cxsel ${isSel?'on':''}" data-cxsel="${g.id}">#${g.id}</button>
-        <b style="color:${cxLayerCol(g.layer)};-webkit-text-stroke:0.3px #23201a">${KIND[g.kind]}</b>
+      <div class="cstage-top"><button class="cxsel ${isSel?'on':''}" data-cxsel="${g.id}">${isSel?'◉':'○'} #${g.id}</button>
+        <b data-cxsel="${g.id}" style="cursor:pointer;color:${cxLayerCol(g.layer)};-webkit-text-stroke:0.3px #23201a">${KIND[g.kind]}</b>
         <span class="clab">L${g.layer}</span>
         <span class="clab">teeth</span><span class="cstep"><button data-cxn="-1" data-id="${g.id}">−</button><input type="number" value="${g.N}" data-cxnn="${g.id}" min="6" max="120" step="1"><button data-cxn="1" data-id="${g.id}">＋</button></span>
         ${dirCtl}
         ${g.id!==0?`<button class="cxdel" data-cxdel="${g.id}">✕</button>`:''}</div></div>`; }).join('');
+  const selG=c.byId[S.cx.sel]||c.gears[0];
+  const mb=document.getElementById('cxMeshBtn'); if(mb)mb.textContent=`＋ mesh a gear beside #${selG.id}`;
+  const sb=document.getElementById('cxStackBtn'); if(sb)sb.textContent=`＋ stack a gear on #${selG.id}'s shaft`;
   const sc=document.getElementById('cxCountVal'); if(sc)sc.textContent=`${c.gears.length} gears · ${c.layers} layers`;
   const pen=document.getElementById('cxPen');
   if(pen){ if(!c.pen){ pen.innerHTML=`<div class="lab"><label>Drawing pen (pintograph)</label></div><div class="hint">Pin two gears, link them to a shared pen, and it traces a spirograph rosette — a drawing machine.</div><button class="btn ghost" id="cxAddPenBtn" style="margin-top:8px">＋ add drawing pen</button>`; }
@@ -3235,7 +3243,7 @@ function drawPreview(){ if(S.movement==='complex'){ drawComplexPreview();
   const vb=(preview.getAttribute('viewBox')||'').trim().split(/\s+/).map(Number); if(vb.length===4&&vb.every(isFinite)){svgNat=vb; applySvgView();} }
 function buildExportSVG(){ if(S.movement==='complex')return exportComplex(); return S.movement==='composer'?exportComposer():S.movement==='fourbar'?exportFourbar():S.movement==='planetary'?exportPlanetary():S.movement==='internal'?exportInternal():S.movement==='scotch'?exportScotch():S.movement==='ratchet'?exportRatchet():S.movement==='rack'?exportRack():S.movement==='cam'?exportCam():S.movement==='crank'?exportCrank():exportGearing(); }
 function rebuild3D(){if(GL&&GL.ok)GL.setScene(buildScene());}
-const SIZES={s:300,m:440,l:600};
+const SIZES={s:360,m:520,l:700};
 function applySize(){document.documentElement.style.setProperty('--stageH',(window.innerWidth<560?SIZES[S.psize]*0.8:SIZES[S.psize])+'px');if(GL&&GL.ok)GL.draw();}
 function applyView(){
   const is3d=S.view==='3d'&&ensureGL();
@@ -3609,12 +3617,12 @@ document.getElementById('loadProjFile').addEventListener('change',e=>{ const f=e
 document.getElementById('sheetSize').addEventListener('change',()=>{if(cutSheetOpen())renderCutSheet();});
 
 (function(){let drag=false,lx=0,ly=0;const pts=new Map();let pinch=0,pcx=0,pcy=0;
-  glCanvas.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;pts.set(e.pointerId,e);glCanvas.setPointerCapture(e.pointerId);glCanvas.classList.add('grabbing');});
+  glCanvas.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;pts.set(e.pointerId,e);try{glCanvas.setPointerCapture(e.pointerId);}catch(_){}glCanvas.classList.add('grabbing');});
   glCanvas.addEventListener('pointermove',e=>{if(!GL||!GL.ok)return;if(pts.has(e.pointerId))pts.set(e.pointerId,e);
     if(pts.size>=2){const a=[...pts.values()];const d=Math.hypot(a[0].clientX-a[1].clientX,a[0].clientY-a[1].clientY);
       const ccx=(a[0].clientX+a[1].clientX)/2,ccy=(a[0].clientY+a[1].clientY)/2;
-      if(pinch){GL.zoomBy(d/pinch);GL.pan(ccx-pcx,ccy-pcy);}pinch=d;pcx=ccx;pcy=ccy;drag=false;return;}
-    if(drag){if(e.shiftKey)GL.pan(e.clientX-lx,e.clientY-ly);else GL.orbit(e.clientX-lx,e.clientY-ly);lx=e.clientX;ly=e.clientY;}});
+      if(pinch){GL.zoomBy(d/pinch);GL.pan(ccx-pcx,ccy-pcy);GL.draw();}pinch=d;pcx=ccx;pcy=ccy;drag=false;return;}
+    if(drag){if(e.shiftKey)GL.pan(e.clientX-lx,e.clientY-ly);else GL.orbit(e.clientX-lx,e.clientY-ly);lx=e.clientX;ly=e.clientY;GL.draw();}});
   const up=e=>{drag=false;pts.delete(e.pointerId);if(pts.size<2)pinch=0;glCanvas.classList.remove('grabbing');};
   glCanvas.addEventListener('pointerup',up);glCanvas.addEventListener('pointercancel',up);
   glCanvas.addEventListener('wheel',e=>{if(!GL||!GL.ok)return;e.preventDefault();GL.zoomBy(e.deltaY<0?1.08:0.926);},{passive:false});
