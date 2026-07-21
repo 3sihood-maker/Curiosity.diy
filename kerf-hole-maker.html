@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kerf Hole Maker — Curiosity.diy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4ece0;
+  --paper-2:#eadfcd;
+  --espresso:#241a12;
+  --espresso-soft:#4a382a;
+  --rust:#c0442a;
+  --tan:#d9b483;
+  --line:#c9b79c;
+  --ok:#5d7b3e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);color:var(--espresso);
+  font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+header{background:var(--espresso);color:var(--paper);padding:14px 20px 20px}
+.backlink{
+  display:inline-block;font-family:'JetBrains Mono',monospace;font-size:11px;
+  letter-spacing:.12em;color:var(--tan);text-decoration:none;margin-bottom:12px;
+}
+.backlink:hover{color:var(--paper)}
+header .eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--tan);
+}
+header h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(26px,6vw,38px);margin:6px 0 4px;line-height:1.05}
+header h1 em{font-style:italic;color:var(--tan)}
+header p{margin:0;color:#cdbba4;font-size:14px;max-width:62ch}
+.wrap{max-width:1080px;margin:0 auto;padding:20px}
+.grid{display:grid;gap:20px;grid-template-columns:1fr}
+@media(min-width:900px){.grid{grid-template-columns:340px 1fr;align-items:start}}
+.card{background:#fbf6ee;border:1px solid var(--line);border-radius:10px;padding:16px;box-shadow:0 1px 0 #fff inset}
+.card h2{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--espresso-soft);margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+label{display:block;margin:0 0 14px}
+label .lab{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:500;margin-bottom:5px}
+label .val{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--rust);font-weight:700}
+input[type=range]{width:100%;accent-color:var(--rust)}
+select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--espresso)}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{flex:1;padding:9px 6px;border:0;background:#fff;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.04em;color:var(--espresso-soft);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--espresso);color:var(--paper)}
+.seg button:focus-visible{outline:2px solid var(--rust);outline-offset:-2px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.btn{flex:1;min-width:130px;padding:12px 14px;border-radius:8px;border:1px solid var(--espresso);background:var(--espresso);color:var(--paper);cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.btn.alt{background:var(--tan);color:var(--espresso);border-color:#b8925f}
+.btn:hover{filter:brightness(1.12)}
+.btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+.preview{background:#fffdf9;border:1px solid var(--line);border-radius:10px;padding:12px}
+canvas{width:100%;height:auto;display:block;border-radius:4px;background:#fffdf9}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--espresso-soft)}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:middle;border-radius:2px}
+.stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dotted var(--line);font-family:'JetBrains Mono',monospace;font-size:12px}
+.stat:last-child{border-bottom:0}
+.stat b{font-weight:700;color:var(--rust)}
+.note{border-left:3px solid var(--rust);background:#f7efe3;padding:12px 14px;border-radius:0 6px 6px 0;font-size:14px;margin:0 0 14px}
+.note strong{font-weight:600}
+.explain h3{font-family:Fraunces,Georgia,serif;font-size:20px;margin:18px 0 6px;font-weight:600}
+.explain h3:first-child{margin-top:0}
+.explain ol,.explain ul{margin:0 0 10px;padding-left:20px}
+.explain li{margin-bottom:6px}
+.explain code{font-family:'JetBrains Mono',monospace;background:#efe4d2;padding:1px 5px;border-radius:3px;font-size:13px}
+footer{text-align:center;padding:26px 20px 40px;color:var(--espresso-soft);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em}
+footer a{color:var(--rust);text-decoration:none}
+.chiplist{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chip{font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 7px;border-radius:4px;background:#efe4d2;border:1px solid var(--line)}
+.chip.nom{background:var(--espresso);color:var(--paper);border-color:var(--espresso)}
+@media(prefers-reduced-motion:no-preference){.btn{transition:filter .15s ease}}
+</style>
+</head>
+<body>
+<header>
+  <a class="backlink" href="https://curiosity.diy">← curiosity.diy</a>
+  <div class="eyebrow">Curiosity.diy · Laser bench</div>
+  <h1>Kerf <em>Hole</em> Maker</h1>
+  <p>A grid of test holes stepping around one target size. Push the actual dowel, bolt or bearing into each and find the one it grips — that hole size is the one to draw. Two rows, so it barely costs any board.</p>
+</header>
+
+<div class="wrap">
+<div class="note">
+  <strong>What this is for.</strong> A laser hole comes out <em>wider</em> than the circle you drew, by roughly the beam width — the kerf. Draw a 6&nbsp;mm hole and a 6&nbsp;mm dowel rattles in it. This tool cuts your target size plus five smaller and four larger. Try the real part in each: for a <strong>press fit</strong> (dowel, bearing housing) take the smallest hole it seats into by hand; for a <strong>clearance fit</strong> (bolt passing through) take the smallest hole it drops through cleanly. Draw that size on the real job and it fits first time. Roughly, <code>kerf = part Ø − drawn hole that grips</code>.
+</div>
+
+<div class="grid">
+  <div>
+    <div class="card">
+      <h2>Target</h2>
+
+      <label>
+        <div class="lab"><span>Part type</span></div>
+        <div class="seg" id="typeSeg">
+          <button data-type="dowel" aria-pressed="true">Dowel</button>
+          <button data-type="bolt" aria-pressed="false">Bolt</button>
+          <button data-type="bearing" aria-pressed="false">Bearing</button>
+        </div>
+      </label>
+
+      <label>
+        <div class="lab"><span>Common size</span></div>
+        <select id="preset"></select>
+      </label>
+
+      <label>
+        <div class="lab"><span>Target hole Ø</span><span class="val" id="nVal">6.0 mm</span></div>
+        <input type="range" id="nom" min="2" max="30" step="0.1" value="6">
+      </label>
+
+      <label>
+        <div class="lab"><span>Step between holes</span><span class="val" id="sVal">0.10 mm</span></div>
+        <input type="range" id="step" min="0.05" max="0.5" step="0.05" value="0.1">
+      </label>
+
+      <label>
+        <div class="lab"><span>Land between holes</span><span class="val" id="gVal">5 mm</span></div>
+        <input type="range" id="land" min="3" max="12" step="0.5" value="5">
+      </label>
+
+      <label>
+        <div class="lab"><span>Layout</span></div>
+        <div class="seg" id="rowSeg">
+          <button data-rows="2" aria-pressed="true">Two rows</button>
+          <button data-rows="1" aria-pressed="false">One row</button>
+        </div>
+      </label>
+
+      <label>
+        <div class="lab"><span>Engrave resolution</span></div>
+        <select id="dpi">
+          <option value="300">300 dpi</option>
+          <option value="500" selected>500 dpi</option>
+          <option value="600">600 dpi</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>Sheet</h2>
+      <div class="stat"><span>Document</span><b id="docSize">—</b></div>
+      <div class="stat"><span>Holes</span><b id="nHoles">10</b></div>
+      <div class="stat"><span>Hole range</span><b id="range">—</b></div>
+      <div class="stat"><span>Kerf window</span><b id="kerf">—</b></div>
+      <div class="chiplist" id="chips"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>Download</h2>
+      <div class="btnrow">
+        <button class="btn" id="dlSvg">SVG · cut</button>
+        <button class="btn alt" id="dlJpg">JPG · engrave</button>
+      </div>
+      <p style="font-size:13px;color:var(--espresso-soft);margin:12px 0 0">
+        Same page size, same origin. Engrave the JPG numbers, cut the SVG over the top without moving the board. The 4&nbsp;mm square at top-left sits at <code>0,0</code> in both — line the squares up and the holes land on their labels.
+      </p>
+    </div>
+  </div>
+
+  <div>
+    <div class="preview">
+      <canvas id="cv" width="1200" height="760"></canvas>
+      <div class="legend">
+        <span><i style="background:#c0442a"></i>Cut holes — SVG</span>
+        <span><i style="background:#241a12"></i>Engraved numbers — JPG</span>
+        <span><i style="background:#5d7b3e"></i>Registration square at 0,0 — both files</span>
+        <span><i style="background:#b8925f"></i>Your target size</span>
+      </div>
+    </div>
+
+    <div class="card explain" style="margin-top:20px">
+      <h2>How to use it</h2>
+      <h3>Cut the tester</h3>
+      <ol>
+        <li>Engrave the JPG on the board you'll build from, at your usual settings.</li>
+        <li>Cut the SVG over it without moving the board.</li>
+        <li>Take the real dowel, bolt or bearing and try it in each hole.</li>
+      </ol>
+      <h3>Read it</h3>
+      <ul>
+        <li><strong>Dowel / glue-up:</strong> the smallest hole the dowel pushes into snugly by hand. Glue swells timber, so leave it just shy of a hammer fit.</li>
+        <li><strong>Bearing:</strong> the smallest hole the outer race seats into with firm thumb pressure or one light tap, no side-to-side wobble.</li>
+        <li><strong>Bolt clearance:</strong> the smallest hole the bolt drops through freely. Go one step up if you want the head to self-centre.</li>
+      </ul>
+      <h3>Why the drawn size isn't the part size</h3>
+      <p style="margin:0">The beam eats a little material all the way round the circle, so the finished hole is larger than the line — usually by 0.1–0.25&nbsp;mm on the diameter depending on machine, power, speed and board. Read the engraved number under the hole that fit, draw <em>that</em> on the real job, and note it on the wall beside your comb figure. Recut this whenever the board or settings change.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>Curiosity.diy · <a href="https://curiosity.diy">back to the workshop</a> · test the fit before the real job</footer>
+
+<script>
+(function(){
+'use strict';
+
+var PRESETS = {
+  dowel:  { step:0.1, note:'dowel', items:[
+    {label:'3 mm dowel',d:3},{label:'4 mm dowel',d:4},{label:'5 mm dowel',d:5},
+    {label:'6 mm dowel',d:6},{label:'8 mm dowel',d:8},{label:'10 mm dowel',d:10},
+    {label:'12 mm dowel',d:12},{label:'16 mm dowel',d:16}], def:3 },
+  bolt:   { step:0.2, note:'bolt shank', items:[
+    {label:'M3 (3 mm)',d:3},{label:'M4 (4 mm)',d:4},{label:'M5 (5 mm)',d:5},
+    {label:'M6 (6 mm)',d:6},{label:'M8 (8 mm)',d:8},{label:'M10 (10 mm)',d:10},
+    {label:'M12 (12 mm)',d:12}], def:3 },
+  bearing:{ step:0.1, note:'bearing OD', items:[
+    {label:'MR84/85 · OD 8',d:8},{label:'623 · OD 10',d:10},{label:'624 · OD 13',d:13},
+    {label:'625 · OD 16',d:16},{label:'626 · OD 19',d:19},{label:'608 · OD 22',d:22},
+    {label:'6000 · OD 26',d:26},{label:'6001 · OD 28',d:28},{label:'6200 · OD 30',d:30}], def:0 }
+};
+
+var S = {
+  type:'dowel', nom:6.0, step:0.1, land:5, rows:2, dpi:500,
+  nSmaller:5, nBigger:4
+};
+
+var REG = 4, REG_GAP = 5, LABEL_H = 8, TITLE_H = 8, ROW_GAP = 6, MARGIN = 8, MIN_D = 0.8;
+
+/* ---------- geometry ---------- */
+function diameters(){
+  var out = [];
+  for(var i=S.nSmaller;i>=1;i--){
+    var d = +(S.nom - i*S.step).toFixed(3);
+    if(d >= MIN_D) out.push({d:d, nom:false});
+  }
+  out.push({d:+S.nom.toFixed(3), nom:true});
+  for(var j=1;j<=S.nBigger;j++){
+    out.push({d:+(S.nom + j*S.step).toFixed(3), nom:false});
+  }
+  return out; // ascending
+}
+
+function buildDoc(){
+  var holes = diameters();
+  var maxD = holes.reduce(function(m,h){return Math.max(m,h.d);}, 0);
+  var perRow = (S.rows === 2) ? Math.ceil(holes.length/2) : holes.length;
+  var pitchX = maxD + S.land;
+  var cellH  = maxD + LABEL_H;
+  var pitchY = cellH + ROW_GAP;
+  var nRows  = (S.rows === 2) ? 2 : 1;
+
+  var y0 = REG + REG_GAP + TITLE_H;
+  var placed = [];
+  for(var i=0;i<holes.length;i++){
+    var row = (S.rows === 2) ? Math.floor(i/perRow) : 0;
+    var col = (S.rows === 2) ? (i % perRow) : i;
+    var cx = MARGIN + col*pitchX + maxD/2;
+    var cy = y0 + row*pitchY + maxD/2;
+    placed.push({d:holes[i].d, nom:holes[i].nom, cx:cx, cy:cy, labelY:cy + maxD/2 + LABEL_H/2 + 0.5});
+  }
+  var W = MARGIN*2 + perRow*pitchX - S.land;
+  var H = y0 + nRows*pitchY - ROW_GAP + 3;
+  W = Math.max(W, REG + 10);
+  return {
+    W:+(W+3).toFixed(2), H:+H.toFixed(2), reg:REG, holes:placed, maxD:maxD,
+    title: PRESETS[S.type].note + '  ·  target ' + S.nom.toFixed(1) + ' mm  ·  draw the hole that grips'
+  };
+}
+
+/* ---------- SVG: cut ---------- */
+function makeSVG(doc){
+  var L = [];
+  L.push('<?xml version="1.0" encoding="UTF-8"?>');
+  L.push('<svg xmlns="http://www.w3.org/2000/svg" width="'+doc.W+'mm" height="'+doc.H+'mm" viewBox="0 0 '+doc.W+' '+doc.H+'">');
+  L.push('<!-- Kerf Hole tester - CUT file - Curiosity.diy. Units mm. Registration square at 0,0 matches the engrave JPG. -->');
+  L.push('<g id="cut" fill="none" stroke="#ff0000" stroke-width="0.1">');
+  L.push('  <rect x="0" y="0" width="'+doc.reg+'" height="'+doc.reg+'"/>');
+  for(var i=0;i<doc.holes.length;i++){
+    var h = doc.holes[i];
+    L.push('  <circle cx="'+(+h.cx.toFixed(3))+'" cy="'+(+h.cy.toFixed(3))+'" r="'+(+(h.d/2).toFixed(3))+'"/>');
+  }
+  L.push('</g>');
+  L.push('</svg>');
+  return L.join('\n');
+}
+
+/* ---------- shared paint ---------- */
+function paint(ctx, doc, scale, mode){
+  var ink = '#000';
+  ctx.save();
+  ctx.scale(scale, scale);
+
+  // registration square
+  ctx.fillStyle = (mode === 'preview') ? '#5d7b3e' : ink;
+  ctx.fillRect(0, 0, doc.reg, doc.reg);
+
+  // title band (engraved)
+  ctx.fillStyle = (mode === 'preview') ? '#241a12' : ink;
+  ctx.font = '600 3.2px Inter, Arial, sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(doc.title, MARGIN, REG + REG_GAP + TITLE_H/2);
+
+  for(var i=0;i<doc.holes.length;i++){
+    var h = doc.holes[i];
+    if(mode === 'preview'){
+      ctx.beginPath();
+      ctx.arc(h.cx, h.cy, h.d/2, 0, Math.PI*2);
+      ctx.fillStyle = '#fffdf9';
+      ctx.fill();
+      ctx.strokeStyle = h.nom ? '#b8925f' : '#c0442a';
+      ctx.lineWidth = h.nom ? 0.7 : 0.35;
+      ctx.stroke();
+      if(h.nom){
+        ctx.beginPath();
+        ctx.arc(h.cx, h.cy, h.d/2 + 0.9, 0, Math.PI*2);
+        ctx.strokeStyle = '#b8925f';
+        ctx.lineWidth = 0.3;
+        ctx.stroke();
+      }
+    }
+    // engraved number
+    ctx.fillStyle = (mode === 'preview') ? '#241a12' : ink;
+    ctx.font = '600 3.3px Inter, Arial, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(h.d.toFixed(2), h.cx, h.labelY);
+  }
+  ctx.restore();
+}
+
+/* ---------- JPG: engrave ---------- */
+function makeJPG(doc){
+  var px = S.dpi / 25.4;
+  var cv = document.createElement('canvas');
+  cv.width  = Math.round(doc.W * px);
+  cv.height = Math.round(doc.H * px);
+  var ctx = cv.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,cv.width,cv.height);
+  paint(ctx, doc, px, 'engrave');
+  return cv.toDataURL('image/jpeg', 0.95);
+}
+
+/* ---------- preview ---------- */
+function drawPreview(doc){
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var pad = 16, box = cv.width - pad*2, boxH = cv.height - pad*2;
+  var scale = Math.min(box/doc.W, boxH/doc.H);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = '#fffdf9';
+  ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.save();
+  ctx.translate(pad + (box - doc.W*scale)/2, pad + (boxH - doc.H*scale)/2);
+  paint(ctx, doc, scale, 'preview');
+  ctx.restore();
+}
+
+/* ---------- io ---------- */
+function download(name, href){
+  var a = document.createElement('a');
+  a.href = href; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function slug(){ return 'kerf-holes-' + S.type + '-' + S.nom.toFixed(1) + 'mm'; }
+
+/* ---------- ui ---------- */
+function fillPreset(){
+  var p = PRESETS[S.type];
+  var sel = document.getElementById('preset');
+  sel.innerHTML = p.items.map(function(it,i){
+    return '<option value="'+it.d+'"'+(i===p.def?' selected':'')+'>'+it.label+'</option>';
+  }).join('');
+}
+
+function refresh(){
+  var doc = buildDoc();
+  drawPreview(doc);
+  document.getElementById('docSize').textContent = doc.W.toFixed(0) + ' × ' + doc.H.toFixed(0) + ' mm';
+  document.getElementById('nHoles').textContent = doc.holes.length;
+  var ds = doc.holes.map(function(h){return h.d;});
+  document.getElementById('range').textContent = ds[0].toFixed(2) + ' → ' + ds[ds.length-1].toFixed(2) + ' mm';
+  document.getElementById('kerf').textContent = '−' + (S.nSmaller*S.step).toFixed(2) + ' → +' + (S.nBigger*S.step).toFixed(2) + ' mm';
+  document.getElementById('chips').innerHTML = doc.holes.map(function(h){
+    return '<span class="chip'+(h.nom?' nom':'')+'">'+h.d.toFixed(2)+'</span>';
+  }).join('');
+  return doc;
+}
+
+function bindRange(id, key, fmt, valId, after){
+  var el = document.getElementById(id);
+  el.addEventListener('input', function(){
+    S[key] = parseFloat(el.value);
+    document.getElementById(valId).textContent = fmt(S[key]);
+    if(after) after();
+    refresh();
+  });
+  document.getElementById(valId).textContent = fmt(S[key]);
+}
+
+bindRange('nom','nom', function(v){return v.toFixed(1)+' mm';}, 'nVal', function(){
+  document.getElementById('preset').value = '';
+});
+bindRange('step','step', function(v){return v.toFixed(2)+' mm';}, 'sVal');
+bindRange('land','land', function(v){return v.toFixed(1)+' mm';}, 'gVal');
+
+document.getElementById('typeSeg').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if(!b) return;
+  S.type = b.dataset.type;
+  [].forEach.call(this.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x===b)); });
+  var p = PRESETS[S.type];
+  S.step = p.step;
+  document.getElementById('step').value = S.step;
+  document.getElementById('sVal').textContent = S.step.toFixed(2)+' mm';
+  fillPreset();
+  S.nom = p.items[p.def].d;
+  document.getElementById('nom').value = S.nom;
+  document.getElementById('nVal').textContent = S.nom.toFixed(1)+' mm';
+  refresh();
+});
+
+document.getElementById('preset').addEventListener('change', function(){
+  if(!this.value) return;
+  S.nom = parseFloat(this.value);
+  document.getElementById('nom').value = S.nom;
+  document.getElementById('nVal').textContent = S.nom.toFixed(1)+' mm';
+  refresh();
+});
+
+document.getElementById('rowSeg').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if(!b) return;
+  S.rows = parseInt(b.dataset.rows, 10);
+  [].forEach.call(this.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x===b)); });
+  refresh();
+});
+
+document.getElementById('dpi').addEventListener('change', function(){ S.dpi = parseInt(this.value,10); });
+
+document.getElementById('dlSvg').addEventListener('click', function(){
+  var doc = buildDoc();
+  var blob = new Blob([makeSVG(doc)], {type:'image/svg+xml'});
+  download(slug()+'-CUT.svg', URL.createObjectURL(blob));
+});
+document.getElementById('dlJpg').addEventListener('click', function(){
+  var doc = buildDoc();
+  download(slug()+'-ENGRAVE.jpg', makeJPG(doc));
+});
+
+fillPreset();
+refresh();
+
+if(typeof module !== 'undefined' && module.exports){
+  module.exports = { S:S, diameters:diameters, buildDoc:buildDoc, makeSVG:makeSVG, PRESETS:PRESETS };
+}
+window.__kerfhole = { S:S, diameters:diameters, buildDoc:buildDoc, makeSVG:makeSVG, PRESETS:PRESETS };
+})();
+</script>
+</body>
+</html>
