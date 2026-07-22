@@ -2756,7 +2756,7 @@ function cxBrgCount(c){ const M=cxBrgMode(); if(M==='none')return 0; let n=c.gea
 // Kerf Hole Maker (flat-top for even sides, point-up for odd) so a hex pencil gets a hex hole.
 var CX_SIDE_NAME={0:'round',3:'triangular',4:'square',5:'pentagonal',6:'hex',7:'heptagonal',8:'octagonal'};
 function cxPenSides(){ const n=S.cx.penSides|0; return (n>=3&&n<=8)?n:0; }
-function cxPenAF(){ return (S.cx.penHole!=null?S.cx.penHole:(S.cx.penDia||10)); }
+function cxPenAF(){ return Math.max(S.cx.penDia||10,2); }
 function cxPenHoleOR(){ const n=cxPenSides(), af=cxPenAF(); return n<3?af/2:(af/2)/Math.cos(Math.PI/n); }
 // hole loop centred at (cx,cy); afAdj is the across-flats (already kerf-adjusted by caller)
 function cxPenHoleLoop(cx,cy,afAdj){ const n=cxPenSides();
@@ -3210,7 +3210,7 @@ function renderComplexUI(){
         P.joints.forEach((_,k)=>o+=opt('j'+k,'joint '+(k+1))+opt('t:j'+k+':a','↳ along arm→J'+(k+1)+' (a)')+opt('t:j'+k+':b','↳ along arm→J'+(k+1)+' (b)'));
         W.forEach((_,m)=>o+=opt('w'+m,'branch W'+(m+1)+' tip')+opt('t:w'+m,'↳ along branch W'+(m+1))); return o; };
       const pnS=cxPenSides(), shapeBtns=[['0','round'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8']].map(o=>`<button class="chip" data-cxpshape="${o[0]}" aria-pressed="${(+o[0]===pnS||(o[0]==='0'&&pnS<3))?'true':'false'}" style="padding:4px 8px;cursor:pointer">${o[1]}</button>`).join('');
-      const penBlock=`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label></div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="cstage-top" style="margin-top:6px"><span class="clab">pen ⌀</span><span class="cstep"><button data-cxpen="-0.5">−</button><input type="number" value="${S.cx.penDia||10}" id="cxPenDia" min="3" max="30" step="0.5"><button data-cxpen="0.5">＋</button></span><span class="clab">mm barrel</span></div><div class="cstage-top" style="margin-top:6px"><span class="clab">hole shape</span><span style="display:flex;gap:5px;flex-wrap:wrap" id="cxPenShape">${shapeBtns}</span></div><div class="cstage-top" style="margin-top:6px"><span class="clab">hole ${pnS<3?'⌀':'A/F'}</span><span class="cstep"><button data-cxph="-0.1">−</button><input type="number" value="${S.cx.penHole!=null?S.cx.penHole:(S.cx.penDia||10)}" id="cxPenHole" min="2" max="30" step="0.1"><button data-cxph="0.1">＋</button></span><span class="clab">mm to cut</span></div><div class="hint">The pen sticks to this arm as you build the rest. A <b>teardrop collar</b> (cut sheet) bolts to the tip and the pen drops through its hole. Pick a shape — <b>${pnS>=3?CX_SIDE_NAME[pnS]:'round'}</b>${pnS>=3?` (${pnS} sides, measured across the flats — a hex hole grips a hex pencil)`:' (round barrels)'} — and cut it a touch under size for a friction grip. Use the <b>Kerf Hole Maker</b> on curiosity.diy to find the exact number.</div>`;
+      const penBlock=`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label></div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="cstage-top" style="margin-top:6px"><span class="clab">hole shape</span><span style="display:flex;gap:5px;flex-wrap:wrap" id="cxPenShape">${shapeBtns}</span></div><div class="cstage-top" style="margin-top:6px"><span class="clab">pen/pencil ${pnS<3?'⌀':'A/F'}</span><span class="cstep"><button data-cxpen="-0.1">−</button><input type="number" value="${S.cx.penDia||10}" id="cxPenDia" min="2" max="30" step="0.1"><button data-cxpen="0.1">＋</button></span><span class="clab">mm to cut</span></div><div class="hint">The pen sticks to this arm as you build the rest. A <b>teardrop collar</b> (cut sheet) bolts to the tip and the pen drops through this exact hole — a <b>${pnS>=3?CX_SIDE_NAME[pnS]:'round'}</b>${pnS>=3?` ${pnS}-sided hole measured across the flats (grips a hex pencil)`:' hole for round barrels'}. Cut a test hole in the <b>Kerf Hole Maker</b> on curiosity.diy and set this to the size that grips.</div>`;
       const custom=P.paper&&P.paper.mode==='custom';
       const paperCtl=`<div class="lab" style="margin-top:10px"><label>Paper</label></div><div class="cstage-top" style="margin-bottom:8px"><span class="clab">attach to</span><select class="selin" id="cxPaperGear" style="width:auto">${'<option value="fixed"'+((P.paper&&P.paper.gear!=null)?'':' selected')+'>fixed / moving bed</option>'+c.gears.map(g=>`<option value="g${g.id}"${(P.paper&&P.paper.gear===g.id)?' selected':''}>turntable on #${g.id}</option>`).join('')}</select></div><div class="seg" id="cxPaperSeg"><button data-pm="fit" aria-pressed="${custom?'false':'true'}">Fit to drawing</button><button data-pm="custom" aria-pressed="${custom?'true':'false'}">Custom</button></div>`+(custom?`<div class="cstage-top" style="margin-top:8px"><span class="clab">size</span><select class="selin" id="cxPaperPreset" style="width:auto"><option value="">preset…</option><option value="297x210">A4 · 297×210</option><option value="210x148">A5 · 210×148</option><option value="420x297">A3 · 420×297</option><option value="200x200">square 200</option><option value="300x300">square 300</option></select></div><div class="cstage-top" style="margin-top:6px"><span class="clab">W×H</span><span class="cstep"><button data-cxpaper="w" data-d="-10">−</button><input type="number" value="${P.paper.w}" id="cxPaperW" min="20" step="10"><button data-cxpaper="w" data-d="10">＋</button></span><span class="cstep"><button data-cxpaper="h" data-d="-10">−</button><input type="number" value="${P.paper.h}" id="cxPaperH" min="20" step="10"><button data-cxpaper="h" data-d="10">＋</button></span></div><button class="btn" id="cxFitPaper" style="margin-top:8px">⤢ fit drawing to this paper</button><div class="hint" style="margin-top:4px">Sizes the pins &amp; arms so the pattern fills the sheet.</div>`:'');
       pen.innerHTML=`<div class="lab"><label>Drawing pen (linkage)</label><span class="val">${!tr.reachable?'⚠ arms short':(cl.closes?'closed ✓':'open — weaves')}</span></div>
@@ -3604,6 +3604,27 @@ function nestPieces(pieces,sheetW,sheetH,gap){
     place.push({p:it.p,rot,sheet:ch.bi,x:ch.x,y:ch.y,w:w-gap,h:h-gap,over:(it.w>sheetW+1e-6||it.h>sheetH+1e-6)}); }
   return {place,sheets:bins.length};
 }
+function loopArea(L){ let a=0; for(let i=0;i<L.length;i++){const [x1,y1]=L[i],[x2,y2]=L[(i+1)%L.length];a+=x1*y2-x2*y1;} return a/2; }
+// Build one kerf-compensated cut SVG per nested sheet. opts:{outline, marker}
+function cxNestedSheets(opts){ opts=opts||{};
+  const szEl=document.getElementById('sheetSize'), sz=((szEl&&szEl.value)||'400x300').split('x').map(Number), sw=sz[0], sh=sz[1], gap=6, kh=S.kerf/2;
+  let pieces; try{ pieces=cutPiecesFromScene(); }catch(e){ pieces=[]; }
+  if(!pieces.length)return {sheets:[], count:0, sw, sh};
+  const {place,sheets}=nestPieces(pieces,sw,sh,gap), out=[];
+  for(let k=0;k<sheets;k++){ let body='';
+    if(opts.outline)body+=`<rect x="0" y="0" width="${sw}" height="${sh}" fill="none" stroke="#bf3a2b" stroke-width="0.3"/>`;
+    if(opts.marker)body+=`<g stroke="#2c5f8a" stroke-width="0.4" fill="none"><line x1="-6" y1="0" x2="6" y2="0"/><line x1="0" y1="-6" x2="0" y2="6"/><circle cx="0" cy="0" r="2"/></g>`;
+    for(const pl of place){ if(pl.sheet!==k)continue; const cx=pl.x+pl.w/2, cy=pl.y+pl.h/2;
+      let oi=0,oa=-1; pl.p.loops.forEach((L,i)=>{const a=Math.abs(loopArea(L)); if(a>oa){oa=a;oi=i;}});
+      let d='';
+      pl.p.loops.forEach((L,i)=>{ let LL; try{ LL=offsetPolygon(L, i===oi?kh:-kh); if(!LL.length||!LL.every(p=>isFinite(p[0])&&isFinite(p[1])))LL=L; }catch(_){ LL=L; }
+        LL.forEach((pt,j)=>{ let X=pt[0],Y=pt[1]; if(pl.rot){const t=X;X=-Y;Y=t;} d+=(j?'L':'M')+(cx+X).toFixed(2)+' '+(cy+Y).toFixed(2)+' '; }); d+='Z '; });
+      body+=`<path d="${d}" fill="none" stroke="#bf3a2b" stroke-width="0.12"/>`; }
+    const mo=opts.marker?10:0;
+    out.push({name:`sheet_${k+1}_of_${sheets}_${sw}x${sh}mm`, svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-mo} ${-mo} ${sw+2*mo} ${sh+2*mo}" width="${sw}mm" height="${sh}mm">${body}</svg>`}); }
+  return {sheets:out, count:sheets, sw, sh};
+}
+function dlSVG(name,svg){ const blob=new Blob([svg],{type:'image/svg+xml'}), url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=name+'.svg'; a.click(); URL.revokeObjectURL(url); }
 function renderCutSheet(){
   const view=document.getElementById('cutSheetView'); if(!view)return;
   const sz=(document.getElementById('sheetSize').value||'400x300').split('x').map(Number), sw=sz[0], sh=sz[1], gap=6, CUT='#bf3a2b';
@@ -3619,7 +3640,17 @@ function renderCutSheet(){
   s+='</svg>';
   const areaUsed=pieces.reduce((a,p)=>a+p.w*p.h,0), util=Math.min(100,areaUsed/(sheets*sw*sh)*100);
   const cap=`<b>${pieces.length} pieces</b> nested on <b>${sheets} sheet${sheets>1?'s':''}</b> of ${sw}×${sh} mm · ~${util.toFixed(0)}% used`+(over?` · ⚠ ${over} piece${over>1?'s':''} exceed the sheet — pick a larger size`:'');
-  view.innerHTML=`<div class="csheet">${s}</div><div class="hint" style="margin-top:6px">${cap}<br>Tight-packed preview; the <b>Download laser SVG</b> stays the exact kerf-compensated cut file.</div>`;
+  const outOn=S.nestOutline!==false, mkOn=!!S.nestMarker;
+  let dlrow=''; for(let k=0;k<sheets;k++)dlrow+=`<button class="btn ghost" data-dlsheet="${k}" style="padding:6px 10px;font-size:12px">⬇ Sheet ${k+1}</button>`;
+  if(sheets>1)dlrow+=`<button class="btn ghost" data-dlsheet="all" style="padding:6px 10px;font-size:12px">⬇ All ${sheets}</button>`;
+  view.innerHTML=`<div class="csheet">${s}</div><div class="hint" style="margin-top:6px">${cap}</div>`+
+    `<div class="cstage-top" style="margin-top:8px;gap:16px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestOutline" ${outOn?'checked':''}>sheet outline</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestMarker" ${mkOn?'checked':''}>0,0 marker</label></div>`+
+    `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${dlrow}</div>`+
+    `<div class="hint" style="margin-top:4px">Each sheet saves as its own kerf-compensated SVG, nested tight. For bed registration, turn the outline off and the <b>0,0 marker</b> on.</div>`;
+  const oc=document.getElementById('nestOutline'); if(oc)oc.addEventListener('change',e=>{S.nestOutline=e.target.checked;});
+  const mc=document.getElementById('nestMarker'); if(mc)mc.addEventListener('change',e=>{S.nestMarker=e.target.checked;});
+  view.querySelectorAll('[data-dlsheet]').forEach(b=>b.addEventListener('click',()=>{ const ns=cxNestedSheets({outline:S.nestOutline!==false,marker:!!S.nestMarker}), which=b.dataset.dlsheet;
+    if(which==='all')ns.sheets.forEach(sh=>dlSVG(sh.name,sh.svg)); else { const sh=ns.sheets[+which]; if(sh)dlSVG(sh.name,sh.svg); } }));
 }
 function cutSheetOpen(){ const p=document.getElementById('cutSheetPanel'); return p&&!p.classList.contains('hide'); }
 function everything(){updateReadout();if(S.view==='3d'&&GL&&GL.ok)rebuild3D();else drawPreview();if(cutSheetOpen())renderCutSheet();}
@@ -3827,7 +3858,7 @@ document.getElementById('cxStackBtn').addEventListener('click',()=>{cxAddCompoun
 document.getElementById('mvComplex').addEventListener('click',e=>{const b=e.target.closest('[data-cxscale]');if(!b)return;const target=+b.dataset.cxscale,cur=S.cx.scale||1;if(Math.abs(target-cur)<1e-4)return;cxScaleMechanism(target/cur);S.cx.scale=target;renderComplexUI();everything();});
 document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.cxpshape!=null){S.cx.penSides=+b.dataset.cxpshape;renderComplexUI();everything();return;}
-  if(b.dataset.cxpen){S.cx.penDia=Math.max(3,Math.min(30,Math.round(((S.cx.penDia||10)+(+b.dataset.cxpen))*10)/10));S.cx.penHole=S.cx.penDia;renderComplexUI();everything();return;}
+  if(b.dataset.cxpen){S.cx.penDia=Math.max(2,Math.min(30,Math.round(((S.cx.penDia||10)+(+b.dataset.cxpen))*10)/10));renderComplexUI();everything();return;}
   if(b.dataset.cxph){S.cx.penHole=Math.max(2,Math.min(30,Math.round(((S.cx.penHole!=null?S.cx.penHole:(S.cx.penDia||10))+(+b.dataset.cxph))*10)/10));renderComplexUI();everything();return;}
   if(b.id==='cxAddPenBtn'){cxAddPen();renderComplexUI();everything();return;}
   if(b.id==='cxLoadExBtn'){cxLoadExample();renderComplexUI();everything();return;}
@@ -3851,8 +3882,7 @@ document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.c
   if(b.dataset.cxpaper){P.paper=P.paper||{mode:'custom',w:200,h:200};P.paper[b.dataset.cxpaper]=Math.max(20,(P.paper[b.dataset.cxpaper]||200)+(+b.dataset.d));renderComplexUI();everything();return;}
   if(b.id==='cxFitPaper'){cxFitToPaper();renderComplexUI();everything();return;}});
 document.getElementById('cxPen').addEventListener('change',e=>{const t=e.target;if(!S.cx.pen)return;const P=S.cx.pen;
-  if(t.id==='cxPenDia'){S.cx.penDia=Math.max(3,Math.min(30,(+t.value)||S.cx.penDia||10));S.cx.penHole=S.cx.penDia;renderComplexUI();everything();}
-  else if(t.id==='cxPenHole'){S.cx.penHole=Math.max(2,Math.min(30,(+t.value)||S.cx.penHole||10));renderComplexUI();everything();}
+  if(t.id==='cxPenDia'){S.cx.penDia=Math.max(2,Math.min(30,(+t.value)||S.cx.penDia||10));renderComplexUI();everything();}
   else if(t.classList.contains('cxPinG')){P.pins[+t.dataset.i].g=+t.value;renderComplexUI();everything();}
   else if(t.classList.contains('cxPinR')){P.pins[+t.dataset.i].r=Math.max(2,Math.round(+t.value)||P.pins[+t.dataset.i].r);renderComplexUI();everything();}
   else if(t.classList.contains('cxJa')){const o=P.joints[+t.dataset.i].a;P.joints[+t.dataset.i].a=cxMakeRef(t.value,(o&&o.on)?o.t:null);renderComplexUI();everything();}
