@@ -2752,12 +2752,21 @@ function cxDowelHole(){ return (S.cx.dowelHole!=null)?S.cx.dowelHole:(S.dowelD||
 function cxGearBore(){ const M=cxBrgMode(); return (M==='gears'||M==='gearsRods')?cxBearingHole():boreDia(); }
 function cxRodBore(){ return (cxBrgMode()==='gearsRods')?cxBearingHole():boreDia(); }
 function cxBrgCount(c){ const M=cxBrgMode(); if(M==='none')return 0; let n=c.gears.length; if(M==='gearsRods'&&c.pen)n+=c.pen.pins.length+c.pen.joints.length; return n; }
-// Pen holder: a flat teardrop collar. The pen/pencil drops through the hole at the wide (round)
-// end; the narrow end carries a bolt hole to fix it to the branch arm. The pen hole is a separate
-// tunable size for a friction grip (a "10mm" pen isn't exactly 10, same as bearings/dowels).
+// pen-hole shape: round (0) or a regular 3–8-gon sized by across-flats, matching the
+// Kerf Hole Maker (flat-top for even sides, point-up for odd) so a hex pencil gets a hex hole.
+var CX_SIDE_NAME={0:'round',3:'triangular',4:'square',5:'pentagonal',6:'hex',7:'heptagonal',8:'octagonal'};
+function cxPenSides(){ const n=S.cx.penSides|0; return (n>=3&&n<=8)?n:0; }
+function cxPenAF(){ return (S.cx.penHole!=null?S.cx.penHole:(S.cx.penDia||10)); }
+function cxPenHoleOR(){ const n=cxPenSides(), af=cxPenAF(); return n<3?af/2:(af/2)/Math.cos(Math.PI/n); }
+// hole loop centred at (cx,cy); afAdj is the across-flats (already kerf-adjusted by caller)
+function cxPenHoleLoop(cx,cy,afAdj){ const n=cxPenSides();
+  if(n<3){ return circleLoop(Math.max(afAdj/2,1),24).map(p=>[p[0]+cx,p[1]+cy]); }
+  const R=(Math.max(afAdj,1.5)/2)/Math.cos(Math.PI/n), off=(n%2===0)?0.5:0, pts=[];
+  for(let k=0;k<n;k++){ const a=-Math.PI/2+(k+off)*(2*Math.PI/n); pts.push([cx+R*Math.cos(a),cy+R*Math.sin(a)]); }
+  return pts; }
 function cxPenHolder(){ const penR=Math.max((S.cx.penDia||10)/2,2.5);
-  const penHoleR=Math.max((S.cx.penHole!=null?S.cx.penHole:(S.cx.penDia||10))/2,2);
-  const wall=Math.max(boreDia()*0.9,5), Rw=penR+wall, Rt=Math.max(boreDia()/2+3.5,5.5), H=Rw+28;
+  const penHoleR=Math.max(cxPenHoleOR(),2);
+  const wall=Math.max(boreDia()*0.9,5), Rw=penHoleR+wall, Rt=Math.max(boreDia()/2+3.5,5.5), H=Rw+28;
   const psi=Math.asin(Math.max(-1,Math.min(1,(Rw-Rt)/H))), out=[];
   const seg=52; for(let i=0;i<=seg;i++){ const a=psi-(Math.PI+2*psi)*(i/seg); out.push([Rw*Math.cos(a),Rw*Math.sin(a)]); }
   const tseg=18; for(let i=0;i<=tseg;i++){ const a=(Math.PI-psi)-(Math.PI-2*psi)*(i/tseg); out.push([Rt*Math.cos(a),H+Rt*Math.sin(a)]); }
@@ -2772,7 +2781,7 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
   if(c.pen&&c.pen.joints.length){ const lens=[]; c.pen.joints.forEach(j=>{lens.push(j.la,j.lb);}); const aMax=cxArmMax(); let pcs=0; lens.forEach(l=>pcs+=cxArmSplice(l,aMax,28).length); cut.push([`linkage arm`,pcs,`${lens.map(l=>fmt(l)).join(', ')} long · ${cxLinkW()}mm wide · ${t}mm${pcs>lens.length?' · long ones spliced to fit bed (overlap-glue + pins)':''}`]); }
   if(c.pen&&c.pen.welds&&c.pen.welds.length)cut.push([`branch arm`,c.pen.welds.length,`${c.pen.welds.map(w=>fmt(w.len||100)).join(', ')} long · GLUE rigidly onto host arm (fixed, not a pivot) — locating pin at the glue end, pen fits the tip hole · ${t}mm`]);
   if(c.pen&&(c.pen.joints.length||c.pen.welds&&c.pen.welds.length)){ const H=cxPenHolder();
-    cut.push([`pen collar`,1,`teardrop — pen/pencil drops through the ⌀${fmt(2*H.penHoleR)} hole (wide end), narrow end bolts to the branch tip · ${t}mm`]);
+    cut.push([`pen collar`,1,`teardrop — pen/pencil drops through the ${cxPenSides()<3?'⌀'+fmt(cxPenAF()):CX_SIDE_NAME[cxPenSides()]+' '+fmt(cxPenAF())+' (across flats)'} hole, narrow end bolts to the branch tip · ${t}mm`]);
     buy.push([`collar bolt`,1,`${S.bolt} bolt — fixes the pen collar to the arm (+ nut)`]); }
   const cv={}; S.cx.converters.forEach(v=>{ if(c.byId[v.gear])cv[v.type]=(cv[v.type]||0)+1; });
   if(cv.crank){ cut.push([`crank arm`,cv.crank,`${t}mm`],[`con-rod`,cv.crank,`${cxLinkW()}mm wide · ${t}mm`],[`slider block`,cv.crank,`${t}mm`],[`crank guide rail`,cv.crank*2,`bridges over the gear · post-hole each end · ${t}mm`]); }
@@ -2877,7 +2886,7 @@ function sceneFromComplex(){
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.4),14))],0,0,t*1.3,yLink-t*0.4),col:'#c79a63',pose:s=>{ const st=cxPenAt(c,s), T=st?st.weldPos[wi]:null; if(!T)return {x:OFF,z:OFF,rot:0}; return {x:T[0]-ox,z:T[1]-oy,rot:0}; }}); });
     parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }});
     { const H=cxPenHolder();
-      const collar=[flipY(H.outline), flipY(circleLoop(Math.max(H.penHoleR,1),20)), flipY(circleLoop(Math.max(boreDia()/2,1),12).map(p=>[p[0]+H.mount[0],p[1]+H.mount[1]]))];
+      const collar=[flipY(H.outline), flipY(cxPenHoleLoop(0,0,cxPenAF())), flipY(circleLoop(Math.max(boreDia()/2,1),12).map(p=>[p[0]+H.mount[0],p[1]+H.mount[1]]))];
       parts.push({tris:plateMesh(collar,0,0,t*0.6,yLink-1.2),col:'#b98c52',pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; let rot=0; if(c.pen.welds&&c.pen.welds.length){ const w=c.pen.welds[0], d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(d!=null)rot=d-Math.PI/2; } return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot}; }}); } }
   // spacer ring stacks lifting elevated gears off the backing wood
   const spOR=Math.max(boreDia()/2+4,4), spIR=Math.max(boreDia()/2,1.5);
@@ -3086,14 +3095,16 @@ function exportComplex(){
       parts.push(txt(x+L0,cy-w/2+2.6,isPen?`✎ pen`:`tip`,SCORE,2.4));
       parts.push(txt(x+L0/2,cy,`branch W${wi+1} · ${fmt(L0)} · GLUE onto arm @${cxRefT(wd.base)}% (fixed)`,SCORE,2.4));
       x=x+L0+gap+w; rowH=Math.max(rowH,w+gap*2); }); }
-  if(c.pen&&(c.pen.welds&&c.pen.welds.length||c.pen.joints.length)){ const H=cxPenHolder(), penHoleR=Math.max(H.penHoleR-kh,1);
+  if(c.pen&&(c.pen.welds&&c.pen.welds.length||c.pen.joints.length)){ const H=cxPenHolder();
     let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9; H.outline.forEach(p=>{mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);});
     const ox2=x-mnx+2, oy2=gap-mny;
     const d=H.outline.map((p,j)=>(j?'L':'M')+(p[0]+ox2).toFixed(1)+' '+(p[1]+oy2).toFixed(1)).join(' ')+' Z';
     parts.push(`<path d="${d}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-    parts.push(`<path d="${svgCircle(penHoleR,ox2,oy2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+    const penAF=Math.max(cxPenAF()-2*kh,1.2), hl=cxPenHoleLoop(ox2,oy2,penAF);
+    const hd=hl.map((p,j)=>(j?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+' Z';
+    parts.push(`<path d="${hd}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     parts.push(`<path d="${svgCircle(boreR,H.mount[0]+ox2,H.mount[1]+oy2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-    parts.push(txt(ox2,oy2,`pen ⌀${fmt(2*H.penHoleR)}`,SCORE,2.4));
+    parts.push(txt(ox2,oy2,`${cxPenSides()<3?'⌀':CX_SIDE_NAME[cxPenSides()]+' '}${fmt(cxPenAF())}`,SCORE,2.4));
     parts.push(txt(H.mount[0]+ox2,H.mount[1]+oy2-H.Rt-1.5,`bolt to arm`,SCORE,2.2));
     parts.push(txt(ox2+(mxx-mnx)/2+3,oy2+H.H*0.45,`pen collar`,SCORE,2.6));
     x=x+(mxx-mnx)+gap+4; rowH=Math.max(rowH,(mxy-mny)+gap*2); }
@@ -3198,7 +3209,8 @@ function renderComplexUI(){
       const penOpts=(sel)=>{ const sk=cxRefKey(sel); const opt=(v,l)=>`<option value="${v}"${v===sk?' selected':''}>${l}</option>`; let o=P.pins.map((_,i)=>opt('p'+i,'pin '+(i+1))).join('');
         P.joints.forEach((_,k)=>o+=opt('j'+k,'joint '+(k+1))+opt('t:j'+k+':a','↳ along arm→J'+(k+1)+' (a)')+opt('t:j'+k+':b','↳ along arm→J'+(k+1)+' (b)'));
         W.forEach((_,m)=>o+=opt('w'+m,'branch W'+(m+1)+' tip')+opt('t:w'+m,'↳ along branch W'+(m+1))); return o; };
-      const penBlock=`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label></div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="cstage-top" style="margin-top:6px"><span class="clab">pen ⌀</span><span class="cstep"><button data-cxpen="-0.5">−</button><input type="number" value="${S.cx.penDia||10}" id="cxPenDia" min="3" max="30" step="0.5"><button data-cxpen="0.5">＋</button></span><span class="clab">mm barrel</span></div><div class="cstage-top" style="margin-top:6px"><span class="clab">pen hole ⌀</span><span class="cstep"><button data-cxph="-0.1">−</button><input type="number" value="${S.cx.penHole!=null?S.cx.penHole:(S.cx.penDia||10)}" id="cxPenHole" min="2" max="30" step="0.1"><button data-cxph="0.1">＋</button></span><span class="clab">mm to cut</span></div><div class="hint">The pen sticks to this arm as you build the rest. A <b>teardrop collar</b> (in the cut sheet) bolts to the tip — the pen drops through its hole. Cut the hole a touch under the barrel for a friction grip; the <b>pen hole ⌀</b> is that tuned size.</div>`;
+      const pnS=cxPenSides(), shapeBtns=[['0','round'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8']].map(o=>`<button class="chip" data-cxpshape="${o[0]}" aria-pressed="${(+o[0]===pnS||(o[0]==='0'&&pnS<3))?'true':'false'}" style="padding:4px 8px;cursor:pointer">${o[1]}</button>`).join('');
+      const penBlock=`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label></div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="cstage-top" style="margin-top:6px"><span class="clab">pen ⌀</span><span class="cstep"><button data-cxpen="-0.5">−</button><input type="number" value="${S.cx.penDia||10}" id="cxPenDia" min="3" max="30" step="0.5"><button data-cxpen="0.5">＋</button></span><span class="clab">mm barrel</span></div><div class="cstage-top" style="margin-top:6px"><span class="clab">hole shape</span><span style="display:flex;gap:5px;flex-wrap:wrap" id="cxPenShape">${shapeBtns}</span></div><div class="cstage-top" style="margin-top:6px"><span class="clab">hole ${pnS<3?'⌀':'A/F'}</span><span class="cstep"><button data-cxph="-0.1">−</button><input type="number" value="${S.cx.penHole!=null?S.cx.penHole:(S.cx.penDia||10)}" id="cxPenHole" min="2" max="30" step="0.1"><button data-cxph="0.1">＋</button></span><span class="clab">mm to cut</span></div><div class="hint">The pen sticks to this arm as you build the rest. A <b>teardrop collar</b> (cut sheet) bolts to the tip and the pen drops through its hole. Pick a shape — <b>${pnS>=3?CX_SIDE_NAME[pnS]:'round'}</b>${pnS>=3?` (${pnS} sides, measured across the flats — a hex hole grips a hex pencil)`:' (round barrels)'} — and cut it a touch under size for a friction grip. Use the <b>Kerf Hole Maker</b> on curiosity.diy to find the exact number.</div>`;
       const custom=P.paper&&P.paper.mode==='custom';
       const paperCtl=`<div class="lab" style="margin-top:10px"><label>Paper</label></div><div class="cstage-top" style="margin-bottom:8px"><span class="clab">attach to</span><select class="selin" id="cxPaperGear" style="width:auto">${'<option value="fixed"'+((P.paper&&P.paper.gear!=null)?'':' selected')+'>fixed / moving bed</option>'+c.gears.map(g=>`<option value="g${g.id}"${(P.paper&&P.paper.gear===g.id)?' selected':''}>turntable on #${g.id}</option>`).join('')}</select></div><div class="seg" id="cxPaperSeg"><button data-pm="fit" aria-pressed="${custom?'false':'true'}">Fit to drawing</button><button data-pm="custom" aria-pressed="${custom?'true':'false'}">Custom</button></div>`+(custom?`<div class="cstage-top" style="margin-top:8px"><span class="clab">size</span><select class="selin" id="cxPaperPreset" style="width:auto"><option value="">preset…</option><option value="297x210">A4 · 297×210</option><option value="210x148">A5 · 210×148</option><option value="420x297">A3 · 420×297</option><option value="200x200">square 200</option><option value="300x300">square 300</option></select></div><div class="cstage-top" style="margin-top:6px"><span class="clab">W×H</span><span class="cstep"><button data-cxpaper="w" data-d="-10">−</button><input type="number" value="${P.paper.w}" id="cxPaperW" min="20" step="10"><button data-cxpaper="w" data-d="10">＋</button></span><span class="cstep"><button data-cxpaper="h" data-d="-10">−</button><input type="number" value="${P.paper.h}" id="cxPaperH" min="20" step="10"><button data-cxpaper="h" data-d="10">＋</button></span></div><button class="btn" id="cxFitPaper" style="margin-top:8px">⤢ fit drawing to this paper</button><div class="hint" style="margin-top:4px">Sizes the pins &amp; arms so the pattern fills the sheet.</div>`:'');
       pen.innerHTML=`<div class="lab"><label>Drawing pen (linkage)</label><span class="val">${!tr.reachable?'⚠ arms short':(cl.closes?'closed ✓':'open — weaves')}</span></div>
@@ -3814,6 +3826,7 @@ document.getElementById('cxMeshBtn').addEventListener('click',()=>{cxAddMesh();r
 document.getElementById('cxStackBtn').addEventListener('click',()=>{cxAddCompound();renderComplexUI();everything();});
 document.getElementById('mvComplex').addEventListener('click',e=>{const b=e.target.closest('[data-cxscale]');if(!b)return;const target=+b.dataset.cxscale,cur=S.cx.scale||1;if(Math.abs(target-cur)<1e-4)return;cxScaleMechanism(target/cur);S.cx.scale=target;renderComplexUI();everything();});
 document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.cxpshape!=null){S.cx.penSides=+b.dataset.cxpshape;renderComplexUI();everything();return;}
   if(b.dataset.cxpen){S.cx.penDia=Math.max(3,Math.min(30,Math.round(((S.cx.penDia||10)+(+b.dataset.cxpen))*10)/10));S.cx.penHole=S.cx.penDia;renderComplexUI();everything();return;}
   if(b.dataset.cxph){S.cx.penHole=Math.max(2,Math.min(30,Math.round(((S.cx.penHole!=null?S.cx.penHole:(S.cx.penDia||10))+(+b.dataset.cxph))*10)/10));renderComplexUI();everything();return;}
   if(b.id==='cxAddPenBtn'){cxAddPen();renderComplexUI();everything();return;}
