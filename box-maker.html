@@ -246,12 +246,37 @@
   .planbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
   .planbtns button{padding:9px 6px;font-size:12.5px}
 
-  .mobtabs{display:none}
+  /* zoom + shrink controls floating on the preview */
+  .viewbtns{
+    position:absolute;right:10px;top:10px;z-index:6;
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .viewbtns button{
+    width:38px;height:38px;padding:0;font-size:19px;line-height:1;
+    display:grid;place-items:center;border-radius:8px;
+    background:rgba(24,15,10,.82);color:var(--cream);border:1px solid var(--line);
+    backdrop-filter:blur(4px);
+  }
+  .viewbtns button:hover{border-color:var(--brass);color:#fff}
+  #shrinkBtn{display:none}
+
   @media (max-width:860px){
     main{flex-direction:column}
-    #controls{width:100%;max-height:46%;border-right:0;border-bottom:1px solid var(--line)}
-    .readout{max-width:calc(100% - 24px)}
+    /* preview pinned above the controls, fixed height, always visible */
+    #work{
+      order:-1;flex:none;height:var(--preview-h,46vh);
+      position:sticky;top:0;z-index:20;
+      border-bottom:1px solid var(--line);
+      box-shadow:0 6px 18px -8px rgba(0,0,0,.7);
+    }
+    body.preview-shrunk #work{height:22vh}
+    #controls{width:100%;max-height:none;flex:1;border-right:0}
+    .readout{max-width:calc(100% - 24px);font-size:11px;left:10px;bottom:10px}
+    body.preview-shrunk .readout{display:none}
+    #shrinkBtn{display:grid}
+    .tabs button{padding:10px 14px}
   }
+  .mobtabs{display:none}
 </style>
 </head>
 <body>
@@ -412,6 +437,16 @@
       </fieldset>
 
       <fieldset>
+        <legend>Project</legend>
+        <div class="btns">
+          <button id="saveProj">Save project (.box)</button>
+          <button id="loadProj">Load project&hellip;</button>
+        </div>
+        <input type="file" id="loadFile" accept=".box,.json,application/json" hidden>
+        <p class="hint">Saves every setting, including the guillotine layout, to a small file you can reopen later.</p>
+      </fieldset>
+
+      <fieldset>
         <legend>Parts</legend>
         <div id="parts"></div>
       </fieldset>
@@ -422,7 +457,16 @@
         <button id="tab3d" role="tab" aria-selected="true">3D preview</button>
         <button id="tabSheet" role="tab" aria-selected="false">Sheet layout</button>
       </div>
-      <div class="pane on" id="pane3d"><canvas id="c3d"></canvas><div class="readout" id="ro3d"></div></div>
+      <div class="pane on" id="pane3d">
+        <canvas id="c3d"></canvas>
+        <div class="viewbtns">
+          <button id="zoomIn" aria-label="Zoom in">+</button>
+          <button id="zoomOut" aria-label="Zoom out">&minus;</button>
+          <button id="zoomReset" aria-label="Reset view">&#8635;</button>
+          <button id="shrinkBtn" aria-label="Shrink preview">&#8597;</button>
+        </div>
+        <div class="readout" id="ro3d"></div>
+      </div>
       <div class="pane" id="sheetPane"><div id="sheetWrap"></div></div>
     </div>
   </main>
@@ -1617,12 +1661,61 @@ function shade(hex, m){
   return `rgb(${r},${g},${b})`;
 }
 
+/* ----------------------------------------------------------------
+   Shaded software renderer. Perspective camera, linear-space
+   two-light shading with hemispheric ambient, Blinn-Phong spec and
+   a Fresnel rim, a vertical ambient-occlusion ramp, crease-only
+   edge lines and a radial contact shadow — the same lighting recipe
+   the Shape Designer uses in WebGL, done per-face in software since
+   every panel is planar and its normal is exact.
+------------------------------------------------------------------ */
+const V3 = {
+  sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
+  add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],
+  dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  norm:(a)=>{const l=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/l,a[1]/l,a[2]/l];}
+};
+const srgb2lin = (c)=> Math.pow(c, 2.2);
+const lin2srgb = (c)=> Math.pow(Math.max(0,c), 1/2.2);
+
+function shadeFace(baseLin, n, wpos, eye, zTop, zBot){
+  const V = V3.norm(V3.sub(eye, wpos));
+  const L1 = V3.norm([0.5,-0.6,0.85]);      // warm key
+  const L2 = V3.norm([-0.55,0.45,0.3]);     // cool fill
+  const hemi = 0.5 + 0.5*n[2];
+  const amb = [
+    (0.5*(1-hemi) + 1.05*hemi)*0.36,
+    (0.42*(1-hemi) + 1.0*hemi)*0.36,
+    (0.34*(1-hemi) + 0.9*hemi)*0.36
+  ];
+  const d1 = Math.max(V3.dot(n,L1), 0), d2 = Math.max(V3.dot(n,L2), 0);
+  const ao = 0.55 + 0.45*Math.min(1, Math.max(0, (wpos[2]-zBot)/Math.max(zTop-zBot,1)));
+  const col = [
+    baseLin[0]*(amb[0] + 1.0*1.05*d1 + 0.82*0.24*d2)*ao,
+    baseLin[1]*(amb[1] + 0.95*1.05*d1 + 0.88*0.24*d2)*ao,
+    baseLin[2]*(amb[2] + 0.86*1.05*d1 + 1.0*0.24*d2)*ao
+  ];
+  const H = V3.norm(V3.add(L1, V));
+  const spec = Math.pow(Math.max(V3.dot(n,H),0), 24) * 0.4 * (0.35+0.65*d1) * ao;
+  col[0]+=1.0*spec; col[1]+=0.98*spec; col[2]+=0.92*spec;
+  const fr = Math.pow(1 - Math.max(V3.dot(n,V),0), 3.4) * 0.32;
+  col[0]+=baseLin[0]*fr; col[1]+=baseLin[1]*fr; col[2]+=baseLin[2]*fr;
+  return `rgb(${Math.round(lin2srgb(col[0])*255)},${Math.round(lin2srgb(col[1])*255)},${Math.round(lin2srgb(col[2])*255)})`;
+}
+
 function renderScene(g, wpx, hpx, opt){
   const o = opt || {};
-  const bg = o.bg || '#14100e';
+  const white = (o.bg === '#ffffff');
   g.save();
-  g.fillStyle = bg;
-  g.fillRect(0, 0, wpx, hpx);
+  if(white){
+    g.fillStyle = '#ffffff'; g.fillRect(0,0,wpx,hpx);
+  } else {
+    const grd = g.createRadialGradient(wpx*0.5, hpx*0.30, 0, wpx*0.5, hpx*0.30, Math.max(wpx,hpx)*0.95);
+    grd.addColorStop(0, '#241813');
+    grd.addColorStop(0.82, '#140d0a');
+    grd.addColorStop(1, '#0e0806');
+    g.fillStyle = grd; g.fillRect(0,0,wpx,hpx);
+  }
   if(!model || !model.parts.length){ g.restore(); return; }
 
   // world bounds over every placed panel (the overlay cap sits outside the box)
@@ -1643,98 +1736,100 @@ function renderScene(g, wpx, hpx, opt){
   const ctr = [(lo[0]+hi[0])/2, (lo[1]+hi[1])/2, (lo[2]+hi[2])/2];
   const reach = Math.max(hi[0]-lo[0], hi[1]-lo[1], hi[2]-lo[2]);
   const ex = (+$('explode').value/100) * reach * 0.42;
+  const zTop = hi[2], zBot = lo[2];
 
-  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
-  const view = (p)=>{
-    const x = p[0]-ctr[0], y = p[1]-ctr[1], z = p[2]-ctr[2];
-    const x1 = x*cy - y*sy, y1 = x*sy + y*cy, z1 = z;
-    const y2 = y1*cp - z1*sp, z2 = y1*sp + z1*cp;
-    return [x1, z2, y2];                       // screen x, screen up, depth
+  // ---- perspective camera orbiting the centre (world z is up) ----
+  const dist = (reach*1.7 + ex*2.2) / zoom / (o.fill || 1);
+  const cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const dir = [cp*Math.sin(yaw), -cp*Math.cos(yaw), sp];
+  const eye = [ctr[0]+dir[0]*dist, ctr[1]+dir[1]*dist, ctr[2]+dir[2]*dist];
+  const fwd = V3.norm(V3.sub(ctr, eye));
+  const wUp = [0,0,1];
+  const right = V3.norm([fwd[1]*wUp[2]-fwd[2]*wUp[1], fwd[2]*wUp[0]-fwd[0]*wUp[2], fwd[0]*wUp[1]-fwd[1]*wUp[0]]);
+  const up = [right[1]*fwd[2]-right[2]*fwd[1], right[2]*fwd[0]-right[0]*fwd[2], right[0]*fwd[1]-right[1]*fwd[0]];
+  const fov = 0.72, focal = 1/Math.tan(fov/2);
+  const scale = Math.min(wpx, hpx) * 0.5 * focal;
+  const project = (p)=>{
+    const rel = V3.sub(p, eye);
+    const cxp = V3.dot(rel, right), cyp = V3.dot(rel, up), cz = Math.max(V3.dot(rel, fwd), 0.001);
+    return [wpx/2 + cxp/cz*scale, hpx/2 - cyp/cz*scale, cz];
   };
-  const span = reach * 1.55 + ex*2;
-  const sc0 = Math.min(wpx, hpx) / span * zoom * (o.fill || 1);
-  const px = (v)=> [wpx/2 + v[0]*sc0, hpx/2 - v[1]*sc0];
 
-  // soft contact shadow, for the white render
-  if(o.shadow){
-    const foot = [];
-    for(const c of [[lo[0],lo[1]],[hi[0],lo[1]],[hi[0],hi[1]],[lo[0],hi[1]]])
-      foot.push(px(view([c[0], c[1], lo[2]])));
-    const cxp = foot.reduce((a,q)=>a+q[0],0)/4, cyp = foot.reduce((a,q)=>a+q[1],0)/4;
-    const rx = Math.max(...foot.map(q=>Math.abs(q[0]-cxp))) * 1.15;
-    const ry = Math.max(...foot.map(q=>Math.abs(q[1]-cyp))) * 1.15 + sc0*reach*0.02;
-    const grd = g.createRadialGradient(cxp, cyp, 0, cxp, cyp, Math.max(rx, ry));
-    grd.addColorStop(0, 'rgba(60,44,30,.30)');
-    grd.addColorStop(0.62, 'rgba(60,44,30,.11)');
-    grd.addColorStop(1, 'rgba(60,44,30,0)');
+  // ---- contact shadow on the bed ----
+  if(o.shadow !== false){
+    const R = Math.max(hi[0]-lo[0], hi[1]-lo[1]) * 0.62, seg = 40, pts = [];
+    for(let i=0;i<seg;i++){ const a=i/seg*Math.PI*2; pts.push(project([ctr[0]+Math.cos(a)*R, ctr[1]+Math.sin(a)*R, lo[2]])); }
+    let sx=0, syy=0; for(const p of pts){ sx+=p[0]; syy+=p[1]; } sx/=seg; syy/=seg;
+    let rr=0; for(const p of pts){ rr=Math.max(rr, Math.hypot(p[0]-sx, p[1]-syy)); }
+    const grd = g.createRadialGradient(sx, syy, 0, sx, syy, rr||1);
+    const a0 = white ? 0.26 : 0.42;
+    grd.addColorStop(0, `rgba(0,0,0,${a0})`);
+    grd.addColorStop(0.55, `rgba(0,0,0,${a0*0.5})`);
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
     g.save();
-    g.translate(cxp, cyp + sc0*reach*0.02);
-    g.scale(1, Math.max(0.18, ry/Math.max(rx,1)));
-    g.translate(-cxp, -cyp);
-    g.fillStyle = grd;
     g.beginPath();
-    g.arc(cxp, cyp, Math.max(rx, ry), 0, Math.PI*2);
-    g.fill();
+    pts.forEach((p,i)=> i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));
+    g.closePath(); g.fillStyle = grd; g.fill();
     g.restore();
   }
 
-  const L = [0.42,-0.66,0.62];
-  const faces = [];
+  const bi = parseInt(wood.base.slice(1),16);
+  const baseLin = [srgb2lin(((bi>>16)&255)/255), srgb2lin(((bi>>8)&255)/255), srgb2lin((bi&255)/255)];
+  const faces = [], creases = [];
 
   for(const part of model.parts){
     const pl = part.place;
     const N = pl.N, U = pl.U, V = pl.V;
     const cen3 = [0,1,2].map(a=> pl.O[a] + U[a]*part.w/2 + V[a]*part.h/2 + N[a]*pl.t/2);
-    const dn = (cen3[0]-ctr[0])*N[0] + (cen3[1]-ctr[1])*N[1] + (cen3[2]-ctr[2])*N[2];
-    const sgn = dn >= 0 ? 1 : -1;
+    const sgn = V3.dot(V3.sub(cen3, ctr), N) >= 0 ? 1 : -1;
     const O = [0,1,2].map(a=>
       pl.O[a] + N[a]*sgn*ex + (part.offset ? U[a]*part.offset[0] + V[a]*part.offset[1] : 0));
-
-    const P = (u,v,w)=>[
-      O[0] + U[0]*u + V[0]*v + N[0]*w,
-      O[1] + U[1]*u + V[1]*v + N[1]*w,
-      O[2] + U[2]*u + V[2]*v + N[2]*w
-    ];
+    const P = (u,v,w)=>[O[0]+U[0]*u+V[0]*v+N[0]*w, O[1]+U[1]*u+V[1]*v+N[1]*w, O[2]+U[2]*u+V[2]*v+N[2]*w];
     const rings = [part.poly].concat(part.holes.map(h=>[
       [h.x,h.y],[h.x+h.w,h.y],[h.x+h.w,h.y+h.h],[h.x,h.y+h.h]
     ]));
 
-    for(const w of [0, pl.t]){
-      const paths = rings.map(r=> r.map(q=> view(P(q[0], q[1], w))));
-      const dep = paths[0].reduce((a,q)=>a+q[2],0)/paths[0].length;
-      const dot = Math.abs(N[0]*L[0] + N[1]*L[1] + N[2]*L[2]);
-      faces.push({dep, paths, lum: 0.55 + 0.55*dot + (w ? 0 : -0.06), evenodd:true});
+    for(const [w, nf] of [[0,-1],[pl.t,1]]){
+      const nrm = V3.norm([N[0]*nf, N[1]*nf, N[2]*nf]);
+      const proj = rings.map(r=> r.map(q=> project(P(q[0], q[1], w))));
+      const wc = rings[0].reduce((s,q)=> V3.add(s, P(q[0],q[1],w)), [0,0,0]).map(v=>v/rings[0].length);
+      const dep = proj[0].reduce((a,q)=>a+q[2],0)/proj[0].length;
+      faces.push({dep, proj, evenodd:true, fill: shadeFace(baseLin, nrm, wc, eye, zTop, zBot)});
     }
     for(const ring of rings){
       for(let i=0;i<ring.length;i++){
         const a = ring[i], b = ring[(i+1)%ring.length];
-        const q = [P(a[0],a[1],0), P(b[0],b[1],0), P(b[0],b[1],pl.t), P(a[0],a[1],pl.t)].map(view);
-        const dep = (q[0][2]+q[1][2]+q[2][2]+q[3][2])/4;
+        const wq = [P(a[0],a[1],0), P(b[0],b[1],0), P(b[0],b[1],pl.t), P(a[0],a[1],pl.t)];
+        const proj = wq.map(project);
+        const dep = (proj[0][2]+proj[1][2]+proj[2][2]+proj[3][2])/4;
         const eu = b[0]-a[0], ev = b[1]-a[1];
-        const nx = U[0]*ev - V[0]*eu, ny = U[1]*ev - V[1]*eu, nz = U[2]*ev - V[2]*eu;
-        const ln = Math.hypot(nx,ny,nz) || 1;
-        const dot = Math.abs((nx/ln)*L[0] + (ny/ln)*L[1] + (nz/ln)*L[2]);
-        faces.push({dep, paths:[q], lum: 0.34 + 0.5*dot, evenodd:false});
+        const nrm = V3.norm([U[0]*ev-V[0]*eu, U[1]*ev-V[1]*eu, U[2]*ev-V[2]*eu]);
+        const wc = wq.reduce((s,q)=>V3.add(s,q),[0,0,0]).map(v=>v/4);
+        faces.push({dep, proj:[proj], evenodd:false, fill: shadeFace(baseLin, nrm, wc, eye, zTop, zBot)});
+        creases.push([project(P(a[0],a[1],0)), project(P(b[0],b[1],0))]);
+        creases.push([project(P(a[0],a[1],pl.t)), project(P(b[0],b[1],pl.t))]);
       }
     }
   }
 
   faces.sort((a,b)=> b.dep - a.dep);
-  const lw = o.line != null ? o.line : 0.55;
   for(const f of faces){
     g.beginPath();
-    for(const path of f.paths){
-      path.forEach((q,i)=>{ const p = px(q); i ? g.lineTo(p[0],p[1]) : g.moveTo(p[0],p[1]); });
+    for(const path of f.proj){
+      path.forEach((q,i)=> i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));
       g.closePath();
     }
-    g.fillStyle = shade(wood.base, f.lum);
+    g.fillStyle = f.fill;
     g.fill(f.evenodd ? 'evenodd' : 'nonzero');
-    if(lw > 0){
-      g.strokeStyle = shade(wood.grain, 0.75);
-      g.lineWidth = lw;
-      g.lineJoin = 'round';
-      g.stroke();
-    }
+  }
+
+  const lw = o.line != null ? o.line : 0.5;
+  if(lw > 0){
+    g.strokeStyle = white ? 'rgba(60,40,26,.26)' : 'rgba(18,11,7,.5)';
+    g.lineWidth = lw; g.lineJoin = 'round'; g.lineCap = 'round';
+    g.beginPath();
+    for(const c of creases){ g.moveTo(c[0][0],c[0][1]); g.lineTo(c[1][0],c[1][1]); }
+    g.stroke();
   }
   g.restore();
 }
@@ -1751,7 +1846,7 @@ function saveRender(){
   const off = document.createElement('canvas');
   off.width = Wpx; off.height = Hpx;
   const g = off.getContext('2d');
-  renderScene(g, Wpx, Hpx, {bg:'#ffffff', shadow:true, line:1.4, fill:0.9});
+  renderScene(g, Wpx, Hpx, {bg:'#ffffff', shadow:true, line:1.1, fill:0.92});
 
   // a quiet caption, bottom left
   const b = model.box, r1 = (n)=> Math.round(n*10)/10;
@@ -1940,6 +2035,88 @@ planCv.addEventListener('click', (e)=>{
 });
 $('dlPng').addEventListener('click', saveRender);
 
+/* ---------- save / load project ---------- */
+const PROJECT_VERSION = 1;
+const SIMPLE_IDS = ['dims','W','D','H','t','kerf','fs','lidMode','lidSkirt','lidClearance',
+                    'dmode','baseSlot','SW','SH','margin','gap','allowRot','engrave','wood','useTree'];
+
+function collectProject(){
+  const state = {version: PROJECT_VERSION, fields:{}};
+  for(const id of SIMPLE_IDS){
+    const el = $(id);
+    if(!el) continue;
+    state.fields[id] = (el.type === 'checkbox') ? el.checked : el.value;
+  }
+  state.axes = {
+    col: {n:AX.col.n, mode:AX.col.mode, prop:AX.col.prop.slice(), exact:AX.col.exact.slice()},
+    row: {n:AX.row.n, mode:AX.row.mode, prop:AX.row.prop.slice(), exact:AX.row.exact.slice()}
+  };
+  state.fit = {cols: $('fitCols').checked, rows: $('fitRows').checked};
+  state.tree = tree ? JSON.parse(JSON.stringify(tree)) : null;
+  state.view = {yaw, pitch, zoom, explode:+$('explode').value};
+  return state;
+}
+
+function saveProject(){
+  const data = JSON.stringify(collectProject(), null, 0);
+  const b = model && model.box;
+  const nm = b ? `box-${Math.round(b.W)}x${Math.round(b.D)}x${Math.round(b.H)}` : 'project';
+  download(nm + '.box', data, 'application/json');
+}
+
+function applyProject(state){
+  if(!state || !state.fields) throw new Error('Not a Box Maker project file.');
+  for(const id of SIMPLE_IDS){
+    const el = $(id);
+    if(!el || !(id in state.fields)) continue;
+    if(el.type === 'checkbox') el.checked = !!state.fields[id];
+    else el.value = state.fields[id];
+  }
+  if(state.axes){
+    for(const ax of ['col','row']){
+      const a = state.axes[ax]; if(!a) continue;
+      AX[ax].n = Math.max(1, Math.min(16, a.n|0));
+      AX[ax].mode = a.mode || 'even';
+      if(Array.isArray(a.prop)) AX[ax].prop = a.prop.slice();
+      if(Array.isArray(a.exact)) AX[ax].exact = a.exact.slice();
+      $(AXEL[ax].count).value = AX[ax].n;
+      $(AXEL[ax].mode).value = AX[ax].mode;
+    }
+  }
+  if(state.fit){ $('fitCols').checked = !!state.fit.cols; $('fitRows').checked = !!state.fit.rows; }
+  tree = state.tree ? JSON.parse(JSON.stringify(state.tree)) : null;
+  sel = []; selKind = (tree && tree.split) ? 'wall' : 'region';
+  if(state.view){
+    if(isFinite(state.view.yaw)) yaw = state.view.yaw;
+    if(isFinite(state.view.pitch)) pitch = state.view.pitch;
+    if(isFinite(state.view.zoom)) zoom = state.view.zoom;
+    if(isFinite(state.view.explode)) $('explode').value = state.view.explode;
+  }
+  // reflect all the derived UI state
+  document.body.classList.toggle('lid-overlay', $('lidMode').value === 'overlay');
+  document.body.classList.toggle('tree-on', $('useTree').checked);
+  $('dimsHint').textContent = $('dims').value === 'internal'
+    ? 'Millimetres of usable cavity. Stock thickness is added outside it.'
+    : 'Millimetres, measured over the outside faces.';
+  renderCells('col'); renderCells('row'); updateHint();
+  reskin();                 // wood + rerender
+  if(!$('advBody').hidden && tree){ drawPlan(); syncPlanUI(); }
+}
+
+$('saveProj').addEventListener('click', saveProject);
+$('loadProj').addEventListener('click', ()=> $('loadFile').click());
+$('loadFile').addEventListener('change', (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try { applyProject(JSON.parse(reader.result)); }
+    catch(err){ $('planHint') && ($('ro3d').innerHTML = '<span class="warn">Could not load: ' + err.message + '</span>'); }
+    $('loadFile').value = '';
+  };
+  reader.readAsText(file);
+});
+
 $('dims').addEventListener('change', ()=>{
   $('dimsHint').textContent = $('dims').value === 'internal'
     ? 'Millimetres of usable cavity. Stock thickness is added outside it.'
@@ -1964,22 +2141,56 @@ function setTab(i){
   if(i===0) resize3d();
 }
 
-cv.addEventListener('pointerdown', e=>{ dragging=true; lastP=[e.clientX,e.clientY]; cv.setPointerCapture(e.pointerId); });
+const activePointers = new Map();
+let pinchStart = 0, pinchZoom0 = 1;
+function pinchDist(){
+  const p = [...activePointers.values()];
+  return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+}
+cv.addEventListener('pointerdown', e=>{
+  activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  cv.setPointerCapture(e.pointerId);
+  if(activePointers.size === 2){ dragging = false; pinchStart = pinchDist(); pinchZoom0 = zoom; }
+  else { dragging = true; lastP = [e.clientX, e.clientY]; }
+});
 cv.addEventListener('pointermove', e=>{
+  if(!activePointers.has(e.pointerId)) return;
+  activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if(activePointers.size === 2){
+    const d = pinchDist();
+    if(pinchStart > 0){ zoom = Math.max(0.3, Math.min(8, pinchZoom0 * d/pinchStart)); draw3d(); }
+    return;
+  }
   if(!dragging) return;
   yaw   += (e.clientX - lastP[0]) * 0.009;
   pitch += (e.clientY - lastP[1]) * 0.009;
   pitch = Math.max(-1.45, Math.min(1.45, pitch));
-  lastP=[e.clientX,e.clientY];
+  lastP = [e.clientX, e.clientY];
   draw3d();
 });
-cv.addEventListener('pointerup', ()=>{ dragging=false; });
+function endPointer(e){
+  activePointers.delete(e.pointerId);
+  if(activePointers.size < 2) pinchStart = 0;
+  if(activePointers.size === 0) dragging = false;
+  else if(activePointers.size === 1){ const p=[...activePointers.values()][0]; lastP=[p.x,p.y]; dragging=true; }
+}
+cv.addEventListener('pointerup', endPointer);
+cv.addEventListener('pointercancel', endPointer);
 cv.addEventListener('wheel', e=>{
   e.preventDefault();
   zoom *= e.deltaY > 0 ? 0.92 : 1.08;
-  zoom = Math.max(0.3, Math.min(6, zoom));
+  zoom = Math.max(0.3, Math.min(8, zoom));
   draw3d();
 }, {passive:false});
+
+// on-screen zoom + view controls
+$('zoomIn').addEventListener('click', ()=>{ zoom = Math.min(8, zoom*1.2); draw3d(); });
+$('zoomOut').addEventListener('click', ()=>{ zoom = Math.max(0.3, zoom/1.2); draw3d(); });
+$('zoomReset').addEventListener('click', ()=>{ zoom = 1; yaw = -0.62; pitch = 0.52; draw3d(); });
+$('shrinkBtn').addEventListener('click', ()=>{
+  document.body.classList.toggle('preview-shrunk');
+  requestAnimationFrame(resize3d);
+});
 
 function download(name, data, mime){
   const blob = new Blob([data], {type:mime});
@@ -2003,6 +2214,12 @@ $('dlZip').onclick = ()=>{
 };
 
 window.addEventListener('resize', ()=>{ resize3d(); });
+
+/* test hooks — inert in the browser, read by the headless UI harness */
+if(typeof window !== 'undefined'){
+  window.__test = {collectProject, applyProject, params, shadeFace, seedTree,
+                   get tree(){ return tree; }};
+}
 
 /* ---------- boot ---------- */
 document.body.classList.toggle('lid-overlay', $('lidMode').value === 'overlay');
