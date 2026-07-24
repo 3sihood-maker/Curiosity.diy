@@ -1199,8 +1199,8 @@ function baseDims(){
    3D SCENE
    ============================================================ */
 const WOOD_GEAR="#d3ab74", WOOD_IDLER="#c79a63", WOOD_BASE="#7d5236";
-function gearLoops3D(N,m,pa){
-  const g=gearOutline(N,m,pa,0,9);
+function gearLoops3D(N,m,pa,blOff){
+  const g=gearOutline(N,m,pa,blOff?-blOff:0,9);
   const loops=[flipY(g.poly), flipY(circleLoop(Math.max(boreDia()/2,0.6),40))];
   if(S.spokes) spokeHoles(g.ra,S.spokes,hubR()).forEach(h=>loops.push(flipY(h)));
   return loops;
@@ -2729,7 +2729,7 @@ function cxAddConv(type){ const c=computeComplex(), g=c.byId[S.cx.sel]||c.gears[
 function cxDelConv(id){ S.cx.converters=S.cx.converters.filter(v=>v.id!==id); }
 function cxCoupleOffset(c,ang,role){ let ox=0,oy=0; for(const v of S.cx.converters){ if(v.drive!==role)continue; const g=c.byId[v.gear]; if(!g)continue; const d=cxConvAt(v,g,ang).disp, ph=(v.dir||0)*Math.PI/180; ox+=d*Math.cos(ph); oy+=d*Math.sin(ph); } return [ox,oy]; }
 /* edge-mounted movements: mesh at a gear's rim (extensible; first type = rack) */
-function cxRackWindow(m,len,ph){ const p=Math.PI*m,a=m,dd=1.25*m,back=Math.max(2*m,4),tphi=Math.tan(20*Math.PI/180),ttip=Math.max(p/2-2*a*tphi,p*0.08),run=(a+dd)*tphi;
+function cxRackWindow(m,len,ph,bl){ const p=Math.PI*m,a=m,dd=1.25*m,back=Math.max(2*m,4),tphi=Math.tan(20*Math.PI/180),ttip=Math.max(p/2-2*a*tphi-(bl||0),p*0.06),run=(a+dd)*tphi;
   ph=((ph%p)+p)%p; const top=[[-len/2,-dd]];
   for(let c=-len/2+ph-p; c<=len/2+p; c+=p){ if(c-ttip/2-run<-len/2+0.4||c+ttip/2+run>len/2-0.4)continue; top.push([c-ttip/2-run,-dd],[c-ttip/2,a],[c+ttip/2,a],[c+ttip/2+run,-dd]); }
   top.push([len/2,-dd]); const yB=-dd-back; return top.concat([[len/2,yB],[-len/2,yB]]); }
@@ -2752,6 +2752,15 @@ function cxDowelHole(){ return (S.cx.dowelHole!=null)?S.cx.dowelHole:(S.dowelD||
 function cxGearBore(){ const M=cxBrgMode(); return (M==='gears'||M==='gearsRods')?cxBearingHole():boreDia(); }
 function cxRodBore(){ return (cxBrgMode()==='gearsRods')?cxBearingHole():boreDia(); }
 function cxBrgCount(c){ const M=cxBrgMode(); if(M==='none')return 0; let n=c.gears.length; if(M==='gearsRods'&&c.pen)n+=c.pen.pins.length+c.pen.joints.length; return n; }
+// ---- gear mesh clearance (backlash) ----
+// Cut wooden gears need real backlash: with zero design clearance a perfect cut binds.
+// Set as a fraction of MODULE so the fit stays identical at every machine scale.
+// Achieved by thinning each tooth (centre distance stays exact, so involute action is unchanged).
+function cxBacklash(){ const b=S.cx.backlash; return (b==null)?0.08:Math.max(0,Math.min(0.3,b)); }
+function cxBacklashMM(m){ return cxBacklash()*m; }                 // total pair backlash at the pitch line
+function cxBacklashDelta(m){ return cxBacklashMM(m)/2; }           // per-gear tooth thinning
+// normal offset giving that thinning: circumferential change = 2*d/cos(pa)
+function cxBacklashOffset(m){ return cxBacklashDelta(m)*Math.cos(20*Math.PI/180)/2; }
 // pen-hole shape: round (0) or a regular 3–8-gon sized by across-flats, matching the
 // Kerf Hole Maker (flat-top for even sides, point-up for odd) so a hex pencil gets a hex hole.
 var CX_SIDE_NAME={0:'round',3:'triangular',4:'square',5:'pentagonal',6:'hex',7:'heptagonal',8:'octagonal'};
@@ -2807,7 +2816,7 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
 function cxBOMText(){ const b=cxBOM(), c=computeComplex(), t=S.thick;
   const m2=Math.max(t*2,14), bw=Math.round(c.bbox.w+2*m2), bh=Math.round(c.bbox.h+2*m2);
   const M=cxBrgMode(), brgLine=M==='none'?'no bearings (plain bolt / dowel pivots)':`⌀${S.cx.bearing.od}mm ${M==='gearsRods'?'in gears + rod pivots':'in gears'} · holes cut ⌀${fmt(cxBearingHole())}`;
-  const head=`PROJECT MATERIALS — The Clever Contraptions Corner\n\n  Back board / sheet : ${bw}×${bh}mm · ${t}mm stock\n  Bolt / shaft       : ${S.bolt} (⌀${fmt(boreDia())} clearance holes)\n  Bearings           : ${brgLine}\n  Dowels             : ⌀${fmt(S.dowelD)} nominal · press-fit holes cut ⌀${fmt(cxDowelHole())}\n  Kerf allowance     : ${S.kerf}mm (beam width — holes cut ${S.kerf}mm undersize to compensate)\n`;
+  const head=`PROJECT MATERIALS — The Clever Contraptions Corner\n\n  Back board / sheet : ${bw}×${bh}mm · ${t}mm stock\n  Bolt / shaft       : ${S.bolt} (⌀${fmt(boreDia())} clearance holes)\n  Bearings           : ${brgLine}\n  Dowels             : ⌀${fmt(S.dowelD)} nominal · press-fit holes cut ⌀${fmt(cxDowelHole())}\n  Kerf allowance     : ${S.kerf}mm (beam width — holes cut ${S.kerf}mm undersize to compensate)\n  Gear mesh clearance: ${cxBacklashMM(c.m).toFixed(2)}mm backlash (${cxBacklash().toFixed(2)} x module ${c.m}mm)\n`;
   return head+'\nLASER-CUT (wood, '+t+'mm):\n'+b.cut.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n')+'\n\nBUY SEPARATELY:\n'+b.buy.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n'); }
 function cxArmMax(){ const P=S.cx.split; return (P&&P.mode!=='off')?Math.max(P.maxW||600,P.maxH||400):1e9; }
 function cxArmSplice(al,armMax,ov){ ov=ov||28; if(!(armMax>0)||al<=armMax)return [{start:0,len:al,pivS:true,pivE:true,aligns:[]}];
@@ -2849,7 +2858,7 @@ function cxSpacers(c){ const t=S.thick, LG=t*2, shafts={};
   return {list,totalRings,ringT:t,LG}; }
 function sceneFromComplex(){
   const c=computeComplex(), t=S.thick, LG=t*2, parts=[], ox=c.bbox.cx, oy=c.bbox.cy;
-  c.gears.forEach(g=>{ const yOff=-(g.layer)*LG; const gloops=gearLoops3D(g.N,c.m,20);
+  c.gears.forEach(g=>{ const yOff=-(g.layer)*LG; const gloops=gearLoops3D(g.N,c.m,20,cxBacklashOffset(c.m));
     gloops[1]=flipY(circleLoop(Math.max(cxGearBore()/2,0.6),40));
     if(c.pen)c.pen.pins.forEach(pn=>{ if(pn.g===g.id && pn.r>cxGearBore()/2+cxBaseHole()/2+1)gloops.push(flipY(circleLoop(Math.max(cxBaseHole()/2,1),12).map(p=>[p[0]+pn.r,p[1]]))); });
     parts.push({tris:plateMesh(gloops,0,0,t,yOff),col:cxLayerCol(g.layer),spin:{x:g.x-ox,z:g.y-oy,phase:g.phase,rate:g.rate}}); });
@@ -2922,7 +2931,7 @@ function sceneFromComplex(){
     if(kit.pinCap){ parts.push({tris:plateMesh([flipY(circleLoop(kit.postD/2+3.5,20)),flipY(circleLoop(cbore,14))],0,0,t*0.5,yDrive-t*0.9),col:WOOD_IDLER,
       pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.pin[0]-ox,z:cv.pin[1]-oy,rot:0};}}); } });
   S.cx.edges.forEach(edge=>{ const g=c.byId[edge.gear]; if(!g)return; const p=Math.PI*c.m, dir=(edge.dir||0)*Math.PI/180, cd=Math.cos(dir), sd=Math.sin(dir), tg=[-sd,cd], rot=Math.atan2(cd,-sd), yE=-(g.layer)*LG-t*0.9;
-    const mesh=plateMesh([flipY(cxRackWindow(c.m,edge.len,0))],0,0,t*0.85,yE);
+    const mesh=plateMesh([flipY(cxRackWindow(c.m,edge.len,0,cxBacklashDelta(c.m)))],0,0,t*0.85,yE);
     parts.push({tris:mesh,col:'#c08a4e',pose:s=>{ const d=g.rp*(g.phase+g.rate*s), scroll=((d%p)+p)%p-p/2, P0x=(g.x-ox)+g.rp*cd, P0z=(g.y-oy)+g.rp*sd; return {x:P0x+scroll*tg[0],z:P0z+scroll*tg[1],rot}; }}); });
   if(c.pen){ const dr=cxDrawing(c); if(dr.ink.filter(Boolean).length>2){
     let a=1e9,b=-1e9,cc=1e9,dd=-1e9; dr.ink.forEach(p=>{if(p){a=Math.min(a,p[0]);b=Math.max(b,p[0]);cc=Math.min(cc,p[1]);dd=Math.max(dd,p[1]);}});
@@ -3070,7 +3079,7 @@ function complexReadout(){
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
   const boreR=Math.max(boreDia()/2-kh,0.3), gBoreR=Math.max(cxGearBore()/2-kh,0.3), rBoreR=Math.max(cxRodBore()/2-kh,0.3), pinR=Math.max(cxBaseHole()/2-kh,0.3), locR=Math.max(Math.min(cxDowelHole(),4)/2-kh,0.7);
-  c.gears.forEach(g=>{ const go=gearOutline(g.N,m,20,kh,14), cx=x+go.ra, cy=go.ra+gap;
+  c.gears.forEach(g=>{ const go=gearOutline(g.N,m,20,kh-cxBacklashOffset(m),14), cx=x+go.ra, cy=go.ra+gap;
     parts.push(`<path d="${pathFrom(go.poly,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     parts.push(`<path d="${svgCircle(gBoreR,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     if(c.pen)c.pen.pins.forEach((pn,pi)=>{ if(pn.g===g.id && pn.r>cxGearBore()/2+cxBaseHole()/2+1){ parts.push(`<path d="${svgCircle(pinR,cx+pn.r,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(cx+pn.r,cy-pinR-2.5,`pin ${pi+1}`,SCORE,2.4)); } });
@@ -3140,7 +3149,7 @@ function exportComplex(){
       place([roundRectLoop(kit.sliderLen,kit.sliderW,4,4),dot(0)],`slider #${conv.gear}`); rail(); rail(); cap(); }
     else { place([rodLoop(r,w),dot(0),dot(r)],`crank #${conv.gear} · r${Math.round(r)}`);
       place(kit.yoke,`slotted yoke #${conv.gear} · stroke ${fmt(2*r)}`); rail(); rail(); cap(); } });
-  S.cx.edges.forEach(edge=>{ const g=c.byId[edge.gear]; if(!g)return; const poly=cxRackWindow(c.m,edge.len,0);
+  S.cx.edges.forEach(edge=>{ const g=c.byId[edge.gear]; if(!g)return; const poly=cxRackWindow(c.m,edge.len,0,cxBacklashDelta(c.m));
     let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9; poly.forEach(p=>{mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);});
     const pts=poly.map(p=>[x+(p[0]-mnx),gap+(mxy-p[1])]);
     parts.push(`<path d="M${pts.map(p=>p[0].toFixed(2)+' '+p[1].toFixed(2)).join('L')}Z" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
@@ -3253,7 +3262,7 @@ function renderComplexUI(){
       <div>shaft bolt <b>${S.bolt}</b> · plain holes ⌀${fmt(boreDia())}mm</div>
       <div>bearings <b>${brgLabel}</b></div>
       <div>dowels <b>⌀${fmt(S.dowelD)}</b> · press-fit holes cut ⌀${fmt(cxDowelHole())}mm</div>
-      <div>kerf <b>${S.kerf}mm</b></div>
+      <div>kerf <b>${S.kerf}mm</b> · gear mesh clearance <b>${cxBacklashMM(c.m).toFixed(2)}mm</b> (${cxBacklash().toFixed(2)}×module)</div>
       <details style="margin-top:4px"><summary style="cursor:pointer;color:#9a7220;font-weight:700">ⓘ what's kerf?</summary><div class="hint" style="margin-top:4px">The laser beam burns away a thin strip of wood as it cuts — the <b>kerf</b> (~0.1–0.3mm). Holes come out that much <i>bigger</i> and outer shapes that much <i>smaller</i> than drawn, so every part here is cut with the kerf compensated. For a given material &amp; thickness the kerf is essentially the same whether you're cutting a hole or a slot — it's a property of the beam, not the shape. But a "8mm" bearing or "6mm" dowel isn't exactly that size, and press-fits need a specific grip — so the <b>bearing hole</b> and <b>dowel hole</b> above are the actual sizes to cut: measure once with the <b>Kerf Hole Maker</b> on curiosity.diy and set them to what presses in firmly.</div></details>
     </div>`;
     bom.innerHTML=`<div class="lab"><label>Project materials</label><button class="btn ghost" id="cxBOMCopy" style="padding:2px 10px;font-size:12px">⧉ copy list</button></div>${summary}<div style="margin-top:6px"><div style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#7a5a1c;margin-bottom:2px">▸ LASER-CUT · ${S.thick}mm wood</div>${b.cut.map(row).join('')}</div><div style="margin-top:10px"><div style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#7a5a1c;margin-bottom:2px">▸ BUY SEPARATELY</div>${b.buy.map(row).join('')}</div>`;
@@ -3272,9 +3281,11 @@ function renderComplexUI(){
     const match=presets.find(p=>+p[0]===B.od), sel=B.custom?'custom':(match?match[0]:'custom');
     const brgHoleRow=M!=='none'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">bearing hole ⌀</span><span class="cstep"><button data-cxbh="-0.1">−</button><input type="number" value="${B.hole}" id="cxBrgHole" min="4" max="80" step="0.1"><button data-cxbh="0.1">＋</button></span><span class="clab">mm to cut</span></div><div class="hint">A "${B.od}mm" bearing is rarely exactly ${B.od}. This is the hole actually cut — nudge it a few hundredths so it <b>presses in firmly</b>. Test with the Kerf Hole Maker.${Math.abs(B.hole-B.od)>0.001?` <b>(nominal ${B.od})</b>`:''}</div>`:'';
     const dowelHoleRow=`<div class="cstage-top" style="margin-top:10px"><span class="clab">dowel hole ⌀</span><span class="cstep"><button data-cxdh="-0.1">−</button><input type="number" value="${S.cx.dowelHole}" id="cxDowelHole" min="2" max="30" step="0.1"><button data-cxdh="0.1">＋</button></span><span class="clab">mm to cut</span></div><div class="hint">Press-fit hole for ${fmt(S.dowelD)}mm dowels (shafts &amp; standoff posts). Same idea — a "${fmt(S.dowelD)}mm" dowel isn't exactly that, so set the hole to what grips.${Math.abs(S.cx.dowelHole-(S.dowelD||6))>0.001?` <b>(nominal ${fmt(S.dowelD)})</b>`:''}</div>`;
+    const blv=cxBacklash(), blmm=cxBacklashMM(c.m);
+    const blRow=`<div class="lab" style="margin-top:12px"><label>Gear mesh clearance</label><span class="val">${blmm.toFixed(2)}mm</span></div><div class="cstage-top"><span class="clab">backlash</span><span class="cstep"><button data-cxbl="-0.01">−</button><input type="number" value="${blv.toFixed(2)}" id="cxBacklash" min="0" max="0.3" step="0.01"><button data-cxbl="0.01">＋</button></span><span class="clab">× module = <b>${blmm.toFixed(2)}mm</b></span></div><div class="hint">Wooden gears need real slack — with zero clearance a perfect cut <b>binds</b>. This thins each tooth slightly (centre distances stay exact, so the motion is unchanged). Set as a fraction of module, so the fit holds at <b>every machine scale</b>. ${blv===0?'<b style="color:#bf3a2b">0 = no clearance — will likely seize.</b>':blv<0.05?'Tight — precise but stiff in ply.':blv<=0.15?'Good running fit for laser-cut ply.':'Loose — free-running, more play in the drawing.'}</div>`;
     const pnS=cxPenSides(), penShapeBtns=[['0','round'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8']].map(o=>`<button class="chip" data-cxpshape="${o[0]}" aria-pressed="${(+o[0]===pnS||(o[0]==='0'&&pnS<3))?'true':'false'}" style="padding:4px 8px;cursor:pointer">${o[1]}</button>`).join('');
     const penHoleRow=`<div class="lab" style="margin-top:12px"><label>Pencil / pen hole</label></div><div class="cstage-top"><span class="clab">shape</span><span style="display:flex;gap:5px;flex-wrap:wrap" id="cxPenShape">${penShapeBtns}</span></div><div class="cstage-top" style="margin-top:6px"><span class="clab">pen/pencil ${pnS<3?'⌀':'A/F'}</span><span class="cstep"><button data-cxpen="-0.1">−</button><input type="number" value="${S.cx.penDia||10}" id="cxPenDia" min="2" max="30" step="0.1"><button data-cxpen="0.1">＋</button></span><span class="clab">mm to cut</span></div><div class="hint">The teardrop collar's hole (grips the pen/pencil). <b>${pnS>=3?CX_SIDE_NAME[pnS]+' — measured across the flats, grips a hex pencil':'round — for round barrels'}</b>. Cut a test hole in the Kerf Hole Maker and set the size that grips.</div>`;
-    brg.innerHTML=`<div class="lab"><label>Bearings, bolts &amp; dowels</label>${M!=='none'?`<span class="val">⌀${B.od}mm</span>`:''}</div><div class="hint">Press a bearing into each gear${M==='gearsRods'?' and rod pivot':''} so it spins freely on the ${S.bolt} bolt shaft. Bearing holes are ⌀${B.hole}mm; everywhere without a bearing uses ${S.bolt} bolt-clearance holes.</div><div class="cstage-top" style="margin-top:8px"><span class="clab">use</span><select class="selin" id="cxBrgMode" style="width:auto"><option value="none"${M==='none'?' selected':''}>none — bolt / dowel pivots</option><option value="gears"${M==='gears'?' selected':''}>bearings in gears</option><option value="gearsRods"${M==='gearsRods'?' selected':''}>bearings in gears + rod pivots</option></select></div>${M!=='none'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">bearing</span><select class="selin" id="cxBrgSel" style="width:auto">${presets.map(p=>`<option value="${p[0]}"${sel===p[0]?' selected':''}>${p[1]} mm</option>`).join('')}<option value="custom"${sel==='custom'?' selected':''}>custom…</option></select>${sel==='custom'?`<span class="cstep"><button data-cxbrg="-1">−</button><input type="number" value="${B.od}" id="cxBrgOD" min="6" max="80" step="1"><button data-cxbrg="1">＋</button></span><span class="clab">OD</span>`:''}</div>`:''}${brgHoleRow}${dowelHoleRow}${penHoleRow}`;
+    brg.innerHTML=`<div class="lab"><label>Bearings, bolts &amp; dowels</label>${M!=='none'?`<span class="val">⌀${B.od}mm</span>`:''}</div><div class="hint">Press a bearing into each gear${M==='gearsRods'?' and rod pivot':''} so it spins freely on the ${S.bolt} bolt shaft. Bearing holes are ⌀${B.hole}mm; everywhere without a bearing uses ${S.bolt} bolt-clearance holes.</div><div class="cstage-top" style="margin-top:8px"><span class="clab">use</span><select class="selin" id="cxBrgMode" style="width:auto"><option value="none"${M==='none'?' selected':''}>none — bolt / dowel pivots</option><option value="gears"${M==='gears'?' selected':''}>bearings in gears</option><option value="gearsRods"${M==='gearsRods'?' selected':''}>bearings in gears + rod pivots</option></select></div>${M!=='none'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">bearing</span><select class="selin" id="cxBrgSel" style="width:auto">${presets.map(p=>`<option value="${p[0]}"${sel===p[0]?' selected':''}>${p[1]} mm</option>`).join('')}<option value="custom"${sel==='custom'?' selected':''}>custom…</option></select>${sel==='custom'?`<span class="cstep"><button data-cxbrg="-1">−</button><input type="number" value="${B.od}" id="cxBrgOD" min="6" max="80" step="1"><button data-cxbrg="1">＋</button></span><span class="clab">OD</span>`:''}</div>`:''}${brgHoleRow}${dowelHoleRow}${blRow}${penHoleRow}`;
   }
 }
 function renderChainUI(){
@@ -3835,6 +3846,7 @@ document.getElementById('cxSplit').addEventListener('change',e=>{const t=e.targe
   if(t.id==='cxSplitMode')P.mode=t.value; else if(t.id==='cxSplitW')P.maxW=Math.max(100,Math.round(+t.value)||P.maxW); else if(t.id==='cxSplitH')P.maxH=Math.max(100,Math.round(+t.value)||P.maxH); else if(t.id==='cxSplitO')P.overlap=Math.max(4,Math.min(40,Math.round(+t.value)||P.overlap)); else return;
   renderComplexUI();everything();});
 document.getElementById('cxBearing').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const B=S.cx.bearing;
+  if(b.dataset.cxbl){S.cx.backlash=Math.max(0,Math.min(0.3,Math.round((cxBacklash()+(+b.dataset.cxbl))*100)/100));renderComplexUI();everything();return;}
   if(b.dataset.cxpshape!=null){S.cx.penSides=+b.dataset.cxpshape;renderComplexUI();everything();return;}
   if(b.dataset.cxpen){S.cx.penDia=Math.max(2,Math.min(30,Math.round(((S.cx.penDia||10)+(+b.dataset.cxpen))*10)/10));renderComplexUI();everything();return;}
   if(b.dataset.cxbrg){ B.od=Math.max(6,Math.min(80,B.od+(+b.dataset.cxbrg))); B.hole=B.od; B.custom=true; renderComplexUI();everything(); }
@@ -3846,7 +3858,8 @@ document.getElementById('cxBearing').addEventListener('change',e=>{const t=e.tar
   else if(t.id==='cxBrgOD'){ B.od=Math.max(6,Math.min(80,Math.round(+t.value)||B.od)); B.hole=B.od; B.custom=true; renderComplexUI();everything(); }
   else if(t.id==='cxBrgHole'){ B.hole=Math.max(4,Math.min(80,(+t.value)||B.hole)); renderComplexUI();everything(); }
   else if(t.id==='cxDowelHole'){ S.cx.dowelHole=Math.max(2,Math.min(30,(+t.value)||cxDowelHole())); renderComplexUI();everything(); }
-  else if(t.id==='cxPenDia'){ S.cx.penDia=Math.max(2,Math.min(30,(+t.value)||S.cx.penDia||10)); renderComplexUI();everything(); }});
+  else if(t.id==='cxPenDia'){ S.cx.penDia=Math.max(2,Math.min(30,(+t.value)||S.cx.penDia||10)); renderComplexUI();everything(); }
+  else if(t.id==='cxBacklash'){ const v=+t.value; S.cx.backlash=Math.max(0,Math.min(0.3,isNaN(v)?cxBacklash():v)); renderComplexUI();everything(); }});
 document.getElementById('cxConv').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.cxlw){S.cx.linkW=Math.max(4,Math.min(60,cxLinkW()+(+b.dataset.cxlw)));renderComplexUI();everything();return;}
   if(b.id==='cxAddCam'){cxAddConv('cam');renderComplexUI();everything();return;}
