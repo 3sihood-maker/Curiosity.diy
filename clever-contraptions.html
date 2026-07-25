@@ -269,6 +269,22 @@
     .mn-toc{break-after:page;page-break-after:always}
     a[href]:after{content:''}
   }
+
+  /* ---- iOS: stop Safari auto-zooming when a field is tapped ----
+     Safari zooms whenever a focused control's font is under 16px. Bumping to 16px
+     on touch devices removes the zoom without disabling pinch-zoom on the views. */
+  @media (pointer:coarse){
+    input[type=number],input[type=text],input[type=search],select,textarea,
+    .cstep input,.cstage input,.stepper input,.selin,.addrow select{
+      font-size:16px !important;
+    }
+    .cstep input{width:66px;padding:2px 2px}
+    .cstage input{width:62px}
+    .selin,.addrow select{padding:8px 8px}
+    /* keep the +/- taps snappy and stop double-tap zoom on controls */
+    button,.chip,.btn,.cstep button,.mtab{touch-action:manipulation}
+    .cstep button{width:30px;font-size:17px}
+  }
 </style>
 </head>
 <body>
