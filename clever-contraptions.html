@@ -221,6 +221,54 @@
   .addgear:disabled{opacity:.4;cursor:not-allowed}
   .seg.wrap4{flex-wrap:wrap}
   .seg.wrap4 button{flex:1 1 40%}
+
+  /* ---- manual ---- */
+  #manualPanel{background:var(--paper-3);border:1.5px solid var(--ink);padding:0 0 18px;margin-bottom:14px}
+  .mn-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 18px;border-bottom:1px solid #cbbf9f;
+    position:sticky;top:0;background:var(--paper-3);z-index:5}
+  .mn-doc{padding:0 18px;max-width:760px}
+  .mn-head{padding:22px 0 14px;border-bottom:2px solid var(--ink);margin-bottom:16px}
+  .mn-kicker{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
+  .mn-title{font-family:'Fraunces',serif;font-size:30px;line-height:1.1;margin:6px 0 4px;color:var(--ink)}
+  .mn-sub{font-family:'Fraunces',serif;font-style:italic;font-size:15px;color:var(--ink-mute)}
+  .mn-toc{background:var(--paper-2);border:1px solid #cbbf9f;border-radius:8px;padding:12px 16px;margin-bottom:20px;
+    font-family:'Space Mono',monospace;font-size:12px}
+  .mn-toc b{display:block;margin-bottom:6px;color:var(--brass);letter-spacing:.08em;text-transform:uppercase;font-size:10px}
+  .mn-toc ol{margin:0;padding-left:20px;line-height:1.85}
+  .mn-h1{font-family:'Fraunces',serif;font-size:20px;margin:26px 0 8px;color:var(--ink);
+    padding-bottom:5px;border-bottom:1px solid #cbbf9f}
+  .mn-h2{font-family:'Space Mono',monospace;font-size:13px;margin:16px 0 5px;color:var(--cut);letter-spacing:.01em}
+  .mn-p{font-size:14.5px;line-height:1.62;margin:0 0 10px;color:var(--ink)}
+  .mn-ul,.mn-ol{font-size:14.5px;line-height:1.6;margin:0 0 12px;padding-left:22px}
+  .mn-ul li,.mn-ol li{margin-bottom:6px}
+  .mn-note{background:var(--paper-2);border-left:3px solid var(--brass);border-radius:0 6px 6px 0;
+    padding:10px 14px;margin:12px 0 14px;font-size:14px;line-height:1.55;font-style:italic;color:var(--ink-mute)}
+  .mn-kv{display:grid;grid-template-columns:minmax(120px,30%) 1fr;gap:0;margin:6px 0 14px;font-size:14px}
+  .mn-kv dt{font-family:'Space Mono',monospace;font-size:12px;color:var(--brass);padding:8px 12px 8px 0;
+    border-top:1px solid #cbbf9f;line-height:1.45}
+  .mn-kv dd{margin:0;padding:8px 0;border-top:1px solid #cbbf9f;line-height:1.55}
+  .mn-tbl{width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:13px}
+  .mn-tbl th{background:var(--ink);color:var(--paper-2);font-family:'Space Mono',monospace;font-size:10.5px;
+    letter-spacing:.06em;text-transform:uppercase;text-align:left;padding:7px 9px}
+  .mn-tbl td{border:1px solid #cbbf9f;padding:7px 9px;vertical-align:top;line-height:1.5}
+  .mn-tbl tbody tr:nth-child(even){background:var(--paper-2)}
+  .mn-foot{margin-top:24px;padding-top:12px;border-top:2px solid var(--ink);
+    font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-mute)}
+  @media(max-width:600px){ .mn-kv{grid-template-columns:1fr} .mn-kv dt{padding-bottom:0;border-top:1px solid #cbbf9f}
+    .mn-kv dd{border-top:0;padding-top:2px} .mn-title{font-size:24px} .mn-tbl{font-size:12px} }
+  @media print{
+    body>*{display:none !important}
+    body>#manualPanel{display:block !important;border:0;background:#fff;margin:0;padding:0}
+    #manualPanel.hide{display:block !important}
+    .mn-bar{display:none !important}
+    .mn-doc{max-width:none;padding:0}
+    .mn-h1{break-after:avoid;page-break-after:avoid}
+    .mn-h2{break-after:avoid;page-break-after:avoid}
+    .mn-tbl,.mn-kv,.mn-note,.mn-ol,.mn-ul{break-inside:avoid;page-break-inside:avoid}
+    .mn-tbl th{background:#2b2620 !important;color:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .mn-toc{break-after:page;page-break-after:always}
+    a[href]:after{content:''}
+  }
 </style>
 </head>
 <body>
@@ -229,8 +277,113 @@
     <div class="kicker">A Curiosity.diy Workshop Tool</div>
     <div class="brand">The Clever Contraptions Corner</div>
   </div>
-  <a class="back" href="https://curiosity.diy">← curiosity.diy</a>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+    <a class="back" href="https://curiosity.diy">← curiosity.diy</a>
+    <button class="btn ghost" id="meshTestBtn" style="padding:6px 12px;font-size:12px">🔧 Gear Mesh Tester</button>
+    <button class="btn ghost" id="manualBtn" style="padding:6px 12px;font-size:12px">📖 Manual</button>
+  </div>
 </header>
+<div class="wrap hide" id="meshTestPanel" style="background:var(--paper-3);border:1.5px solid var(--ink);padding:16px 18px;margin-bottom:14px">
+  <div class="lab"><label>🔧 Gear Mesh Tester</label><button class="btn ghost" id="meshTestClose" style="padding:2px 10px;font-size:12px">✕ close</button></div>
+  <div class="hint" style="margin:4px 0 10px">Cut a tiny test board of gear pairs at different clearances, mount them, and feel which meshes best — <b>before</b> committing a whole machine. Each pair is engraved with its clearance. Use the winner as your <b>Gear mesh clearance</b>.</div>
+  <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
+    <div><div class="clab">module <span id="mtModHelp" style="color:#9a7220;cursor:pointer">ⓘ</span></div><span class="cstep"><button data-mt="m-0.5">−</button><input type="number" id="mtM" value="3" min="1.4" max="8" step="0.5"><button data-mt="m0.5">＋</button></span></div>
+    <button class="btn ghost" id="mtMatch" style="padding:7px 12px;font-size:12px">match my machine</button>
+    <div><div class="clab">teeth A</div><span class="cstep"><button data-mt="a-1">−</button><input type="number" id="mtA" value="12" min="8" max="30" step="1"><button data-mt="a1">＋</button></span></div>
+    <div><div class="clab">teeth B</div><span class="cstep"><button data-mt="b-1">−</button><input type="number" id="mtB" value="16" min="8" max="40" step="1"><button data-mt="b1">＋</button></span></div>
+    <div><div class="clab">shaft holes</div><select class="selin" id="mtBore" style="width:auto"><option value="machine">match my machine</option><option value="bearing">bearing seat</option><option value="bolt">bolt clearance</option></select></div>
+  </div>
+  <div id="mtModExplain" class="hint hide" style="margin-top:8px;background:#efe7d5;border:1px solid #cbbf9f;border-radius:6px;padding:8px 10px"><b>Module</b> is the tooth size — millimetres of pitch diameter per tooth. A gear's pitch ⌀ = module × teeth, and two gears mesh at centre distance module × (T₁+T₂) ÷ 2. Bigger module = bigger, chunkier teeth (stronger, easier to cut); smaller = finer teeth. It's the same "module" your machine's scale buttons change: ×½ halves it. Both meshing gears must share the same module.</div>
+  <div style="margin-top:14px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px" id="mtGrid">
+    <div>
+      <div class="clab" style="margin-bottom:4px">clearance to test</div>
+      <input type="range" id="mtTol" min="0" max="0.20" step="0.01" value="0.08" style="width:100%">
+      <div style="display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:11px;color:#8a7a58"><span>◀ tighter (stiff, precise)</span><span id="mtTolVal" style="color:#9a7220;font-weight:700">0.08 ×m</span><span>looser (free, slack) ▶</span></div>
+      <div class="cstage-top" style="margin-top:12px"><span class="clab">also cut ±</span><span class="cstep"><button data-mt="n-1">−</button><input type="number" id="mtN" value="5" min="1" max="5" step="1"><button data-mt="n1">＋</button></span><span class="clab">clearances to bracket it</span></div>
+      <div class="hint" id="mtValues" style="margin-top:8px"></div>
+      <button class="btn" id="mtDownload" style="padding:9px 16px;margin-top:8px">⬇ Download test SVG</button>
+    </div>
+    <div>
+      <div class="clab" style="margin-bottom:4px">live mesh — this is the gap you're setting</div>
+      <div style="background:#f7f2e6;border:1px solid #cbbf9f;border-radius:6px;padding:6px" id="mtCloseup"></div>
+      <div class="hint" style="margin-top:4px">Two teeth meshing at your clearance. The <span style="color:#2c5f8a;font-weight:700">blue gap</span> is the backlash — watch it open as you drag looser.</div>
+    </div>
+  </div>
+  <div style="margin-top:10px;background:#f7f2e6;border:1px solid #cbbf9f;border-radius:6px;overflow:auto;max-height:46vh" id="mtPreview"></div>
+</div>
+
+<div class="wrap hide" id="manualPanel">
+  <div class="mn-bar">
+    <button class="btn ghost" id="manualClose" style="padding:4px 12px;font-size:12px">✕ close</button>
+    <button class="btn" id="manualPrint" style="padding:6px 14px;font-size:12px">🖨 Print / Save as PDF</button>
+    <a class="btn ghost" id="manualPdf" href="clever-contraptions-manual.pdf" download style="padding:6px 14px;font-size:12px;text-decoration:none">⬇ Download PDF</a>
+  </div>
+  <article class="mn-doc">
+<div class="mn-head"><div class="mn-kicker">A Curiosity.diy Workshop Tool</div><h2 class="mn-title">The Clever Contraptions Corner</h2><div class="mn-sub">Manual — designing and cutting real mechanisms</div></div>
+<div class="mn-toc"><b>Contents</b><ol><li>What this tool is</li><li>Before you cut: the numbers that matter</li><li>Quick start</li><li>The movements</li><li>Module, and why it matters</li><li>Gear mesh clearance and the Gear Mesh Tester</li><li>Bearings, bolts and dowels</li><li>The Complex Workbench</li><li>Cut sheets and downloads</li><li>Building it</li><li>Troubleshooting</li><li>Glossary</li></ol></div>
+<h3 class="mn-h1">1 · What this tool is</h3>
+<p class="mn-p">The Clever Contraptions Corner designs machines that <b>move</b> — gear trains, cams, cranks, linkages, drawing machines — and gives you laser-ready cutting files for them. You set the mechanism up on screen, watch it run, then download SVGs that are already nested onto your sheet and compensated for your laser's kerf.</p>
+<p class="mn-p">There are two ways to work. <b>Single movements</b> builds one mechanism on its own — a gear pair, a cam, a rack. <b>Combining parts</b> chains several into one machine on a shared baseplate, using either the Composer Workbench (one layer) or the Complex Workbench (multiple layers, stacked gears, pens and arms).</p>
+<div class="mn-note">Everything is cut from flat sheet. The tool assumes plywood or acrylic, bolts for shafts, and optional bearings and dowels.</div>
+<h3 class="mn-h1">2 · Before you cut: the numbers that matter</h3>
+<p class="mn-p">Four settings in the <b>Parameters</b> panel decide whether your machine runs sweetly or seizes. Get these right once for your laser and material, and everything afterwards just works.</p>
+<dl class="mn-kv"><dt>Wood thickness</dt><dd>Your actual sheet, measured. Used for spacers, standoffs and stack heights.</dd><dt>Kerf</dt><dd>The width of material the laser beam burns away. Typically 0.10-0.25mm in ply. The tool grows outlines and shrinks holes by half of this, so finished parts come out on size.</dd><dt>Gear mesh clearance</dt><dd>Backlash between meshing teeth, set as a fraction of module. Default 0.08. This is the single most important setting for gears that turn freely.</dd><dt>Bearings</dt><dd>Whether gears get a bearing seat or a plain bolt hole, and the exact hole diameter to cut for a press fit.</dd></dl>
+<h4 class="mn-h2">Kerf is not the same as a hole fit</h4>
+<p class="mn-p">Kerf is the beam width — the same whether you cut a hole or a slot — and the tool compensates for it automatically. A <b>press-fit hole size</b> (for a bearing or a dowel) is a separate, tested number: an “8mm” bearing is rarely exactly 8mm, and wood compresses. Set kerf once for your machine; set hole sizes by testing.</p>
+<h4 class="mn-h2">Measuring your kerf</h4>
+<ol class="mn-ol"><li>Cut a 50mm square with kerf set to 0.</li><li>Measure it with calipers. It will come out undersize, say 49.85mm.</li><li>The difference (0.15mm) is your kerf. Enter it in Parameters.</li><li>Re-cut and check: the square should now measure 50.0mm.</li></ol>
+<h3 class="mn-h1">3 · Quick start</h3>
+<ol class="mn-ol"><li>Pick a movement, or open Combining parts for a full machine.</li><li>Set the teeth counts, module and any lengths. Watch it run in 3D wood or 2D schematic.</li><li>In Parameters set wood thickness, kerf, gear mesh clearance and bearings.</li><li>Open <b>Cut sheets to laser</b> and check the nesting and the piece count.</li><li>Download each numbered sheet. Cut at your usual settings for the material.</li><li>Build it using the <b>Reference sheet</b> and the materials list, which tell you every part, bolt, bearing and dowel you need.</li></ol>
+<div class="mn-note">New to gears? Cut a Gear Mesh Tester board first (section 6). Twenty minutes there saves a whole sheet of gears that bind.</div>
+<h3 class="mn-h1">4 · The movements</h3>
+<table class="mn-tbl"><thead><tr><th>Movement</th><th>Converts</th><th>Notes</th></tr></thead><tbody><tr><td>Spur gearing</td><td>rotary to rotary</td><td>Pairs and trains, 2-7 gears. Idlers set direction, not ratio.</td></tr><tr><td>Crank & connecting rod</td><td>rotary to reciprocating</td><td>The classic engine linkage; works both ways.</td></tr><tr><td>Cam & follower</td><td>rotary to reciprocating</td><td>Choose the motion law: heart, dwell, and others.</td></tr><tr><td>Rack & pinion</td><td>rotary to linear</td><td>Straight-line travel; rack length sets the stroke.</td></tr><tr><td>Ratchet & pawl</td><td>oscillating to intermittent</td><td>One-way motion, steps forward and holds.</td></tr><tr><td>Scotch yoke</td><td>rotary to sine reciprocation</td><td>Pure sine motion, fewer parts than a crank.</td></tr><tr><td>Internal ring gear</td><td>rotary to rotary</td><td>Same direction, compact centre distance.</td></tr><tr><td>Epicyclic / planetary</td><td>compound ratios</td><td>Big reductions in a small space; traces hypocycloid paths.</td></tr><tr><td>Four-bar linkage</td><td>rotary to complex curve</td><td>Coupler curves — the heart of drawing machines.</td></tr><tr><td>Composer Workbench</td><td>chained</td><td>Several movements on one baseplate, one crank.</td></tr><tr><td>Complex Workbench</td><td>chained, multi-layer</td><td>Stacked gears on shafts, plus pens and arms.</td></tr></tbody></table>
+<h3 class="mn-h1">5 · Module, and why it matters</h3>
+<p class="mn-p"><b>Module</b> is tooth size: millimetres of pitch diameter per tooth. Two rules follow from it:</p>
+<ul class="mn-ul"><li>A gear's pitch diameter = module x number of teeth.</li><li>Two gears mesh at a centre distance of module x (teeth1 + teeth2) / 2.</li></ul>
+<p class="mn-p">Bigger module means bigger, chunkier teeth — stronger and easier to cut cleanly in ply. Smaller module means finer teeth and a more compact machine. <b>Two gears can only mesh if they share the same module.</b> The machine scale buttons in the Complex Workbench change module: at half scale, module halves and every gear shrinks with it.</p>
+<div class="mn-note">In ply, module 2 is about the finest worth cutting. Module 3 is a good general choice; module 4-5 is very forgiving.</div>
+<h3 class="mn-h1">6 · Gear mesh clearance and the Gear Mesh Tester</h3>
+<p class="mn-p">A gear cut to perfect theoretical dimensions <b>will not turn</b>. Real teeth need backlash — a small gap between the driving and driven flanks — to allow for material roughness, char, and tiny errors. The <b>Gear mesh clearance</b> setting adds it by thinning each tooth very slightly, leaving centre distances exact so the motion stays true.</p>
+<p class="mn-p">It is set as a fraction of module, which means the fit holds at any size. A machine that runs beautifully at half scale will run the same at full scale.</p>
+<dl class="mn-kv"><dt>0</dt><dd>No clearance. Gears will almost certainly seize.</dd><dt>0.05</dt><dd>Tight. Precise, but stiff in plywood.</dd><dt>0.08</dt><dd>Good running fit for laser-cut ply. The default.</dd><dt>0.12 - 0.15</dt><dd>Free-running. A little lost motion, useful for rough material.</dd><dt>0.20+</dt><dd>Loose. Noticeable slack; fine for hand-turned toys, poor for drawing.</dd></dl>
+<h4 class="mn-h2">Using the tester</h4>
+<p class="mn-p">The Gear Mesh Tester (in the Combining menu, or the button at the top) cuts a small board of gear pairs at different clearances so you can feel the difference before committing a whole machine.</p>
+<ol class="mn-ol"><li>Press <b>match my machine</b> so the module matches what you are building.</li><li>Drag the clearance slider. The live close-up shows two teeth meshing, with the backlash gap shaded blue — watch it open as you go looser.</li><li>Set <b>also cut</b> to 5 to bracket your guess, or to 1 to test a single value.</li><li>Choose the shaft holes: match my machine, bearing seat, or bolt clearance.</li><li>Download and cut the board. Each pair is engraved with its clearance, centre distance and tooth count.</li><li>Mount each pair on its tile and turn them. Pick the one that turns freely without rattling.</li><li>Enter that number as your Gear mesh clearance in Parameters.</li></ol>
+<h3 class="mn-h1">7 · Bearings, bolts and dowels</h3>
+<p class="mn-p">Rotating parts need something to turn on. The <b>Bearings</b> setting in Parameters offers three arrangements:</p>
+<dl class="mn-kv"><dt>None</dt><dd>Every gear gets a bolt-clearance bore and spins directly on the bolt. Simplest, and fine for slow hand-turned machines.</dd><dt>In gears</dt><dd>Each gear gets a bearing seat; the baseplate keeps a smaller bolt hole. The bearing takes the load and the gear spins freely. This is the usual choice.</dd><dt>In gears + rod pivots</dt><dd>As above, plus bearings at linkage rod pivots. Smoothest, most hardware.</dd></dl>
+<p class="mn-p">The <b>bearing hole diameter</b> is the size actually cut. Start at the bearing's nominal outside diameter and adjust by a tenth of a millimetre at a time until it presses in firmly without splitting the ply. <b>Dowel holes</b> work the same way for shafts and standoff posts.</p>
+<div class="mn-note">Use the Kerf Hole Maker on curiosity.diy to test hole sizes quickly: it cuts a strip of holes in small increments so you can find the one that grips.</div>
+<h3 class="mn-h1">8 · The Complex Workbench</h3>
+<p class="mn-p">The Complex Workbench builds multi-layer machines: gears stacked on shared shafts, driven from one crank, optionally carrying a pen.</p>
+<h4 class="mn-h2">Gears</h4>
+<ul class="mn-ul"><li><b>Driver</b> is the input gear you turn. <b>Mesh</b> gears engage a chosen neighbour at an angle you set. <b>Stack</b> gears share a shaft with another gear, so they turn together.</li><li>Each row shows the live tip diameter, so you can see the machine's real size as you work.</li><li>Layers separate the gear trains vertically; spacers and standoffs are generated automatically.</li></ul>
+<h4 class="mn-h2">Machine scale</h4>
+<p class="mn-p">The scale buttons resize the whole mechanism — module, arm lengths, pin radii — by an exact factor, relative to the original. Because clearance and hole fits are proportional or absolute as appropriate, a scaled machine still assembles correctly.</p>
+<h4 class="mn-h2">Pens and arms</h4>
+<ul class="mn-ul"><li>A <b>pen</b> can ride on a gear pin, a linkage joint, or part-way along an arm.</li><li><b>Arms</b> pivot on joints. A <b>branch</b> is glued rigidly to an arm — it is not a pivot — and carries the pen at its tip.</li><li>The <b>pen collar</b> is a teardrop piece: the pen drops through the hole at the round end, and the narrow end bolts to the branch tip.</li><li>The pen hole can be round or a 3-8 sided polygon, measured across the flats — so a hex hole grips a hex pencil.</li></ul>
+<h4 class="mn-h2">Reading the drawing</h4>
+<p class="mn-p">A <b>closed</b> figure repeats after a set number of turns. An <b>open</b> figure never quite closes, so it weaves denser the longer it runs — set <b>run for N turns</b> to control how much it fills in.</p>
+<h4 class="mn-h2">Splitting the baseplate</h4>
+<p class="mn-p">If the baseplate is bigger than your sheet, use <b>Split the baseplate</b> to tile it into sheet-sized pieces with alignment features.</p>
+<h3 class="mn-h1">9 · Cut sheets and downloads</h3>
+<p class="mn-p">There are two different files, and they do different jobs.</p>
+<dl class="mn-kv"><dt>Reference sheet (annotated)</dt><dd>One long drawing with every part named, dimensioned and annotated — which hole is which, what glues where. Print it or keep it on screen while you build. Not intended for cutting.</dd><dt>Cut sheets to laser</dt><dd>The numbered sheets you actually cut. Tightly nested to your sheet size, kerf compensated, one SVG per sheet.</dd></dl>
+<h4 class="mn-h2">Options</h4>
+<dl class="mn-kv"><dt>Sheet outline</dt><dd>Draws the sheet border. Turn it off if your laser software places jobs itself.</dd><dt>0,0 marker</dt><dd>A crosshair at the origin for lining the job up on the bed. Handy with the outline off.</dd><dt>Engrave part labels</dt><dd>Engraves each part's number and tooth count. Off by default, since engraving adds machine time.</dd><dt>Zoom / fit width</dt><dd>Inspect the nesting before committing.</dd></dl>
+<h4 class="mn-h2">Colours</h4>
+<p class="mn-p"><b>Red</b> lines are cuts. <b>Blue</b> lines are engraving or scoring. Map these to your laser's layers as cut and raster/score.</p>
+<div class="mn-note">If a piece is larger than your sheet, a red warning appears above the downloads. Choose a bigger sheet size or split the baseplate — otherwise that piece will be cut short.</div>
+<h3 class="mn-h1">10 · Building it</h3>
+<ol class="mn-ol"><li>Weed and de-soot the parts. Wiping cut edges with methylated spirits removes char, which is a surprisingly large source of friction.</li><li>Press bearings into the gears. They should need firm thumb pressure, not a hammer.</li><li>Fit shafts and standoffs to the baseplate. Dowels glue in; bolts pass through.</li><li>Stack the layers in order, using the generated spacers to set the gaps.</li><li>Check each gear turns freely on its own before adding the next.</li><li>Fit arms and linkages. Branches are glued rigidly; joints must stay free.</li><li>Bolt the pen collar to the branch tip and drop the pen through.</li><li>Turn the crank slowly by hand for a full cycle before running it properly.</li></ol>
+<div class="mn-note">A candle or paste wax rubbed on tooth flanks makes a real difference to how freely wooden gears run.</div>
+<h3 class="mn-h1">11 · Troubleshooting</h3>
+<table class="mn-tbl"><thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead><tbody><tr><td>Gears bind or lock up</td><td>Not enough mesh clearance</td><td>Raise Gear mesh clearance to 0.10-0.12; de-soot and wax the teeth</td></tr><tr><td>Gears rattle, drawing looks fuzzy</td><td>Too much clearance</td><td>Lower to 0.05-0.06 and re-cut</td></tr><tr><td>Gear wobbles on its bolt</td><td>No bearing, or hole too large</td><td>Switch Bearings to 'In gears', or reduce the bearing hole</td></tr><tr><td>Bearing falls out</td><td>Hole cut too big</td><td>Reduce the bearing hole diameter by 0.1mm and re-cut</td></tr><tr><td>Bearing won't go in</td><td>Hole too small</td><td>Increase by 0.1mm; do not change kerf to fix this</td></tr><tr><td>Parts come out undersize</td><td>Kerf set too low</td><td>Measure a test square and correct the kerf</td></tr><tr><td>A piece is cut short at the edge</td><td>Piece exceeds the sheet</td><td>Bigger sheet size, or split the baseplate</td></tr><tr><td>Pen slips in the collar</td><td>Pen hole too large</td><td>Reduce the pen hole size, or match the shape to the barrel</td></tr><tr><td>Drawing never repeats</td><td>Open figure</td><td>Expected — set run for N turns to control the density</td></tr><tr><td>Screen looks unchanged after an edit</td><td>Cached page</td><td>Hard reload, adding ?v=2 to the address</td></tr></tbody></table>
+<h3 class="mn-h1">12 · Glossary</h3>
+<dl class="mn-kv"><dt>Module</dt><dd>Tooth size: mm of pitch diameter per tooth. Meshing gears must share it.</dd><dt>Pitch circle</dt><dd>The imaginary circle where two gears effectively roll on each other.</dd><dt>Centre distance</dt><dd>Distance between two meshing gear centres: module x (T1 + T2) / 2.</dd><dt>Backlash</dt><dd>The small gap between meshing tooth flanks that lets gears turn freely.</dd><dt>Kerf</dt><dd>The width of material removed by the laser beam.</dd><dt>Kerf compensation</dt><dd>Growing outlines and shrinking holes by half a kerf so finished parts are on size.</dd><dt>Involute</dt><dd>The tooth curve that gives a constant speed ratio through the mesh. All gears here are involute.</dd><dt>Across flats (A/F)</dt><dd>The width of a polygon measured flat-to-flat, not corner-to-corner. How hex pencils and bolts are sized.</dd><dt>Press fit</dt><dd>A hole slightly smaller than the part, so it grips without glue.</dd><dt>Coupler curve</dt><dd>The path traced by a point on the connecting link of a four-bar linkage.</dd><dt>Hypocycloid</dt><dd>The path traced by a point on a circle rolling inside another circle, as in planetary gearing.</dd></dl>
+<div class="mn-foot">A Curiosity.diy workshop tool · free, no sign-up · curiosity.diy</div>
+  </article>
+</div>
 
 <main class="ccmain">
   <section class="hero">
@@ -294,6 +447,7 @@
       <div class="movetabs hide" id="combineTabs">
         <button class="mtab" data-m="composer"><b>Composer Workbench</b><span>one layer · belts · meshing · links</span></button>
         <button class="mtab" data-m="complex"><b>Complex Workbench</b><span>multi-layer · shafts · stacks · pens</span></button>
+        <button class="mtab" id="meshTestTab"><b>🔧 Gear Mesh Tester</b><span>cut a tiny test · find your clearance first</span></button>
       </div>
     </nav>
     <div class="panel">
@@ -676,6 +830,28 @@
           </div>
         </div>
 
+        <div class="field">
+          <div class="lab"><label>Gear mesh clearance</label><span class="val" id="blVal">0.08 × module</span></div>
+          <input type="number" id="backlash" min="0" max="0.3" step="0.01" value="0.08">
+          <div class="hint" id="blHint">Backlash between meshing teeth, as a fraction of module — so the fit holds at any size. Cut wood needs real slack: <b>0</b> binds. 0.05 tight · <b>0.08 good for ply</b> · 0.15+ loose. Applies to every gear, rack and ring in the tool.</div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <div class="lab"><label>Bearings</label></div>
+            <select id="brgModeG">
+              <option value="none">None — bolt / dowel pivots</option>
+              <option value="gears">In gears</option>
+              <option value="gearsRods">In gears + rod pivots</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="lab"><label>Bearing hole ⌀</label><span class="val" id="brgHoleGVal">—</span></div>
+            <input type="number" id="brgHoleG" min="4" max="80" step="0.1" value="7.9">
+          </div>
+        </div>
+        <div class="field"><div class="hint" id="brgHintG">Press a bearing into each gear so it spins freely on the bolt shaft. Applies to every gear in the tool; baseplates and levers keep bolt-clearance holes. Set the hole a touch under the bearing's outside ⌀ for a press fit — the Complex Workbench panel has the full presets, dowel and pen-hole settings.</div></div>
+
         <div class="row2">
           <div class="field"><div class="lab"><label>Axle / bolt</label></div><select id="bolt"></select></div>
           <div class="field"><div class="lab"><label>Bore fit</label></div>
@@ -736,13 +912,14 @@
         </dl>
         <div class="mesh-ok good" id="meshMsg">✔ Every gear meshes.</div>
         <div class="export">
-          <button class="btn" id="dlBtn">⬇ Download laser SVG</button>
+          <button class="btn" id="dlBtn">⬇ Reference sheet (annotated)</button>
           <button class="btn ghost" id="cdBtn">⧉ Copy centre distances</button>
-          <button class="btn ghost" id="csBtn" aria-expanded="false">▸ Show cut sheet</button>
+          <button class="btn ghost" id="csBtn" aria-expanded="false">▸ Cut sheets to laser</button>
           <button class="btn ghost" id="saveProjBtn">⇩ Save project</button>
           <button class="btn ghost" id="loadProjBtn">⇧ Load project</button>
           <input type="file" id="loadProjFile" accept=".json,application/json" style="display:none">
           <span class="hint" id="projMsg" style="width:100%"></span>
+          <div class="hint" style="width:100%"><b>Which file do I cut?</b> Open <b>Cut sheets to laser</b> and download the numbered sheets — those are nested to your sheet size and kerf-compensated. The <b>reference sheet</b> is one long annotated drawing with part names, dimensions and assembly notes: print it or keep it on screen while you build.</div>
           <div class="legend">
             <span><span class="sw" style="border-color:var(--cut)"></span>cut</span>
             <span><span class="sw" style="border-color:var(--score)"></span>score / engrave</span>
@@ -1200,8 +1377,9 @@ function baseDims(){
    ============================================================ */
 const WOOD_GEAR="#d3ab74", WOOD_IDLER="#c79a63", WOOD_BASE="#7d5236";
 function gearLoops3D(N,m,pa,blOff){
-  const g=gearOutline(N,m,pa,blOff?-blOff:0,9);
-  const loops=[flipY(g.poly), flipY(circleLoop(Math.max(boreDia()/2,0.6),40))];
+  const off=(blOff==null)?cxBacklashOffset(m):blOff;
+  const g=gearOutline(N,m,pa,off?-off:0,14);
+  const loops=[flipY(g.poly), flipY(circleLoop(Math.max(cxGearBore()/2,0.6),40))];
   if(S.spokes) spokeHoles(g.ra,S.spokes,hubR()).forEach(h=>loops.push(flipY(h)));
   return loops;
 }
@@ -1232,7 +1410,7 @@ function sceneFromCompound(){
   const Nto=Math.max(8,Math.min(P.N,Math.round(W.N*0.35)));
   parts.push({tris:plateMesh(gearLoops3D(Nto,m,S.pa),0,0,t,-(t*1.25)),col:WOOD_SLIDE,spin:{x:wx,z:wz,phase:W.phase,rate:W.rate}});
   // shaft dowels through pinion stack and wheel+takeoff stack
-  [[px,pz],[wx,wz]].forEach(c=>parts.push({tris:plateMesh([flipY(circleLoop(Math.max(boreDia()/2,1.4),18))],0,0,t*2.6,-(t*1.7)),col:'#3a3226',spin:{x:c[0],z:c[1],phase:0,rate:0}}));
+  [[px,pz],[wx,wz]].forEach(c=>parts.push({tris:plateMesh([flipY(circleLoop(Math.max(boreDia()/2,1.4),18))],0,0,t*2.6,-(t*1.7)),col:'#3a3226',hw:1,spin:{x:c[0],z:c[1],phase:0,rate:0}}));
   return {parts,reach:base.reach,floorZ:base.floorZ};
 }
 function drawCompoundPreview(){
@@ -1517,12 +1695,12 @@ ${parts.join('\n')}
 const WOOD_RACK="#c08a4e";
 function rpVals(){ const m=S.rpM, N=S.rpN, pa=S.rpPa, rp=m*N/2, p=Math.PI*m; return {m,N,pa,rp,p,teeth:S.rackT,Lr:S.rackT*Math.PI*m}; }
 function rackProfile(){ const {m,pa,p,teeth,Lr}=rpVals(), a=m, d=1.25*m, back=2*m, tphi=Math.tan(pa*Math.PI/180);
-  const ttip=Math.max(p/2-2*a*tphi, p*0.08), run=(a+d)*tphi, top=[[-Lr/2,-d]];
+  const ttip=Math.max(p/2-2*a*tphi-cxBacklashDelta(m), p*0.06), run=(a+d)*tphi, top=[[-Lr/2,-d]];
   for(let j=0;j<teeth;j++){ const c=-Lr/2+(j+0.5)*p;
     top.push([c-ttip/2-run,-d],[c-ttip/2,a],[c+ttip/2,a],[c+ttip/2+run,-d]); }
   top.push([Lr/2,-d]); const yB=-d-back;
   return top.concat([[Lr/2,yB],[-Lr/2,yB]]); }
-function pinionExportLoops(){ const g=gearOutline(S.rpN,S.rpM,S.rpPa); const loops=[g.poly, circleLoop(Math.max(boreDia()/2,0.6),40)];
+function pinionExportLoops(){ const g=gearOutline(S.rpN,S.rpM,S.rpPa,-cxBacklashOffset(S.rpM),14); const loops=[g.poly, circleLoop(Math.max(cxGearBore()/2,0.6),40)];
   if(S.spokes) spokeHoles(g.ra,S.spokes,hubR()).forEach(h=>loops.push(h)); return {loops,g}; }
 function rpLayout(){ const v=rpVals(), ra=v.rp+v.m, railH=6, rackBot=-(1.25*v.m+2*v.m);
   const sMax=Math.max(v.Lr/2-1.5*v.p, v.p), railCy=rackBot-2-railH/2, guideLen=2*ra+2*v.p;
@@ -1562,7 +1740,7 @@ function drawRackPreview(){
   s+=`<path d="M${rack.map((p,i)=>(i?'L':'')+p[0].toFixed(2)+' '+Y(p[1]).toFixed(2)).join(' ')}Z" fill="#c08a4e55" stroke="#23201a" stroke-width="${lw}"/>`;
   // pinion pitch circle + outline rotated
   s+=`<circle cx="0" cy="${Y(rp).toFixed(2)}" r="${rp.toFixed(2)}" fill="none" stroke="#9a7220" stroke-width="${lw*0.6}" stroke-dasharray="${lw*2} ${lw*2}"/>`;
-  const g=gearOutline(S.rpN,S.rpM,S.rpPa), rot=base+o, pin=g.poly.map(p=>{const q=rot2(p[0],p[1],rot);return [q[0], q[1]+rp];});
+  const g=gearOutline(S.rpN,S.rpM,S.rpPa,-cxBacklashOffset(S.rpM),14), rot=base+o, pin=g.poly.map(p=>{const q=rot2(p[0],p[1],rot);return [q[0], q[1]+rp];});
   s+=`<path d="M${pin.map((p,i)=>(i?'L':'')+p[0].toFixed(2)+' '+Y(p[1]).toFixed(2)).join(' ')}Z" fill="#d3ab7455" stroke="#23201a" stroke-width="${lw}"/>`;
   s+=`<circle cx="0" cy="${Y(rp).toFixed(2)}" r="${br}" fill="#e9e2d0" stroke="#bf3a2b" stroke-width="${lw}"/>`;
   s+=`<circle cx="0" cy="0" r="${(br*0.8).toFixed(2)}" fill="#bf3a2b"/>`;
@@ -1867,7 +2045,7 @@ ${parts.join('\n')}
    ============================================================ */
 function igVals(){ const m=S.igM, Nr=S.igNr, Np=S.igNp, pa=S.igPa, RpR=m*Nr/2, RpP=m*Np/2;
   return {m,Nr,Np,pa,RpR,RpP,cd:RpR-RpP,Ro:RpR+4.25*m}; }
-function ringBore(Nr,m,pa){ const RpR=m*Nr/2, g=gearOutline(Nr,m,pa,0,9);
+function ringBore(Nr,m,pa){ const RpR=m*Nr/2, g=gearOutline(Nr,m,pa,-cxBacklashOffset(m),14);
   const raw=g.poly.map(([x,y])=>{const r=Math.hypot(x,y)||1e-9,a=Math.atan2(y,x),r2=2*RpR-r;return [r2*Math.cos(a),r2*Math.sin(a)];});
   const out=[]; for(let i=0;i<raw.length;i++){const p=raw[i],q=raw[(i-1+raw.length)%raw.length]; if(Math.hypot(p[0]-q[0],p[1]-q[1])>1e-4)out.push(p);} return out; }
 function internalBore(){ const {Nr,m,pa}=igVals(); return ringBore(Nr,m,pa); }
@@ -1902,7 +2080,7 @@ function drawInternalPreview(){
   s+=`<path d="M${outer.map((p,i)=>(i?'L':'')+p[0].toFixed(2)+' '+Y(p[1]).toFixed(2)).join(' ')}Z M${bore.map((p,i)=>(i?'L':'')+p[0].toFixed(2)+' '+Y(p[1]).toFixed(2)).join(' ')}Z" fill="#c79a6355" fill-rule="evenodd" stroke="#23201a" stroke-width="${lw}"/>`;
   s+=`<circle cx="0" cy="0" r="${v.RpR.toFixed(2)}" fill="none" stroke="#9a7220" stroke-width="${lw*0.5}" stroke-dasharray="${lw*2} ${lw*2}"/>`;
   // pinion at (0,cd)
-  const g=gearOutline(S.igNp,S.igM,S.igPa), pin=g.poly.map(p=>{const q=rot2(p[0],p[1],rotP);return [q[0],q[1]+v.cd];});
+  const g=gearOutline(S.igNp,S.igM,S.igPa,-cxBacklashOffset(S.igM),14), pin=g.poly.map(p=>{const q=rot2(p[0],p[1],rotP);return [q[0],q[1]+v.cd];});
   s+=`<path d="M${pin.map((p,i)=>(i?'L':'')+p[0].toFixed(2)+' '+Y(p[1]).toFixed(2)).join(' ')}Z" fill="#d3ab7455" stroke="#23201a" stroke-width="${lw}"/>`;
   s+=`<circle cx="0" cy="${Y(v.cd).toFixed(2)}" r="${br}" fill="#e9e2d0" stroke="#bf3a2b" stroke-width="${lw}"/>`;
   s+=`<circle cx="0" cy="${Y(v.RpR).toFixed(2)}" r="${(br*0.8).toFixed(2)}" fill="#bf3a2b"/>`;
@@ -1947,7 +2125,7 @@ function exportInternal(){
     x+=w+gap; rowH=Math.max(rowH,h+gap*2+4);
   };
   place([circleLoop(v.Ro,140), internalBore()],`ring · ${v.Nr}T internal`, true);
-  const g=gearOutline(S.igNp,S.igM,S.igPa), pinLoops=[g.poly, circleLoop(Math.max(boreDia()/2,0.6),40)];
+  const g=gearOutline(S.igNp,S.igM,S.igPa,-cxBacklashOffset(S.igM),14), pinLoops=[g.poly, circleLoop(Math.max(cxGearBore()/2,0.6),40)];
   if(S.spokes) spokeHoles(g.ra,S.spokes,hubR()).forEach(h=>pinLoops.push(h));
   place(pinLoops,`pinion · ${v.Np}T`);
   let totalW=x, totalH=rowH;
@@ -2040,12 +2218,12 @@ function drawPlanetaryPreview(){
   const belt=carrierBelt(v.P,v.Rc,plPadR()).map(p=>rot2(p[0],p[1],k.wc*th));
   s+=`<path d="M${belt.map((p,i)=>(i?'L':'')+p[0].toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ')}Z" fill="#c08a4e44" stroke="#8a6a3c" stroke-width="${lw*0.8}"/>`;
   // sun
-  const gs=gearOutline(v.Ns,v.m,v.pa).poly.map(p=>rot2(p[0],p[1],th));
+  const gs=gearOutline(v.Ns,v.m,v.pa,-cxBacklashOffset(v.m),14).poly.map(p=>rot2(p[0],p[1],th));
   s+=`<path d="M${gs.map((p,i)=>(i?'L':'')+p[0].toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ')}Z" fill="#d3ab7488" stroke="#23201a" stroke-width="${lw}"/>`;
   s+=`<circle cx="0" cy="0" r="${br}" fill="#e9e2d0" stroke="#bf3a2b" stroke-width="${lw}"/>`;
   // planets
   for(let i=0;i<v.P;i++){const ak=2*Math.PI*i/v.P, ac=ak+k.wc*th, cx=v.Rc*Math.cos(ac), cy=v.Rc*Math.sin(ac), pr=plPlanetPhase(i)+k.wp*th;
-    const gp=gearOutline(v.Np,v.m,v.pa).poly.map(p=>{const r=rot2(p[0],p[1],pr);return [r[0]+cx,r[1]+cy];});
+    const gp=gearOutline(v.Np,v.m,v.pa,-cxBacklashOffset(v.m),14).poly.map(p=>{const r=rot2(p[0],p[1],pr);return [r[0]+cx,r[1]+cy];});
     s+=`<path d="M${gp.map((p,j)=>(j?'L':'')+p[0].toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ')}Z" fill="#d3ab7466" stroke="#23201a" stroke-width="${lw}"/>`;
     s+=`<circle cx="${cx.toFixed(1)}" cy="${Y(cy).toFixed(1)}" r="${br}" fill="#e9e2d0" stroke="#bf3a2b" stroke-width="${lw}"/>`;
     if(i===0)s+=`<circle cx="${(cx+v.RpP*Math.cos(pr)).toFixed(1)}" cy="${Y(cy+v.RpP*Math.sin(pr)).toFixed(1)}" r="${(br*0.9).toFixed(1)}" fill="#bf3a2b"/>`; }
@@ -2091,10 +2269,10 @@ function exportPlanetary(){
     x+=w+gap; rowH=Math.max(rowH,h+gap*2+4);
   };
   place([circleLoop(v.Ro,140), ringBore(v.Nr,v.m,v.pa)],`ring · ${v.Nr}T (fixed)`,true);
-  const sg=gearOutline(v.Ns,v.m,v.pa), sun=[sg.poly, circleLoop(Math.max(boreDia()/2,0.6),40)];
+  const sg=gearOutline(v.Ns,v.m,v.pa,-cxBacklashOffset(v.m),14), sun=[sg.poly, circleLoop(Math.max(cxGearBore()/2,0.6),40)];
   if(S.spokes) spokeHoles(sg.ra,S.spokes,hubR()).forEach(h=>sun.push(h));
   place(sun,`sun · ${v.Ns}T`);
-  const pgL=gearOutline(v.Np,v.m,v.pa), planet=[pgL.poly, circleLoop(Math.max(boreDia()/2,0.6),40)];
+  const pgL=gearOutline(v.Np,v.m,v.pa,-cxBacklashOffset(v.m),14), planet=[pgL.poly, circleLoop(Math.max(cxGearBore()/2,0.6),40)];
   place(planet,`planet · ${v.Np}T ×${v.P}`);
   place(carrierLoops(),`carrier ×1`);
   let totalW=x, totalH=rowH;
@@ -2174,7 +2352,7 @@ function sceneFromFourbar(){
   parts.push({tris:plateMesh(linkBar(v.k).map(flipY),0,0,t,yLink),col:WOOD_SLIDE,pose:sp=>{const st=solveFourbar(mapTheta(sp,rng));return st.ok?{x:v.O4[0]-ox,z:v.O4[1]-oy,rot:st.rAng}:{x:v.O4[0]-ox,z:v.O4[1]-oy,rot:0};}});
   parts.push({tris:plateMesh(couplerLoops().map(flipY),0,0,t,yCoup),col:WOOD_IDLER,pose:sp=>{const st=solveFourbar(mapTheta(sp,rng));return st.ok?{x:st.A[0]-ox,z:st.A[1]-oy,rot:st.cAng}:{x:v.O2[0]-ox,z:v.O2[1]-oy,rot:0};}});
   // dowel pins (small disks) at the four joints, in front
-  const pin=(fn)=>({tris:plateMesh([flipY(circleLoop(dpar,20))],0,0,t*0.5,-t*0.5),col:WOOD_BASE,pose:sp=>{const p=fn(solveFourbar(mapTheta(sp,rng)));return {x:p[0]-ox,z:p[1]-oy,rot:0};}});
+  const pin=(fn)=>({tris:plateMesh([flipY(circleLoop(dpar,20))],0,0,t*0.5,-t*0.5),col:WOOD_BASE,hw:1,pose:sp=>{const p=fn(solveFourbar(mapTheta(sp,rng)));return {x:p[0]-ox,z:p[1]-oy,rot:0};}});
   parts.push(pin(()=>v.O2)); parts.push(pin(()=>v.O4));
   parts.push(pin(st=>st.ok?st.A:v.O2)); parts.push(pin(st=>st.ok?st.B:v.O4));
   let reach=Math.max(bb.w,bb.h)+8, floorZ=bb.minY-oy-4;
@@ -2383,9 +2561,9 @@ function sceneFromComposer(){
     b.parts.forEach(p=>parts.push(wrapPose(p,rate,b.cx,b.cz))); });
   // real drive coupling: belt from stage i's OUTPUT shaft to stage i+1's INPUT shaft
   const pulley=(P,rate,rp)=>{ parts.push({tris:plateMesh([flipY(circleLoop(rp,28)),flipY(circleLoop(Math.max(rp*0.26,1),16))],0,0,t*0.8,-(t*1.05)),col:WOOD_RAIL,pose:s=>({x:P[0],z:P[1],rot:s*rate})});
-    parts.push({tris:plateMesh([flipY(rodLoop(rp*0.82,Math.max(rp*0.24,1.4),8))],0,0,t*0.5,-(t*1.55)),col:'#3a3226',pose:s=>({x:P[0],z:P[1],rot:s*rate})}); };
+    parts.push({tris:plateMesh([flipY(rodLoop(rp*0.82,Math.max(rp*0.24,1.4),8))],0,0,t*0.5,-(t*1.55)),col:'#3a3226',hw:1,pose:s=>({x:P[0],z:P[1],rot:s*rate})}); };
   const belt=(P,Q,rp)=>{ const dx=Q[0]-P[0],dz=Q[1]-P[1],L=Math.hypot(dx,dz)||1,px=-dz/L,pz=dx/L;
-    [rp,-rp].forEach(o=>parts.push({tris:barTris(P[0]+px*o,P[1]+pz*o,Q[0]+px*o,Q[1]+pz*o,Math.max(rp*0.16,1.1),-(t*0.85)),col:'#4a3f30',pose:()=>({x:0,z:0,rot:0})})); };
+    [rp,-rp].forEach(o=>parts.push({tris:barTris(P[0]+px*o,P[1]+pz*o,Q[0]+px*o,Q[1]+pz*o,Math.max(rp*0.16,1.1),-(t*0.85)),col:'#4a3f30',hw:1,pose:()=>({x:0,z:0,rot:0})})); };
   const rod=(P,Q,rp)=>{ parts.push({tris:barTris(P[0],P[1],Q[0],Q[1],Math.max(rp*0.5,2),-(t*0.7)),col:WOOD_SLIDE,pose:()=>({x:0,z:0,rot:0})});
     [P,Q].forEach(p=>parts.push({tris:plateMesh([flipY(circleLoop(Math.max(rp*0.5,2),16))],0,0,t*0.7,-(t*1.1)),col:WOOD_RAIL,pose:()=>({x:p[0],z:p[1],rot:0})})); };
   for(let i=0;i<built.length-1;i++){ if(stages[i+1]&&!stages[i+1].comp)continue; const A=built[i],B=built[i+1];
@@ -2861,11 +3039,11 @@ function sceneFromComplex(){
   c.gears.forEach(g=>{ const yOff=-(g.layer)*LG; const gloops=gearLoops3D(g.N,c.m,20,cxBacklashOffset(c.m));
     gloops[1]=flipY(circleLoop(Math.max(cxGearBore()/2,0.6),40));
     if(c.pen)c.pen.pins.forEach(pn=>{ if(pn.g===g.id && pn.r>cxGearBore()/2+cxBaseHole()/2+1)gloops.push(flipY(circleLoop(Math.max(cxBaseHole()/2,1),12).map(p=>[p[0]+pn.r,p[1]]))); });
-    parts.push({tris:plateMesh(gloops,0,0,t,yOff),col:cxLayerCol(g.layer),spin:{x:g.x-ox,z:g.y-oy,phase:g.phase,rate:g.rate}}); });
+    parts.push({tris:plateMesh(gloops,0,0,t,yOff),col:cxLayerCol(g.layer),label:'#'+g.id+'·'+g.N+'T',spin:{x:g.x-ox,z:g.y-oy,phase:g.phase,rate:g.rate}}); });
   // shafts (one dowel per unique x,y through its layer span)
   const shafts={}; c.gears.forEach(g=>{ const k=(Math.round(g.x*10))+'_'+(Math.round(g.y*10)); (shafts[k]||(shafts[k]={x:g.x,y:g.y,min:g.layer,max:g.layer})); shafts[k].min=Math.min(shafts[k].min,g.layer); shafts[k].max=Math.max(shafts[k].max,g.layer); });
   Object.values(shafts).forEach(s=>{ const h=(s.max-s.min)*LG+t*2.4, yOff=-(s.max)*LG-t*0.7;
-    parts.push({tris:plateMesh([flipY(circleLoop(Math.max(boreDia()/2,1.5),18))],0,0,h,yOff),col:'#3a3226',spin:{x:s.x-ox,z:s.y-oy,phase:0,rate:0}}); });
+    parts.push({tris:plateMesh([flipY(circleLoop(Math.max(boreDia()/2,1.5),18))],0,0,h,yOff),col:'#3a3226',hw:1,spin:{x:s.x-ox,z:s.y-oy,phase:0,rate:0}}); });
   // baseplate behind everything — tiled to fit the laser bed
   const m2=Math.max(t*2,14), bw=c.bbox.w+2*m2, bh=c.bbox.h+2*m2;
   const bHoles=Object.values(shafts).map(s=>({x:(s.x-ox)+bw/2,y:(oy-s.y)+bh/2}));
@@ -2875,9 +3053,9 @@ function sceneFromComplex(){
     const loops=[outer]; tile.holes.forEach(h=>loops.push(flipY(circleLoop(Math.max(cxBaseHole()/2,1.5),20).map(p=>[p[0]+h.x-bw/2,p[1]+bh/2-h.y]))));
     parts.push({tris:plateMesh(loops,0,0,t,(t+3)),col:WOOD_BASE,spin:null}); });
   if(S.cx.bearing&&S.cx.bearing.mode==='seat'){ const od=S.cx.bearing.od, rOut=od/2, rIn=Math.max(cxBore()/2,1.5);
-    Object.values(shafts).forEach(s=>parts.push({tris:plateMesh([flipY(circleLoop(rOut,28)),flipY(circleLoop(rIn,18))],0,0,t*0.9,(t+2.4)),col:'#2b2620',spin:{x:s.x-ox,z:s.y-oy,phase:0,rate:0}})); }
+    Object.values(shafts).forEach(s=>parts.push({tris:plateMesh([flipY(circleLoop(rOut,28)),flipY(circleLoop(rIn,18))],0,0,t*0.9,(t+2.4)),col:'#2b2620',hw:1,spin:{x:s.x-ox,z:s.y-oy,phase:0,rate:0}})); }
   if(c.pen){ c.pen.pins.forEach(pn=>{ const g=c.byId[pn.g]; if(!g)return; const r=pn.r, yo=-(g.layer)*LG-t*0.7;
-      parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.6),16))],0,0,t*1.7,yo),col:'#bf3a2b',pose:s=>({x:(g.x-ox)+r*Math.cos(g.phase+g.rate*s),z:(g.y-oy)+r*Math.sin(g.phase+g.rate*s),rot:0})}); });
+      parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.6),16))],0,0,t*1.7,yo),col:'#bf3a2b',hw:1,pose:s=>({x:(g.x-ox)+r*Math.cos(g.phase+g.rate*s),z:(g.y-oy)+r*Math.sin(g.phase+g.rate*s),rot:0})}); });
     const yLink=-(c.layers)*LG-t*0.5, barW=cxLinkW(), OFF=99999;
     const aMaxS=cxArmMax();
     c.pen.joints.forEach((j,ji)=>{ [[j.a,j.la,'a'],[j.b,j.lb,'b']].forEach(rl=>{ const ref=rl[0], L=rl[1], side=rl[2];
@@ -2889,12 +3067,12 @@ function sceneFromComplex(){
         locs.forEach(o=>{ const local=(cxRefT(o.wd.base)/100)*L-(pc.start||0); if(local>hr&&local<pc.len-hr)loops.push(flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12).map(p=>[p[0]+local,p[1]]))); });
         parts.push({tris:plateMesh(loops,0,0,t*0.55,yLink-pc.idx*0.4),col:'#8a6a3c',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*pc.start-ox,z:A[1]+Math.sin(ang)*pc.start-oy,rot:ang}; }}); }); }); });
     c.pen.joints.forEach((j,ji)=>{ const isLast=ji===c.pen.joints.length-1;
-      parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.6,2.2),14))],0,0,t*1.2,yLink-t*0.3),col:'#5a4632',pose:s=>{ const st=cxPenAt(c,s), J=st?st.jointPos[ji]:null; if(!J)return {x:OFF,z:OFF,rot:0}; return {x:J[0]-ox,z:J[1]-oy,rot:0}; }}); });
+      parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.6,2.2),14))],0,0,t*1.2,yLink-t*0.3),col:'#5a4632',hw:1,pose:s=>{ const st=cxPenAt(c,s), J=st?st.jointPos[ji]:null; if(!J)return {x:OFF,z:OFF,rot:0}; return {x:J[0]-ox,z:J[1]-oy,rot:0}; }}); });
     (c.pen.welds||[]).forEach((w,wi)=>{ const L0=w.len||100, bw2=barW*0.9;
       const bl=[flipY(rodLoop(L0,bw2)), flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12)), flipY(circleLoop(Math.max(cxRodBore()/2,1),16).map(p=>[p[0]+L0,p[1]]))];
       parts.push({tris:plateMesh(bl,0,0,t*0.5,yLink-0.6),col:'#a3763a',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const base=cxRefPos(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds), d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(!base||d==null)return {x:OFF,z:OFF,rot:0}; return {x:base[0]-ox,z:base[1]-oy,rot:d+(w.ang==null?90:w.ang)*Math.PI/180}; }});
-      parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.4),14))],0,0,t*1.3,yLink-t*0.4),col:'#c79a63',pose:s=>{ const st=cxPenAt(c,s), T=st?st.weldPos[wi]:null; if(!T)return {x:OFF,z:OFF,rot:0}; return {x:T[0]-ox,z:T[1]-oy,rot:0}; }}); });
-    parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }});
+      parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.4),14))],0,0,t*1.3,yLink-t*0.4),col:'#c79a63',hw:1,pose:s=>{ const st=cxPenAt(c,s), T=st?st.weldPos[wi]:null; if(!T)return {x:OFF,z:OFF,rot:0}; return {x:T[0]-ox,z:T[1]-oy,rot:0}; }}); });
+    parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',hw:1,pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }});
     { const H=cxPenHolder();
       const collar=[flipY(H.outline), flipY(cxPenHoleLoop(0,0,cxPenAF())), flipY(circleLoop(Math.max(boreDia()/2,1),12).map(p=>[p[0]+H.mount[0],p[1]+H.mount[1]]))];
       parts.push({tris:plateMesh(collar,0,0,t*0.6,yLink-1.2),col:'#b98c52',pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; let rot=0; if(c.pen.welds&&c.pen.welds.length){ const w=c.pen.welds[0], d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(d!=null)rot=d-Math.PI/2; } return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot}; }}); } }
@@ -2922,12 +3100,12 @@ function sceneFromComplex(){
       parts.push({tris:plateMesh([flipY(rodLoop(r,w)),flipY(circleLoop(cbore,16)),flipY(circleLoop(cbore,14).map(p=>[p[0]+r,p[1]]))],0,0,t,yEcc),col:WOOD_GEAR,spin:{x:gx,z:gz,phase:g.phase,rate:g.rate}});
       parts.push({tris:plateMesh(kit.yoke.map(flipY),0,0,t*0.7,yDrive),col:WOOD_SLIDE,
         pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.slider[0]-ox,z:cv.slider[1]-oy,rot:cv.ph};}}); }
-    if(conv.type!=='cam'){ parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cbore,2.2),14))],0,0,t*2.2,yDrive-t*0.3),col:'#bf3a2b',
+    if(conv.type!=='cam'){ parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cbore,2.2),14))],0,0,t*2.2,yDrive-t*0.3),col:'#bf3a2b',hw:1,
       pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.pin[0]-ox,z:cv.pin[1]-oy,rot:0};}}); }
     // standoff posts — fixed dowels tying the guide bridge down to the back board
     { const uu=[Math.cos(ph),Math.sin(ph)], pp=[-uu[1],uu[0]], hP=(t+3)-yDrive;
       kit.posts.forEach(([lx,ly])=>{ const wx=g.x+lx*uu[0]+ly*pp[0], wy=g.y+lx*uu[1]+ly*pp[1];
-        parts.push({tris:plateMesh([flipY(circleLoop(Math.max(kit.postD/2,1.6),16))],0,0,hP,yDrive),col:'#5a4632',spin:{x:wx-ox,z:wy-oy,phase:0,rate:0}}); }); }
+        parts.push({tris:plateMesh([flipY(circleLoop(Math.max(kit.postD/2,1.6),16))],0,0,hP,yDrive),col:'#5a4632',hw:1,spin:{x:wx-ox,z:wy-oy,phase:0,rate:0}}); }); }
     if(kit.pinCap){ parts.push({tris:plateMesh([flipY(circleLoop(kit.postD/2+3.5,20)),flipY(circleLoop(cbore,14))],0,0,t*0.5,yDrive-t*0.9),col:WOOD_IDLER,
       pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.pin[0]-ox,z:cv.pin[1]-oy,rot:0};}}); } });
   S.cx.edges.forEach(edge=>{ const g=c.byId[edge.gear]; if(!g)return; const p=Math.PI*c.m, dir=(edge.dir||0)*Math.PI/180, cd=Math.cos(dir), sd=Math.sin(dir), tg=[-sd,cd], rot=Math.atan2(cd,-sd), yE=-(g.layer)*LG-t*0.9;
@@ -2940,7 +3118,7 @@ function sceneFromComplex(){
     else { const cxx=(a+b)/2,cyy=(cc+dd)/2; if(pp.mode==='custom'){w=pp.w||200;h=pp.h||200;}else{const mg=Math.max(15,Math.max(b-a,dd-cc)*0.08);w=(b-a)+2*mg;h=(dd-cc)+2*mg;} px=cxx;py=cyy; }
     if(isFinite(w)&&isFinite(h)&&w>4&&h>4){ const yo=-(c.layers)*LG-t*1.6, bw2=Math.max(6,Math.min(w,h)*0.06);
       const frame=[flipY(roundRectLoop(w,h,Math.min(w,h)*0.03,7)),flipY(roundRectLoop(Math.max(w-2*bw2,4),Math.max(h-2*bw2,4),Math.min(w,h)*0.03,7))];
-      let part={tris:plateMesh(frame,0,0,t*0.5,yo),col:'#e8dcc2'};
+      let part={tris:plateMesh(frame,0,0,t*0.5,yo),col:'#e8dcc2',hw:1};
       if(dr.mode==='gear'){ const G=dr.G; part.pose=s=>{const o=cxCoupleOffset(c,s,'paper');return {x:px-ox+o[0],z:py-oy+o[1],rot:G.phase+G.rate*s};}; }
       else if(dr.bed){ part.pose=s=>{const o=cxCoupleOffset(c,s,'paper');return {x:(px-ox)+o[0],z:(py-oy)+o[1],rot:0};}; }
       else part.spin={x:px-ox,z:py-oy,phase:0,rate:0};
@@ -2962,7 +3140,7 @@ function drawComplexPreview(){
   Object.values(shafts).forEach(sh=>{ const bh=cxBaseHole(); s+=`<circle cx="${sh.x.toFixed(1)}" cy="${(-sh.y).toFixed(1)}" r="${Math.max(bh/2,1.5).toFixed(1)}" fill="none" stroke="#8a6a3c" stroke-width="${lw.toFixed(2)}"/>`; if(S.cx.bearing&&S.cx.bearing.mode==='seat')s+=`<circle cx="${sh.x.toFixed(1)}" cy="${(-sh.y).toFixed(1)}" r="${Math.max(boreDia()/2,1).toFixed(1)}" fill="none" stroke="#8a6a3c" stroke-width="${(lw*0.6).toFixed(2)}" stroke-dasharray="2 1.5"/>`; });
   // gears low layers first
   const order=[...c.gears].sort((a,b)=>a.layer-b.layer);
-  order.forEach(g=>{ const go=gearOutline(g.N,c.m,20,0,10), rot=(g.phase+g.rate*th);
+  order.forEach(g=>{ const go=gearOutline(g.N,c.m,20,-cxBacklashOffset(c.m),12), rot=(g.phase+g.rate*th);
     let d='M'; go.poly.forEach((p,i)=>{ const X=g.x+p[0]*Math.cos(rot)-p[1]*Math.sin(rot), Y=-(g.y+p[0]*Math.sin(rot)+p[1]*Math.cos(rot)); d+=(i?'L':'')+X.toFixed(1)+' '+Y.toFixed(1)+' '; }); d+='Z';
     const col=cxLayerCol(g.layer), isSel=g.id===S.cx.sel;
     s+=`<path d="${d}" fill="${col}" fill-opacity="${g.layer===0?0.92:0.62}" stroke="${isSel?'#bf3a2b':'#23201a'}" stroke-width="${isSel?lw*2:lw}"/>`;
@@ -3083,7 +3261,7 @@ function exportComplex(){
     parts.push(`<path d="${pathFrom(go.poly,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     parts.push(`<path d="${svgCircle(gBoreR,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     if(c.pen)c.pen.pins.forEach((pn,pi)=>{ if(pn.g===g.id && pn.r>cxGearBore()/2+cxBaseHole()/2+1){ parts.push(`<path d="${svgCircle(pinR,cx+pn.r,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(cx+pn.r,cy-pinR-2.5,`pin ${pi+1}`,SCORE,2.4)); } });
-    parts.push(txt(cx,cy,`#${g.id}·${g.N}T·L${g.layer}`,SCORE,m*0.8));
+    if(!!S.engraveLabels)parts.push(txt(cx,cy,`#${g.id}·${g.N}T·L${g.layer}`,SCORE,m*0.8));
     x=cx+go.ra+gap; rowH=Math.max(rowH,2*go.ra+gap*2); });
   if(c.pen){ const armLens=[]; c.pen.joints.forEach(j=>{armLens.push(j.la,j.lb);}); const w=boreDia()+8, aMax=cxArmMax();
     armLens.forEach((al,k)=>{ const jointIdx=Math.floor(k/2), side=(k%2===0)?'a':'b';
@@ -3157,8 +3335,8 @@ function exportComplex(){
     parts.push(txt(x+(mxx-mnx)/2,gap+(mxy-mny)+2,`rack #${edge.gear} · ${fmt(edge.len)} (m${fmt(c.m)})`,SCORE,3));
     x=x+(mxx-mnx)+gap; rowH=Math.max(rowH,(mxy-mny)+gap*3); });
   const m2=Math.max(S.thick*2,14), bw=c.bbox.w+2*m2, bh=c.bbox.h+2*m2;
-  const shafts={}; c.gears.forEach(g=>{shafts[(Math.round(g.x*10))+'_'+(Math.round(g.y*10))]={x:g.x,y:g.y};});
-  const bHoles=Object.values(shafts).map(s=>({x:(s.x-c.bbox.cx)+bw/2, y:(c.bbox.cy-s.y)+bh/2, r:Math.max(cxBaseHole()/2-kh,0.3)}));
+  const shafts={}; c.gears.forEach(g=>{const k=(Math.round(g.x*10))+'_'+(Math.round(g.y*10)); (shafts[k]||(shafts[k]={x:g.x,y:g.y,ids:[]})).ids.push(g.id);});
+  const bHoles=Object.values(shafts).map(s=>({x:(s.x-c.bbox.cx)+bw/2, y:(c.bbox.cy-s.y)+bh/2, r:Math.max(cxBaseHole()/2-kh,0.3), lbl:s.ids.map(id=>{const g=c.byId[id];return '#'+id+'·'+(g?g.N+'T':'');}).join('/')}));
   cxPostWorld(c).forEach(pp=>bHoles.push({x:(pp.x-c.bbox.cx)+bw/2, y:(c.bbox.cy-pp.y)+bh/2, r:Math.max(cxDowelHole()/2-kh,0.3)}));
   const tiles=cxTileBoard(bw,bh,bHoles,S.cx.split||{mode:'off'});
   let bbx=gap, bby=rowH+gap, browH=0;
@@ -3166,7 +3344,7 @@ function exportComplex(){
     const px=bbx-tile.mnx, py=bby-tile.mny;
     if(tile.single){ parts.push(`<path d="${pathFrom(roundRectLoop(bw,bh,Math.min(bh/2,16),8),bbx+bw/2,bby+bh/2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(bbx+bw/2,bby-2,`baseplate · ${Object.keys(shafts).length} shafts`,SCORE,3.2)); }
     else { parts.push(`<path d="M${tile.poly.map(p=>(p[0]+px).toFixed(2)+' '+(p[1]+py).toFixed(2)).join('L')}Z" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(bbx+tile.w/2,bby-2,`board ${tile.col+1},${tile.row+1} of ${tile.cols}×${tile.rows}`,SCORE,3)); }
-    tile.holes.forEach(h=>{ const hr=(h.r!=null)?h.r:Math.max(cxBaseHole()/2-kh,0.3); parts.push(`<path d="${svgCircle(hr,h.x+px,h.y+py)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); if(h.seat)parts.push(`<path d="${svgCircle(boreR,h.x+px,h.y+py)}" fill="none" stroke="${SCORE}" stroke-width="${SW}"/>`); });
+    tile.holes.forEach(h=>{ const hr=(h.r!=null)?h.r:Math.max(cxBaseHole()/2-kh,0.3); parts.push(`<path d="${svgCircle(hr,h.x+px,h.y+py)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); if(h.seat)parts.push(`<path d="${svgCircle(boreR,h.x+px,h.y+py)}" fill="none" stroke="${SCORE}" stroke-width="${SW}"/>`); if(h.lbl&&!!S.engraveLabels)parts.push(txt(h.x+px,h.y+py-hr-3,h.lbl,SCORE,3.4)); });
     bbx+=tile.w+gap*1.5; browH=Math.max(browH,tile.h); });
   x=Math.max(x,bbx); rowH=bby+browH;
   const totalW=Math.max(x,bw+gap*2)+gap, totalH=rowH+gap;
@@ -3453,7 +3631,7 @@ function gearingPreview(){
   const parts=[];
   G.forEach((q,i)=>{
     const th=q.phase+q.rate*base;
-    const g=gearOutline(q.N,m,S.pa,0,14);
+    const g=gearOutline(q.N,m,S.pa,-cxBacklashOffset(m),14);
     const pts=g.poly.map(p=>{const r=rot2(p[0],p[1],th);return [q.cx+r[0], -(q.cy+r[1])];});
     pts.forEach(p=>{minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1]);});
     const holes=S.spokes?spokeHoles(g.ra,S.spokes,hubR()).map(h=>h.map(p=>{const r=rot2(p[0],p[1],th);return [q.cx+r[0],-(q.cy+r[1])];})):[];
@@ -3511,7 +3689,7 @@ function exportGearing(){
   const {G,bbox}=computeTrain();
   // row of gears
   const placed=[];
-  G.forEach((q,i)=>{const g=gearOutline(q.N,m,S.pa,kh,14);const cx=x+g.ra, cyy=g.ra+gap;
+  G.forEach((q,i)=>{const g=gearOutline(q.N,m,S.pa,kh-cxBacklashOffset(m),14);const cx=x+g.ra, cyy=g.ra+gap;
     parts.push(`<path d="${pathFrom(g.poly,cx,cyy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     parts.push(`<path d="${svgCircle(boreR,cx,cyy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     if(S.spokes) spokeHoles(g.ra,S.spokes,hubR()).forEach(h=>parts.push(`<path d="${pathFrom(h,cx,cyy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
@@ -3580,7 +3758,7 @@ const NEST_EXCLUDE=new Set(['#4a3f30','#3a3226','#5a4a34','#6b5a42','#e8dcc2','#
 function cutPiecesFromScene(){
   let scene; try{ scene=buildScene(); }catch(e){ return []; }
   const pieces=[];
-  for(const part of scene.parts){ if(!part.tris||!part.tris.length)continue; if(NEST_EXCLUDE.has((part.col||'').toLowerCase()))continue;
+  for(const part of scene.parts){ if(!part.tris||!part.tris.length)continue; if(part.hw)continue; if(NEST_EXCLUDE.has((part.col||'').toLowerCase()))continue;
     let minY=1e9; for(const tr of part.tris)for(const v of tr)minY=Math.min(minY,v[1]);
     const front=[]; for(const tr of part.tris)if(tr.every(v=>Math.abs(v[1]-minY)<0.02))front.push(tr.map(v=>[v[0],v[2]]));
     if(!front.length)continue;
@@ -3588,7 +3766,7 @@ function cutPiecesFromScene(){
     const w=mxx-mnx,h=mxz-mnz; if(!(w>0.6&&h>0.6)||!isFinite(w)||!isFinite(h))continue;
     const cx=(mnx+mxx)/2,cz=(mnz+mxz)/2, rec=front.map(tr=>tr.map(p=>[p[0]-cx,p[1]-cz]));
     let loops=loopsFromTris(rec); if(!loops.length)loops=[[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]]];
-    pieces.push({loops,w,h,col:part.col||'#c9a56a'}); }
+    pieces.push({loops,w,h,col:part.col||'#c9a56a',label:part.label||null}); }
   return pieces;
 }
 function nestPieces(pieces,sheetW,sheetH,gap){
@@ -3624,6 +3802,7 @@ function cxNestedSheets(opts){ opts=opts||{};
   let pieces; try{ pieces=cutPiecesFromScene(); }catch(e){ pieces=[]; }
   if(!pieces.length)return {sheets:[], count:0, sw, sh};
   const {place,sheets}=nestPieces(pieces,sw,sh,gap), out=[];
+  const oversize=place.filter(pl=>pl.over||pl.p.w>sw+0.5||pl.p.h>sh+0.5).map(pl=>({w:pl.p.w,h:pl.p.h,label:pl.p.label||'part'}));
   for(let k=0;k<sheets;k++){ let body='';
     if(opts.outline)body+=`<rect x="0" y="0" width="${sw}" height="${sh}" fill="none" stroke="#bf3a2b" stroke-width="0.3"/>`;
     if(opts.marker)body+=`<g stroke="#2c5f8a" stroke-width="0.4" fill="none"><line x1="-6" y1="0" x2="6" y2="0"/><line x1="0" y1="-6" x2="0" y2="6"/><circle cx="0" cy="0" r="2"/></g>`;
@@ -3632,12 +3811,68 @@ function cxNestedSheets(opts){ opts=opts||{};
       let d='';
       pl.p.loops.forEach((L,i)=>{ let LL; try{ LL=offsetPolygon(L, i===oi?kh:-kh); if(!LL.length||!LL.every(p=>isFinite(p[0])&&isFinite(p[1])))LL=L; }catch(_){ LL=L; }
         LL.forEach((pt,j)=>{ let X=pt[0],Y=pt[1]; if(pl.rot){const t=X;X=-Y;Y=t;} d+=(j?'L':'M')+(cx+X).toFixed(2)+' '+(cy+Y).toFixed(2)+' '; }); d+='Z '; });
-      body+=`<path d="${d}" fill="none" stroke="#bf3a2b" stroke-width="0.12"/>`; }
+      body+=`<path d="${d}" fill="none" stroke="#bf3a2b" stroke-width="0.12"/>`;
+      if(opts.labels&&pl.p.label)body+=`<text x="${cx.toFixed(1)}" y="${(cy+3).toFixed(1)}" font-family="monospace" font-size="4" fill="#2c5f8a" text-anchor="middle">${pl.p.label}</text>`; }
     const mo=opts.marker?10:0;
     out.push({name:`sheet_${k+1}_of_${sheets}_${sw}x${sh}mm`, svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-mo} ${-mo} ${sw+2*mo} ${sh+2*mo}" width="${sw}mm" height="${sh}mm">${body}</svg>`}); }
-  return {sheets:out, count:sheets, sw, sh};
+  return {sheets:out, count:sheets, sw, sh, oversize};
 }
 function dlSVG(name,svg){ const blob=new Blob([svg],{type:'image/svg+xml'}), url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=name+'.svg'; a.click(); URL.revokeObjectURL(url); }
+// ---- Gear Mesh Tester: a small cut+engrave test board of gear pairs at several clearances ----
+function meshTestClearances(n,center){ n=Math.max(1,Math.min(5,n|0)); center=(center==null)?0.08:center; const start=center-Math.floor(n/2)*0.02, arr=[]; for(let i=0;i<n;i++)arr.push(Math.max(0,Math.round((start+i*0.02)*100)/100)); return [...new Set(arr)]; }
+function mtRot(poly,ang,dx,dy){ const ca=Math.cos(ang),sa=Math.sin(ang); return poly.map(p=>[p[0]*ca-p[1]*sa+dx, p[0]*sa+p[1]*ca+dy]); }
+// live close-up of a few teeth meshing at clearance c, gear1 rotated by a (gear2 follows)
+function meshCloseupSVG(m,N1,N2,c,a){ const CD=m*(N1+N2)/2, rp1=m*N1/2, off=c*m*Math.cos(20*Math.PI/180)/4;
+  const g1=mtRot(gearOutline(N1,m,20,-off,22).poly, a, 0, 0);
+  const kk=Math.round(N2/2-0.5), th0=Math.PI-(kk+0.5)*2*Math.PI/N2;
+  const g2=mtRot(gearOutline(N2,m,20,-off,22).poly, -(N1/N2)*a+th0, CD, 0);
+  const win=2.6*m, vx=rp1-win, vy=-win, vw=2*win, vh=2*win, sw=m*0.05;
+  const P=pts=>'M'+pts.map(p=>p[0].toFixed(2)+' '+p[1].toFixed(2)).join('L')+'Z';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx.toFixed(2)} ${vy.toFixed(2)} ${vw.toFixed(2)} ${vh.toFixed(2)}" width="100%" height="auto" style="display:block;background:#f7f2e6">`+
+    `<rect x="${(rp1-c*m*1.6).toFixed(2)}" y="${vy.toFixed(2)}" width="${(c*m*3.2).toFixed(2)}" height="${vh.toFixed(2)}" fill="#2c5f8a" fill-opacity="0.16"/>`+
+    `<path d="${P(g1)}" fill="#e6cf9f" stroke="#7a5a2c" stroke-width="${sw}"/>`+
+    `<path d="${P(g2)}" fill="#d4b57e" stroke="#7a5a2c" stroke-width="${sw}"/>`+
+    `<line x1="${rp1.toFixed(2)}" y1="${vy.toFixed(2)}" x2="${rp1.toFixed(2)}" y2="${(vy+vh).toFixed(2)}" stroke="#2c5f8a" stroke-width="${(m*0.03).toFixed(3)}" stroke-dasharray="${(m*0.25).toFixed(2)} ${(m*0.2).toFixed(2)}"/>`+
+    `</svg>`; }
+function meshTesterSVG(o){ const m=o.m, N1=o.N1, N2=o.N2, cls=o.clearances, kh=S.kerf/2, pa=20, CUT='#bf3a2b', ENG='#2c5f8a', SW=0.12;
+  const ra1=m*(N1+2)/2, ra2=m*(N2+2)/2, CD=m*(N1+N2)/2, maxRa=Math.max(ra1,ra2);
+  const boreMode=(o.bore||'machine'), gearBoreD=(boreMode==='bearing')?cxBearingHole():(boreMode==='bolt'?boreDia():cxGearBore());
+  const gHole=Math.max(gearBoreD/2-kh,0.6), bHole=Math.max(boreDia()/2-kh,0.6), gap=8, margin=6;
+  const offFor=c=>c*m*Math.cos(pa*Math.PI/180)/4;
+  let cut='', eng='', y=margin, maxW=0;
+  cls.forEach(c=>{ const rowH=2*maxRa+gap, cyRow=y+rowH/2, tileW=CD+ra1+ra2+2*margin, tileX=margin;
+    cut+=`<path d="${pathFrom(roundRectLoop(tileW,rowH,4),tileX+tileW/2,cyRow)}"/>`;
+    const h1x=tileX+margin+ra1, h2x=h1x+CD;
+    cut+=`<path d="${svgCircle(bHole,h1x,cyRow)}"/><path d="${svgCircle(bHole,h2x,cyRow)}"/>`;
+    // engraved measurements: clearance + centre distance dimension between the two shafts
+    eng+=txt(tileX+tileW/2,y+rowH-3.5,`clearance ${c.toFixed(2)}xm = ${(c*m).toFixed(2)}mm  ·  module ${m}  ·  ${N1}T + ${N2}T`,ENG,3.4);
+    eng+=`<line x1="${h1x.toFixed(1)}" y1="${(cyRow-maxRa-1).toFixed(1)}" x2="${h2x.toFixed(1)}" y2="${(cyRow-maxRa-1).toFixed(1)}" stroke="${ENG}" stroke-width="0.15"/>`;
+    eng+=txt((h1x+h2x)/2,cyRow-maxRa-2.2,`centre dist ${CD.toFixed(1)}mm`,ENG,2.8);
+    let gx=tileX+tileW+gap;
+    [[N1,ra1],[N2,ra2]].forEach(function(pr){ const N=pr[0], ra=pr[1], go=gearOutline(N,m,pa,kh-offFor(c),14), cx=gx+ra, cyg=cyRow;
+      cut+=`<path d="${pathFrom(go.poly,cx,cyg)}"/><path d="${svgCircle(gHole,cx,cyg)}"/>`;
+      eng+=txt(cx,cyg+ra*0.5,`${c.toFixed(2)}`,ENG,Math.max(ra*0.3,2.6));
+      eng+=txt(cx,cyg-ra*0.55,`${N}T ø${(2*ra).toFixed(1)}`,ENG,Math.max(ra*0.2,2.2));
+      gx=cx+ra+gap; });
+    maxW=Math.max(maxW,gx); y+=rowH+gap; });
+  const W=Math.ceil(maxW+margin), H=Math.ceil(y+margin);
+  eng+=txt(W/2,H-1.5,`Gear Mesh Test · module ${m} · kerf ${S.kerf}mm · gear bore \u2300${gearBoreD.toFixed(1)} · red=cut blue=engrave`,ENG,3);
+  return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm"><g id="cut" fill="none" stroke="${CUT}" stroke-width="${SW}">${cut}</g><g id="engrave">${eng}</g></svg>`, W, H};
+}
+function currentMeshTest(){ const gv=id=>{const e=document.getElementById(id);return e?+e.value:0;};
+  const tol=document.getElementById('mtTol')?+document.getElementById('mtTol').value:0.08;
+  const be=document.getElementById('mtBore');
+  return {m:gv('mtM')||3, N1:gv('mtA')||12, N2:gv('mtB')||16, tol, bore:(be&&be.value)||'machine', clearances:meshTestClearances(gv('mtN')||1, tol)}; }
+let mtAngle=0, mtRAF=null;
+function mtAnimate(){ const p=document.getElementById('meshTestPanel'); if(!p||p.classList.contains('hide')){mtRAF=null;return;}
+  const o=currentMeshTest(), cu=document.getElementById('mtCloseup'); mtAngle+=0.012;
+  if(cu)cu.innerHTML=meshCloseupSVG(o.m,o.N1,o.N2,o.tol,mtAngle);
+  mtRAF=requestAnimationFrame(mtAnimate); }
+function renderMeshTest(){ const o=currentMeshTest(), r=meshTesterSVG(o);
+  const pv=document.getElementById('mtPreview'); if(pv)pv.innerHTML=`<div style="padding:8px">${r.svg.replace(`width="${r.W}mm" height="${r.H}mm"`,'width="100%" height="auto"').replace('stroke-width="0.12"','stroke-width="0.5"')}</div>`;
+  const tv=document.getElementById('mtTolVal'); if(tv)tv.textContent=`${o.tol.toFixed(2)} ×m = ${(o.tol*o.m).toFixed(2)}mm`;
+  const cu=document.getElementById('mtCloseup'); if(cu)cu.innerHTML=meshCloseupSVG(o.m,o.N1,o.N2,o.tol,mtAngle);
+  const vv=document.getElementById('mtValues'); if(vv)vv.innerHTML=`Cuts <b>${o.clearances.length}</b> pair${o.clearances.length>1?'s':''}: <b>${o.clearances.map(c=>c.toFixed(2)).join(' · ')}</b> ×module — board ~${r.W}×${r.H}mm · gear bore <b>⌀${((o.bore==='bearing')?cxBearingHole():(o.bore==='bolt'?boreDia():cxGearBore())).toFixed(1)}mm</b>.`; }
 function renderCutSheet(){
   const view=document.getElementById('cutSheetView'); if(!view)return;
   const sz=(document.getElementById('sheetSize').value||'400x300').split('x').map(Number), sw=sz[0], sh=sz[1], gap=6, CUT='#bf3a2b';
@@ -3654,19 +3889,24 @@ function renderCutSheet(){
   s+='</svg>';
   const areaUsed=pieces.reduce((a,p)=>a+p.w*p.h,0), util=Math.min(100,areaUsed/(sheets*sw*sh)*100);
   const cap=`<b>${pieces.length} pieces</b> nested on <b>${sheets} sheet${sheets>1?'s':''}</b> of ${sw}×${sh} mm · ~${util.toFixed(0)}% used`+(over?` · ⚠ ${over} piece${over>1?'s':''} exceed the sheet — pick a larger size`:'');
-  const outOn=S.nestOutline!==false, mkOn=!!S.nestMarker;
+  const outOn=S.nestOutline!==false, mkOn=!!S.nestMarker, lbOn=!!S.engraveLabels;
   let dlrow=''; for(let k=0;k<sheets;k++)dlrow+=`<button class="btn ghost" data-dlsheet="${k}" style="padding:6px 10px;font-size:12px">⬇ Sheet ${k+1}</button>`;
   if(sheets>1)dlrow+=`<button class="btn ghost" data-dlsheet="all" style="padding:6px 10px;font-size:12px">⬇ All ${sheets}</button>`;
-  view.innerHTML=
+  const ovList=place.filter(pl=>pl.over||pl.p.w>sw+0.5||pl.p.h>sh+0.5);
+  const ovWarn=ovList.length?`<div id="cutOverWarn" style="background:#fbe9e6;border:1.5px solid #bf3a2b;border-radius:6px;padding:9px 11px;margin-bottom:9px;font-family:'Space Mono',monospace;font-size:12px;color:#8f1e10"><b>\u26a0 ${ovList.length} piece${ovList.length>1?'s':''} won't fit your ${sw}\u00d7${sh}mm sheet</b> \u2014 ${ovList.map(pl=>`${pl.p.w.toFixed(0)}\u00d7${pl.p.h.toFixed(0)}mm`).join(', ')}. They'd hang off the edge and cut short. Either pick a bigger sheet size, or use <b>Split the baseplate</b> in the Complex Workbench to tile it.</div>`:'';
+  view.innerHTML= ovWarn+
     `<div style="display:flex;gap:8px;flex-wrap:wrap">${dlrow}</div>`+
-    `<div class="cstage-top" style="margin-top:8px;gap:16px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestOutline" ${outOn?'checked':''}>sheet outline</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestMarker" ${mkOn?'checked':''}>0,0 marker</label></div>`+
+    `<div class="cstage-top" style="margin-top:8px;gap:16px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestOutline" ${outOn?'checked':''}>sheet outline</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestMarker" ${mkOn?'checked':''}>0,0 marker</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestLabels" ${lbOn?'checked':''}>engrave part labels</label></div>`+
     `<div class="hint" style="margin:6px 0">${cap} · each sheet saves as its own kerf-compensated SVG. For bed registration, outline off + <b>0,0 marker</b> on.</div>`+
-    `<div style="display:flex;gap:6px;margin-bottom:6px"><button class="btn ghost" data-cutzoom="1.4" style="padding:4px 12px">＋</button><button class="btn ghost" data-cutzoom="0.71" style="padding:4px 12px">−</button><button class="btn ghost" data-cutzoom="fit" style="padding:4px 12px">⤢ fit</button><span class="clab" style="align-self:center">${Math.round(zoom*100)}%</span></div>`+
+    `<div style="display:flex;gap:6px;margin-bottom:6px"><button class="btn ghost" data-cutzoom="1.4" style="padding:4px 12px">＋</button><button class="btn ghost" data-cutzoom="0.71" style="padding:4px 12px">−</button><button class="btn ghost" data-cutzoom="fit" style="padding:4px 12px">⤢ fit width</button><span class="clab" style="align-self:center">${Math.round(zoom*100)}%</span></div>`+
     `<div class="csheet" style="overflow:auto;max-height:62vh;border:1px solid #cbbf9f">${s}</div>`;
   const oc=document.getElementById('nestOutline'); if(oc)oc.addEventListener('change',e=>{S.nestOutline=e.target.checked;});
   const mc=document.getElementById('nestMarker'); if(mc)mc.addEventListener('change',e=>{S.nestMarker=e.target.checked;});
+  const lc=document.getElementById('nestLabels'); if(lc)lc.addEventListener('change',e=>{S.engraveLabels=e.target.checked; everything();});
   view.querySelectorAll('[data-cutzoom]').forEach(b=>b.addEventListener('click',()=>{ const v=b.dataset.cutzoom; S.cutZoom=(v==='fit')?1:Math.max(0.5,Math.min(6,(S.cutZoom||1)*(+v))); renderCutSheet(); }));
-  view.querySelectorAll('[data-dlsheet]').forEach(b=>b.addEventListener('click',()=>{ const ns=cxNestedSheets({outline:S.nestOutline!==false,marker:!!S.nestMarker}), which=b.dataset.dlsheet;
+  view.querySelectorAll('[data-dlsheet]').forEach(b=>b.addEventListener('click',()=>{ const ns=cxNestedSheets({outline:S.nestOutline!==false,marker:!!S.nestMarker,labels:!!S.engraveLabels}), which=b.dataset.dlsheet;
+    if(ns.oversize&&ns.oversize.length){ const w=document.getElementById('cutOverWarn');
+      if(w&&!w.dataset.ack){ w.dataset.ack='1'; w.innerHTML+=`<div style="margin-top:6px"><b>Tap the download again</b> to save it anyway (oversize pieces will be clipped).</div>`; return; } }
     if(which==='all')ns.sheets.forEach(sh=>dlSVG(sh.name,sh.svg)); else { const sh=ns.sheets[+which]; if(sh)dlSVG(sh.name,sh.svg); } }));
 }
 function cutSheetOpen(){ const p=document.getElementById('cutSheetPanel'); return p&&!p.classList.contains('hide'); }
@@ -3846,20 +4086,20 @@ document.getElementById('cxSplit').addEventListener('change',e=>{const t=e.targe
   if(t.id==='cxSplitMode')P.mode=t.value; else if(t.id==='cxSplitW')P.maxW=Math.max(100,Math.round(+t.value)||P.maxW); else if(t.id==='cxSplitH')P.maxH=Math.max(100,Math.round(+t.value)||P.maxH); else if(t.id==='cxSplitO')P.overlap=Math.max(4,Math.min(40,Math.round(+t.value)||P.overlap)); else return;
   renderComplexUI();everything();});
 document.getElementById('cxBearing').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const B=S.cx.bearing;
-  if(b.dataset.cxbl){S.cx.backlash=Math.max(0,Math.min(0.3,Math.round((cxBacklash()+(+b.dataset.cxbl))*100)/100));renderComplexUI();everything();return;}
+  if(b.dataset.cxbl){S.cx.backlash=Math.max(0,Math.min(0.3,Math.round((cxBacklash()+(+b.dataset.cxbl))*100)/100));renderComplexUI();try{syncBacklashUI();}catch(_){} everything();return;}
   if(b.dataset.cxpshape!=null){S.cx.penSides=+b.dataset.cxpshape;renderComplexUI();everything();return;}
   if(b.dataset.cxpen){S.cx.penDia=Math.max(2,Math.min(30,Math.round(((S.cx.penDia||10)+(+b.dataset.cxpen))*10)/10));renderComplexUI();everything();return;}
-  if(b.dataset.cxbrg){ B.od=Math.max(6,Math.min(80,B.od+(+b.dataset.cxbrg))); B.hole=B.od; B.custom=true; renderComplexUI();everything(); }
-  else if(b.dataset.cxbh){ B.hole=Math.max(4,Math.min(80,Math.round((B.hole+(+b.dataset.cxbh))*100)/100)); renderComplexUI();everything(); }
+  if(b.dataset.cxbrg){ B.od=Math.max(6,Math.min(80,B.od+(+b.dataset.cxbrg))); B.hole=B.od; B.custom=true; renderComplexUI();try{syncBearingUI();}catch(_){} everything(); }
+  else if(b.dataset.cxbh){ B.hole=Math.max(4,Math.min(80,Math.round((B.hole+(+b.dataset.cxbh))*100)/100)); renderComplexUI();try{syncBearingUI();}catch(_){} everything(); }
   else if(b.dataset.cxdh){ S.cx.dowelHole=Math.max(2,Math.min(30,Math.round((cxDowelHole()+(+b.dataset.cxdh))*100)/100)); renderComplexUI();everything(); }});
 document.getElementById('cxBearing').addEventListener('change',e=>{const t=e.target,B=S.cx.bearing;
-  if(t.id==='cxBrgMode'){ B.mode=t.value; if(B.mode!=='none'&&!B.od)B.od=8; if(B.hole==null)B.hole=B.od; renderComplexUI();everything(); }
-  else if(t.id==='cxBrgSel'){ if(t.value==='custom'){B.custom=true;} else {B.od=+t.value;B.hole=B.od;B.custom=false;} renderComplexUI();everything(); }
+  if(t.id==='cxBrgMode'){ B.mode=t.value; if(B.mode!=='none'&&!B.od)B.od=8; if(B.hole==null)B.hole=B.od; renderComplexUI();try{syncBearingUI();}catch(_){} everything(); }
+  else if(t.id==='cxBrgSel'){ if(t.value==='custom'){B.custom=true;} else {B.od=+t.value;B.hole=B.od;B.custom=false;} renderComplexUI();try{syncBearingUI();}catch(_){} everything(); }
   else if(t.id==='cxBrgOD'){ B.od=Math.max(6,Math.min(80,Math.round(+t.value)||B.od)); B.hole=B.od; B.custom=true; renderComplexUI();everything(); }
-  else if(t.id==='cxBrgHole'){ B.hole=Math.max(4,Math.min(80,(+t.value)||B.hole)); renderComplexUI();everything(); }
+  else if(t.id==='cxBrgHole'){ B.hole=Math.max(4,Math.min(80,(+t.value)||B.hole)); renderComplexUI();try{syncBearingUI();}catch(_){} everything(); }
   else if(t.id==='cxDowelHole'){ S.cx.dowelHole=Math.max(2,Math.min(30,(+t.value)||cxDowelHole())); renderComplexUI();everything(); }
   else if(t.id==='cxPenDia'){ S.cx.penDia=Math.max(2,Math.min(30,(+t.value)||S.cx.penDia||10)); renderComplexUI();everything(); }
-  else if(t.id==='cxBacklash'){ const v=+t.value; S.cx.backlash=Math.max(0,Math.min(0.3,isNaN(v)?cxBacklash():v)); renderComplexUI();everything(); }});
+  else if(t.id==='cxBacklash'){ const v=+t.value; S.cx.backlash=Math.max(0,Math.min(0.3,isNaN(v)?cxBacklash():v)); renderComplexUI();try{syncBacklashUI();}catch(_){} everything(); }});
 document.getElementById('cxConv').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.cxlw){S.cx.linkW=Math.max(4,Math.min(60,cxLinkW()+(+b.dataset.cxlw)));renderComplexUI();everything();return;}
   if(b.id==='cxAddCam'){cxAddConv('cam');renderComplexUI();everything();return;}
@@ -3878,6 +4118,28 @@ document.getElementById('cxConv').addEventListener('change',e=>{const t=e.target
 document.getElementById('cxMeshBtn').addEventListener('click',()=>{cxAddMesh();renderComplexUI();everything();});
 document.getElementById('cxStackBtn').addEventListener('click',()=>{cxAddCompound();renderComplexUI();everything();});
 document.getElementById('mvComplex').addEventListener('click',e=>{const b=e.target.closest('[data-cxscale]');if(!b)return;const target=+b.dataset.cxscale,cur=S.cx.scale||1;if(Math.abs(target-cur)<1e-4)return;cxScaleMechanism(target/cur);S.cx.scale=target;renderComplexUI();everything();});
+(function(){ const mp=document.getElementById('manualPanel'), mb=document.getElementById('manualBtn');
+  if(mb)mb.addEventListener('click',()=>{ const opening=mp.classList.contains('hide'); mp.classList.toggle('hide');
+    if(opening)mp.scrollIntoView({behavior:'smooth',block:'start'}); });
+  const mc=document.getElementById('manualClose'); if(mc)mc.addEventListener('click',()=>mp.classList.add('hide'));
+  const pr=document.getElementById('manualPrint'); if(pr)pr.addEventListener('click',()=>{ mp.classList.remove('hide'); setTimeout(()=>window.print(),60); });
+})();
+(function(){ const panel=document.getElementById('meshTestPanel');
+  const clampSet=(id,d,mn,mx)=>{const e=document.getElementById(id);if(!e)return;e.value=Math.max(mn,Math.min(mx,Math.round((((+e.value)||0)+d)*100)/100));};
+  const openPanel=()=>{ panel.classList.remove('hide');
+    document.querySelectorAll('#moveNav .mtab').forEach(t=>{const on=(t.id==='meshTestTab');t.classList.toggle('active',on);t.setAttribute('aria-pressed',on?'true':'false');}); const mm=document.getElementById('mtM'); if(mm&&S.cx&&S.cx.m)mm.value=S.cx.m; renderMeshTest(); if(!mtRAF)mtAnimate(); panel.scrollIntoView({behavior:'smooth',block:'start'}); };
+  const btn=document.getElementById('meshTestBtn'); if(btn)btn.addEventListener('click',()=>{ if(panel.classList.contains('hide'))openPanel(); else panel.classList.add('hide'); });
+  const tab=document.getElementById('meshTestTab'); if(tab)tab.addEventListener('click',openPanel);
+  const cl=document.getElementById('meshTestClose'); if(cl)cl.addEventListener('click',()=>panel.classList.add('hide'));
+  const mh=document.getElementById('mtModHelp'); if(mh)mh.addEventListener('click',()=>document.getElementById('mtModExplain').classList.toggle('hide'));
+  const match=document.getElementById('mtMatch'); if(match)match.addEventListener('click',()=>{ const mm=document.getElementById('mtM'); if(mm){mm.value=(S.cx&&S.cx.m)||3;} const tl=document.getElementById('mtTol'); if(tl)tl.value=cxBacklash(); renderMeshTest(); });
+  panel.addEventListener('click',e=>{ const b=e.target.closest('[data-mt]'); if(!b)return; const v=b.dataset.mt;
+    if(v[0]==='m')clampSet('mtM',+v.slice(1),1.4,8); else if(v[0]==='a')clampSet('mtA',+v.slice(1),8,30); else if(v[0]==='b')clampSet('mtB',+v.slice(1),8,40); else if(v[0]==='n')clampSet('mtN',+v.slice(1),1,5);
+    renderMeshTest(); });
+  panel.addEventListener('input',e=>{ if(e.target.id==='mtTol')renderMeshTest(); });
+  panel.addEventListener('change',e=>{ if(['mtM','mtA','mtB','mtN','mtTol','mtBore'].includes(e.target.id))renderMeshTest(); });
+  const dl=document.getElementById('mtDownload'); if(dl)dl.addEventListener('click',()=>{ const o=currentMeshTest(), r=meshTesterSVG(o); dlSVG(`gear-mesh-test_m${o.m}_${o.N1}x${o.N2}T`, r.svg); });
+})();
 document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.cxpshape!=null){S.cx.penSides=+b.dataset.cxpshape;renderComplexUI();everything();return;}
   if(b.dataset.cxpen){S.cx.penDia=Math.max(2,Math.min(30,Math.round(((S.cx.penDia||10)+(+b.dataset.cxpen))*10)/10));renderComplexUI();everything();return;}
@@ -3940,6 +4202,19 @@ document.getElementById('chainList').addEventListener('click',e=>{const b=e.targ
 document.getElementById('spokeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.spokes=+b.dataset.s;everything();});
 document.getElementById('thick').addEventListener('input',e=>{S.thick=+e.target.value;document.getElementById('thickVal').textContent=S.unit==='mm'?S.thick+' mm':(+S.thick).toFixed(3)+' in';everything();});
 document.getElementById('kerf').addEventListener('input',e=>{S.kerf=+e.target.value;document.getElementById('kerfVal').textContent=S.unit==='mm'?S.kerf+' mm':(+S.kerf).toFixed(3)+' in';});
+document.getElementById('backlash').addEventListener('input',e=>{ const v=+e.target.value; S.cx.backlash=Math.max(0,Math.min(0.3,isNaN(v)?0.08:v)); syncBacklashUI(); everything(); try{renderComplexUI();}catch(_){} });
+document.getElementById('brgModeG').addEventListener('change',e=>{ S.cx.bearing=S.cx.bearing||{od:8,hole:7.9}; S.cx.bearing.mode=e.target.value; syncBearingUI(); everything(); try{renderComplexUI();}catch(_){} });
+document.getElementById('brgHoleG').addEventListener('input',e=>{ const v=+e.target.value; S.cx.bearing=S.cx.bearing||{od:8,mode:'none'}; if(!isNaN(v))S.cx.bearing.hole=Math.max(4,Math.min(80,v)); S.cx.bearing.custom=true; syncBearingUI(); everything(); try{renderComplexUI();}catch(_){} });
+function syncBearingUI(){ const B=S.cx.bearing||{mode:'none',od:8,hole:7.9}, on=cxBrgMode()!=='none';
+  const sel=document.getElementById('brgModeG'), inp=document.getElementById('brgHoleG'), val=document.getElementById('brgHoleGVal'), h=document.getElementById('brgHintG');
+  if(sel&&document.activeElement!==sel)sel.value=cxBrgMode();
+  if(inp){ inp.disabled=!on; inp.style.opacity=on?'1':'0.45'; if(document.activeElement!==inp)inp.value=(+cxBearingHole()).toFixed(1); }
+  if(val)val.textContent=on?(+cxBearingHole()).toFixed(1)+' mm':'not used';
+  if(h)h.innerHTML=on?`Gears get a \u2300${(+cxBearingHole()).toFixed(1)}mm bearing seat; baseplates and levers keep ${S.bolt} bolt-clearance holes. Set the hole a touch under the bearing's outside \u2300 for a press fit \u2014 the Complex Workbench panel has the full presets, dowel and pen-hole settings.`:`No bearings \u2014 every gear gets a ${S.bolt} bolt-clearance bore and spins on the bolt. Switch to <b>In gears</b> to cut bearing seats instead.`; }
+function syncBacklashUI(){ const b=cxBacklash(), el=document.getElementById('blVal'), inp=document.getElementById('backlash'), h=document.getElementById('blHint');
+  if(inp&&document.activeElement!==inp)inp.value=b.toFixed(2);
+  if(el)el.textContent=b.toFixed(2)+' \u00d7 module';
+  if(h)h.innerHTML='Backlash between meshing teeth, as a fraction of module \u2014 so the fit holds at any size. '+(b===0?'<b style="color:#bf3a2b">0 \u2014 no clearance, gears will likely seize.</b>':b<0.05?'<b>Tight</b> \u2014 precise but stiff in ply.':b<=0.15?'<b>Good running fit for laser-cut ply.</b>':'<b>Loose</b> \u2014 free-running, more play in a drawing.')+' Applies to every gear, rack and ring in the tool.'; }
 document.getElementById('bolt').addEventListener('change',e=>{S.bolt=e.target.value;everything();});
 document.getElementById('fit').addEventListener('change',e=>{S.fit=e.target.value;everything();});
 document.getElementById('baseChk').addEventListener('change',e=>{S.base=e.target.checked;document.getElementById('baseCtl').classList.toggle('subtle',!S.base);everything();});
@@ -3976,7 +4251,7 @@ function applyLoadedState(){
   const mgv=document.getElementById('marginVal'); if(mgv&&S.margin!=null)mgv.textContent=S.unit==='mm'?S.margin+' mm':(S.margin/MM_PER_IN).toFixed(2)+' in';
   const bw=S.baseW, bh=S.baseH, m=S.movement||'gearing'; S.movement='__reload__'; setMovement(m); S.baseW=bw; S.baseH=bh;
   try{renderChainUI();}catch(_){} try{renderComplexUI();}catch(_){}
-  applyView(); applySize(); everything(); updateDirBtn(); if(S.view==='3d'&&GL&&GL.ok)rebuild3D();
+  applyView(); applySize(); everything(); updateDirBtn(); try{syncBacklashUI();syncBearingUI();}catch(_){} if(S.view==='3d'&&GL&&GL.ok)rebuild3D();
   const pm=document.getElementById('projMsg'); if(pm)pm.textContent='loaded ✓'; setTimeout(()=>{const e=document.getElementById('projMsg');if(e)e.textContent='';},1800);
 }
 document.getElementById('saveProjBtn').addEventListener('click',saveProject);
@@ -4022,6 +4297,7 @@ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){S.playing=fals
 function setMovement(m){ resetSvgView();
   if(m===S.movement)return;
   S.movement=m; S.baseW=0; S.baseH=0;
+  { const mp=document.getElementById('meshTestPanel'); if(mp)mp.classList.add('hide'); }
   document.querySelectorAll('#moveNav .mtab').forEach(t=>{const on=t.dataset.m===m;t.classList.toggle('active',on);t.setAttribute('aria-pressed',on?'true':'false');});
   syncMode(m);
   document.getElementById('mvGearing').classList.toggle('hide',m!=='gearing');
@@ -4055,7 +4331,7 @@ function syncMode(m){ const mode=COMBINE_MOVEMENTS.includes(m)?'combine':'single
   document.querySelectorAll('#modeSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===mode?'true':'false'));
   document.getElementById('singleTabs').classList.toggle('hide',mode!=='single');
   document.getElementById('combineTabs').classList.toggle('hide',mode!=='combine'); }
-document.getElementById('moveNav').addEventListener('click',e=>{const b=e.target.closest('.mtab');if(!b||b.disabled||b.classList.contains('soon'))return;setMovement(b.dataset.m);});
+document.getElementById('moveNav').addEventListener('click',e=>{const b=e.target.closest('.mtab');if(!b||b.disabled||b.classList.contains('soon')||!b.dataset.m)return;setMovement(b.dataset.m);});
 document.getElementById('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const mode=b.dataset.mode;
   document.querySelectorAll('#modeSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
   document.getElementById('singleTabs').classList.toggle('hide',mode!=='single');
@@ -4068,7 +4344,7 @@ document.getElementById('shrinkBtn').addEventListener('click',()=>{document.quer
 
 (function(){const cm=document.querySelector('.ccmain'),hero=document.querySelector('.hero'),csp=document.getElementById('cutSheetPanel');
   if(cm&&hero){const col=document.createElement('div');col.className='leftcol';cm.insertBefore(col,hero);col.appendChild(hero);if(csp)col.appendChild(csp);}})();
-renderGearList();refreshBolts();syncSizeUI();updateReadout();applySize();applyView();
+renderGearList();refreshBolts();syncSizeUI();try{syncBacklashUI();syncBearingUI();}catch(_){} updateReadout();applySize();applyView();
 </script>
 </body>
 </html>
