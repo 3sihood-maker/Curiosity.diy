@@ -285,6 +285,11 @@
     button,.chip,.btn,.cstep button,.mtab{touch-action:manipulation}
     .cstep button{width:30px;font-size:17px}
   }
+
+  .mat-dl{display:grid;grid-template-columns:minmax(96px,38%) 1fr;gap:0;margin:0;font-size:13px}
+  .mat-dl dt{font-family:'Space Mono',monospace;font-size:11px;color:var(--brass);padding:7px 10px 7px 0;
+    border-top:1px solid #cbbf9f;line-height:1.4}
+  .mat-dl dd{margin:0;padding:7px 0;border-top:1px solid #cbbf9f;line-height:1.45}
 </style>
 </head>
 <body>
@@ -309,6 +314,7 @@
     <div><div class="clab">teeth B</div><span class="cstep"><button data-mt="b-1">−</button><input type="number" id="mtB" value="16" min="8" max="40" step="1"><button data-mt="b1">＋</button></span></div>
     <div><div class="clab">shaft holes</div><select class="selin" id="mtBore" style="width:auto"><option value="machine">match my machine</option><option value="bearing">bearing seat</option><option value="bolt">bolt clearance</option></select></div>
   </div>
+  <div id="mtSettings" style="margin-top:10px;background:var(--paper-2);border:1px solid #cbbf9f;border-radius:6px;padding:9px 11px;font-family:'Space Mono',monospace;font-size:11.5px;line-height:1.75;color:var(--ink)"></div>
   <div id="mtModExplain" class="hint hide" style="margin-top:8px;background:#efe7d5;border:1px solid #cbbf9f;border-radius:6px;padding:8px 10px"><b>Module</b> is the tooth size — millimetres of pitch diameter per tooth. A gear's pitch ⌀ = module × teeth, and two gears mesh at centre distance module × (T₁+T₂) ÷ 2. Bigger module = bigger, chunkier teeth (stronger, easier to cut); smaller = finer teeth. It's the same "module" your machine's scale buttons change: ×½ halves it. Both meshing gears must share the same module.</div>
   <div style="margin-top:14px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px" id="mtGrid">
     <div>
@@ -444,7 +450,7 @@
   </section>
 
   <section class="controls">
-    <nav class="movenav" id="moveNav" aria-label="Choose what to build">
+<nav class="movenav" id="moveNav" aria-label="Choose what to build">
       <div class="modeseg" id="modeSeg" role="tablist">
         <button data-mode="single" aria-pressed="true"><b>Single movements</b><span>Build one mechanism on its own — a gear pair, a cam, a crank, a rack…</span></button>
         <button data-mode="combine" aria-pressed="false"><b>Combining parts</b><span>Chain several parts into one machine on a shared baseplate</span></button>
@@ -467,18 +473,56 @@
       </div>
     </nav>
     <div class="panel">
-      <div class="panel-h"><span>Parameters</span><span class="n">01</span></div>
+      <div class="panel-h"><span>Set up the scale</span><span class="n">01</span></div>
       <div class="panel-b">
-
-        <div class="field">
+        <div class="hint">Units, material and the overall size of the finished machine.</div>
+<div class="field">
           <div class="lab"><label>Units</label></div>
           <div class="seg" id="unitSeg">
             <button data-u="mm" aria-pressed="true">Metric (mm)</button>
             <button data-u="in" aria-pressed="false">Imperial (in)</button>
           </div>
         </div>
+<div class="field">
+            <div class="lab"><label>Wood thickness</label><span class="val" id="thickVal">6 mm</span></div>
+            <input type="number" id="thick" min="1" max="25" step="0.5" value="6">
+          </div>
+<div class="field" style="border-top:1px dotted #23201a30;padding-top:14px">
+          <div class="lab">
+            <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
+              <input type="checkbox" id="baseChk" checked style="width:auto;accent-color:var(--brass)"> Baseplate
+            </label>
+            <span class="val" id="baseDimVal">—</span>
+          </div>
+          <div id="baseCtl">
+            <div class="lab" style="margin-top:10px"><label>Size mode</label></div>
+            <div class="seg" id="baseModeSeg">
+              <button data-bm="auto" aria-pressed="true">Auto (fit train)</button>
+              <button data-bm="custom" aria-pressed="false">Custom size</button>
+            </div>
+            <div id="autoCtl">
+              <div class="lab" style="margin-top:10px"><label>Margin around train</label><span class="val" id="marginVal">12 mm</span></div>
+              <input type="range" id="margin" min="4" max="40" step="1" value="12">
+              <div class="hint">One plate carrying every axle at the exact centre distances.</div>
+            </div>
+            <div id="customCtl" class="hide">
+              <div class="row2" style="margin-top:10px">
+                <div><div class="lab"><label>Width</label><span class="val" id="baseWunit">mm</span></div><input type="number" id="baseW" min="10" step="1"></div>
+                <div><div class="lab"><label>Height</label><span class="val" id="baseHunit">mm</span></div><input type="number" id="baseH" min="10" step="1"></div>
+              </div>
+              <div class="hint">Axle holes stay locked to their true positions, centred on the plate.</div>
+            </div>
+            <div class="hint" id="baseWarn" style="color:var(--cut)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        <div id="mvGearing">
+    <div class="panel">
+      <div class="panel-h"><span>Build the machine</span><span class="n">02</span></div>
+      <div class="panel-b">
+        <div class="hint">Design the mechanism itself — teeth, lengths, layers, pens. Tooth size (module) lives here too, since it sets how big the machine turns out.</div>
+<div id="mvGearing">
         <div class="field">
           <div class="lab"><label id="sizeLab">Module (tooth size)</label><span class="val" id="sizeVal">6 mm</span></div>
           <input type="range" id="sizeRange" min="1" max="12" step="0.5" value="6">
@@ -783,10 +827,7 @@
             <div id="cxPen" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
             <div id="cxConv" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
             <div id="cxEdge" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
-            <div class="cxmajor">Preparation for Cutting<small>bearings · board tiling · parts list</small></div>
-            <div id="cxBearing" style="margin-top:12px;padding-top:4px"></div>
-            <div id="cxSplit" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
-            <div id="cxBOM" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
+
           </div>
         </div>
         <div id="mvComposer" class="hide">
@@ -834,25 +875,44 @@
           <div class="hint" id="addHint">Each stage's output feeds the next stage's input. Green links mean the motion types match; red means you'd need an adapter. Design each part in its own tab, then chain them here.</div>
         </div>
         </div>
-
-        <div class="row2">
-          <div class="field">
-            <div class="lab"><label>Wood thickness</label><span class="val" id="thickVal">6 mm</span></div>
-            <input type="number" id="thick" min="1" max="25" step="0.5" value="6">
+<div class="field">
+          <div class="lab"><label>Spokes / lightening</label></div>
+          <div class="seg" id="spokeSeg">
+            <button data-s="0" aria-pressed="true">Solid</button>
+            <button data-s="3" aria-pressed="false">3</button>
+            <button data-s="4" aria-pressed="false">4</button>
+            <button data-s="5" aria-pressed="false">5</button>
           </div>
-          <div class="field">
+        </div>
+        <div class="field" style="border-top:1px dotted #23201a30;padding-top:12px">
+          <div class="lab"><label>How it works out</label></div>
+<dl>
+          <dt id="dtA">Overall ratio (in : out)</dt><dd id="rRatio">—</dd>
+          <dt id="dtB">Output turns</dt><dd id="rDir">—</dd>
+          <dt id="dtC">Gears / meshes</dt><dd id="rCount">—</dd>
+          <dt id="dtD">Centre distances</dt><dd id="rCDs">—</dd>
+          <dt id="dtE">Baseplate W × H</dt><dd id="rBase">—</dd>
+          <dt id="dtF" class="big">Train span</dt><dd id="rSpan" class="big">—</dd>
+        </dl>
+<div class="mesh-ok good" id="meshMsg">✔ Every gear meshes.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span>Prepare for cutting</span><span class="n">03</span></div>
+      <div class="panel-b">
+        <div class="hint">Your laser and hardware. Set these once for your machine and material — they decide whether parts fit and gears turn freely.</div>
+<div class="field">
             <div class="lab"><label>Kerf</label><span class="val" id="kerfVal">0.15 mm</span></div>
             <input type="number" id="kerf" min="0" max="0.6" step="0.01" value="0.15">
           </div>
-        </div>
-
-        <div class="field">
+<div class="field">
           <div class="lab"><label>Gear mesh clearance</label><span class="val" id="blVal">0.08 × module</span></div>
           <input type="number" id="backlash" min="0" max="0.3" step="0.01" value="0.08">
           <div class="hint" id="blHint">Backlash between meshing teeth, as a fraction of module — so the fit holds at any size. Cut wood needs real slack: <b>0</b> binds. 0.05 tight · <b>0.08 good for ply</b> · 0.15+ loose. Applies to every gear, rack and ring in the tool.</div>
         </div>
-
-        <div class="row2">
+<div class="row2">
           <div class="field">
             <div class="lab"><label>Bearings</label></div>
             <select id="brgModeG">
@@ -866,68 +926,43 @@
             <input type="number" id="brgHoleG" min="4" max="80" step="0.1" value="7.9">
           </div>
         </div>
-        <div class="field"><div class="hint" id="brgHintG">Press a bearing into each gear so it spins freely on the bolt shaft. Applies to every gear in the tool; baseplates and levers keep bolt-clearance holes. Set the hole a touch under the bearing's outside ⌀ for a press fit — the Complex Workbench panel has the full presets, dowel and pen-hole settings.</div></div>
-
-        <div class="row2">
+<div class="field"><div class="hint" id="brgHintG">Press a bearing into each gear so it spins freely on the bolt shaft. Applies to every gear in the tool; baseplates and levers keep bolt-clearance holes. Set the hole a touch under the bearing's outside ⌀ for a press fit — the Complex Workbench panel has the full presets, dowel and pen-hole settings.</div></div>
+<div class="row2">
           <div class="field"><div class="lab"><label>Axle / bolt</label></div><select id="bolt"></select></div>
           <div class="field"><div class="lab"><label>Bore fit</label></div>
             <select id="fit"><option value="clr">Clearance — spins</option><option value="snug">Snug — press/keyed</option></select></div>
         </div>
-
-        <div class="field">
-          <div class="lab"><label>Spokes / lightening</label></div>
-          <div class="seg" id="spokeSeg">
-            <button data-s="0" aria-pressed="true">Solid</button>
-            <button data-s="3" aria-pressed="false">3</button>
-            <button data-s="4" aria-pressed="false">4</button>
-            <button data-s="5" aria-pressed="false">5</button>
-          </div>
-        </div>
-
-        <div class="field" style="border-top:1px dotted #23201a30;padding-top:14px">
-          <div class="lab">
-            <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
-              <input type="checkbox" id="baseChk" checked style="width:auto;accent-color:var(--brass)"> Baseplate
-            </label>
-            <span class="val" id="baseDimVal">—</span>
-          </div>
-          <div id="baseCtl">
-            <div class="lab" style="margin-top:10px"><label>Size mode</label></div>
-            <div class="seg" id="baseModeSeg">
-              <button data-bm="auto" aria-pressed="true">Auto (fit train)</button>
-              <button data-bm="custom" aria-pressed="false">Custom size</button>
-            </div>
-            <div id="autoCtl">
-              <div class="lab" style="margin-top:10px"><label>Margin around train</label><span class="val" id="marginVal">12 mm</span></div>
-              <input type="range" id="margin" min="4" max="40" step="1" value="12">
-              <div class="hint">One plate carrying every axle at the exact centre distances.</div>
-            </div>
-            <div id="customCtl" class="hide">
-              <div class="row2" style="margin-top:10px">
-                <div><div class="lab"><label>Width</label><span class="val" id="baseWunit">mm</span></div><input type="number" id="baseW" min="10" step="1"></div>
-                <div><div class="lab"><label>Height</label><span class="val" id="baseHunit">mm</span></div><input type="number" id="baseH" min="10" step="1"></div>
-              </div>
-              <div class="hint">Axle holes stay locked to their true positions, centred on the plate.</div>
-            </div>
-            <div class="hint" id="baseWarn" style="color:var(--cut)"></div>
-          </div>
+        <div id="cxBearing" style="margin-top:4px"></div>
+        <div id="cxSplit" style="margin-top:12px"></div>
+        <div class="field" style="border-top:1px dotted #23201a30;padding-top:12px">
+<div class="lab"><label>Material sheet size</label></div>
+            <select id="sheetSize" class="selin">
+              <option value="300x200">300 × 200 mm</option>
+              <option value="300x300">300 × 300 mm</option>
+              <option value="400x300" selected>400 × 300 mm</option>
+              <option value="600x300">600 × 300 mm</option>
+              <option value="600x400">600 × 400 mm</option>
+              <option value="297x210">A4 (297 × 210)</option>
+              <option value="420x297">A3 (420 × 297)</option>
+            </select>
+          <div class="hint">Pieces are nested onto sheets this size. If something does not fit you will be warned in Cut sheets.</div>
         </div>
       </div>
     </div>
 
     <div class="panel">
-      <div class="panel-h"><span>Cut Sheet</span><span class="n">02</span></div>
-      <div class="panel-b readout">
-        <dl>
-          <dt id="dtA">Overall ratio (in : out)</dt><dd id="rRatio">—</dd>
-          <dt id="dtB">Output turns</dt><dd id="rDir">—</dd>
-          <dt id="dtC">Gears / meshes</dt><dd id="rCount">—</dd>
-          <dt id="dtD">Centre distances</dt><dd id="rCDs">—</dd>
-          <dt id="dtE">Baseplate W × H</dt><dd id="rBase">—</dd>
-          <dt id="dtF" class="big">Train span</dt><dd id="rSpan" class="big">—</dd>
-        </dl>
-        <div class="mesh-ok good" id="meshMsg">✔ Every gear meshes.</div>
-        <div class="export">
+      <div class="panel-h"><span>Project materials</span><span class="n">04</span></div>
+      <div class="panel-b">
+        <div class="hint">Everything you need to buy or find before you start.</div>
+        <div id="matSummary"></div>
+        <div id="cxBOM" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><span>Cut sheets</span><span class="n">05</span></div>
+      <div class="panel-b">
+<div class="export">
           <button class="btn" id="dlBtn">⬇ Reference sheet (annotated)</button>
           <button class="btn ghost" id="cdBtn">⧉ Copy centre distances</button>
           <button class="btn ghost" id="csBtn" aria-expanded="false">▸ Cut sheets to laser</button>
@@ -942,16 +977,7 @@
             <span>units: real mm</span>
           </div>
           <div id="cutSheetPanel" class="hide" style="margin-top:12px">
-            <div class="lab"><label>Material sheet size</label></div>
-            <select id="sheetSize" class="selin">
-              <option value="300x200">300 × 200 mm</option>
-              <option value="300x300">300 × 300 mm</option>
-              <option value="400x300" selected>400 × 300 mm</option>
-              <option value="600x300">600 × 300 mm</option>
-              <option value="600x400">600 × 400 mm</option>
-              <option value="297x210">A4 (297 × 210)</option>
-              <option value="420x297">A3 (420 × 297)</option>
-            </select>
+            
             <div id="cutSheetView" style="margin-top:10px"></div>
           </div>
         </div>
@@ -2945,6 +2971,15 @@ function cxBearingHole(){ const B=S.cx.bearing; return (B&&B.hole!=null)?B.hole:
 function cxDowelHole(){ return (S.cx.dowelHole!=null)?S.cx.dowelHole:(S.dowelD||6); }
 function cxGearBore(){ const M=cxBrgMode(); return (M==='gears'||M==='gearsRods')?cxBearingHole():boreDia(); }
 function cxRodBore(){ return (cxBrgMode()==='gearsRods')?cxBearingHole():boreDia(); }
+function cxGearSpokes(g,c){ if(!S.spokes)return [];
+  const ra=c.m*(g.N+2)/2, hub=hubR(), rimIn=ra*0.80;
+  if(rimIn-hub<6)return [];                      // too small to lighten safely
+  const pins=(c.pen?c.pen.pins.filter(pn=>pn.g===g.id):[]);
+  const keep=[], hole=cxBaseHole();
+  spokeHoles(ra,S.spokes,hub).forEach(L=>{
+    const clash=pins.some(pn=>L.some(q=>Math.hypot(q[0]-pn.r,q[1])<hole/2+2.5));
+    if(!clash)keep.push(L); });
+  return keep; }
 function cxBrgCount(c){ const M=cxBrgMode(); if(M==='none')return 0; let n=c.gears.length; if(M==='gearsRods'&&c.pen)n+=c.pen.pins.length+c.pen.joints.length; return n; }
 // ---- gear mesh clearance (backlash) ----
 // Cut wooden gears need real backlash: with zero design clearance a perfect cut binds.
@@ -3052,8 +3087,9 @@ function cxSpacers(c){ const t=S.thick, LG=t*2, shafts={};
   return {list,totalRings,ringT:t,LG}; }
 function sceneFromComplex(){
   const c=computeComplex(), t=S.thick, LG=t*2, parts=[], ox=c.bbox.cx, oy=c.bbox.cy;
-  c.gears.forEach(g=>{ const yOff=-(g.layer)*LG; const gloops=gearLoops3D(g.N,c.m,20,cxBacklashOffset(c.m));
-    gloops[1]=flipY(circleLoop(Math.max(cxGearBore()/2,0.6),40));
+  c.gears.forEach(g=>{ const yOff=-(g.layer)*LG; const gl0=gearLoops3D(g.N,c.m,20,cxBacklashOffset(c.m));
+    const gloops=[gl0[0], flipY(circleLoop(Math.max(cxGearBore()/2,0.6),40))];
+    cxGearSpokes(g,c).forEach(L=>gloops.push(flipY(L)));
     if(c.pen)c.pen.pins.forEach(pn=>{ if(pn.g===g.id && pn.r>cxGearBore()/2+cxBaseHole()/2+1)gloops.push(flipY(circleLoop(Math.max(cxBaseHole()/2,1),12).map(p=>[p[0]+pn.r,p[1]]))); });
     parts.push({tris:plateMesh(gloops,0,0,t,yOff),col:cxLayerCol(g.layer),label:'#'+g.id+'·'+g.N+'T',spin:{x:g.x-ox,z:g.y-oy,phase:g.phase,rate:g.rate}}); });
   // shafts (one dowel per unique x,y through its layer span)
@@ -3157,9 +3193,12 @@ function drawComplexPreview(){
   // gears low layers first
   const order=[...c.gears].sort((a,b)=>a.layer-b.layer);
   order.forEach(g=>{ const go=gearOutline(g.N,c.m,20,-cxBacklashOffset(c.m),12), rot=(g.phase+g.rate*th);
+    const spk=cxGearSpokes(g,c);
     let d='M'; go.poly.forEach((p,i)=>{ const X=g.x+p[0]*Math.cos(rot)-p[1]*Math.sin(rot), Y=-(g.y+p[0]*Math.sin(rot)+p[1]*Math.cos(rot)); d+=(i?'L':'')+X.toFixed(1)+' '+Y.toFixed(1)+' '; }); d+='Z';
     const col=cxLayerCol(g.layer), isSel=g.id===S.cx.sel;
     s+=`<path d="${d}" fill="${col}" fill-opacity="${g.layer===0?0.92:0.62}" stroke="${isSel?'#bf3a2b':'#23201a'}" stroke-width="${isSel?lw*2:lw}"/>`;
+    spk.forEach(L=>{ let sd='M'; L.forEach((p,i)=>{ const X=g.x+p[0]*Math.cos(rot)-p[1]*Math.sin(rot), Y=-(g.y+p[0]*Math.sin(rot)+p[1]*Math.cos(rot)); sd+=(i?'L':'')+X.toFixed(1)+' '+Y.toFixed(1)+' '; }); sd+='Z';
+      s+=`<path d="${sd}" fill="var(--paper-2)" fill-opacity="0.95" stroke="#23201a" stroke-width="${(lw*0.8).toFixed(2)}"/>`; });
     if(g.kind==='driver')s+=`<circle cx="${g.x.toFixed(1)}" cy="${(-g.y).toFixed(1)}" r="${(g.rp*0.4).toFixed(1)}" fill="none" stroke="#bf3a2b" stroke-width="${(lw*1.4).toFixed(2)}"/>`; });
   // labels on top, uniform size, offset by layer so stacked gears don't collide
   c.gears.forEach(g=>{ const dy=(g.layer-(c.layers-1)/2)*gfs*1.2;
@@ -3274,6 +3313,7 @@ function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
   const boreR=Math.max(boreDia()/2-kh,0.3), gBoreR=Math.max(cxGearBore()/2-kh,0.3), rBoreR=Math.max(cxRodBore()/2-kh,0.3), pinR=Math.max(cxBaseHole()/2-kh,0.3), locR=Math.max(Math.min(cxDowelHole(),4)/2-kh,0.7);
   c.gears.forEach(g=>{ const go=gearOutline(g.N,m,20,kh-cxBacklashOffset(m),14), cx=x+go.ra, cy=go.ra+gap;
+    cxGearSpokes(g,c).forEach(L=>{ const d=offsetPolygon(L,-kh); parts.push(`<path d="${pathFrom(d,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); });
     parts.push(`<path d="${pathFrom(go.poly,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     parts.push(`<path d="${svgCircle(gBoreR,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     if(c.pen)c.pen.pins.forEach((pn,pi)=>{ if(pn.g===g.id && pn.r>cxGearBore()/2+cxBaseHole()/2+1){ parts.push(`<path d="${svgCircle(pinR,cx+pn.r,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(cx+pn.r,cy-pinR-2.5,`pin ${pi+1}`,SCORE,2.4)); } });
@@ -3479,7 +3519,7 @@ function renderComplexUI(){
     const blRow=`<div class="lab" style="margin-top:12px"><label>Gear mesh clearance</label><span class="val">${blmm.toFixed(2)}mm</span></div><div class="cstage-top"><span class="clab">backlash</span><span class="cstep"><button data-cxbl="-0.01">−</button><input type="number" value="${blv.toFixed(2)}" id="cxBacklash" min="0" max="0.3" step="0.01"><button data-cxbl="0.01">＋</button></span><span class="clab">× module = <b>${blmm.toFixed(2)}mm</b></span></div><div class="hint">Wooden gears need real slack — with zero clearance a perfect cut <b>binds</b>. This thins each tooth slightly (centre distances stay exact, so the motion is unchanged). Set as a fraction of module, so the fit holds at <b>every machine scale</b>. ${blv===0?'<b style="color:#bf3a2b">0 = no clearance — will likely seize.</b>':blv<0.05?'Tight — precise but stiff in ply.':blv<=0.15?'Good running fit for laser-cut ply.':'Loose — free-running, more play in the drawing.'}</div>`;
     const pnS=cxPenSides(), penShapeBtns=[['0','round'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8']].map(o=>`<button class="chip" data-cxpshape="${o[0]}" aria-pressed="${(+o[0]===pnS||(o[0]==='0'&&pnS<3))?'true':'false'}" style="padding:4px 8px;cursor:pointer">${o[1]}</button>`).join('');
     const penHoleRow=`<div class="lab" style="margin-top:12px"><label>Pencil / pen hole</label></div><div class="cstage-top"><span class="clab">shape</span><span style="display:flex;gap:5px;flex-wrap:wrap" id="cxPenShape">${penShapeBtns}</span></div><div class="cstage-top" style="margin-top:6px"><span class="clab">pen/pencil ${pnS<3?'⌀':'A/F'}</span><span class="cstep"><button data-cxpen="-0.1">−</button><input type="number" value="${S.cx.penDia||10}" id="cxPenDia" min="2" max="30" step="0.1"><button data-cxpen="0.1">＋</button></span><span class="clab">mm to cut</span></div><div class="hint">The teardrop collar's hole (grips the pen/pencil). <b>${pnS>=3?CX_SIDE_NAME[pnS]+' — measured across the flats, grips a hex pencil':'round — for round barrels'}</b>. Cut a test hole in the Kerf Hole Maker and set the size that grips.</div>`;
-    brg.innerHTML=`<div class="lab"><label>Bearings, bolts &amp; dowels</label>${M!=='none'?`<span class="val">⌀${B.od}mm</span>`:''}</div><div class="hint">Press a bearing into each gear${M==='gearsRods'?' and rod pivot':''} so it spins freely on the ${S.bolt} bolt shaft. Bearing holes are ⌀${B.hole}mm; everywhere without a bearing uses ${S.bolt} bolt-clearance holes.</div><div class="cstage-top" style="margin-top:8px"><span class="clab">use</span><select class="selin" id="cxBrgMode" style="width:auto"><option value="none"${M==='none'?' selected':''}>none — bolt / dowel pivots</option><option value="gears"${M==='gears'?' selected':''}>bearings in gears</option><option value="gearsRods"${M==='gearsRods'?' selected':''}>bearings in gears + rod pivots</option></select></div>${M!=='none'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">bearing</span><select class="selin" id="cxBrgSel" style="width:auto">${presets.map(p=>`<option value="${p[0]}"${sel===p[0]?' selected':''}>${p[1]} mm</option>`).join('')}<option value="custom"${sel==='custom'?' selected':''}>custom…</option></select>${sel==='custom'?`<span class="cstep"><button data-cxbrg="-1">−</button><input type="number" value="${B.od}" id="cxBrgOD" min="6" max="80" step="1"><button data-cxbrg="1">＋</button></span><span class="clab">OD</span>`:''}</div>`:''}${brgHoleRow}${dowelHoleRow}${blRow}${penHoleRow}`;
+    brg.innerHTML=`<div class="lab"><label>Bearing, dowel &amp; pen fits</label>${M!=='none'?`<span class="val">⌀${B.od}mm</span>`:''}</div><div class="hint">Press-fit sizes for this machine. Bearings on/off and the seat size are set above; these are the extras.</div>${M!=='none'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">bearing</span><select class="selin" id="cxBrgSel" style="width:auto">${presets.map(p=>`<option value="${p[0]}"${sel===p[0]?' selected':''}>${p[1]} mm</option>`).join('')}<option value="custom"${sel==='custom'?' selected':''}>custom…</option></select>${sel==='custom'?`<span class="cstep"><button data-cxbrg="-1">−</button><input type="number" value="${B.od}" id="cxBrgOD" min="6" max="80" step="1"><button data-cxbrg="1">＋</button></span><span class="clab">OD</span>`:''}</div>`:''}${dowelHoleRow}${penHoleRow}`;
   }
 }
 function renderChainUI(){
@@ -3856,23 +3896,27 @@ function meshTesterSVG(o){ const m=o.m, N1=o.N1, N2=o.N2, cls=o.clearances, kh=S
   const gHole=Math.max(gearBoreD/2-kh,0.6), bHole=Math.max(boreDia()/2-kh,0.6), gap=8, margin=6;
   const offFor=c=>c*m*Math.cos(pa*Math.PI/180)/4;
   let cut='', eng='', y=margin, maxW=0;
-  cls.forEach(c=>{ const rowH=2*maxRa+gap, cyRow=y+rowH/2, tileW=CD+ra1+ra2+2*margin, tileX=margin;
+  cls.forEach((c,ci)=>{ const pairNo=ci+1, rowH=2*maxRa+gap, cyRow=y+rowH/2, tileW=CD+ra1+ra2+2*margin, tileX=margin;
     cut+=`<path d="${pathFrom(roundRectLoop(tileW,rowH,4),tileX+tileW/2,cyRow)}"/>`;
     const h1x=tileX+margin+ra1, h2x=h1x+CD;
     cut+=`<path d="${svgCircle(bHole,h1x,cyRow)}"/><path d="${svgCircle(bHole,h2x,cyRow)}"/>`;
     // engraved measurements: clearance + centre distance dimension between the two shafts
-    eng+=txt(tileX+tileW/2,y+rowH-3.5,`clearance ${c.toFixed(2)}xm = ${(c*m).toFixed(2)}mm  ·  module ${m}  ·  ${N1}T + ${N2}T`,ENG,3.4);
+    eng+=txt(tileX+tileW/2,y+rowH-3.5,`pair ${pairNo} · clearance ${c.toFixed(2)}xm = ${(c*m).toFixed(2)}mm · module ${m} · ${N1}T+${N2}T`,ENG,3.4);
+    eng+=txt(h1x,cyRow-3.5,'A',ENG,4.2); eng+=txt(h2x,cyRow-3.5,'B',ENG,4.2);
+    eng+=txt(tileX+tileW/2,cyRow+4.5,`bore ⌀${gearBoreD.toFixed(1)} · shaft ⌀${boreDia().toFixed(1)}`,ENG,2.6);
     eng+=`<line x1="${h1x.toFixed(1)}" y1="${(cyRow-maxRa-1).toFixed(1)}" x2="${h2x.toFixed(1)}" y2="${(cyRow-maxRa-1).toFixed(1)}" stroke="${ENG}" stroke-width="0.15"/>`;
     eng+=txt((h1x+h2x)/2,cyRow-maxRa-2.2,`centre dist ${CD.toFixed(1)}mm`,ENG,2.8);
     let gx=tileX+tileW+gap;
-    [[N1,ra1],[N2,ra2]].forEach(function(pr){ const N=pr[0], ra=pr[1], go=gearOutline(N,m,pa,kh-offFor(c),14), cx=gx+ra, cyg=cyRow;
+    [[N1,ra1],[N2,ra2]].forEach(function(pr,gi){ const N=pr[0], ra=pr[1], go=gearOutline(N,m,pa,kh-offFor(c),14), cx=gx+ra, cyg=cyRow;
       cut+=`<path d="${pathFrom(go.poly,cx,cyg)}"/><path d="${svgCircle(gHole,cx,cyg)}"/>`;
       eng+=txt(cx,cyg+ra*0.5,`${c.toFixed(2)}`,ENG,Math.max(ra*0.3,2.6));
-      eng+=txt(cx,cyg-ra*0.55,`${N}T ø${(2*ra).toFixed(1)}`,ENG,Math.max(ra*0.2,2.2));
+      eng+=txt(cx,cyg-ra*0.52,`${gi===0?'A':'B'} · ${N}T`,ENG,Math.max(ra*0.24,2.6));
+      eng+=txt(cx,cyg-ra*0.30,`ø${(2*ra).toFixed(1)} · pair ${pairNo}`,ENG,Math.max(ra*0.17,2.2));
       gx=cx+ra+gap; });
     maxW=Math.max(maxW,gx); y+=rowH+gap; });
   const W=Math.ceil(maxW+margin), H=Math.ceil(y+margin);
-  eng+=txt(W/2,H-1.5,`Gear Mesh Test · module ${m} · kerf ${S.kerf}mm · gear bore \u2300${gearBoreD.toFixed(1)} · red=cut blue=engrave`,ENG,3);
+  eng+=txt(W/2,H-4.6,`GEAR MESH TEST · module ${m} · kerf ${S.kerf}mm · stock ${S.thick}mm · shaft ${S.bolt} · ${cxBrgMode()==='none'?'no bearings':'bearing \u2300'+(+cxBearingHole()).toFixed(1)}`,ENG,3);
+  eng+=txt(W/2,H-1.2,`centre distance ${CD.toFixed(2)}mm · red = cut, blue = engrave · curiosity.diy`,ENG,2.7);
   return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm"><g id="cut" fill="none" stroke="${CUT}" stroke-width="${SW}">${cut}</g><g id="engrave">${eng}</g></svg>`, W, H};
 }
 function currentMeshTest(){ const gv=id=>{const e=document.getElementById(id);return e?+e.value:0;};
@@ -3888,7 +3932,32 @@ function renderMeshTest(){ const o=currentMeshTest(), r=meshTesterSVG(o);
   const pv=document.getElementById('mtPreview'); if(pv)pv.innerHTML=`<div style="padding:8px">${r.svg.replace(`width="${r.W}mm" height="${r.H}mm"`,'width="100%" height="auto"').replace('stroke-width="0.12"','stroke-width="0.5"')}</div>`;
   const tv=document.getElementById('mtTolVal'); if(tv)tv.textContent=`${o.tol.toFixed(2)} ×m = ${(o.tol*o.m).toFixed(2)}mm`;
   const cu=document.getElementById('mtCloseup'); if(cu)cu.innerHTML=meshCloseupSVG(o.m,o.N1,o.N2,o.tol,mtAngle);
+  const se=document.getElementById('mtSettings');
+  if(se){ const mm=(S.cx&&S.cx.m)||3, bl=cxBacklash(), brg=cxBrgMode(), bore=(o.bore==='bearing')?cxBearingHole():(o.bore==='bolt'?boreDia():cxGearBore());
+    const diff=[]; if(Math.abs(o.m-mm)>0.001)diff.push(`module ${o.m} vs machine ${mm}`);
+    if(Math.abs(o.tol-bl)>0.001)diff.push(`clearance ${o.tol.toFixed(2)} vs machine ${bl.toFixed(2)}`);
+    se.innerHTML=`<b style="color:var(--brass)">CUTTING WITH YOUR MACHINE SETTINGS</b><br>`+
+      `module <b>${o.m}</b> \u00b7 kerf <b>${S.kerf}mm</b> \u00b7 stock <b>${S.thick}mm</b> \u00b7 shaft <b>${S.bolt}</b><br>`+
+      `bearings <b>${brg==='none'?'none':(brg==='gears'?'in gears':'gears + rods')}</b> \u00b7 gear bore <b>\u2300${bore.toFixed(1)}mm</b> \u00b7 shaft hole <b>\u2300${boreDia().toFixed(1)}mm</b><br>`+
+      `machine clearance <b>${bl.toFixed(2)}\u00d7m</b> \u00b7 testing <b>${o.clearances.map(c=>c.toFixed(2)).join(', ')}</b>`+
+      (diff.length?`<br><span style="color:#bf3a2b">\u26a0 differs from your machine: ${diff.join(' \u00b7 ')} \u2014 press <b>match my machine</b> to line them up</span>`:'<br><span style="color:#4a7c3f">\u2713 matches your machine</span>');
+  }
   const vv=document.getElementById('mtValues'); if(vv)vv.innerHTML=`Cuts <b>${o.clearances.length}</b> pair${o.clearances.length>1?'s':''}: <b>${o.clearances.map(c=>c.toFixed(2)).join(' · ')}</b> ×module — board ~${r.W}×${r.H}mm · gear bore <b>⌀${((o.bore==='bearing')?cxBearingHole():(o.bore==='bolt'?boreDia():cxGearBore())).toFixed(1)}mm</b>.`; }
+function renderMaterials(){ const el=document.getElementById('matSummary'); if(!el)return;
+  const szEl=document.getElementById('sheetSize'), sz=((szEl&&szEl.value)||'400x300');
+  let pieces=0, sheets=0;
+  try{ const pcs=cutPiecesFromScene(), d=sz.split('x').map(Number); pieces=pcs.length; sheets=nestPieces(pcs,d[0],d[1],6).sheets; }catch(_){}
+  const M=cxBrgMode(), rows=[
+    ['sheet material', `${S.thick}mm stock \u00b7 ${sz.replace('x',' \u00d7 ')} mm sheets \u00b7 <b>${sheets||'\u2014'}</b> sheet${sheets===1?'':'s'}`],
+    ['pieces to cut', `<b>${pieces||'\u2014'}</b> parts`],
+    ['shafts / bolts', `${S.bolt} \u00b7 clearance holes \u2300${boreDia().toFixed(1)}mm`],
+    ['bearings', M==='none'?'none \u2014 gears run on the bolt':`${M==='gears'?'one per gear':'gears + rod pivots'} \u00b7 seat \u2300${(+cxBearingHole()).toFixed(1)}mm`],
+    ['dowels', `\u2300${fmt(S.dowelD)} \u00b7 holes cut \u2300${(+cxDowelHole()).toFixed(1)}mm`],
+    ['laser settings', `kerf ${S.kerf}mm \u00b7 gear mesh clearance ${cxBacklash().toFixed(2)}\u00d7module`],
+  ];
+  el.innerHTML=`<dl class="mat-dl">`+rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('')+`</dl>`+
+    (S.movement==='complex'?'':`<div class="hint" style="margin-top:8px">Switch to the <b>Complex Workbench</b> for a full itemised parts list with assembly notes.</div>`);
+}
 function renderCutSheet(){
   const view=document.getElementById('cutSheetView'); if(!view)return;
   const sz=(document.getElementById('sheetSize').value||'400x300').split('x').map(Number), sw=sz[0], sh=sz[1], gap=6, CUT='#bf3a2b';
@@ -3926,7 +3995,7 @@ function renderCutSheet(){
     if(which==='all')ns.sheets.forEach(sh=>dlSVG(sh.name,sh.svg)); else { const sh=ns.sheets[+which]; if(sh)dlSVG(sh.name,sh.svg); } }));
 }
 function cutSheetOpen(){ const p=document.getElementById('cutSheetPanel'); return p&&!p.classList.contains('hide'); }
-function everything(){updateReadout();if(S.view==='3d'&&GL&&GL.ok)rebuild3D();else drawPreview();if(cutSheetOpen())renderCutSheet();}
+function everything(){updateReadout();if(S.view==='3d'&&GL&&GL.ok)rebuild3D();else drawPreview();try{renderMaterials();}catch(_){} if(cutSheetOpen())renderCutSheet();}
 
 /* gear list rendering */
 function setTeeth(i,val){S.gears[i]=Math.max(8,Math.min(120,Math.round(val)||8));}
