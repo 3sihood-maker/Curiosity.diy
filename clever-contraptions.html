@@ -2793,7 +2793,8 @@ function composerReadout(){
    COMPLEX WORKBENCH · multi-layer shafts, meshing + compound gears
    ============================================================ */
 function cxLayerCol(L){ return [WOOD_GEAR,WOOD_IDLER,WOOD_SLIDE,WOOD_RAIL,'#b98a52','#a9c1a0'][((L%6)+6)%6]; }
-function computeComplex(){
+function computeComplex(){ try{cxSyncSplitMax();}catch(_){}
+
   const m=S.cx.m||6, G=S.cx.gears, byId={}; G.forEach(g=>byId[g.id]=g);
   const done={};
   function resolve(g){ if(done[g.id])return; done[g.id]=1; g.rp=m*g.N/2; g.ra=m*g.N/2+m;
@@ -3018,6 +3019,10 @@ function cxBearingHole(){ const B=S.cx.bearing; return (B&&B.hole!=null)?B.hole:
 function cxDowelHole(){ return (S.cx.dowelHole!=null)?S.cx.dowelHole:(S.dowelD||6); }
 function cxGearBore(){ const M=cxBrgMode(); return (M==='gears'||M==='gearsRods')?cxBearingHole():boreDia(); }
 function cxRodBore(){ return (cxBrgMode()==='gearsRods')?cxBearingHole():boreDia(); }
+function sheetDims(){ const el=document.getElementById('sheetSize'); const v=(el&&el.value)||'400x300';
+  const d=v.split('x').map(Number); return [d[0]||400, d[1]||300]; }
+function cxSyncSplitMax(){ const P=S.cx&&S.cx.split; if(!P)return;
+  if(!P.custom){ const d=sheetDims(); P.maxW=d[0]; P.maxH=d[1]; } }
 function cxGearSpokes(g,c){ if(!S.spokes)return [];
   const ra=c.m*(g.N+2)/2, hub=hubR(), rimIn=ra*0.80;
   if(rimIn-hub<6)return [];                      // too small to lighten safely
@@ -3609,7 +3614,8 @@ function renderComplexUI(){
     const cols=P.mode==='off'?1:Math.max(1,Math.ceil(bw/P.maxW)), rows=P.mode==='off'?1:Math.max(1,Math.ceil(bh/P.maxH));
     const ML={off:'off (one full board)',butt:'butt (glue flat edges)',overlap:'overlap lap (glue faces)',finger:'finger joint (interlock)',dovetail:'dovetail (interlock + lock)'};
     const modes=['off','butt','overlap','finger','dovetail'];
-    spl.innerHTML=`<div class="lab"><label>Back board splitting</label><span class="val">${fmt(bw)} × ${fmt(bh)}</span></div><div class="hint">The board is ${fmt(bw)} × ${fmt(bh)} — if that's bigger than your laser bed, split it into tiles that join. ${P.mode!=='off'?`<b>${cols}×${rows} = ${cols*rows} tiles</b> at ≤ ${P.maxW}×${P.maxH} mm.`:''}</div><div class="cstage-top" style="margin-top:8px"><span class="clab">join</span><select class="selin" id="cxSplitMode" style="width:auto">${modes.map(m=>`<option value="${m}"${P.mode===m?' selected':''}>${ML[m]}</option>`).join('')}</select></div>`+(P.mode!=='off'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">bed max</span><span class="cstep"><button data-cxsp="maxW" data-d="-50">−</button><input type="number" value="${P.maxW}" id="cxSplitW" min="100" step="50"><button data-cxsp="maxW" data-d="50">＋</button></span><span class="cstep"><button data-cxsp="maxH" data-d="-50">−</button><input type="number" value="${P.maxH}" id="cxSplitH" min="100" step="50"><button data-cxsp="maxH" data-d="50">＋</button></span></div>`+((P.mode==='overlap'||P.mode==='finger'||P.mode==='dovetail')?`<div class="cstage-top" style="margin-top:8px"><span class="clab">${P.mode==='overlap'?'overlap':'tooth depth'}</span><span class="cstep"><button data-cxsp="overlap" data-d="-2">−</button><input type="number" value="${P.overlap}" id="cxSplitO" min="4" max="40" step="2"><button data-cxsp="overlap" data-d="2">＋</button></span><span class="hint">mm</span></div>`:''):'');
+    const shd=sheetDims();
+    spl.innerHTML=`<div class="lab"><label>Back board splitting</label><span class="val">${fmt(bw)} × ${fmt(bh)}</span></div><div class="hint">The board is ${fmt(bw)} × ${fmt(bh)} — if that's bigger than your laser sheet, split it into tiles that join. ${P.mode!=='off'?`<b>${cols}×${rows} = ${cols*rows} tiles</b> at ≤ ${P.maxW}×${P.maxH} mm.`:''}<br>Tile size follows your <b>laser sheet size</b> (${shd[0]}×${shd[1]} mm) ${P.custom?`\u2014 <b>overridden</b>`:`from 01 Set up the scale`}.</div><div class="cstage-top" style="margin-top:8px"><span class="clab">join</span><select class="selin" id="cxSplitMode" style="width:auto">${modes.map(m=>`<option value="${m}"${P.mode===m?' selected':''}>${ML[m]}</option>`).join('')}</select></div>`+(P.mode!=='off'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">max tile</span><span class="cstep"><button data-cxsp="maxW" data-d="-50">−</button><input type="number" value="${P.maxW}" id="cxSplitW" min="100" step="50"><button data-cxsp="maxW" data-d="50">＋</button></span><span class="cstep"><button data-cxsp="maxH" data-d="-50">−</button><input type="number" value="${P.maxH}" id="cxSplitH" min="100" step="50"><button data-cxsp="maxH" data-d="50">＋</button></span></div>${P.custom?`<button class="btn ghost" data-cxspreset="1" style="padding:4px 10px;font-size:11px;margin-top:6px">↺ match laser sheet (${shd[0]}×${shd[1]})</button>`:''}`+((P.mode==='overlap'||P.mode==='finger'||P.mode==='dovetail')?`<div class="cstage-top" style="margin-top:8px"><span class="clab">${P.mode==='overlap'?'overlap':'tooth depth'}</span><span class="cstep"><button data-cxsp="overlap" data-d="-2">−</button><input type="number" value="${P.overlap}" id="cxSplitO" min="4" max="40" step="2"><button data-cxsp="overlap" data-d="2">＋</button></span><span class="hint">mm</span></div>`:''):'');
   }
   const brg=document.getElementById('cxBearing');
   if(brg){ let B=S.cx.bearing||{mode:'none',od:8}; if(B.mode==='seat')B.mode='gears'; if(B.hole==null)B.hole=B.od; S.cx.bearing=B;
@@ -4387,8 +4393,13 @@ document.getElementById('cxEdge').addEventListener('change',e=>{const t=e.target
   else if(t.classList.contains('cxEdL'))ed.len=Math.max(30,Math.round(+t.value)||ed.len);
   renderComplexUI();everything();});
 document.getElementById('cxBOM').addEventListener('click',e=>{if(e.target.closest('#cxBOMCopy')){navigator.clipboard&&navigator.clipboard.writeText(cxBOMText());const b=e.target.closest('#cxBOMCopy');if(b){const o=b.textContent;b.textContent='copied ✓';setTimeout(()=>{b.textContent=o;},1400);}}});
-document.getElementById('cxSplit').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!b.dataset.cxsp)return;const P=S.cx.split;const f=b.dataset.cxsp,d=+b.dataset.d;P[f]=Math.max(f==='overlap'?4:100,(P[f]||0)+d);renderComplexUI();everything();});
+document.getElementById('cxSplit').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const P=S.cx.split;
+  if(b.dataset.cxspreset){ P.custom=false; cxSyncSplitMax(); renderComplexUI(); everything(); return; }
+  if(!b.dataset.cxsp)return; const f=b.dataset.cxsp,d=+b.dataset.d;
+  if(f==='maxW'||f==='maxH')P.custom=true;
+  P[f]=Math.max(f==='overlap'?4:100,(P[f]||0)+d);renderComplexUI();everything();});
 document.getElementById('cxSplit').addEventListener('change',e=>{const t=e.target,P=S.cx.split;
+  if(t.id==='cxSplitW'||t.id==='cxSplitH')P.custom=true;
   if(t.id==='cxSplitMode')P.mode=t.value; else if(t.id==='cxSplitW')P.maxW=Math.max(100,Math.round(+t.value)||P.maxW); else if(t.id==='cxSplitH')P.maxH=Math.max(100,Math.round(+t.value)||P.maxH); else if(t.id==='cxSplitO')P.overlap=Math.max(4,Math.min(40,Math.round(+t.value)||P.overlap)); else return;
   renderComplexUI();everything();});
 document.getElementById('cxBearing').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const B=S.cx.bearing;
