@@ -581,7 +581,7 @@
             <button class="btn" id="exLoad2">2 · Drawing machine 02</button>
             <button class="btn ghost" id="exUndo" disabled>↩ Undo load</button>
           </div>
-          <div class="hint" id="exNote" style="margin-top:7px"><b>01</b> a six-lobed pintograph — four gears, two pins, a coupler arm and a pen. <b>02</b> a woven rosette — six gears driving a long arm over a circular paper board, run for 130 turns. Both open in the Complex Workbench, where you can change anything.</div>
+          <div class="hint" id="exNote" style="margin-top:7px"><b>01</b> a six-lobed pintograph — four gears, two pins, a coupler arm and a pen. <b>02</b> a woven ring — ten gears on two layers with compound stacks, driving a long arm over a circular paper board. Both open in the Complex Workbench, where you can change anything.</div>
         </div>
       </div>
     </div>
@@ -4195,23 +4195,27 @@ function cxSnapshot(){ try{ return JSON.stringify({cx:S.cx, movement:S.movement,
 function cxRestore(js){ try{ const d=JSON.parse(js); S.cx=d.cx; S.movement=d.movement; S.spokes=d.spokes; return true; }catch(_){ return false; } }
 function cxUndoBtn(){ const b=document.getElementById('exUndo'); if(b){ b.disabled=!cxUndo; b.style.opacity=cxUndo?'1':'0.45'; } }
 function cxLoadExample2(){
-  S.cx={ nextId:13, sel:0, m:3, scale:0.5, linkW:12.5,
+  S.cx={ nextId:19, sel:18, m:2.25, scale:0.75, linkW:20,
     converters:[], edges:[], dowelHole:6,
-    split:{mode:'off',maxW:600,maxH:400,overlap:10},
+    split:{mode:'off',overlap:10},
     bearing:{mode:'none',od:8,hole:8},
     backlash:(S.cx&&S.cx.backlash!=null)?S.cx.backlash:0.08,
     penDia:(S.cx&&S.cx.penDia)||10, penSides:(S.cx&&S.cx.penSides)||0,
-    gears:[ {id:0,N:43,kind:'driver',layer:0},
-            {id:1,N:31,kind:'mesh',parent:0,dir:60,layer:0},
-            {id:4,N:17,kind:'mesh',parent:1,dir:345,layer:0},
-            {id:10,N:18,kind:'mesh',parent:0,dir:315,layer:0},
-            {id:11,N:60,kind:'mesh',parent:10,dir:285,layer:0},
-            {id:12,N:24,kind:'mesh',parent:4,dir:285,layer:0} ],
-    pen:{ pins:[{g:0,r:22},{g:12,r:27}],
-          joints:[{a:'p0',la:149,b:'p1',lb:179,branch:-1}],
-          welds:[{base:{on:'j0',side:'b',t:0.5},len:65,ang:75}],
-          penRef:'w0', runTurns:130,
-          paper:{mode:'fit',w:200,h:200,gear:11,conv:null,board:{on:true,shape:'circle'}} } };
+    gears:[ {id:0,N:26,kind:'driver',layer:0},
+            {id:10,N:20,kind:'mesh',parent:0,dir:60,layer:0},
+            {id:11,N:28,kind:'mesh',parent:10,dir:330,layer:0},
+            {id:12,N:18,kind:'compound',parent:11,layer:1},
+            {id:13,N:36,kind:'mesh',parent:12,dir:330,layer:1},
+            {id:14,N:30,kind:'mesh',parent:13,dir:285,layer:1},
+            {id:15,N:39,kind:'mesh',parent:0,dir:255,layer:0},
+            {id:16,N:21,kind:'mesh',parent:15,dir:315,layer:0},
+            {id:17,N:18,kind:'compound',parent:16,layer:1},
+            {id:18,N:50,kind:'mesh',parent:17,dir:300,layer:1} ],
+    pen:{ pins:[{g:15,r:24},{g:14,r:23}],
+          joints:[{a:'p0',la:161,b:'p1',lb:175,branch:-1}],
+          welds:[{base:{on:'j0',side:'b',t:0.5},len:50,ang:75}],
+          penRef:'j0',
+          paper:{mode:'fit',w:200,h:200,gear:18,conv:null,board:{on:true,shape:'circle',margin:0.10}} } };
   S.movement='complex'; }
 function cxLoadExampleSafe(which){ cxUndo=cxSnapshot();
   if(which===2)cxLoadExample2(); else cxLoadExample();
