@@ -3165,7 +3165,7 @@ function cxBOMText(){ const b=cxBOM(), c=computeComplex(), t=S.thick;
   const head=`PROJECT MATERIALS — The Clever Contraptions Corner\n\n  Back board / sheet : ${bw}×${bh}mm · ${t}mm stock\n  Bolt / shaft       : ${S.bolt} (⌀${fmt(boreDia())} clearance holes)\n  Bearings           : ${brgLine}\n  Dowels             : ⌀${fmt(S.dowelD)} nominal · press-fit holes cut ⌀${fmt(cxDowelHole())}\n  Kerf allowance     : ${S.kerf}mm (beam width — holes cut ${S.kerf}mm undersize to compensate)\n  Gear mesh clearance: ${cxBacklashMM(c.m).toFixed(2)}mm backlash (${cxBacklash().toFixed(2)} x module ${c.m}mm)\n`;
   return head+'\nLASER-CUT (wood, '+t+'mm):\n'+b.cut.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n')+'\n\nBUY SEPARATELY:\n'+b.buy.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n'); }
 function cxArmMax(){ const P=S.cx.split; return (P&&P.mode!=='off')?Math.max(P.maxW||600,P.maxH||400):1e9; }
-function cxArmSplice(al,armMax,ov){ ov=ov||28; if(!(armMax>0)||al<=armMax)return [{start:0,len:al,pivS:true,pivE:true,aligns:[]}];
+function cxArmSplice(al,armMax,ov){ ov=ov||28; if(!(armMax>0)||al<=armMax)return [{start:0,len:al,pivS:true,pivE:true,aligns:[],idx:0,n:1}];
   const n=Math.max(2,Math.ceil((al-ov)/(armMax-ov))), segLen=(al+(n-1)*ov)/n, step=segLen-ov, out=[];
   for(let i=0;i<n;i++){ const aligns=[]; if(i>0)aligns.push(ov*0.3,ov*0.7); if(i<n-1)aligns.push(step+ov*0.3,step+ov*0.7);
     out.push({start:i*step,len:segLen,pivS:i===0,pivE:i===n-1,aligns,idx:i,n}); } return out; }
@@ -3234,7 +3234,7 @@ function sceneFromComplex(){
         if(pc.pivE)loops.push(flipY(circleLoop(hr,18).map(p=>[p[0]+pc.len,p[1]])));
         pc.aligns.forEach(d=>loops.push(flipY(circleLoop(Math.max(cxBore()/2,1.2),12).map(p=>[p[0]+d,p[1]]))));
         locs.forEach(o=>{ const local=(cxRefT(o.wd.base)/100)*L-(pc.start||0); if(local>hr&&local<pc.len-hr)loops.push(flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12).map(p=>[p[0]+local,p[1]]))); });
-        parts.push({tris:plateMesh(loops,0,0,t*0.55,yLink-pc.idx*0.4),col:'#8a6a3c',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*pc.start-ox,z:A[1]+Math.sin(ang)*pc.start-oy,rot:ang}; }}); }); }); });
+        parts.push({tris:plateMesh(loops,0,0,t*0.55,yLink-(pc.idx||0)*0.4),col:'#8a6a3c',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*pc.start-ox,z:A[1]+Math.sin(ang)*pc.start-oy,rot:ang}; }}); }); }); });
     c.pen.joints.forEach((j,ji)=>{ const isLast=ji===c.pen.joints.length-1;
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.6,2.2),14))],0,0,t*1.2,yLink-t*0.3),col:'#5a4632',hw:1,pose:s=>{ const st=cxPenAt(c,s), J=st?st.jointPos[ji]:null; if(!J)return {x:OFF,z:OFF,rot:0}; return {x:J[0]-ox,z:J[1]-oy,rot:0}; }}); });
     (c.pen.welds||[]).forEach((w,wi)=>{ const L0=w.len||100, bw2=barW*0.9;
@@ -3244,9 +3244,9 @@ function sceneFromComplex(){
     parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',hw:1,pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }});
     { const B=cxPaperBoard(c);
       if(B){ const g=(B.gear!=null)?c.byId[B.gear]:null, gx=g?g.x-ox:0, gz=g?g.y-oy:0;
-        parts.push({tris:plateMesh(cxPaperBoardLoops(B).map(flipY),0,0,t*0.7,yLink+8),col:'#cbbf9f',
+        parts.push({tris:plateMesh(cxPaperBoardLoops(B).map(flipY),0,0,t*0.7,yLink+6),col:'#cbbf9f',
           spin:g?{x:gx,z:gz,phase:g.phase,rate:g.rate}:{x:gx,z:gz,phase:0,rate:0}});
-        parts.push({tris:plateMesh(cxPaperRingLoops(B).map(flipY),0,0,t,yLink+4),col:'#b9a882',
+        parts.push({tris:plateMesh(cxPaperRingLoops(B).map(flipY),0,0,t,yLink+9.5),col:'#b9a882',
           spin:g?{x:gx,z:gz,phase:g.phase,rate:g.rate}:{x:gx,z:gz,phase:0,rate:0}}); } }
     { const H=cxPenHolder();
       const collar=[flipY(H.outline), flipY(cxPenHoleLoop(0,0,cxPenAF())), flipY(circleLoop(Math.max(boreDia()/2,1),12).map(p=>[p[0]+H.mount[0],p[1]+H.mount[1]]))];
@@ -3291,7 +3291,7 @@ function sceneFromComplex(){
     const pp=c.pen.paper||{mode:'fit'}; let w,h,px,py;
     if(dr.mode==='gear'){ let hw,hh; if(pp.mode==='custom'){hw=(pp.w||200)/2;hh=(pp.h||200)/2;}else{const mg=Math.max(15,Math.max(b-a,dd-cc)*0.08);hw=Math.max(Math.abs(a),Math.abs(b))+mg;hh=Math.max(Math.abs(cc),Math.abs(dd))+mg;} w=2*hw;h=2*hh;px=dr.C[0];py=dr.C[1]; }
     else { const cxx=(a+b)/2,cyy=(cc+dd)/2; if(pp.mode==='custom'){w=pp.w||200;h=pp.h||200;}else{const mg=Math.max(15,Math.max(b-a,dd-cc)*0.08);w=(b-a)+2*mg;h=(dd-cc)+2*mg;} px=cxx;py=cyy; }
-    if(isFinite(w)&&isFinite(h)&&w>4&&h>4){ const yo=-(c.layers)*LG-t*1.6, bw2=Math.max(6,Math.min(w,h)*0.06);
+    if(isFinite(w)&&isFinite(h)&&w>4&&h>4){ const yo=(-(c.layers)*LG-t*0.5)+3, bw2=Math.max(6,Math.min(w,h)*0.06);
       const pv=cxPaperVis(c), R0=pv?(pv.r||Math.hypot(w,h)/2):0;
       const frame=pv?[flipY(circleLoop(R0,72)),flipY(circleLoop(Math.max(R0-bw2,2),64))]
                     :[flipY(roundRectLoop(w,h,Math.min(w,h)*0.03,7)),flipY(roundRectLoop(Math.max(w-2*bw2,4),Math.max(h-2*bw2,4),Math.min(w,h)*0.03,7))];
@@ -4213,7 +4213,7 @@ function cxLoadExample2(){
             {id:18,N:50,kind:'mesh',parent:17,dir:300,layer:1} ],
     pen:{ pins:[{g:15,r:24},{g:14,r:23}],
           joints:[{a:'p0',la:161,b:'p1',lb:175,branch:-1}],
-          welds:[{base:{on:'j0',side:'b',t:0.5},len:50,ang:75}],
+          welds:[],
           penRef:'j0',
           paper:{mode:'fit',w:200,h:200,gear:18,conv:null,board:{on:true,shape:'circle',margin:0.10}} } };
   S.movement='complex'; }
