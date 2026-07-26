@@ -94,6 +94,13 @@
   .subtle{opacity:.45;pointer-events:none}
 
   .readout dl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin:0}
+  .summarybox dl{display:grid;grid-template-columns:minmax(96px,38%) 1fr;gap:0;margin:6px 0 0;font-size:13px}
+  .summarybox dt{font-family:'Space Mono',monospace;font-size:11px;color:var(--brass);
+    padding:7px 10px 7px 0;border-top:1px solid #cbbf9f;line-height:1.4;text-align:left}
+  .summarybox dd{margin:0;padding:7px 0;border-top:1px solid #cbbf9f;line-height:1.45;
+    text-align:left;font-weight:600;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+  .summarybox dl>dt:first-of-type,.summarybox dl>dd:first-of-type{border-top:0}
+  @media (max-width:430px){ .summarybox dl{grid-template-columns:minmax(84px,44%) 1fr} }
   .readout dt{font-size:12.5px;color:var(--ink-mute);padding:6px 0;border-bottom:1px dotted #23201a30}
   .readout dd{font-family:"Space Mono",monospace;font-size:13px;margin:0;text-align:right;padding:6px 0;border-bottom:1px dotted #23201a30;font-weight:700}
   .readout dd.big{color:var(--brass);font-size:15px}
@@ -159,7 +166,7 @@
   .mtab.soon{opacity:.5;cursor:not-allowed;border-style:dashed}
   .mtab:not(.active):not(.soon):hover{border-color:var(--brass)}
   .ccmain{max-width:1560px;margin:14px auto 34px;padding:0 18px;display:grid;
-    grid-template-columns:minmax(0,1fr) 460px;grid-template-areas:"left controls";gap:24px;align-items:start}
+    grid-template-columns:minmax(0,1fr) minmax(460px,32vw);grid-template-areas:"left controls";gap:24px;align-items:start}
   .leftcol{grid-area:left;min-width:0;position:sticky;top:14px;align-self:start;display:flex;flex-direction:column;gap:14px}
   .hero{min-width:0}
   #cutSheetPanel{min-width:0}
@@ -330,6 +337,9 @@
   .cxmajor{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;
     color:var(--brass);margin:18px 0 6px;padding-top:10px;border-top:1.5px solid var(--ink)}
   .cxmajor small{display:block;text-transform:none;letter-spacing:0;font-size:11.5px;color:var(--ink-mute);margin-top:2px}
+
+  .excard{border:1.5px solid var(--brass);border-radius:10px;padding:12px 13px;margin:0 0 14px;background:#f6f1e4}
+  .excard .pcard-h{margin-bottom:9px}
 </style>
 </head>
 <body>
@@ -474,6 +484,7 @@
       <div class="movetabs hide" id="combineTabs">
         <button class="mtab" data-m="composer"><b>Composer Workbench</b><span>one layer · belts · meshing · links</span></button>
         <button class="mtab" data-m="complex"><b>Complex Workbench</b><span>multi-layer · shafts · stacks · pens</span></button>
+        <button class="mtab" id="exampleTab"><b>📐 Example machines</b><span>start from a working machine, then edit it</span></button>
         <button class="mtab" id="meshTestTab2"><b>🔧 Gear Mesh Tester</b><span>cut a tiny test · find your clearance first</span></button>
       </div>
     </nav>
@@ -536,8 +547,22 @@
       </div>
     </div>
 
+    <div class="panel" style="background:#f6f1e4">
+      <div class="panel-h"><span>Machine examples &amp; ideas</span><span class="n">02</span></div>
+      <div class="panel-b">
+        <div class="hint">Start from a machine that already works, then change anything you like.</div>
+        <button class="btn ghost" id="exReveal" style="margin-top:8px" aria-expanded="false">▸ Show machine examples</button>
+        <div id="exampleSection" class="hide" style="margin-top:12px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button class="btn" id="exLoad1">1 · Drawing machine 01</button>
+            <button class="btn ghost" id="exUndo" disabled>↩ Undo load</button>
+          </div>
+          <div class="hint" id="exNote" style="margin-top:7px">A six-lobed pintograph: four gears, two pins, a coupler arm and a pen. It opens in the Complex Workbench, where you can add gears, move pins, change arms or swap the pen.</div>
+        </div>
+      </div>
+    </div>
     <div class="panel">
-      <div class="panel-h"><span>Build the machine</span><span class="n">02</span></div>
+      <div class="panel-h"><span>Build the machine</span><span class="n">03</span></div>
       <div class="panel-b">
         <div class="hint">Design the mechanism itself — teeth, lengths, layers, pens. Tooth size (module) lives here too, since it sets how big the machine turns out.</div>
 <div id="mvGearing">
@@ -844,7 +869,8 @@
             <div class="hint" style="margin-top:8px">Meshed gears sit on the same plane; stacked gears climb to a new layer on the same shaft. Cut each layer as its own sheet and thread them on dowels with spacers.</div>
 
           </div>
-                  <div class="cxmajor">Add other movements<small>shaft converters &amp; edge-mounted parts</small></div>
+                  <div id="spokeSlotComplex"></div>
+          <div class="cxmajor">Add other movements<small>shaft converters &amp; edge-mounted parts</small></div>
             <div id="cxConv" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
             <div id="cxEdge" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
           <div class="cxmajor">Add pen &amp; arms<small>pins · joints · branches · pen · paper</small></div>
@@ -897,7 +923,8 @@
           <div class="hint" id="addHint">Each stage's output feeds the next stage's input. Green links mean the motion types match; red means you'd need an adapter. Design each part in its own tab, then chain them here.</div>
         </div>
         </div>
-<div class="field">
+        <div id="spokeSlotGlobal">
+          <div class="field" id="spokeField">
           <div class="lab"><label>Gear spokes / lightening</label></div>
           <div class="seg" id="spokeSeg">
             <button data-s="0" aria-pressed="true">Solid</button>
@@ -905,6 +932,7 @@
             <button data-s="4" aria-pressed="false">4</button>
             <button data-s="5" aria-pressed="false">5</button>
           </div>
+        </div>
         </div>
         <div class="field summarybox">
           <div class="lab"><label>How it works out</label></div>
@@ -922,7 +950,7 @@
     </div>
 
     <div class="panel">
-      <div class="panel-h"><span>Prepare for cutting</span><span class="n">03</span></div>
+      <div class="panel-h"><span>Prepare for cutting</span><span class="n">04</span></div>
       <div class="panel-b">
         <div id="prepBody"></div>
         <div class="pcard" id="prepBoard">
@@ -934,7 +962,7 @@
       </div>
     </div>
     <div class="panel" style="background:#f6f1e4">
-      <div class="panel-h"><span>Gear mesh tester <em style="font-style:normal;color:var(--ink-mute);text-transform:none;letter-spacing:0">(optional)</em></span><span class="n">04</span></div>
+      <div class="panel-h"><span>Gear mesh tester <em style="font-style:normal;color:var(--ink-mute);text-transform:none;letter-spacing:0">(optional)</em></span><span class="n">05</span></div>
       <div class="panel-b">
         <div class="hint">Cut a tiny test board of gear pairs at different clearances and feel which meshes best — before committing a whole machine.</div>
         <button class="btn ghost" id="meshTestReveal" style="margin-top:8px">🔧 Open the tester</button>
@@ -970,7 +998,7 @@
       </div>
     </div>
     <div class="panel">
-      <div class="panel-h"><span>Project materials</span><span class="n">05</span></div>
+      <div class="panel-h"><span>Project materials</span><span class="n">06</span></div>
       <div class="panel-b">
         <div class="hint">Everything you need to buy or find before you start.</div>
         <div id="matSummary"></div>
@@ -979,7 +1007,7 @@
     </div>
 
     <div class="panel">
-      <div class="panel-h"><span>Cut sheets</span><span class="n">06</span></div>
+      <div class="panel-h"><span>Cut sheets</span><span class="n">07</span></div>
       <div class="panel-b">
 <div class="export">
           <button class="btn" id="dlBtn">⬇ Reference sheet (annotated)</button>
@@ -3500,7 +3528,7 @@ function renderComplexUI(){
   document.querySelectorAll('#mvComplex [data-cxscale]').forEach(b=>b.setAttribute('aria-pressed',Math.abs(+b.dataset.cxscale-curScale)<0.01?'true':'false'));
   if(sw){ const tiny=cxTinyGears(c); if(tiny.length){ sw.textContent=`⚠ #${tiny.map(g=>g.id).join(', #')} too small for ${fmt(boreDia())} bore`; sw.style.color='#bf3a2b'; } else if(c.m<1.4){ sw.textContent=`⚠ module ${c.m}mm — teeth too fine to cut`; sw.style.color='#bf3a2b'; } else { sw.textContent=`×${scaleLbl} of original · module ${c.m}mm`; sw.style.color=''; } }
   const pen=document.getElementById('cxPen');
-  if(pen){ if(!c.pen){ pen.innerHTML=`<div class="lab"><label>Drawing pen (pintograph)</label></div><div class="hint">Two gears at a rich ratio, two arms meeting at a joint, and a pen carried on a coupler branch — with the paper on a slow turntable it weaves a dense rosette.</div><button class="btn" id="cxLoadExBtn" style="margin-top:8px">⟳ load worked example</button> <button class="btn ghost" id="cxAddPenBtn" style="margin-top:8px">＋ blank pen</button><div class="hint" style="margin-top:6px">The example replaces the current gears &amp; pen — a great starting point to vary.</div>`; }
+  if(pen){ if(!c.pen){ pen.innerHTML=`<div class="lab"><label>Drawing pen (pintograph)</label></div><div class="hint">Two gears at a rich ratio, two arms meeting at a joint, and a pen carried on a coupler branch — with the paper on a slow turntable it weaves a dense rosette.</div><div class="hint" style="margin-top:6px">Want a working start point? Use <b>Example machines</b> at the top of this workbench.</div><button class="btn ghost" id="cxAddPenBtn" style="margin-top:8px">＋ blank pen</button><div class="hint" style="margin-top:6px">The example replaces the current gears &amp; pen — a great starting point to vary.</div>`; }
     else { const P=c.pen, tr=cxPenTrace(c), cl=cxCloses(c), gopts=id=>c.gears.map(g=>`<option value="${g.id}"${g.id===id?' selected':''}>#${g.id} (${g.N}T)</option>`).join('');
       const nodeOpts=(upto,sel)=>{ const sk=cxRefKey(sel); const opt=(v,l)=>`<option value="${v}"${v===sk?' selected':''}>${l}</option>`;
         let o=P.pins.map((_,i)=>opt('p'+i,'pin '+(i+1))).join('');
@@ -3539,7 +3567,7 @@ function renderComplexUI(){
       <div class="lab" style="margin-top:6px"><label>Joints (two arms meet)</label></div><div style="display:flex;flex-direction:column;gap:8px">${jointRows}</div><div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddJointBtn">＋ joint (hinge two arms)</button>${P.joints.length>1?'<button class="btn ghost" id="cxRmJointBtn">− joint</button>':''}</div>
       <div class="lab" style="margin-top:6px"><label>Branches (one arm off another)</label></div>${W.length?`<div style="display:flex;flex-direction:column;gap:8px">${weldRows}</div>`:'<div class="hint">A branch is a single arm fixed part-way along another arm — hang the pen on its tip, or attach more to it.</div>'}<div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddArmBtn">＋ arm (branch)</button>${W.length?'<button class="btn ghost" id="cxRmArmBtn">− arm</button>':''}</div>
       ${penBlock}
-      ${paperCtl}${boardCtl}<div class="cstage-top" style="margin-top:10px"><button class="btn ghost" id="cxLoadExBtn">⟳ load example</button><button class="btn ghost" id="cxRmPenBtn">✕ remove pen</button></div>
+      ${paperCtl}${boardCtl}<div class="cstage-top" style="margin-top:10px"><button class="btn ghost" id="cxRmPenBtn">✕ remove pen</button></div>
       <div class="hint" style="margin-top:6px">A <b>joint</b> hinges two arms together (a moving pivot). A <b>branch</b> is one arm fixed part-way along another — set where it taps with <b>at %</b>, plus its length and angle. Any arm or the <b>pen</b> can attach to a pin, a joint, a branch tip, or a point part-way along another arm (↳). The pen stays glued where you put it while you build the rest.</div>`; }
   }
   const conv=document.getElementById('cxConv');
@@ -3862,7 +3890,12 @@ function drawPreview(){ if(S.movement==='complex'){ drawComplexPreview();
 function buildExportSVG(){ if(S.movement==='complex')return exportComplex(); return S.movement==='composer'?exportComposer():S.movement==='fourbar'?exportFourbar():S.movement==='planetary'?exportPlanetary():S.movement==='internal'?exportInternal():S.movement==='scotch'?exportScotch():S.movement==='ratchet'?exportRatchet():S.movement==='rack'?exportRack():S.movement==='cam'?exportCam():S.movement==='crank'?exportCrank():exportGearing(); }
 function rebuild3D(){if(GL&&GL.ok)GL.setScene(buildScene());}
 const SIZES={s:360,m:520,l:700};
-function applySize(){document.documentElement.style.setProperty('--stageH',(window.innerWidth<560?SIZES[S.psize]*0.8:SIZES[S.psize])+'px');if(GL&&GL.ok)GL.draw();}
+function stageHeight(){ const w=window.innerWidth, h=window.innerHeight;
+  if(w<560)return SIZES[S.psize]*0.8;          // phone — unchanged
+  if(w<900)return SIZES[S.psize];              // tablet — unchanged
+  return Math.max(460,Math.min(h-210,1100));   // laptop & up — fill the window
+}
+function applySize(){document.documentElement.style.setProperty('--stageH',stageHeight()+'px');if(GL&&GL.ok)GL.draw();}
 function applyView(){
   const is3d=S.view==='3d'&&ensureGL();
   glCanvas.classList.toggle('hide',!is3d);preview.classList.toggle('hide',is3d);
@@ -4097,6 +4130,21 @@ function renderPrep(){ const host=document.getElementById('prepBody'); if(!host)
   const note=document.getElementById('prepBoardNote');
   if(note)note.innerHTML=`Shaft holes in the baseplate are cut at <b>⌀${(+boardBoltHole()).toFixed(1)}${unit}</b>${cxBrgMode()==='none'?` (or ⌀${(+cxDowelHole()).toFixed(1)}${unit} where a dowel is the shaft)`:''}. Overall plate size is set in <b>01 Set up the scale</b>. Below: split a big plate into sheet-sized tiles with alignment joints.`;
 }
+
+
+/* ---- example machines: load with a one-step undo ---- */
+var cxUndo=null;
+function cxSnapshot(){ try{ return JSON.stringify({cx:S.cx, movement:S.movement, spokes:S.spokes}); }catch(_){ return null; } }
+function cxRestore(js){ try{ const d=JSON.parse(js); S.cx=d.cx; S.movement=d.movement; S.spokes=d.spokes; return true; }catch(_){ return false; } }
+function cxUndoBtn(){ const b=document.getElementById('exUndo'); if(b){ b.disabled=!cxUndo; b.style.opacity=cxUndo?'1':'0.45'; } }
+function cxLoadExampleSafe(){ cxUndo=cxSnapshot(); cxLoadExample(); S.movement='complex';
+  const note=document.getElementById('exNote');
+  if(note)note.innerHTML='<b>Loaded.</b> Edit it like any machine — add gears, move pins, change the pen. <b>Undo load</b> puts back what you had before.';
+  cxUndoBtn(); }
+/* the single spokes control follows the movement, so it sits with the gears in the workbench */
+function placeSpokes(){ const f=document.getElementById('spokeField');
+  const slot=document.getElementById(S.movement==='complex'?'spokeSlotComplex':'spokeSlotGlobal');
+  if(f&&slot&&f.parentNode!==slot)slot.appendChild(f); }
 
 function renderCutSheet(){
   const view=document.getElementById('cutSheetView'); if(!view)return;
@@ -4389,6 +4437,22 @@ document.getElementById('mvComplex').addEventListener('click',e=>{const b=e.targ
   ['meshTestBtn','meshTestReveal'].forEach(id=>{ const b=document.getElementById(id);
     if(b)b.addEventListener('click',()=>{ if(panel.classList.contains('hide'))openPanel(); else panel.classList.add('hide'); }); });
   ['meshTestTab','meshTestTab2'].forEach(id=>{ const t=document.getElementById(id); if(t)t.addEventListener('click',openPanel); });
+  const exTab=document.getElementById('exampleTab');
+  if(exTab)exTab.addEventListener('click',()=>{ setMovement('complex');
+    const el=document.getElementById('exampleSection'), rb=document.getElementById('exReveal');
+    if(el&&el.classList.contains('hide')&&rb)rb.click();
+    if(el)el.scrollIntoView({behavior:'smooth',block:'center'}); });
+  const exR=document.getElementById('exReveal'), exS=document.getElementById('exampleSection');
+  if(exR)exR.addEventListener('click',()=>{ const open=exS.classList.toggle('hide')===false;
+    exR.textContent=open?'\u25be Hide machine examples':'\u25b8 Show machine examples';
+    exR.setAttribute('aria-expanded',open?'true':'false'); });
+  const exL=document.getElementById('exLoad1');
+  if(exL)exL.addEventListener('click',()=>{ setMovement('complex'); cxLoadExampleSafe(); renderComplexUI(); renderPrep(); everything();
+    const w=document.getElementById('mvComplex'); if(w)w.scrollIntoView({behavior:'smooth',block:'start'}); });
+  const exU=document.getElementById('exUndo');
+  if(exU)exU.addEventListener('click',()=>{ if(cxUndo&&cxRestore(cxUndo)){ cxUndo=null; cxUndoBtn();
+    const note=document.getElementById('exNote'); if(note)note.innerHTML='Put back what you had before loading the example.';
+    renderComplexUI(); renderPrep(); everything(); } });
   const cl=document.getElementById('meshTestClose'); if(cl)cl.addEventListener('click',()=>panel.classList.add('hide'));
   const mh=document.getElementById('mtModHelp'); if(mh)mh.addEventListener('click',()=>document.getElementById('mtModExplain').classList.toggle('hide'));
   const match=document.getElementById('mtMatch'); if(match)match.addEventListener('click',()=>{
@@ -4562,6 +4626,7 @@ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){S.playing=fals
 function setMovement(m){ resetSvgView();
   if(m===S.movement)return;
   S.movement=m; S.baseW=0; S.baseH=0;
+  try{placeSpokes();}catch(_){}
   document.querySelectorAll('#moveNav .mtab').forEach(t=>{const on=t.dataset.m===m;t.classList.toggle('active',on);t.setAttribute('aria-pressed',on?'true':'false');});
   syncMode(m);
   document.getElementById('mvGearing').classList.toggle('hide',m!=='gearing');
@@ -4608,7 +4673,7 @@ document.getElementById('shrinkBtn').addEventListener('click',()=>{document.quer
 
 (function(){const cm=document.querySelector('.ccmain'),hero=document.querySelector('.hero'),csp=document.getElementById('cutSheetPanel');
   if(cm&&hero){const col=document.createElement('div');col.className='leftcol';cm.insertBefore(col,hero);col.appendChild(hero);if(csp)col.appendChild(csp);}})();
-renderGearList();refreshBolts();syncSizeUI();try{renderPrep();}catch(_){} updateReadout();applySize();applyView();
+renderGearList();refreshBolts();syncSizeUI();try{renderPrep();placeSpokes();cxUndoBtn();}catch(_){} updateReadout();applySize();applyView();
 </script>
 </body>
 </html>
