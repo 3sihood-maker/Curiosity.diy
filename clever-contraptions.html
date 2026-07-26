@@ -34,7 +34,7 @@
   .kicker{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.22em;
     text-transform:uppercase;color:var(--ink-mute)}
 
-  .plate{margin:22px 0 8px;background:var(--paper-3);border:1.5px solid var(--ink);
+  .plate{margin:6px 0 4px;background:var(--paper-3);border:1.5px solid var(--ink);
     position:relative;box-shadow:var(--shadow)}
   .plate::after{content:"";position:absolute;inset:5px;border:1px solid var(--ink);pointer-events:none}
   .plate-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
@@ -168,11 +168,15 @@
   @media (max-width:900px){
     .ccmain{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "controls" "cut";gap:12px;margin-top:8px}
     .leftcol{display:contents}
-    .hero{grid-area:hero;position:sticky;top:0;z-index:30;background:var(--paper);padding:6px 0 8px;
+    .hero{grid-area:hero;position:sticky;top:0;z-index:30;background:var(--paper);padding:0 0 4px;
       box-shadow:0 10px 14px -12px rgba(35,32,26,.5)}
     #cutSheetPanel{grid-area:cut}
     .hero .stage{max-height:40vh}
     .hero.compact .stage{max-height:20vh;transition:max-height .2s ease}
+    .hero.compact .plate-head>div:first-child{display:none !important}
+    .hero.compact #caption{display:none}
+    .hero.compact .plate-head{padding:8px 12px 2px}
+    .hero.compact .plate{margin:2px 0 2px}
     .shrinkBtn{display:flex !important}
   }
   .shrinkBtn{display:none;position:absolute;top:10px;right:10px;z-index:4;width:32px;height:32px;border-radius:50%;
@@ -290,6 +294,33 @@
   .mat-dl dt{font-family:'Space Mono',monospace;font-size:11px;color:var(--brass);padding:7px 10px 7px 0;
     border-top:1px solid #cbbf9f;line-height:1.4}
   .mat-dl dd{margin:0;padding:7px 0;border-top:1px solid #cbbf9f;line-height:1.45}
+
+  /* ---- prepare-for-cutting cards ---- */
+  .pcard{background:var(--paper-2);border:1px solid #cbbf9f;border-radius:10px;padding:13px 14px;margin:0 0 12px}
+  .pcard-h{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--brass);margin-bottom:9px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .pcard-h em{font-style:normal;text-transform:none;letter-spacing:0;font-size:11px;color:var(--ink-mute)}
+  .prow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:7px 0;
+    border-top:1px solid #d8cdb0}
+  .prow:first-of-type{border-top:0}
+  .prow label{font-size:13.5px;line-height:1.35}
+  .prow label small{display:block;color:var(--ink-mute);font-size:11.5px;line-height:1.4;margin-top:2px}
+  .pnum{width:92px;text-align:right;font-family:"Space Mono",monospace;font-size:14px;
+    padding:7px 9px;border:1px solid var(--ink);border-radius:8px;background:var(--paper-3);color:var(--ink)}
+  .psel{font-family:"Space Mono",monospace;font-size:13px;padding:7px 9px;border:1px solid var(--ink);
+    border-radius:8px;background:var(--paper-3);color:var(--ink);max-width:190px}
+  .punit{font-family:"Space Mono",monospace;font-size:11px;color:var(--ink-mute);margin-left:6px}
+  .pchecks{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+  .pchk{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;
+    background:var(--paper-3);border:1px solid #cbbf9f;border-radius:8px;padding:9px 11px}
+  .pchk input{width:auto;accent-color:var(--brass);margin:0}
+  .pchk[data-on="1"]{border-color:var(--brass);box-shadow:inset 0 0 0 1px var(--brass)}
+  .pnote{font-size:12.5px;line-height:1.5;color:var(--ink-mute);margin-top:8px}
+  .pnote a{color:var(--brass)}
+  .psub{margin-top:10px;padding-top:10px;border-top:1px dashed #cbbf9f}
+  .psub-h{font-family:"Space Mono",monospace;font-size:11.5px;color:var(--ink);margin-bottom:4px;font-weight:700}
+  .pwarn{color:var(--cut);font-size:12.5px;margin-top:6px}
+  @media (pointer:coarse){ .pnum,.psel{font-size:16px !important} .pnum{width:104px} }
 </style>
 </head>
 <body>
@@ -300,40 +331,9 @@
   </div>
   <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
     <a class="back" href="https://curiosity.diy">← curiosity.diy</a>
-    <button class="btn ghost" id="meshTestBtn" style="padding:6px 12px;font-size:12px">🔧 Gear Mesh Tester</button>
     <button class="btn ghost" id="manualBtn" style="padding:6px 12px;font-size:12px">📖 Manual</button>
   </div>
 </header>
-<div class="wrap hide" id="meshTestPanel" style="background:var(--paper-3);border:1.5px solid var(--ink);padding:16px 18px;margin-bottom:14px">
-  <div class="lab"><label>🔧 Gear Mesh Tester</label><button class="btn ghost" id="meshTestClose" style="padding:2px 10px;font-size:12px">✕ close</button></div>
-  <div class="hint" style="margin:4px 0 10px">Cut a tiny test board of gear pairs at different clearances, mount them, and feel which meshes best — <b>before</b> committing a whole machine. Each pair is engraved with its clearance. Use the winner as your <b>Gear mesh clearance</b>.</div>
-  <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
-    <div><div class="clab">module <span id="mtModHelp" style="color:#9a7220;cursor:pointer">ⓘ</span></div><span class="cstep"><button data-mt="m-0.5">−</button><input type="number" id="mtM" value="3" min="1.4" max="8" step="0.5"><button data-mt="m0.5">＋</button></span></div>
-    <button class="btn ghost" id="mtMatch" style="padding:7px 12px;font-size:12px">match my machine</button>
-    <div><div class="clab">teeth A</div><span class="cstep"><button data-mt="a-1">−</button><input type="number" id="mtA" value="12" min="8" max="30" step="1"><button data-mt="a1">＋</button></span></div>
-    <div><div class="clab">teeth B</div><span class="cstep"><button data-mt="b-1">−</button><input type="number" id="mtB" value="16" min="8" max="40" step="1"><button data-mt="b1">＋</button></span></div>
-    <div><div class="clab">shaft holes</div><select class="selin" id="mtBore" style="width:auto"><option value="machine">match my machine</option><option value="bearing">bearing seat</option><option value="bolt">bolt clearance</option></select></div>
-  </div>
-  <div id="mtSettings" style="margin-top:10px;background:var(--paper-2);border:1px solid #cbbf9f;border-radius:6px;padding:9px 11px;font-family:'Space Mono',monospace;font-size:11.5px;line-height:1.75;color:var(--ink)"></div>
-  <div id="mtModExplain" class="hint hide" style="margin-top:8px;background:#efe7d5;border:1px solid #cbbf9f;border-radius:6px;padding:8px 10px"><b>Module</b> is the tooth size — millimetres of pitch diameter per tooth. A gear's pitch ⌀ = module × teeth, and two gears mesh at centre distance module × (T₁+T₂) ÷ 2. Bigger module = bigger, chunkier teeth (stronger, easier to cut); smaller = finer teeth. It's the same "module" your machine's scale buttons change: ×½ halves it. Both meshing gears must share the same module.</div>
-  <div style="margin-top:14px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px" id="mtGrid">
-    <div>
-      <div class="clab" style="margin-bottom:4px">clearance to test</div>
-      <input type="range" id="mtTol" min="0" max="0.20" step="0.01" value="0.08" style="width:100%">
-      <div style="display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:11px;color:#8a7a58"><span>◀ tighter (stiff, precise)</span><span id="mtTolVal" style="color:#9a7220;font-weight:700">0.08 ×m</span><span>looser (free, slack) ▶</span></div>
-      <div class="cstage-top" style="margin-top:12px"><span class="clab">also cut ±</span><span class="cstep"><button data-mt="n-1">−</button><input type="number" id="mtN" value="5" min="1" max="5" step="1"><button data-mt="n1">＋</button></span><span class="clab">clearances to bracket it</span></div>
-      <div class="hint" id="mtValues" style="margin-top:8px"></div>
-      <button class="btn" id="mtDownload" style="padding:9px 16px;margin-top:8px">⬇ Download test SVG</button>
-    </div>
-    <div>
-      <div class="clab" style="margin-bottom:4px">live mesh — this is the gap you're setting</div>
-      <div style="background:#f7f2e6;border:1px solid #cbbf9f;border-radius:6px;padding:6px" id="mtCloseup"></div>
-      <div class="hint" style="margin-top:4px">Two teeth meshing at your clearance. The <span style="color:#2c5f8a;font-weight:700">blue gap</span> is the backlash — watch it open as you drag looser.</div>
-    </div>
-  </div>
-  <div style="margin-top:10px;background:#f7f2e6;border:1px solid #cbbf9f;border-radius:6px;overflow:auto;max-height:46vh" id="mtPreview"></div>
-</div>
-
 <div class="wrap hide" id="manualPanel">
   <div class="mn-bar">
     <button class="btn ghost" id="manualClose" style="padding:4px 12px;font-size:12px">✕ close</button>
@@ -421,11 +421,6 @@
             <button data-v="3d" aria-pressed="true">3D wood</button>
             <button data-v="2d" aria-pressed="false">2D schematic</button>
           </div>
-          <div class="seg" id="sizeSeg" title="Preview size">
-            <button data-z="s" aria-pressed="false">S</button>
-            <button data-z="m" aria-pressed="true">M</button>
-            <button data-z="l" aria-pressed="false">L</button>
-          </div>
         </div>
       </div>
       <div class="caption" id="caption" style="margin:2px 0 8px;padding:0 18px">A driver, an idler and a follower.</div>
@@ -456,6 +451,7 @@
         <button data-mode="combine" aria-pressed="false"><b>Combining parts</b><span>Chain several parts into one machine on a shared baseplate</span></button>
       </div>
       <div class="movetabs" id="singleTabs">
+        <button class="mtab" id="meshTestTab"><b>🔧 Gear Mesh Tester</b><span>cut a tiny test · find your clearance first</span></button>
         <button class="mtab active" data-m="gearing" aria-pressed="true"><b>Spur gearing</b><span>pair &amp; trains · rotary→rotary</span></button>
         <button class="mtab" data-m="crank"><b>Crank &amp; rod</b><span>rotary↔reciprocating</span></button>
         <button class="mtab" data-m="cam"><b>Cam &amp; follower</b><span>rotary→reciprocating</span></button>
@@ -469,7 +465,7 @@
       <div class="movetabs hide" id="combineTabs">
         <button class="mtab" data-m="composer"><b>Composer Workbench</b><span>one layer · belts · meshing · links</span></button>
         <button class="mtab" data-m="complex"><b>Complex Workbench</b><span>multi-layer · shafts · stacks · pens</span></button>
-        <button class="mtab" id="meshTestTab"><b>🔧 Gear Mesh Tester</b><span>cut a tiny test · find your clearance first</span></button>
+        <button class="mtab" id="meshTestTab2"><b>🔧 Gear Mesh Tester</b><span>cut a tiny test · find your clearance first</span></button>
       </div>
     </nav>
     <div class="panel">
@@ -490,7 +486,7 @@
 <div class="field" style="border-top:1px dotted #23201a30;padding-top:14px">
           <div class="lab">
             <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
-              <input type="checkbox" id="baseChk" checked style="width:auto;accent-color:var(--brass)"> Baseplate
+              <input type="checkbox" id="baseChk" checked style="width:auto;accent-color:var(--brass)"> Overall baseplate size
             </label>
             <span class="val" id="baseDimVal">—</span>
           </div>
@@ -505,6 +501,19 @@
               <input type="range" id="margin" min="4" max="40" step="1" value="12">
               <div class="hint">One plate carrying every axle at the exact centre distances.</div>
             </div>
+        <div class="field">
+          <div class="lab"><label>Laser sheet size</label></div>
+          <select id="sheetSize" class="selin">
+              <option value="300x200">300 × 200 mm</option>
+              <option value="300x300">300 × 300 mm</option>
+              <option value="400x300" selected>400 × 300 mm</option>
+              <option value="600x300">600 × 300 mm</option>
+              <option value="600x400">600 × 400 mm</option>
+              <option value="297x210">A4 (297 × 210)</option>
+              <option value="420x297">A3 (420 × 297)</option>
+            </select>
+          <div class="hint">The stock you cut from. Parts are nested onto sheets this size — if a piece is too big you will be warned in Cut sheets.</div>
+        </div>
             <div id="customCtl" class="hide">
               <div class="row2" style="margin-top:10px">
                 <div><div class="lab"><label>Width</label><span class="val" id="baseWunit">mm</span></div><input type="number" id="baseW" min="10" step="1"></div>
@@ -902,56 +911,49 @@
     <div class="panel">
       <div class="panel-h"><span>Prepare for cutting</span><span class="n">03</span></div>
       <div class="panel-b">
-        <div class="hint">Your laser and hardware. Set these once for your machine and material — they decide whether parts fit and gears turn freely.</div>
-<div class="field">
-            <div class="lab"><label>Kerf</label><span class="val" id="kerfVal">0.15 mm</span></div>
-            <input type="number" id="kerf" min="0" max="0.6" step="0.01" value="0.15">
-          </div>
-<div class="field">
-          <div class="lab"><label>Gear mesh clearance</label><span class="val" id="blVal">0.08 × module</span></div>
-          <input type="number" id="backlash" min="0" max="0.3" step="0.01" value="0.08">
-          <div class="hint" id="blHint">Backlash between meshing teeth, as a fraction of module — so the fit holds at any size. Cut wood needs real slack: <b>0</b> binds. 0.05 tight · <b>0.08 good for ply</b> · 0.15+ loose. Applies to every gear, rack and ring in the tool.</div>
-        </div>
-<div class="row2">
-          <div class="field">
-            <div class="lab"><label>Bearings</label></div>
-            <select id="brgModeG">
-              <option value="none">None — bolt / dowel pivots</option>
-              <option value="gears">In gears</option>
-              <option value="gearsRods">In gears + rod pivots</option>
-            </select>
-          </div>
-          <div class="field">
-            <div class="lab"><label>Bearing hole ⌀</label><span class="val" id="brgHoleGVal">—</span></div>
-            <input type="number" id="brgHoleG" min="4" max="80" step="0.1" value="7.9">
-          </div>
-        </div>
-<div class="field"><div class="hint" id="brgHintG">Press a bearing into each gear so it spins freely on the bolt shaft. Applies to every gear in the tool; baseplates and levers keep bolt-clearance holes. Set the hole a touch under the bearing's outside ⌀ for a press fit — the Complex Workbench panel has the full presets, dowel and pen-hole settings.</div></div>
-<div class="row2">
-          <div class="field"><div class="lab"><label>Axle / bolt</label></div><select id="bolt"></select></div>
-          <div class="field"><div class="lab"><label>Bore fit</label></div>
-            <select id="fit"><option value="clr">Clearance — spins</option><option value="snug">Snug — press/keyed</option></select></div>
-        </div>
-        <div id="cxBearing" style="margin-top:4px"></div>
-        <div id="cxSplit" style="margin-top:12px"></div>
-        <div class="field" style="border-top:1px dotted #23201a30;padding-top:12px">
-<div class="lab"><label>Material sheet size</label></div>
-            <select id="sheetSize" class="selin">
-              <option value="300x200">300 × 200 mm</option>
-              <option value="300x300">300 × 300 mm</option>
-              <option value="400x300" selected>400 × 300 mm</option>
-              <option value="600x300">600 × 300 mm</option>
-              <option value="600x400">600 × 400 mm</option>
-              <option value="297x210">A4 (297 × 210)</option>
-              <option value="420x297">A3 (420 × 297)</option>
-            </select>
-          <div class="hint">Pieces are nested onto sheets this size. If something does not fit you will be warned in Cut sheets.</div>
-        </div>
+        <div id="prepBody"></div>
+        <div id="cxBearing" style="display:none"></div>
+        <div id="cxSplitHost"><div id="cxSplit"></div></div>
       </div>
     </div>
-
+    <div class="panel" style="background:#efe7d5">
+      <div class="panel-h"><span>Gear mesh tester <em style="font-style:normal;color:var(--ink-mute);text-transform:none;letter-spacing:0">(optional)</em></span><span class="n">04</span></div>
+      <div class="panel-b">
+        <div class="hint">Cut a tiny test board of gear pairs at different clearances and feel which meshes best — before committing a whole machine.</div>
+        <button class="btn ghost" id="meshTestReveal" style="margin-top:8px">🔧 Open the tester</button>
+        <div id="meshTestPanel" class="hide" style="margin-top:12px">
+  <div class="lab"><label>🔧 Gear Mesh Tester</label><button class="btn ghost" id="meshTestClose" style="padding:2px 10px;font-size:12px">✕ close</button></div>
+  <div class="hint" style="margin:4px 0 10px">Cut a tiny test board of gear pairs at different clearances, mount them, and feel which meshes best — <b>before</b> committing a whole machine. Each pair is engraved with its clearance. Use the winner as your <b>Gear mesh clearance</b>.</div>
+  <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
+    <div><div class="clab">module <span id="mtModHelp" style="color:#9a7220;cursor:pointer">ⓘ</span></div><span class="cstep"><button data-mt="m-0.5">−</button><input type="number" id="mtM" value="3" min="1.4" max="8" step="0.5"><button data-mt="m0.5">＋</button></span></div>
+    <button class="btn ghost" id="mtMatch" style="padding:7px 12px;font-size:12px">match my machine</button>
+    <div><div class="clab">teeth A</div><span class="cstep"><button data-mt="a-1">−</button><input type="number" id="mtA" value="12" min="8" max="30" step="1"><button data-mt="a1">＋</button></span></div>
+    <div><div class="clab">teeth B</div><span class="cstep"><button data-mt="b-1">−</button><input type="number" id="mtB" value="16" min="8" max="40" step="1"><button data-mt="b1">＋</button></span></div>
+    <div><div class="clab">shaft holes</div><select class="selin" id="mtBore" style="width:auto"><option value="machine">match my machine</option><option value="bearing">bearing seat</option><option value="bolt">bolt clearance</option></select></div>
+  </div>
+  <div id="mtSettings" style="margin-top:10px;background:var(--paper-2);border:1px solid #cbbf9f;border-radius:6px;padding:9px 11px;font-family:'Space Mono',monospace;font-size:11.5px;line-height:1.75;color:var(--ink)"></div>
+  <div id="mtModExplain" class="hint hide" style="margin-top:8px;background:#efe7d5;border:1px solid #cbbf9f;border-radius:6px;padding:8px 10px"><b>Module</b> is the tooth size — millimetres of pitch diameter per tooth. A gear's pitch ⌀ = module × teeth, and two gears mesh at centre distance module × (T₁+T₂) ÷ 2. Bigger module = bigger, chunkier teeth (stronger, easier to cut); smaller = finer teeth. It's the same "module" your machine's scale buttons change: ×½ halves it. Both meshing gears must share the same module.</div>
+  <div style="margin-top:14px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px" id="mtGrid">
+    <div>
+      <div class="clab" style="margin-bottom:4px">clearance to test</div>
+      <input type="range" id="mtTol" min="0" max="0.20" step="0.01" value="0.08" style="width:100%">
+      <div style="display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:11px;color:#8a7a58"><span>◀ tighter (stiff, precise)</span><span id="mtTolVal" style="color:#9a7220;font-weight:700">0.08 ×m</span><span>looser (free, slack) ▶</span></div>
+      <div class="cstage-top" style="margin-top:12px"><span class="clab">also cut ±</span><span class="cstep"><button data-mt="n-1">−</button><input type="number" id="mtN" value="5" min="1" max="5" step="1"><button data-mt="n1">＋</button></span><span class="clab">clearances to bracket it</span></div>
+      <div class="hint" id="mtValues" style="margin-top:8px"></div>
+      <button class="btn" id="mtDownload" style="padding:9px 16px;margin-top:8px">⬇ Download test SVG</button>
+    </div>
+    <div>
+      <div class="clab" style="margin-bottom:4px">live mesh — this is the gap you're setting</div>
+      <div style="background:#f7f2e6;border:1px solid #cbbf9f;border-radius:6px;padding:6px" id="mtCloseup"></div>
+      <div class="hint" style="margin-top:4px">Two teeth meshing at your clearance. The <span style="color:#2c5f8a;font-weight:700">blue gap</span> is the backlash — watch it open as you drag looser.</div>
+    </div>
+  </div>
+  <div style="margin-top:10px;background:#f7f2e6;border:1px solid #cbbf9f;border-radius:6px;overflow:auto;max-height:46vh" id="mtPreview"></div>
+</div>
+      </div>
+    </div>
     <div class="panel">
-      <div class="panel-h"><span>Project materials</span><span class="n">04</span></div>
+      <div class="panel-h"><span>Project materials</span><span class="n">05</span></div>
       <div class="panel-b">
         <div class="hint">Everything you need to buy or find before you start.</div>
         <div id="matSummary"></div>
@@ -960,7 +962,7 @@
     </div>
 
     <div class="panel">
-      <div class="panel-h"><span>Cut sheets</span><span class="n">05</span></div>
+      <div class="panel-h"><span>Cut sheets</span><span class="n">06</span></div>
       <div class="panel-b">
 <div class="export">
           <button class="btn" id="dlBtn">⬇ Reference sheet (annotated)</button>
@@ -1379,7 +1381,7 @@ function svgCircle(r,cx,cy){return `M ${(cx-r).toFixed(3)} ${cy.toFixed(3)} a ${
 
 /* ---- derived ---- */
 function module_mm(){return S.unit==='mm'?S.size:(MM_PER_IN/S.size);}
-function boreDia(){const b=BOLTS[S.unit].find(x=>x.k===S.bolt)||BOLTS[S.unit][3];return b[S.fit];}
+
 function gcd(a,b){return b?gcd(b,a%b):a;}
 function fmt(mm){return S.unit==='mm'?mm.toFixed(1)+' mm':(mm/MM_PER_IN).toFixed(3)+' in';}
 function hubR(){return Math.max(boreDia()*1.1,module_mm()*1.6);}
@@ -3012,7 +3014,7 @@ function cxPenHolder(){ const penR=Math.max((S.cx.penDia||10)/2,2.5);
 function cxLinkW(){ return Math.max(S.cx.linkW||12, boreDia()+3); }
 function cxBarSVG(A,B,w,fill){ if(!A||!B)return ''; const x1=A[0].toFixed(1),y1=(-A[1]).toFixed(1),x2=B[0].toFixed(1),y2=(-B[1]).toFixed(1);
   return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#23201a" stroke-width="${(w+1.6).toFixed(2)}" stroke-linecap="round"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${fill}" stroke-width="${w.toFixed(2)}" stroke-linecap="round"/>`; }
-function cxBaseHole(){ return (cxBrgMode()!=='none')?boreDia():cxDowelHole(); }
+function cxBaseHole(){ return (cxBrgMode()!=='none')?boardBoltHole():cxDowelHole(); }
 function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], buy=[];
   const gc={}; c.gears.forEach(g=>{gc[g.N]=(gc[g.N]||0)+1;});
   Object.keys(gc).map(Number).sort((a,b)=>a-b).forEach(N=>cut.push([`gear ${N}T`,gc[N],`⌀${fmt(m*(N+2))} · ${t}mm`]));
@@ -3958,6 +3960,75 @@ function renderMaterials(){ const el=document.getElementById('matSummary'); if(!
   el.innerHTML=`<dl class="mat-dl">`+rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('')+`</dl>`+
     (S.movement==='complex'?'':`<div class="hint" style="margin-top:8px">Switch to the <b>Complex Workbench</b> for a full itemised parts list with assembly notes.</div>`);
 }
+
+/* ---- what the build actually uses, and the two bolt fits ---- */
+function pUse(){ if(!S.use)S.use={bolts:true,dowels:true,bearings:cxBrgMode()!=='none',pencil:!!(S.cx&&S.cx.pen)};
+  return S.use; }
+function boltRow(){ return BOLTS[S.unit].find(x=>x.k===S.bolt)||BOLTS[S.unit][3]; }
+function boltNom(){ return (S.boltCustom!=null)?S.boltCustom:boltRow().nom; }
+function gearBoltHole(){ return (S.holeGear!=null)?S.holeGear:boltRow()[S.fit||'clr']; }
+function boardBoltHole(){ return (S.holeBoard!=null)?S.holeBoard:boltRow().snug; }
+function boreDia(){ return gearBoltHole(); }
+function num(id,val,step,min,max){ return `<input type="number" class="pnum" id="${id}" value="${val}" step="${step}" min="${min}" max="${max}">`; }
+function prow(label,sub,ctrl,unit){ return `<div class="prow"><label>${label}${sub?`<small>${sub}</small>`:''}</label><div style="white-space:nowrap">${ctrl}${unit?`<span class="punit">${unit}</span>`:''}</div></div>`; }
+
+function renderPrep(){ const host=document.getElementById('prepBody'); if(!host)return;
+  const U=pUse(), B=S.cx.bearing||(S.cx.bearing={mode:'none',od:8,hole:7.9});
+  const bl=cxBacklash(), unit=S.unit==='mm'?'mm':'in';
+
+  // A — laser
+  let A=`<div class="pcard"><div class="pcard-h"><span>Laser machine adjustments</span><em>set once per machine &amp; material</em></div>`
+   + prow('Kerf','How much width the beam burns away. Cut a test comb to measure yours.',num('kerf',S.kerf,0.01,0,0.6),unit)
+   + prow('Gear mesh clearance',`Backlash between teeth, as a fraction of module. <b>${(bl*((S.cx&&S.cx.m)||3)).toFixed(2)}mm</b> at this machine's module.`,num('backlash',bl.toFixed(2),0.01,0,0.3),'× module')
+   + `<div class="pnote">Measure kerf with the <a href="https://curiosity.diy" target="_blank">Kerf Comb Maker</a> on curiosity.diy. Find your mesh clearance with the <b>Gear Mesh Tester</b> in the next box.`
+   + (bl===0?`<div class="pwarn">⚠ Clearance 0 — gears will almost certainly seize.</div>`:'')
+   + `</div></div>`;
+
+  // B — hardware in use
+  const chk=(k,label)=>`<label class="pchk" data-on="${U[k]?1:0}"><input type="checkbox" data-puse="${k}" ${U[k]?'checked':''}>${label}</label>`;
+  let Bx=`<div class="pcard"><div class="pcard-h"><span>What this build uses</span><em>tick what you have</em></div>`
+   + `<div class="pchecks">${chk('bolts','Bolts')}${chk('dowels','Dowels')}${chk('bearings','Bearings')}${chk('pencil','Pen / pencil')}</div>`;
+
+  if(U.bolts){ const rows=BOLTS[S.unit].map(b=>`<option value="${b.k}"${S.bolt===b.k&&S.boltCustom==null?' selected':''}>${b.k} (⌀${b.nom}${unit})</option>`).join('');
+    Bx+=`<div class="psub"><div class="psub-h">Bolts — shafts &amp; pivots</div>`
+      + prow('Bolt size','Pick a standard size, or enter the exact diameter you have.',`<select class="psel" id="prepBoltSel">${rows}<option value="custom"${S.boltCustom!=null?' selected':''}>exact size…</option></select>`)
+      + (S.boltCustom!=null?prow('Exact bolt ⌀','Measured across the shank.',num('prepBoltDia',S.boltCustom,0.1,1,20),unit):'')
+      + prow('Hole in gears &amp; arms','Should turn freely on the bolt — a looser fit.',num('prepHoleGear',(+gearBoltHole()).toFixed(1),0.1,1,20),unit)
+      + prow('Hole in the baseplate','Should grip so the shaft cannot wander — a tighter fit.',num('prepHoleBoard',(+boardBoltHole()).toFixed(1),0.1,1,20),unit)
+      + `</div>`; }
+
+  if(U.dowels){ Bx+=`<div class="psub"><div class="psub-h">Dowels — pins &amp; standoff posts</div>`
+      + prow('Dowel ⌀','The rod you bought.',num('prepDowelD',S.dowelD,0.5,2,20),unit)
+      + prow('Hole to cut','A touch under the dowel so it presses in.',num('prepDowelHole',(+cxDowelHole()).toFixed(1),0.1,2,30),unit)
+      + `</div>`; }
+
+  if(U.bearings){ const presets=[[8,'8 (693 / MR83)'],[10,'10 (MR104)'],[11,'11 (695)'],[13,'13 (696)'],[16,'16 (688)'],[19,'19 (698)'],[22,'22 (6900)'],[26,'26 (6000)']];
+    const sel=presets.some(x=>x[0]===B.od)&&!B.custom?B.od:'custom';
+    Bx+=`<div class="psub"><div class="psub-h">Bearings</div>`
+      + prow('Where','Gears alone, or rod pivots as well.',`<select class="psel" id="prepBrgMode"><option value="gears"${cxBrgMode()!=='gearsRods'?' selected':''}>In the gears</option><option value="gearsRods"${cxBrgMode()==='gearsRods'?' selected':''}>Gears + rod pivots</option></select>`)
+      + prow('Bearing outside ⌀','What you bought.',`<select class="psel" id="prepBrgSel">${presets.map(x=>`<option value="${x[0]}"${sel===x[0]?' selected':''}>${x[1]}</option>`).join('')}<option value="custom"${sel==='custom'?' selected':''}>exact size…</option></select>`)
+      + (sel==='custom'?prow('Exact bearing ⌀','Measured.',num('prepBrgOD',B.od,0.1,4,80),unit):'')
+      + prow('Hole to cut','A touch under the bearing so it presses in.',num('prepBrgHole',(+cxBearingHole()).toFixed(1),0.1,4,80),unit)
+      + `</div>`; }
+
+  if(U.pencil){ const pn=cxPenSides();
+    const btns=[['0','round'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8']].map(o=>`<button class="chip" data-cxpshape="${o[0]}" aria-pressed="${(+o[0]===pn||(o[0]==='0'&&pn<3))?'true':'false'}" style="padding:4px 9px;cursor:pointer">${o[1]}</button>`).join('');
+    Bx+=`<div class="psub"><div class="psub-h">Pen / pencil</div>`
+      + prow('Hole shape',pn>=3?`${CX_SIDE_NAME[pn]} — measured across the flats, grips a hex pencil.`:'Round barrels.',`<span style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:210px">${btns}</span>`)
+      + prow(`Pen ${pn<3?'⌀':'across flats'}`,'The hole cut in the collar — set it to the size that grips.',num('prepPenDia',S.cx.penDia||10,0.1,2,30),unit)
+      + `</div>`; }
+  Bx+=`</div>`;
+
+  // C — backboard
+  let C=`<div class="pcard"><div class="pcard-h"><span>Preparing the backboard</span><em>the plate everything mounts on</em></div>`
+   + `<div class="pnote" style="margin-top:0">Shaft holes in the baseplate are cut at <b>⌀${(+boardBoltHole()).toFixed(1)}${unit}</b>${cxBrgMode()==='none'?` (or ⌀${(+cxDowelHole()).toFixed(1)}${unit} where a dowel is the shaft)`:''}. Overall plate size is set in <b>01 Set up the scale</b>.</div>`
+   + `<div id="cxSplitSlot" style="margin-top:10px"></div></div>`;
+
+  host.innerHTML=A+Bx+C;
+  const slot=document.getElementById('cxSplitSlot'), sp=document.getElementById('cxSplit');
+  if(slot&&sp)slot.appendChild(sp);
+}
+
 function renderCutSheet(){
   const view=document.getElementById('cutSheetView'); if(!view)return;
   const sz=(document.getElementById('sheetSize').value||'400x300').split('x').map(Number), sw=sz[0], sh=sz[1], gap=6, CUT='#bf3a2b';
@@ -3995,6 +4066,36 @@ function renderCutSheet(){
     if(which==='all')ns.sheets.forEach(sh=>dlSVG(sh.name,sh.svg)); else { const sh=ns.sheets[+which]; if(sh)dlSVG(sh.name,sh.svg); } }));
 }
 function cutSheetOpen(){ const p=document.getElementById('cutSheetPanel'); return p&&!p.classList.contains('hide'); }
+
+(function(){ const host=document.getElementById('prepBody'); if(!host)return;
+  const setv=(o,k,v,min,max)=>{ const n=+v; if(!isFinite(n))return; o[k]=Math.max(min,Math.min(max,Math.round(n*100)/100)); };
+  host.addEventListener('input',e=>{ const t=e.target, id=t.id;
+    if(id==='kerf'){ S.kerf=Math.max(0,Math.min(0.6,+t.value||0)); everything(); return; }
+    if(id==='backlash'){ S.cx.backlash=Math.max(0,Math.min(0.3,+t.value||0)); renderPrep(); everything(); try{renderComplexUI();}catch(_){} return; }
+    if(id==='prepBoltDia'){ S.boltCustom=Math.max(1,Math.min(20,+t.value||boltNom())); everything(); return; }
+    if(id==='prepHoleGear'){ S.holeGear=Math.max(1,Math.min(20,+t.value||gearBoltHole())); everything(); return; }
+    if(id==='prepHoleBoard'){ S.holeBoard=Math.max(1,Math.min(20,+t.value||boardBoltHole())); everything(); return; }
+    if(id==='prepDowelD'){ S.dowelD=Math.max(2,Math.min(20,+t.value||S.dowelD)); everything(); return; }
+    if(id==='prepDowelHole'){ S.cx.dowelHole=Math.max(2,Math.min(30,+t.value||cxDowelHole())); everything(); return; }
+    if(id==='prepBrgOD'){ S.cx.bearing.od=Math.max(4,Math.min(80,+t.value||S.cx.bearing.od)); S.cx.bearing.custom=true; everything(); return; }
+    if(id==='prepBrgHole'){ S.cx.bearing.hole=Math.max(4,Math.min(80,+t.value||cxBearingHole())); everything(); return; }
+    if(id==='prepPenDia'){ S.cx.penDia=Math.max(2,Math.min(30,+t.value||S.cx.penDia||10)); everything(); return; }
+  });
+  host.addEventListener('change',e=>{ const t=e.target, id=t.id;
+    if(t.dataset && t.dataset.puse){ const U=pUse(), k=t.dataset.puse; U[k]=t.checked;
+      if(k==='bearings'){ S.cx.bearing=S.cx.bearing||{od:8,hole:7.9}; if(!t.checked)S.cx.bearing.mode='none';
+        else if(cxBrgMode()==='none'){ S.cx.bearing.mode='gears'; if(S.cx.bearing.hole==null)S.cx.bearing.hole=S.cx.bearing.od||8; } }
+      renderPrep(); everything(); try{renderComplexUI();}catch(_){} return; }
+    if(id==='prepBoltSel'){ if(t.value==='custom'){ S.boltCustom=boltNom(); } else { S.boltCustom=null; S.bolt=t.value; S.holeGear=null; S.holeBoard=null; }
+      renderPrep(); everything(); return; }
+    if(id==='prepBrgMode'){ S.cx.bearing.mode=t.value; renderPrep(); everything(); try{renderComplexUI();}catch(_){} return; }
+    if(id==='prepBrgSel'){ if(t.value==='custom'){ S.cx.bearing.custom=true; } else { S.cx.bearing.od=+t.value; S.cx.bearing.hole=+t.value; S.cx.bearing.custom=false; }
+      renderPrep(); everything(); try{renderComplexUI();}catch(_){} return; }
+  });
+  host.addEventListener('click',e=>{ const b=e.target.closest('[data-cxpshape]'); if(!b)return;
+    S.cx.penSides=+b.dataset.cxpshape; renderPrep(); everything(); try{renderComplexUI();}catch(_){} });
+})();
+
 function everything(){updateReadout();if(S.view==='3d'&&GL&&GL.ok)rebuild3D();else drawPreview();try{renderMaterials();}catch(_){} if(cutSheetOpen())renderCutSheet();}
 
 /* gear list rendering */
@@ -4031,16 +4132,17 @@ document.getElementById('addGear').addEventListener('click',()=>{
   renderGearList(); everything();
 });
 
-function refreshBolts(){const sel=document.getElementById('bolt');sel.innerHTML=BOLTS[S.unit].map(b=>`<option value="${b.k}">${b.k}</option>`).join('');
+function setTxt(id,t){const e=document.getElementById(id); if(e)e.textContent=t;}
+function refreshBolts(){const sel=document.getElementById('bolt');if(!sel)return;sel.innerHTML=BOLTS[S.unit].map(b=>`<option value="${b.k}">${b.k}</option>`).join('');
   if(!BOLTS[S.unit].find(b=>b.k===S.bolt))S.bolt=BOLTS[S.unit][3].k;sel.value=S.bolt;}
 function syncSizeUI(){
   const lab=document.getElementById('sizeLab'),val=document.getElementById('sizeVal'),rng=document.getElementById('sizeRange'),hint=document.getElementById('sizeHint');
   if(S.unit==='mm'){lab.textContent='Module (tooth size)';rng.min=1;rng.max=12;rng.step=0.5;val.textContent=S.size+' mm';
     hint.textContent='Every gear shares one module so they all mesh.';
-    document.getElementById('thickVal').textContent=S.thick+' mm';document.getElementById('kerfVal').textContent=S.kerf+' mm';document.getElementById('marginVal').textContent=S.margin+' mm';}
+    setTxt('thickVal',S.thick+' mm');setTxt('kerfVal',S.kerf+' mm');setTxt('marginVal',S.margin+' mm');}
   else{lab.textContent='Diametral pitch (DP)';rng.min=4;rng.max=24;rng.step=1;val.textContent=S.size+' DP';
     hint.textContent='Diametral pitch = teeth per inch of pitch Ø.';
-    document.getElementById('thickVal').textContent=(+S.thick).toFixed(3)+' in';document.getElementById('kerfVal').textContent=(+S.kerf).toFixed(3)+' in';document.getElementById('marginVal').textContent=(S.margin/MM_PER_IN).toFixed(2)+' in';}
+    setTxt('thickVal',(+S.thick).toFixed(3)+' in');setTxt('kerfVal',(+S.kerf).toFixed(3)+' in');document.getElementById('marginVal').textContent=(S.margin/MM_PER_IN).toFixed(2)+' in';}
   syncCrankVals();
   syncCamVals();
   syncRackVals();
@@ -4104,12 +4206,12 @@ function refreshBaseInputs(){
 }
 
 document.getElementById('viewSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.view=b.dataset.v;applyView();});
-document.getElementById('sizeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.psize=b.dataset.z;applySize();});
+(function(){const el=document.getElementById('sizeSeg'); if(el)el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.psize=b.dataset.z;applySize();});})();
 document.getElementById('unitSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const nu=b.dataset.u;if(nu===S.unit)return;
   [...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));
   if(nu==='in'){S.size=16;document.getElementById('sizeRange').value=16;S.thick=+(S.thick/MM_PER_IN).toFixed(3);S.kerf=+(S.kerf/MM_PER_IN).toFixed(3);}
   else{S.size=6;document.getElementById('sizeRange').value=6;S.thick=+(S.thick*MM_PER_IN).toFixed(1);S.kerf=+(S.kerf*MM_PER_IN).toFixed(2);}
-  S.unit=nu;document.getElementById('thick').value=S.thick;document.getElementById('kerf').value=S.kerf;refreshBolts();syncSizeUI();everything();});
+  S.unit=nu;{const th=document.getElementById('thick');if(th)th.value=S.thick;}refreshBolts();try{renderPrep();}catch(_){}syncSizeUI();everything();});
 document.getElementById('sizeRange').addEventListener('input',e=>{S.size=+e.target.value;document.getElementById('sizeVal').textContent=S.unit==='mm'?S.size+' mm':S.size+' DP';everything();});
 document.getElementById('bend').addEventListener('input',e=>{S.bend=+e.target.value;document.getElementById('bendVal').textContent=S.bend+'°';everything();});
 document.getElementById('paSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.pa=+b.dataset.pa;everything();});
@@ -4212,9 +4314,10 @@ document.getElementById('mvComplex').addEventListener('click',e=>{const b=e.targ
 (function(){ const panel=document.getElementById('meshTestPanel');
   const clampSet=(id,d,mn,mx)=>{const e=document.getElementById(id);if(!e)return;e.value=Math.max(mn,Math.min(mx,Math.round((((+e.value)||0)+d)*100)/100));};
   const openPanel=()=>{ panel.classList.remove('hide');
-    document.querySelectorAll('#moveNav .mtab').forEach(t=>{const on=(t.id==='meshTestTab');t.classList.toggle('active',on);t.setAttribute('aria-pressed',on?'true':'false');}); const mm=document.getElementById('mtM'); if(mm&&S.cx&&S.cx.m)mm.value=S.cx.m; renderMeshTest(); if(!mtRAF)mtAnimate(); panel.scrollIntoView({behavior:'smooth',block:'start'}); };
-  const btn=document.getElementById('meshTestBtn'); if(btn)btn.addEventListener('click',()=>{ if(panel.classList.contains('hide'))openPanel(); else panel.classList.add('hide'); });
-  const tab=document.getElementById('meshTestTab'); if(tab)tab.addEventListener('click',openPanel);
+    document.querySelectorAll('#moveNav .mtab').forEach(t=>{const on=(t.id==='meshTestTab'||t.id==='meshTestTab2');t.classList.toggle('active',on);t.setAttribute('aria-pressed',on?'true':'false');}); const mm=document.getElementById('mtM'); if(mm&&S.cx&&S.cx.m)mm.value=S.cx.m; renderMeshTest(); if(!mtRAF)mtAnimate(); panel.scrollIntoView({behavior:'smooth',block:'start'}); };
+  ['meshTestBtn','meshTestReveal'].forEach(id=>{ const b=document.getElementById(id);
+    if(b)b.addEventListener('click',()=>{ if(panel.classList.contains('hide'))openPanel(); else panel.classList.add('hide'); }); });
+  ['meshTestTab','meshTestTab2'].forEach(id=>{ const t=document.getElementById(id); if(t)t.addEventListener('click',openPanel); });
   const cl=document.getElementById('meshTestClose'); if(cl)cl.addEventListener('click',()=>panel.classList.add('hide'));
   const mh=document.getElementById('mtModHelp'); if(mh)mh.addEventListener('click',()=>document.getElementById('mtModExplain').classList.toggle('hide'));
   const match=document.getElementById('mtMatch'); if(match)match.addEventListener('click',()=>{ const mm=document.getElementById('mtM'); if(mm){mm.value=(S.cx&&S.cx.m)||3;} const tl=document.getElementById('mtTol'); if(tl)tl.value=cxBacklash(); renderMeshTest(); });
@@ -4286,10 +4389,10 @@ document.getElementById('chainList').addEventListener('click',e=>{const b=e.targ
   renderChainUI();everything();});
 document.getElementById('spokeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.spokes=+b.dataset.s;everything();});
 document.getElementById('thick').addEventListener('input',e=>{S.thick=+e.target.value;document.getElementById('thickVal').textContent=S.unit==='mm'?S.thick+' mm':(+S.thick).toFixed(3)+' in';everything();});
-document.getElementById('kerf').addEventListener('input',e=>{S.kerf=+e.target.value;document.getElementById('kerfVal').textContent=S.unit==='mm'?S.kerf+' mm':(+S.kerf).toFixed(3)+' in';});
-document.getElementById('backlash').addEventListener('input',e=>{ const v=+e.target.value; S.cx.backlash=Math.max(0,Math.min(0.3,isNaN(v)?0.08:v)); syncBacklashUI(); everything(); try{renderComplexUI();}catch(_){} });
-document.getElementById('brgModeG').addEventListener('change',e=>{ S.cx.bearing=S.cx.bearing||{od:8,hole:7.9}; S.cx.bearing.mode=e.target.value; syncBearingUI(); everything(); try{renderComplexUI();}catch(_){} });
-document.getElementById('brgHoleG').addEventListener('input',e=>{ const v=+e.target.value; S.cx.bearing=S.cx.bearing||{od:8,mode:'none'}; if(!isNaN(v))S.cx.bearing.hole=Math.max(4,Math.min(80,v)); S.cx.bearing.custom=true; syncBearingUI(); everything(); try{renderComplexUI();}catch(_){} });
+/* replaced by delegated prep handlers */ void 0;
+/* replaced by delegated prep handlers */ void 0;
+/* replaced by delegated prep handlers */ void 0;
+/* replaced by delegated prep handlers */ void 0;
 function syncBearingUI(){ const B=S.cx.bearing||{mode:'none',od:8,hole:7.9}, on=cxBrgMode()!=='none';
   const sel=document.getElementById('brgModeG'), inp=document.getElementById('brgHoleG'), val=document.getElementById('brgHoleGVal'), h=document.getElementById('brgHintG');
   if(sel&&document.activeElement!==sel)sel.value=cxBrgMode();
@@ -4300,8 +4403,8 @@ function syncBacklashUI(){ const b=cxBacklash(), el=document.getElementById('blV
   if(inp&&document.activeElement!==inp)inp.value=b.toFixed(2);
   if(el)el.textContent=b.toFixed(2)+' \u00d7 module';
   if(h)h.innerHTML='Backlash between meshing teeth, as a fraction of module \u2014 so the fit holds at any size. '+(b===0?'<b style="color:#bf3a2b">0 \u2014 no clearance, gears will likely seize.</b>':b<0.05?'<b>Tight</b> \u2014 precise but stiff in ply.':b<=0.15?'<b>Good running fit for laser-cut ply.</b>':'<b>Loose</b> \u2014 free-running, more play in a drawing.')+' Applies to every gear, rack and ring in the tool.'; }
-document.getElementById('bolt').addEventListener('change',e=>{S.bolt=e.target.value;everything();});
-document.getElementById('fit').addEventListener('change',e=>{S.fit=e.target.value;everything();});
+/* replaced by delegated prep handlers */ void 0;
+/* replaced by delegated prep handlers */ void 0;
 document.getElementById('baseChk').addEventListener('change',e=>{S.base=e.target.checked;document.getElementById('baseCtl').classList.toggle('subtle',!S.base);everything();});
 document.getElementById('margin').addEventListener('input',e=>{S.margin=+e.target.value;document.getElementById('marginVal').textContent=S.unit==='mm'?S.margin+' mm':(S.margin/MM_PER_IN).toFixed(2)+' in';everything();});
 document.getElementById('baseModeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.baseMode=b.dataset.bm;
@@ -4311,7 +4414,7 @@ document.getElementById('baseW').addEventListener('input',e=>{const v=parseFloat
 document.getElementById('baseH').addEventListener('input',e=>{const v=parseFloat(e.target.value)||0;S.baseH=S.unit==='mm'?v:v*MM_PER_IN;everything();});
 
 document.getElementById('playBtn').addEventListener('click',e=>{S.playing=!S.playing;e.target.textContent=S.playing?'⏸ pause':'▶ play';e.target.setAttribute('aria-pressed',S.playing);if(GL&&GL.ok)GL.setPlaying(S.playing);});
-function updateDirBtn(){ const b=document.getElementById('dirBtn'); if(b)b.textContent=(S.dir<0)?'⟲ reverse':'⟳ forward'; }
+function updateDirBtn(){ const b=document.getElementById('dirBtn'); if(!b)return; b.textContent=(S.dir<0)?'⟲ reverse':'⟳ forward'; b.setAttribute('aria-pressed','true'); }
 document.getElementById('dirBtn').addEventListener('click',()=>{S.dir*=-1;if(GL&&GL.ok)GL.setDir(S.dir);updateDirBtn();});
 updateDirBtn();
 document.getElementById('dlBtn').addEventListener('click',()=>{const svg=buildExportSVG();const blob=new Blob([svg],{type:'image/svg+xml'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=(S.movement==='composer'?`contraption_chain_${S.chain.map(s=>s.type.slice(0,3)).join('-')}`:S.movement==='fourbar'?`contraption_linkage_${Math.round(S.fbFrame)}_${Math.round(S.fbCrank)}_${Math.round(S.fbCoupler)}_${Math.round(S.fbRocker)}`:S.movement==='planetary'?`contraption_planetary_${S.plNs}_${S.plNp}_${S.plP}p`:S.movement==='internal'?`contraption_internalgear_${S.igNr}_${S.igNp}T`:S.movement==='scotch'?`contraption_scotchyoke_r${Math.round(S.scotchR)}`:S.movement==='ratchet'?`contraption_ratchet_${S.ratN}T`:S.movement==='rack'?`contraption_rackpinion_N${S.rpN}_${S.rackT}T`:S.movement==='cam'?`contraption_cam_${S.camLaw}_lift${Math.round(S.camLift)}`:S.movement==='crank'?`contraption_crank_r${Math.round(S.crankR)}_L${Math.round(S.rodL)}`:`contraption_train_${S.gears.join('-')}`)+'.svg';a.click();URL.revokeObjectURL(url);});
@@ -4329,14 +4432,14 @@ function applyLoadedState(){
   const baseChk=document.getElementById('baseChk'); if(baseChk)baseChk.checked=!!S.base;
   document.querySelectorAll('.controls input').forEach(inp=>{ if(!inp.id||inp.type==='checkbox'||inp.type==='file')return; if(S[inp.id]!==undefined&&document.activeElement!==inp)inp.value=S[inp.id]; });
   const seg=(id,attr,val)=>{const e=document.getElementById(id); if(!e)return; [...e.children].forEach(b=>{ if(b.dataset&&b.dataset[attr]!==undefined)b.setAttribute('aria-pressed',String(b.dataset[attr])===String(val)); });};
-  seg('viewSeg','v',S.view); seg('sizeSeg','z',S.psize); seg('camLawSeg','law',S.camLaw); seg('spokeSeg','s',S.spokes); seg('cmpLayoutSeg','l',S.cmpLayout); seg('cmpCoupleSeg','c',S.cmpCouple);
+  seg('viewSeg','v',S.view); seg('camLawSeg','law',S.camLaw); seg('spokeSeg','s',S.spokes); seg('cmpLayoutSeg','l',S.cmpLayout); seg('cmpCoupleSeg','c',S.cmpCouple);
   [syncSizeUI,syncFourbarVals,syncPlanetaryVals,syncInternalVals,syncScotchVals,syncRatchetVals,syncRackVals,syncCrankVals,syncCamVals,refreshBaseInputs].forEach(f=>{try{f&&f();}catch(_){}});
   try{renderGearList();}catch(_){}
   const tv=document.getElementById('thickVal'); if(tv)tv.textContent=S.unit==='mm'?S.thick+' mm':(+S.thick).toFixed(3)+' in';
   const mgv=document.getElementById('marginVal'); if(mgv&&S.margin!=null)mgv.textContent=S.unit==='mm'?S.margin+' mm':(S.margin/MM_PER_IN).toFixed(2)+' in';
   const bw=S.baseW, bh=S.baseH, m=S.movement||'gearing'; S.movement='__reload__'; setMovement(m); S.baseW=bw; S.baseH=bh;
   try{renderChainUI();}catch(_){} try{renderComplexUI();}catch(_){}
-  applyView(); applySize(); everything(); updateDirBtn(); try{syncBacklashUI();syncBearingUI();}catch(_){} if(S.view==='3d'&&GL&&GL.ok)rebuild3D();
+  applyView(); applySize(); everything(); updateDirBtn(); try{renderPrep();}catch(_){} if(S.view==='3d'&&GL&&GL.ok)rebuild3D();
   const pm=document.getElementById('projMsg'); if(pm)pm.textContent='loaded ✓'; setTimeout(()=>{const e=document.getElementById('projMsg');if(e)e.textContent='';},1800);
 }
 document.getElementById('saveProjBtn').addEventListener('click',saveProject);
@@ -4382,7 +4485,6 @@ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){S.playing=fals
 function setMovement(m){ resetSvgView();
   if(m===S.movement)return;
   S.movement=m; S.baseW=0; S.baseH=0;
-  { const mp=document.getElementById('meshTestPanel'); if(mp)mp.classList.add('hide'); }
   document.querySelectorAll('#moveNav .mtab').forEach(t=>{const on=t.dataset.m===m;t.classList.toggle('active',on);t.setAttribute('aria-pressed',on?'true':'false');});
   syncMode(m);
   document.getElementById('mvGearing').classList.toggle('hide',m!=='gearing');
@@ -4429,7 +4531,7 @@ document.getElementById('shrinkBtn').addEventListener('click',()=>{document.quer
 
 (function(){const cm=document.querySelector('.ccmain'),hero=document.querySelector('.hero'),csp=document.getElementById('cutSheetPanel');
   if(cm&&hero){const col=document.createElement('div');col.className='leftcol';cm.insertBefore(col,hero);col.appendChild(hero);if(csp)col.appendChild(csp);}})();
-renderGearList();refreshBolts();syncSizeUI();try{syncBacklashUI();syncBearingUI();}catch(_){} updateReadout();applySize();applyView();
+renderGearList();refreshBolts();syncSizeUI();try{renderPrep();}catch(_){} updateReadout();applySize();applyView();
 </script>
 </body>
 </html>
