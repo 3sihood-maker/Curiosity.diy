@@ -369,10 +369,16 @@
     <div class="prow"><label>Pen colour</label><div><input type="color" id="patPen" value="#1a2e6b" style="width:52px;height:34px;padding:2px;border:1px solid var(--ink);border-radius:8px;background:none"></div></div>
     <div class="prow"><label>Background colour</label><div><input type="color" id="patBg" value="#faf6ec" style="width:52px;height:34px;padding:2px;border:1px solid var(--ink);border-radius:8px;background:none"></div></div>
     <div class="prow"><label>Line weight</label><div><input type="range" id="patLw" min="0.5" max="6" step="0.5" value="2" style="width:130px"></div></div>
+    <div class="prow"><label>Simplify<small id="patSimpVal">off — every point kept</small></label><div><input type="range" id="patSimp" min="0" max="0.6" step="0.01" value="0.15" style="width:130px"></div></div>
     <div class="prow"><label>Image size</label><div><select class="psel" id="patPx"><option value="1000">1000 px</option><option value="2000" selected>2000 px</option><option value="4000">4000 px</option></select></div></div>
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <button class="btn" id="patSave">⬇ Save JPG</button>
       <button class="btn ghost" id="patSwap">⇄ Swap colours</button>
+      <button class="btn ghost" id="patSvg">⬇ Save SVG (line)</button>
+    </div>
+    <div class="hint" style="margin-top:8px"><label style="display:flex;align-items:center;gap:7px;cursor:pointer">
+      <input type="checkbox" id="patSvgBg" style="width:auto;accent-color:var(--brass)">background in the SVG</label>
+      The SVG is the pen's actual path — one continuous line at true size in millimetres. Leave the background off to engrave or plot just the line. <b>Simplify</b> drops points that sit within the tolerance of the line they're on — at half a line-width it is invisible but roughly halves the file, which cuts engraving time.
     </div>
   </div>
 </div>
@@ -4238,21 +4244,29 @@ function cxPatternLayout(ink,px,marginPct){ let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e
   return {scale, w, h, minX:mnx, minY:mny, px,
           ox:(px-w*scale)/2 - mnx*scale, oy:(px-h*scale)/2 - mny*scale, points:n}; }
 function cxPatternRender(cv,o){ const c=computeComplex(); let dr; try{ dr=cxDrawing(c); }catch(_){ return false; }
-  const L=cxPatternLayout(dr.ink,o.px,0.06); if(!L)return false;
+  const ink=cxSimplifyInk(dr.ink,o.simplify||0);
+  const L=cxPatternLayout(ink,o.px,0.06); if(!L)return false;
   cv.width=o.px; cv.height=o.px; const g=cv.getContext('2d'); if(!g)return false;
   g.fillStyle=o.bgCol; g.fillRect(0,0,o.px,o.px);
   g.strokeStyle=o.penCol; g.lineWidth=Math.max(0.2,o.lw*o.px/1000); g.lineJoin='round'; g.lineCap='round';
   g.beginPath(); let pen=false;
-  dr.ink.forEach(q=>{ if(!q){pen=false;return;} const X=L.ox+q[0]*L.scale, Y=o.px-(L.oy+q[1]*L.scale);
+  ink.forEach(q=>{ if(!q){pen=false;return;} const X=L.ox+q[0]*L.scale, Y=o.px-(L.oy+q[1]*L.scale);
     if(!pen){ g.moveTo(X,Y); pen=true; } else g.lineTo(X,Y); });
   g.stroke(); return true; }
 function cxPatternOpts(){ const v=id=>{const e=document.getElementById(id);return e?e.value:null;};
   return { penCol:v('patPen')||'#1a2e6b', bgCol:v('patBg')||'#faf6ec',
-           lw:+(v('patLw')||2), px:+(v('patPx')||2000) }; }
+           lw:+(v('patLw')||2), px:+(v('patPx')||2000),
+           simplify:(()=>{const e=document.getElementById('patSimp');return e?+e.value:0.15;})() }; }
 function cxPatternPreview(){ const cv=document.getElementById('patCanvas'); if(!cv)return;
   const o=cxPatternOpts(); o.px=Math.min(o.px,900);
   const ok=cxPatternRender(cv,o); const msg=document.getElementById('patMsg');
-  if(msg)msg.textContent=ok?'':'Add a pen to the machine first — there is no drawing to export yet.'; }
+  if(msg)msg.textContent=ok?'':'Add a pen to the machine first — there is no drawing to export yet.';
+  const sv=document.getElementById('patSimpVal');
+  if(sv){ const r=cxPatternSVG({penCol:'#000',bgCol:'#fff',lw:o.lw,simplify:o.simplify});
+    if(!r)sv.textContent='';
+    else if(!(o.simplify>0))sv.textContent=`off — all ${r.points.toLocaleString()} points kept`;
+    else { const cut=Math.round((1-r.points/r.rawPoints)*100);
+      sv.innerHTML=`${o.simplify.toFixed(2)}mm tolerance — <b>${r.rawPoints.toLocaleString()} → ${r.points.toLocaleString()}</b> points (${cut}% smaller)`; } } }
 function dataUrlToBytes(url){ const b64=url.split(',')[1], bin=atob(b64), n=bin.length, a=new Uint8Array(n);
   for(let i=0;i<n;i++)a[i]=bin.charCodeAt(i); return a; }
 function canSharePhotos(){ try{ if(!(navigator.canShare&&navigator.share))return false;
@@ -4260,6 +4274,52 @@ function canSharePhotos(){ try{ if(!(navigator.canShare&&navigator.share))return
     return navigator.canShare({files:[probe]}); }catch(_){ return false; } }
 /* Saving must stay inside the click gesture for iOS, so everything here is synchronous
    up to the share() call — toDataURL is sync, unlike toBlob. */
+// The pen path as a real continuous stroke, at true size in millimetres — good for
+// pen plotters and for engraving, where the laser follows the line rather than filling it.
+// Ramer–Douglas–Peucker: drop points that sit within `eps` mm of the line they lie on.
+// Iterative, so a 14,000-point trace can't blow the stack.
+function rdpSimplify(pts,eps){ const n=pts.length; if(n<3||!(eps>0))return pts;
+  const keep=new Uint8Array(n); keep[0]=1; keep[n-1]=1; const stack=[[0,n-1]];
+  while(stack.length){ const seg=stack.pop(), a=seg[0], b=seg[1]; if(b<=a+1)continue;
+    const ax=pts[a][0], ay=pts[a][1]; let dx=pts[b][0]-ax, dy=pts[b][1]-ay;
+    const L=Math.hypot(dx,dy); let best=-1, bd=eps;
+    if(L<1e-12){ for(let i=a+1;i<b;i++){ const d=Math.hypot(pts[i][0]-ax,pts[i][1]-ay); if(d>bd){bd=d;best=i;} } }
+    else { dx/=L; dy/=L;
+      for(let i=a+1;i<b;i++){ const d=Math.abs((pts[i][0]-ax)*dy-(pts[i][1]-ay)*dx); if(d>bd){bd=d;best=i;} } }
+    if(best>=0){ keep[best]=1; stack.push([a,best],[best,b]); } }
+  const out=[]; for(let i=0;i<n;i++)if(keep[i])out.push(pts[i]); return out; }
+function cxSimplifyInk(ink,eps){ if(!(eps>0))return ink;
+  const out=[]; let run=[];
+  const flush=()=>{ if(run.length){ rdpSimplify(run,eps).forEach(q=>out.push(q)); run=[]; } };
+  ink.forEach(q=>{ if(!q){ flush(); out.push(null); } else run.push(q); }); flush();
+  return out; }
+function cxPatternSVG(o){ const c=computeComplex(); let dr; try{ dr=cxDrawing(c); }catch(_){ return null; }
+  const rawN=dr.ink.filter(q=>q).length;
+  const ink=cxSimplifyInk(dr.ink,o.simplify||0);
+  const L=cxPatternLayout(ink,1000,0); if(!L)return null;
+  const pad=Math.max(2,(o.lw||2)*0.15*2), w=L.w+2*pad, h=L.h+2*pad;
+  const X=q=>(q[0]-L.minX+pad), Y=q=>(h-(q[1]-L.minY+pad));   // flip so it reads the same way up
+  let d='', runs=0, pts=0, pen=false, last=null;
+  const minStep=0.02;                                  // drop duplicate points, keep the shape
+  ink.forEach(q=>{ if(!q){ pen=false; last=null; return; }
+    const x=X(q), y=Y(q);
+    if(!pen){ d+=`M${x.toFixed(2)} ${y.toFixed(2)}`; pen=true; runs++; pts++; last=[x,y]; return; }
+    if(last&&Math.hypot(x-last[0],y-last[1])<minStep)return;
+    d+=`L${x.toFixed(2)} ${y.toFixed(2)}`; pts++; last=[x,y]; });
+  if(!pts)return null;
+  const swmm=Math.max(0.05,(o.lw||2)*0.15);
+  const bg=o.bg?`<rect x="0" y="0" width="${w.toFixed(2)}" height="${h.toFixed(2)}" fill="${o.bgCol}"/>`:'';
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w.toFixed(2)}mm" height="${h.toFixed(2)}mm" `+
+    `viewBox="0 0 ${w.toFixed(2)} ${h.toFixed(2)}">${bg}`+
+    `<path d="${d}" fill="none" stroke="${o.penCol}" stroke-width="${swmm.toFixed(2)}" `+
+    `stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return {svg, w, h, runs, points:pts, rawPoints:rawN, sw:swmm, bytes:svg.length}; }
+function cxPatternSaveSVG(){ const o=cxPatternOpts(); o.bg=!!(document.getElementById('patSvgBg')||{}).checked;
+  const r=cxPatternSVG(o); const msg=document.getElementById('patMsg');
+  if(!r){ if(msg)msg.textContent='No drawing to export yet.'; return; }
+  dlSVG(`pattern_${Math.round(r.w)}x${Math.round(r.h)}mm`, r.svg);
+  if(msg)msg.innerHTML=`Saved <b>${r.w.toFixed(0)} × ${r.h.toFixed(0)} mm</b> at true size \u00b7 `+
+    `${r.runs===1?'one continuous line':r.runs+' strokes'} \u00b7 ${r.points.toLocaleString()} points \u00b7 ${r.sw.toFixed(2)}mm wide.`; }
 function cxPatternSave(){ const o=cxPatternOpts(), cv=document.createElement('canvas');
   if(!cxPatternRender(cv,o))return;
   const name='pattern_'+o.px+'px.jpg';
@@ -4358,9 +4418,10 @@ function cutSheetOpen(){ const p=document.getElementById('cutSheetPanel'); retur
   document.addEventListener('click',e=>{ const b=e.target.closest('#patOpen'); if(b){ open(); } });
   const cl=document.getElementById('patClose'); if(cl)cl.addEventListener('click',close);
   ov.addEventListener('click',e=>{ if(e.target===ov)close(); });
-  ov.addEventListener('input',e=>{ if(['patPen','patBg','patLw','patPx'].includes(e.target.id))cxPatternPreview(); });
-  ov.addEventListener('change',e=>{ if(['patPen','patBg','patLw','patPx'].includes(e.target.id))cxPatternPreview(); });
+  ov.addEventListener('input',e=>{ if(['patPen','patBg','patLw','patPx','patSimp'].includes(e.target.id))cxPatternPreview(); });
+  ov.addEventListener('change',e=>{ if(['patPen','patBg','patLw','patPx','patSimp'].includes(e.target.id))cxPatternPreview(); });
   const sv=document.getElementById('patSave'); if(sv)sv.addEventListener('click',cxPatternSave);
+  const sg=document.getElementById('patSvg'); if(sg)sg.addEventListener('click',cxPatternSaveSVG);
   const sw=document.getElementById('patSwap'); if(sw)sw.addEventListener('click',()=>{
     const p=document.getElementById('patPen'), b=document.getElementById('patBg');
     if(p&&b){ const t=p.value; p.value=b.value; b.value=t; cxPatternPreview(); } });
