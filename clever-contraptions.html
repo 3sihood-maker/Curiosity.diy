@@ -434,8 +434,15 @@
 <ul class="mn-ul"><li>A <b>pen</b> can ride on a gear pin, a linkage joint, or part-way along an arm.</li><li><b>Arms</b> pivot on joints. A <b>branch</b> is glued rigidly to an arm — it is not a pivot — and carries the pen at its tip.</li><li>The <b>pen collar</b> is a teardrop piece: the pen drops through the hole at the round end, and the narrow end bolts to the branch tip.</li><li>The pen hole can be round or a 3-8 sided polygon, measured across the flats — so a hex hole grips a hex pencil.</li></ul>
 <h4 class="mn-h2">Reading the drawing</h4>
 <p class="mn-p">A <b>closed</b> figure repeats after a set number of turns. An <b>open</b> figure never quite closes, so it weaves denser the longer it runs — set <b>run for N turns</b> to control how much it fills in.</p>
+<h4 class="mn-h2">The shape of the back board</h4>
+<p class="mn-p">The back board does not have to be a rectangle. Three shapes are offered:</p>
+<dl class="mn-kv"><dt>Rectangle</dt><dd>The full plate, big enough to cover every gear with a margin. Strongest, simplest, most wood.</dd><dt>Curved</dt><dd>A disc around every gear, blended together into one smooth organic outline. Struts bridge the mesh links automatically as soon as the discs stop touching, so it stays in one piece.</dd><dt>Minimal</dt><dd>Only strips running shaft to shaft — least wood, and you can see the mechanism through it.</dd></dl>
+<p class="mn-p">The <b>offset</b> (−60 to +40mm) is measured out from each gear's tip circle. At <b>0</b> the outline traces the teeth. <b>Negative</b> pulls the discs inside the rims, giving a rounded skeleton; <b>positive</b> pads them out until they merge into one broad blob. On the minimal shape the same number sets the strip half-width.</p>
+<p class="mn-p">Whatever the outline does, every shaft keeps a full pad of wood around it — wide enough for its spacer rings to seat right the way round — and every standoff post keeps a pad plus a strut back to the nearest shaft, so nothing is left floating.</p>
+<div class="mn-note">Wind the offset down far enough and the board will fall into <b>separate pieces</b>. The panel warns you when that happens and gives the count. Sometimes that is what you want; usually it means winding the offset back up until they knit together.</div>
 <h4 class="mn-h2">Splitting the baseplate</h4>
 <p class="mn-p">If the baseplate is bigger than your sheet, use <b>Split the baseplate</b> to tile it into sheet-sized pieces with alignment features.</p>
+<p class="mn-p">A curved or minimal board is <b>clipped</b> to the tiles, so the join runs along the cut and the gear-tooth seam option lines its teeth up with the cut edge. Two cautions: where a seam crosses a narrow strip the teeth can be wider than the wood there, so reduce the tooth depth or shift the tile size; and right at the very edge of the board, where a seam runs out into the curved outline, the two halves can be out by up to a millimetre or so. The teeth themselves interlock exactly — it is only the last few millimetres at the perimeter.</p>
 <h3 class="mn-h1">9 · Cut sheets and downloads</h3>
 <p class="mn-p">There are two different files, and they do different jobs.</p>
 <dl class="mn-kv"><dt>Reference sheet (annotated)</dt><dd>One long drawing with every part named, dimensioned and annotated — which hole is which, what glues where. Print it or keep it on screen while you build. Not intended for cutting.</dd><dt>Cut sheets to laser</dt><dd>The numbered sheets you actually cut. Tightly nested to your sheet size, kerf compensated, one SVG per sheet.</dd></dl>
@@ -1404,7 +1411,7 @@ const S={ unit:'mm', size:6, gears:[18,30], bend:0, pa:20, thick:6, kerf:0.15,
   fbCpFrac:0.5, fbCpOff:18, fbTrace:true, dowelD:6,
   chain:[{type:'planetary',Ns:18,Np:12},{type:'gearing',Nin:12,Nout:36},{type:'cam',lift:16}],
   addType:'gearing', cmpLayout:'row', cmpGap:1, cmpCouple:'belt',
-  cx:{ nextId:4, sel:1, m:6, converters:[], edges:[], linkW:12, split:{mode:'off',maxW:600,maxH:400,overlap:10}, bearing:{mode:'none',od:8}, gears:[
+  cx:{ nextId:4, sel:1, m:6, converters:[], edges:[], linkW:12, split:{mode:'off',maxW:600,maxH:400,overlap:10}, board:{shape:'rect',off:8}, bearing:{mode:'none',od:8}, gears:[
     {id:0,N:12,kind:'driver',layer:0},
     {id:1,N:36,kind:'mesh',parent:0,dir:0},
     {id:2,N:12,kind:'compound',parent:1},
@@ -3154,9 +3161,11 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
     buy.push([`standoff post`,convs.length*4,`⌀${fmt(boreDia())} dowel — hold each guide bridge off the board — lengths ${Object.entries(plen).sort((a,b)=>a[0]-b[0]).map(([L,n])=>`${L}mm×${n}`).join(', ')}`]); }
   const eds=S.cx.edges.filter(e=>c.byId[e.gear]); if(eds.length)cut.push([`rack`,eds.length,`${eds.map(e=>fmt(e.len)).join(', ')} long · ${t}mm`]);
   const sp=cxSpacers(c); if(sp.totalRings)cut.push([`spacer ring`,sp.totalRings,`⌀${fmt(boreDia()+8)} · bore ${fmt(boreDia())} · ${t}mm`]);
-  const m2=Math.max(t*2,14), bw=c.bbox.w+2*m2, bh=c.bbox.h+2*m2, P=S.cx.split||{mode:'off'}, tiles=cxTileBoard(bw,bh,[],P);
-  if(tiles.length>1)cut.push([`back board tile`,tiles.length,`≤ ${P.maxW}×${P.maxH}mm · ${P.mode} join · ${t}mm`]);
-  else cut.push([`back board`,1,`${fmt(bw)}×${fmt(bh)} · ${t}mm`]);
+  const bpl=cxBoardPlan(c), bw=bpl.bw, bh=bpl.bh, P=S.cx.split||{mode:'off'}, tiles=cxShapeTiles(bpl,[],P);
+  const shTxt=(bpl.mode==='rect')?'':`${cxBoardShapeLabel()} outline (offset ${bpl.off>0?'+':''}${fmt(bpl.off)}mm) · `;
+  let nPc=0; tiles.forEach(tl=>{ nPc+=tl.pieces?tl.pieces.length:1; });
+  if(nPc>1)cut.push([`back board piece`,nPc,`${shTxt}${tiles.length>1?`≤ ${P.maxW}×${P.maxH}mm · ${P.mode} join · `:''}${t}mm`]);
+  else cut.push([`back board`,1,`${shTxt}${fmt(bpl.pw)}×${fmt(bpl.ph)} · ${t}mm`]);
   const shafts={}; c.gears.forEach(g=>{const k=Math.round(g.x*10)+'_'+Math.round(g.y*10); (shafts[k]||(shafts[k]={maxL:0})); shafts[k].maxL=Math.max(shafts[k].maxL,g.layer);});
   const nsh=Object.keys(shafts).length, slens={}; Object.values(shafts).forEach(sh=>{ const L=Math.round(2*t+sh.maxL*LG+12); slens[L]=(slens[L]||0)+1; });
   const M=cxBrgMode(), gBrg=(M==='gears'||M==='gearsRods'), rBrg=(M==='gearsRods'), dH=fmt(cxDowelHole());
@@ -3166,16 +3175,304 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
   const nBrg=cxBrgCount(c); if(nBrg)buy.push([`bearing`,nBrg,`⌀${S.cx.bearing.od}mm outer, ${S.bolt}-size bore — press-fit ${rBrg?'into every gear & rod pivot':'into every gear'} · holes cut ⌀${fmt(cxBearingHole())}`]);
   return {cut,buy}; }
 function cxBOMText(){ const b=cxBOM(), c=computeComplex(), t=S.thick;
-  const m2=Math.max(t*2,14), bw=Math.round(c.bbox.w+2*m2), bh=Math.round(c.bbox.h+2*m2);
+  const bpl0=cxBoardPlan(c), bw=Math.round(bpl0.pw), bh=Math.round(bpl0.ph);
   const M=cxBrgMode(), brgLine=M==='none'?'no bearings (plain bolt / dowel pivots)':`⌀${S.cx.bearing.od}mm ${M==='gearsRods'?'in gears + rod pivots':'in gears'} · holes cut ⌀${fmt(cxBearingHole())}`;
-  const head=`PROJECT MATERIALS — The Clever Contraptions Corner\n\n  Back board / sheet : ${bw}×${bh}mm · ${t}mm stock\n  Bolt / shaft       : ${S.bolt} (⌀${fmt(boreDia())} clearance holes)\n  Bearings           : ${brgLine}\n  Dowels             : ⌀${fmt(S.dowelD)} nominal · press-fit holes cut ⌀${fmt(cxDowelHole())}\n  Kerf allowance     : ${S.kerf}mm (beam width — holes cut ${S.kerf}mm undersize to compensate)\n  Gear mesh clearance: ${cxBacklashMM(c.m).toFixed(2)}mm backlash (${cxBacklash().toFixed(2)} x module ${c.m}mm)\n`;
+  const head=`PROJECT MATERIALS — The Clever Contraptions Corner\n\n  Back board / sheet : ${bw}×${bh}mm · ${cxBoardShapeLabel()} outline · ${t}mm stock\n  Bolt / shaft       : ${S.bolt} (⌀${fmt(boreDia())} clearance holes)\n  Bearings           : ${brgLine}\n  Dowels             : ⌀${fmt(S.dowelD)} nominal · press-fit holes cut ⌀${fmt(cxDowelHole())}\n  Kerf allowance     : ${S.kerf}mm (beam width — holes cut ${S.kerf}mm undersize to compensate)\n  Gear mesh clearance: ${cxBacklashMM(c.m).toFixed(2)}mm backlash (${cxBacklash().toFixed(2)} x module ${c.m}mm)\n`;
   return head+'\nLASER-CUT (wood, '+t+'mm):\n'+b.cut.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n')+'\n\nBUY SEPARATELY:\n'+b.buy.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n'); }
 function cxArmMax(){ const P=S.cx.split; return (P&&P.mode!=='off')?Math.max(P.maxW||600,P.maxH||400):1e9; }
 function cxArmSplice(al,armMax,ov){ ov=ov||28; if(!(armMax>0)||al<=armMax)return [{start:0,len:al,pivS:true,pivE:true,aligns:[],idx:0,n:1}];
   const n=Math.max(2,Math.ceil((al-ov)/(armMax-ov))), segLen=(al+(n-1)*ov)/n, step=segLen-ov, out=[];
   for(let i=0;i<n;i++){ const aligns=[]; if(i>0)aligns.push(ov*0.3,ov*0.7); if(i<n-1)aligns.push(step+ov*0.3,step+ov*0.7);
     out.push({start:i*step,len:segLen,pivS:i===0,pivE:i===n-1,aligns,idx:i,n}); } return out; }
-function cxJoinEdge(ax,ay,bx,by,mode,depth){ if(mode!=='finger'&&mode!=='dovetail')return [[ax,ay],[bx,by]];
+// ---- organic / minimal board outlines (geometry only; not yet wired to the board) ----
+// A signed distance field, blended with a soft minimum so circles merge into one smooth
+// shape rather than showing their joins, then traced with marching squares.
+function sdSmin(a,b,k){ const h=Math.max(0,Math.min(1,0.5+0.5*(b-a)/k)); return b*(1-h)+a*h-k*h*(1-h); }
+function sdSeg(px,py,ax,ay,bx,by){ const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy;
+  let t=L2>0?((px-ax)*dx+(py-ay)*dy)/L2:0; t=Math.max(0,Math.min(1,t));
+  return Math.hypot(px-(ax+t*dx), py-(ay+t*dy)); }
+// the soft-min distance field for a set of prims, as a plain function of (x,y)
+function cxBlobField(prims,blend){ blend=(blend==null)?12:blend;
+  return (x,y)=>{ let d=1e9;
+    for(const q of prims){ const di=(q.x!=null)?Math.hypot(x-q.x,y-q.y)-q.r
+                                             :sdSeg(x,y,q.ax,q.ay,q.bx,q.by)-q.r;
+      d=(d>=1e9)?di:sdSmin(d,di,blend); }
+    return d; }; }
+function cxPrimBounds(prims,pad){ pad=pad||0; let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
+  prims.forEach(q=>{ const x0=(q.x!=null)?q.x:Math.min(q.ax,q.bx), x1=(q.x!=null)?q.x:Math.max(q.ax,q.bx);
+    const y0=(q.y!=null)?q.y:Math.min(q.ay,q.by), y1=(q.y!=null)?q.y:Math.max(q.ay,q.by);
+    mnx=Math.min(mnx,x0-q.r-pad); mxx=Math.max(mxx,x1+q.r+pad);
+    mny=Math.min(mny,y0-q.r-pad); mxy=Math.max(mxy,y1+q.r+pad); });
+  return {mnx,mxx,mny,mxy}; }
+// marching squares over any field F(x,y)<0. Returns EVERY closed loop, so a shape that
+// breaks into separate islands (or has a window through it) is not silently reduced to one.
+function cxTraceField(F,mnx,mny,mxx,mxy,step){ step=step||2;
+  const nx=Math.max(4,Math.ceil((mxx-mnx)/step)), ny=Math.max(4,Math.ceil((mxy-mny)/step));
+  const gx=i=>mnx+(mxx-mnx)*i/nx, gy=j=>mny+(mxy-mny)*j/ny;
+  const V=[]; for(let j=0;j<=ny;j++){ const row=[]; for(let i=0;i<=nx;i++)row.push(F(gx(i),gy(j))); V.push(row); }
+  const key=(x,y)=>x.toFixed(2)+','+y.toFixed(2), segs=[];
+  const ip=(x0,y0,v0,x1,y1,v1)=>{ const t=v0/(v0-v1); return [x0+(x1-x0)*t, y0+(y1-y0)*t]; };
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+    const x0=gx(i),x1=gx(i+1),y0=gy(j),y1=gy(j+1);
+    const a=V[j][i], b=V[j][i+1], c2=V[j+1][i+1], d2=V[j+1][i];
+    let idx=(a<0?1:0)|(b<0?2:0)|(c2<0?4:0)|(d2<0?8:0); if(idx===0||idx===15)continue;
+    const eB=()=>ip(x0,y0,a,x1,y0,b), eR=()=>ip(x1,y0,b,x1,y1,c2),
+          eT=()=>ip(x1,y1,c2,x0,y1,d2), eL=()=>ip(x0,y1,d2,x0,y0,a);
+    const add=(p,q)=>segs.push([p,q]);
+    // complementary cases must run the opposite way round, or the chain cannot close
+    switch(idx){
+      case 1:  add(eL(),eB()); break;   case 14: add(eB(),eL()); break;
+      case 2:  add(eB(),eR()); break;   case 13: add(eR(),eB()); break;
+      case 3:  add(eL(),eR()); break;   case 12: add(eR(),eL()); break;
+      case 4:  add(eR(),eT()); break;   case 11: add(eT(),eR()); break;
+      case 6:  add(eB(),eT()); break;   case 9:  add(eT(),eB()); break;
+      case 7:  add(eL(),eT()); break;   case 8:  add(eT(),eL()); break;
+      case 5:  add(eL(),eB()); add(eR(),eT()); break;
+      case 10: add(eB(),eR()); add(eT(),eL()); break; } }
+  if(!segs.length)return [];
+  const map=new Map(); segs.forEach(sg=>{ const k=key(sg[0][0],sg[0][1]); if(!map.has(k))map.set(k,[]); map.get(k).push(sg); });
+  const out=[];
+  const take=k2=>{ const arr=map.get(k2); if(!arr||!arr.length)return null; return arr.shift(); };
+  for(const start of segs){ const k0=key(start[0][0],start[0][1]); const arr=map.get(k0);
+    if(!arr||!arr.length||arr.indexOf(start)<0)continue; arr.splice(arr.indexOf(start),1);
+    const loop=[start[0]]; let cur=start[1], guard=0, closed=false;
+    while(guard++<segs.length+5){ loop.push(cur);
+      if(Math.hypot(cur[0]-loop[0][0],cur[1]-loop[0][1])<1e-6){ closed=true; break; }
+      const nxt=take(key(cur[0],cur[1])); if(!nxt)break; cur=nxt[1]; }
+    if(closed&&loop.length>3)out.push(loop); }
+  return out; }
+// prims: [{x,y,r}] discs and [{ax,ay,bx,by,r}] capsules. Returns the largest closed polygon (mm).
+function cxBlobOutline(prims,blend,step){ if(!prims.length)return null;
+  blend=(blend==null)?12:blend; step=step||2;
+  const B=cxPrimBounds(prims,blend);
+  const loops=cxTraceField(cxBlobField(prims,blend),B.mnx,B.mny,B.mxx,B.mxy,step);
+  let best=null; loops.forEach(L=>{ if(!best||L.length>best.length)best=L; });
+  if(!best||best.length<8)return null;
+  return rdpSimplify(best,Math.max(0.15,step*0.12)); }
+// board outlines: discs on every gear, or strips joining the shafts
+// off may be negative: the discs shrink inside the gear rims for a rounded-skeleton look.
+// Struts along the mesh links keep the board in one piece once the discs stop touching.
+function cxBoardBlobMinR(){ return Math.max(boardBoltHole()/2+6, 9); }
+function cxBoardBlobPrims(c,mode,off){ const prims=[], minR=cxBoardBlobMinR();
+  if(mode==='strips'){ const w=Math.max(off,minR);
+    c.gears.forEach(g=>prims.push({x:g.x,y:g.y,r:w}));
+    c.gears.forEach(g=>{ const par=(g.parent!=null)?c.byId[g.parent]:null;
+      if(par)prims.push({ax:par.x,ay:par.y,bx:g.x,by:g.y,r:w}); });
+    return prims; }
+  const R={}; c.gears.forEach(g=>{ R[g.id]=Math.max(c.m*(g.N+2)/2+off, minR);
+    prims.push({x:g.x,y:g.y,r:R[g.id]}); });
+  // do the discs still overlap? if not, bridge each mesh link with a strut
+  c.gears.forEach(g=>{ const par=(g.parent!=null)?c.byId[g.parent]:null; if(!par)return;
+    const d=Math.hypot(g.x-par.x,g.y-par.y), reach=R[g.id]+R[par.id];
+    if(d>reach*0.92)prims.push({ax:par.x,ay:par.y,bx:g.x,by:g.y,r:Math.max(minR*0.85,Math.min(R[g.id],R[par.id])*0.6)}); });
+  return prims; }
+/* ---- back board shape: rectangle, curved or minimal ------------------------------------
+   The board frame is board-local mm: x right, y DOWN, origin at the top-left corner, which
+   is the same frame the tiling and the shaft-hole lists already use. ---------------------- */
+function cxBoardShapeMode(){ const B=S.cx&&S.cx.board, sh=B&&B.shape; return (sh==='curved'||sh==='minimal')?sh:'rect'; }
+function cxBoardOffRange(){ return {min:-60,max:40}; }
+function cxBoardOff(){ const B=S.cx&&S.cx.board, R=cxBoardOffRange();
+  let v=(B&&B.off!=null)?+B.off:8; if(!isFinite(v))v=8; return Math.max(R.min,Math.min(R.max,v)); }
+function cxBoardShapeLabel(){ return {rect:'rectangle',curved:'curved',minimal:'minimal'}[cxBoardShapeMode()]; }
+// a spacer ring has to land on wood right the way round, so this is the radius of the pad
+// each ring-carrying shaft needs. Kerf grows the ring, so allow for that too.
+function cxSpacerPadR(){ return Math.max(boreDia()/2+4,4)+S.kerf/2+2.5; }
+function cxBoardBlend(){ return Math.max(6,Math.min(18,cxBoardBlobMinR()*1.1)); }
+function cxBoardStep(span){ return Math.max(1.1,Math.min(3.2,span/230)); }
+// discs/capsules for the chosen shape, in world mm, plus the pads that keep hardware on wood
+function cxBoardPrimsWorld(c){
+  const mode=cxBoardShapeMode(); if(mode==='rect')return null;
+  let prims=[]; try{ prims=(cxBoardBlobPrims(c,mode==='minimal'?'strips':'discs',cxBoardOff())||[]).slice(); }catch(_){ prims=[]; }
+  const minR=cxBoardBlobMinR(), padR=cxSpacerPadR(), rings={};
+  try{ cxSpacers(c).list.forEach(sh=>{ rings[(Math.round(sh.x*10))+'_'+(Math.round(sh.y*10))]=sh.count; }); }catch(_){}
+  const seen={};
+  c.gears.forEach(g=>{ const k=(Math.round(g.x*10))+'_'+(Math.round(g.y*10)); if(seen[k])return; seen[k]=1;
+    prims.push({x:g.x,y:g.y,r:rings[k]?Math.max(minR,padR):minR}); });
+  // a standoff post needs its own pad and a strut back to the nearest shaft, or it floats free
+  try{ cxPostWorld(c).forEach(pp=>{ prims.push({x:pp.x,y:pp.y,r:Math.max(minR,(pp.d||6)/2+5)});
+      let g=null,bd=1e9; c.gears.forEach(q=>{ const d=Math.hypot(q.x-pp.x,q.y-pp.y); if(d<bd){bd=d;g=q;} });
+      if(g)prims.push({ax:g.x,ay:g.y,bx:pp.x,by:pp.y,r:Math.max(minR*0.7,5)}); }); }catch(_){}
+  return prims; }
+// closed loops -> solid pieces with windows. Sign of the signed area separates outside from
+// inside, so an island and a hole through the board are never confused for one another.
+function cxLoopsToPieces(loops,minArea){ minArea=(minArea==null)?90:minArea;
+  const A=(loops||[]).map(L=>({L,a:loopArea(L)})).filter(o=>isFinite(o.a)&&Math.abs(o.a)>=minArea);
+  if(!A.length)return [];
+  A.sort((p,q)=>Math.abs(q.a)-Math.abs(p.a));
+  const sgn=(A[0].a>=0)?1:-1;
+  const pieces=A.filter(o=>((o.a>=0)?1:-1)===sgn).map(o=>({outer:o.L,inner:[],area:Math.abs(o.a)}));
+  A.filter(o=>((o.a>=0)?1:-1)!==sgn).forEach(h=>{ let best=null;
+    for(const pc of pieces){ if(pointInPoly2(h.L[0],pc.outer)&&(!best||pc.area<best.area))best=pc; }
+    if(best)best.inner.push(h.L); });
+  return pieces; }
+function cxPieceHas(pc,x,y){ const pt=[x,y]; if(!pointInPoly2(pt,pc.outer))return false;
+  for(const h of pc.inner)if(pointInPoly2(pt,h))return false; return true; }
+function cxPiecesBounds(pieces){ let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
+  pieces.forEach(pc=>pc.outer.forEach(p=>{mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);}));
+  return {mnx,mxx,mny,mxy,w:mxx-mnx,h:mxy-mny}; }
+var cxBoardCache={key:null,val:null};
+function cxBoardKey(c){ const P=S.cx.split||{};
+  return [cxBoardShapeMode(),cxBoardOff(),S.thick,S.kerf,c.m,boardBoltHole(),cxDowelHole(),cxBaseHole(),
+    P.mode||'off',P.maxW,P.maxH,P.overlap,
+    c.gears.map(g=>[g.id,g.N,Math.round(g.x*20),Math.round(g.y*20),g.layer].join(',')).join(';'),
+    (S.cx.converters||[]).map(v=>[v.id,v.gear,v.type,Math.round((v.r||0)*10),v.dir||0,Math.round((v.rod||0)*10)].join(',')).join(';')
+  ].join('~'); }
+function cxBoardPlan(c){ const key=cxBoardKey(c);
+  if(cxBoardCache.key===key&&cxBoardCache.val)return cxBoardCache.val;
+  const val=cxBoardPlanBuild(c); cxBoardCache={key,val}; return val; }
+function cxBoardPlanBuild(c){
+  const t=S.thick, m2=Math.max(t*2,14), ox=c.bbox.cx, oy=c.bbox.cy;
+  let bw=c.bbox.w+2*m2, bh=c.bbox.h+2*m2;
+  const mode=cxBoardShapeMode();
+  const plan={mode,off:cxBoardOff(),bw,bh,pw:bw,ph:bh,poly:null,pieces:null,prims:null,
+              blend:cxBoardBlend(),step:cxBoardStep(Math.max(bw,bh)),ox,oy,rectW:bw,rectH:bh};
+  if(mode==='rect')return plan;
+  const prims=cxBoardPrimsWorld(c); if(!prims||!prims.length)return plan;
+  const blend=plan.blend, B=cxPrimBounds(prims,blend);
+  // the frame stays centred on the mechanism, but grows if the shape runs wider than the rectangle
+  bw=Math.max(bw,2*Math.max(Math.abs(B.mnx-ox),Math.abs(B.mxx-ox))+4);
+  bh=Math.max(bh,2*Math.max(Math.abs(B.mny-oy),Math.abs(B.mxy-oy))+4);
+  plan.bw=bw; plan.bh=bh; plan.step=cxBoardStep(Math.max(bw,bh));
+  const step=plan.step, toL=p=>[(p[0]-ox)+bw/2,(oy-p[1])+bh/2];
+  plan.prims=prims.map(q=>{ if(q.x!=null){ const a=toL([q.x,q.y]); return {x:a[0],y:a[1],r:q.r}; }
+    const a=toL([q.ax,q.ay]), b=toL([q.bx,q.by]); return {ax:a[0],ay:a[1],bx:b[0],by:b[1],r:q.r}; });
+  let loops=[]; try{ loops=cxTraceField(cxBlobField(plan.prims,blend),0,0,bw,bh,step); }catch(_){ loops=[]; }
+  loops=(loops||[]).map(L=>rdpSimplify(L,Math.max(0.15,step*0.12))).filter(L=>L&&L.length>=8);
+  const pieces=cxLoopsToPieces(loops);
+  if(!pieces.length)return plan;                       // nothing traced — fall back to the rectangle
+  plan.pieces=pieces; plan.poly=pieces[0].outer;
+  const bb=cxPiecesBounds(pieces); plan.pw=bb.w; plan.ph=bb.h;
+  return plan; }
+// A join seam read as a signed distance field, so it can be intersected with the board's own
+// field. It has to be a true distance, not "how far past the seam line": a finger or dovetail
+// seam steps sideways, and a sideways step in a height-function has no zero crossing at all, so
+// the riser simply vanishes and the tiles cut ~a tooth depth apart. Distance-to-the-polyline is
+// continuous everywhere and its zero set IS the seam. Both tiles read the same polyline with
+// opposite signs, so the two halves of the join are the same curve by construction.
+// Far from the seam the cheap height-function is accurate, and that is the common case, so the
+// exact nearest-feature walk only runs in a narrow band either side.
+function cxSeamSide(edge,ax,ay,bx,by,sgn){
+  const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L, nx=-uy, ny=ux;
+  const E=(edge&&edge.length>1)?edge:[[ax,ay],[bx,by]];
+  const T=[], O=[]; let amp=0;
+  E.forEach(p=>{ const px=p[0]-ax, py=p[1]-ay; T.push(px*ux+py*uy);
+    const o=px*nx+py*ny; O.push(o); if(Math.abs(o)>amp)amp=Math.abs(o); });
+  const n=T.length;
+  const Tm=T.slice(); for(let i=1;i<n;i++)if(Tm[i]<Tm[i-1])Tm[i]=Tm[i-1];   // for the far-field test only
+  const band=amp*1.9+3, EXT=1e5;
+  // the seam in (along, across) coordinates, run out to infinity at both ends along the base line
+  const PX=[Tm[0]-EXT], PY=[O[0]];
+  for(let i=0;i<n;i++){ PX.push(T[i]); PY.push(O[i]); }
+  PX.push(Tm[n-1]+EXT); PY.push(O[n-1]);
+  const m=PX.length;
+  return (x,y)=>{ const px=x-ax, py=y-ay, t=px*ux+py*uy, o=px*nx+py*ny;
+    let oc;
+    if(t<=Tm[0])oc=O[0];
+    else if(t>=Tm[n-1])oc=O[n-1];
+    else { let k=1; while(k<n-1&&Tm[k]<t)k++; const t0=Tm[k-1],t1=Tm[k];
+      oc=O[k-1]+(O[k]-O[k-1])*((t1>t0)?(t-t0)/(t1-t0):0); }
+    const approx=o-oc;
+    if(approx>band||approx<-band)return sgn*approx;
+    // Which side, by counting how many times a ray straight "up" in the across-direction crosses
+    // the seam. Parity is exact even where a dovetail undercuts itself and doubles back — a
+    // nearest-segment sign test gets that wrong, and gets it wrong differently on each tile.
+    let bd=1e9, cross=0;
+    for(let i=0;i<m-1;i++){ const axx=PX[i], ayy=PY[i], bxx=PX[i+1], byy=PY[i+1];
+      const ex=bxx-axx, ey=byy-ayy, L2=ex*ex+ey*ey;
+      let u2=L2>0?((t-axx)*ex+(o-ayy)*ey)/L2:0; u2=(u2<0)?0:(u2>1?1:u2);
+      const qx=axx+u2*ex, qy=ayy+u2*ey, ddx=t-qx, ddy=o-qy, dd=ddx*ddx+ddy*ddy;
+      if(dd<bd)bd=dd;
+      if((axx>t)!==(bxx>t)){ const oy=ayy+(t-axx)/(bxx-axx)*ey; if(oy>o)cross++; } }
+    return sgn*((cross&1)?-1:1)*Math.sqrt(bd); }; }
+function cxAxisSide(axis,val,sgn){ return (x,y)=>sgn*(((axis==='x')?x:y)-val); }
+// Marching squares only resolves a seam to within a cell, so a traced tile edge is a near-miss
+// of the join rather than the join itself. This replaces any run of vertices lying along a seam
+// with that seam's OWN points, so both tiles carry the identical tooth profile and interlock
+// exactly — the residual is then confined to where the seam runs out at the board's edge.
+function cxSeamArc(pts){ const cum=[0]; for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1])); return cum; }
+function cxSeamProject(pts,cum,p){ let bd=1e9,bs=0,bx=p[0],by=p[1];
+  for(let i=0;i<pts.length-1;i++){ const a=pts[i],b=pts[i+1], dx=b[0]-a[0], dy=b[1]-a[1], L2=dx*dx+dy*dy;
+    let t=L2>0?((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L2:0; t=Math.max(0,Math.min(1,t));
+    const qx=a[0]+t*dx, qy=a[1]+t*dy, d=Math.hypot(p[0]-qx,p[1]-qy);
+    if(d<bd){ bd=d; bs=cum[i]+t*Math.sqrt(L2); bx=qx; by=qy; } }
+  return {d:bd,s:bs,p:[bx,by]}; }
+function cxSeamSpan(pts,cum,s0,s1){ const out=[], up=s1>=s0, lo=Math.min(s0,s1), hi=Math.max(s0,s1);
+  for(let i=0;i<pts.length;i++)if(cum[i]>lo+1e-6&&cum[i]<hi-1e-6)out.push(pts[i]);
+  if(!up)out.reverse(); return out; }
+function cxSnapLoopToSeam(loop,pts,tol){
+  if(!loop||loop.length<6||!pts||pts.length<2)return loop;
+  const cum=cxSeamArc(pts), pr=loop.map(p=>cxSeamProject(pts,cum,p)), on=pr.map(q=>q.d<=tol);
+  let anyOff=-1; for(let i=0;i<on.length;i++)if(!on[i]){anyOff=i;break;}
+  if(anyOff<0)return loop;                                  // whole loop hugs the seam — leave it
+  if(!on.some(Boolean))return loop;
+  const n=loop.length, out=[];
+  for(let k=0;k<n;){ const i=(anyOff+k)%n;
+    if(!on[i]){ out.push(loop[i]); k++; continue; }
+    let len=0; while(len<n&&on[(anyOff+k+len)%n])len++;      // the run along the seam
+    const a=pr[(anyOff+k)%n], b=pr[(anyOff+k+len-1)%n];
+    out.push(a.p); cxSeamSpan(pts,cum,a.s,b.s).forEach(q=>out.push(q)); if(len>1)out.push(b.p);
+    k+=len; }
+  return out; }
+// tiles for whatever shape the board is. Shaped boards are clipped to each tile by intersecting
+// the board's own field with the seam half-planes, so the join runs exactly along the cut.
+function cxShapeTiles(plan,holes,opts){
+  holes=holes||[];
+  if(!plan||!plan.pieces)return cxTileBoard(plan?plan.bw:0,plan?plan.bh:0,holes,opts);
+  const geom=cxShapeTileGeom(plan,opts);
+  const inRect=(h,r)=>h.x>=r.x0-0.2&&h.x<=r.x1+0.2&&h.y>=r.y0-0.2&&h.y<=r.y1+0.2;
+  return geom.map(g=>({poly:g.pieces[0].outer,pieces:g.pieces,shaped:true,single:false,
+    holes:g.rect?holes.filter(h=>inRect(h,g.rect)):holes.slice(),
+    w:g.w,h:g.h,mnx:g.mnx,mny:g.mny,col:g.col,row:g.row,cols:g.cols,rows:g.rows})); }
+function cxShapeTileGeom(plan,opts){
+  const ck=JSON.stringify([(opts&&opts.mode)||'off',opts&&opts.maxW,opts&&opts.maxH,opts&&opts.overlap]);
+  if(plan._tgKey===ck&&plan._tg)return plan._tg;
+  const val=cxShapeTileGeomBuild(plan,opts); plan._tgKey=ck; plan._tg=val; return val; }
+function cxShapeTileGeomBuild(plan,opts){
+  const meta={}, tiles=cxTileBoard(plan.bw,plan.bh,[],opts,meta);
+  if(tiles.length<=1){ const bb=cxPiecesBounds(plan.pieces);
+    return [{pieces:plan.pieces,rect:null,w:bb.w,h:bb.h,mnx:bb.mnx,mny:bb.mny,col:0,row:0,cols:1,rows:1}]; }
+  const F0=cxBlobField(plan.prims,plan.blend), step=Math.max(0.75,plan.step*0.45), mode=(opts&&opts.mode)||'off', out=[];
+  tiles.forEach(tile=>{
+    const i=tile.col, j=tile.row, cols=tile.cols, rows=tile.rows, seams=[], curves=[];
+    let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+    tile.poly.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);});
+    if(mode==='overlap'){
+      if(i>0)seams.push(cxAxisSide('x',x0,-1)); if(i<cols-1)seams.push(cxAxisSide('x',x1,1));
+      if(j>0)seams.push(cxAxisSide('y',y0,-1)); if(j<rows-1)seams.push(cxAxisSide('y',y1,1));
+    } else { const xE=meta.xE, yE=meta.yE, take=(E,ax,ay,bx,by,sg)=>{ seams.push(cxSeamSide(E,ax,ay,bx,by,sg)); if(E&&E.length>1)curves.push(E); };
+      if(i>0)take(meta.vB[i+'_'+j],xE[i],yE[j],xE[i],yE[j+1],1);
+      if(i<cols-1)take(meta.vB[(i+1)+'_'+j],xE[i+1],yE[j],xE[i+1],yE[j+1],-1);
+      if(j>0)take(meta.hB[j+'_'+i],xE[i],yE[j],xE[i+1],yE[j],-1);
+      if(j<rows-1)take(meta.hB[(j+1)+'_'+i],xE[i],yE[j+1],xE[i+1],yE[j+1],1); }
+
+    const F=(x,y)=>{ let d=F0(x,y); for(let k=0;k<seams.length;k++){ const v=seams[k](x,y); if(v>d)d=v; } return d; };
+    // Snap every tile's trace window to one global lattice, and DON'T simplify the result:
+    // two neighbouring tiles then sample identical grid edges along their shared seam and
+    // interpolate identical crossings, so the join mates exactly rather than approximately.
+    const pad=plan.blend+step*3, lo=v=>Math.floor(v/step)*step, hi=v=>Math.ceil(v/step)*step;
+    let loops=[]; try{ loops=cxTraceField(F,lo(x0-pad),lo(y0-pad),hi(x1+pad),hi(y1+pad),step); }catch(_){ loops=[]; }
+    loops=(loops||[]).filter(L=>L&&L.length>=8);
+    const pieces=cxLoopsToPieces(loops);
+    if(!pieces.length)return;                          // no board falls in this tile at all
+    const bb=cxPiecesBounds(pieces);
+    const rect=(mode==='overlap')?{x0,x1,y0,y1}
+              :{x0:meta.xE[i],x1:meta.xE[i+1],y0:meta.yE[j],y1:meta.yE[j+1]};
+    out.push({pieces,rect,w:bb.w,h:bb.h,mnx:bb.mnx,mny:bb.mny,col:i,row:j,cols,rows}); });
+  return out.length?out:tiles.map(t=>({pieces:[{outer:t.poly,inner:[]}],rect:null,
+    w:t.w,h:t.h,mnx:t.mnx,mny:t.mny,col:t.col,row:t.row,cols:t.cols,rows:t.rows})); }
+function cxShapeTilesDisp(plan,opts){
+  const ck=JSON.stringify([(opts&&opts.mode)||'off',opts&&opts.maxW,opts&&opts.maxH,opts&&opts.overlap]);
+  if(plan._dspKey===ck&&plan._dsp)return plan._dsp;
+  const geom=plan.pieces?cxShapeTileGeom(plan,opts):[];
+  const val=geom.map(g=>({cols:g.cols,rows:g.rows,col:g.col,row:g.row,
+    loops:g.pieces.map(pc=>rdpSimplify(pc.outer,0.4)).filter(L=>L&&L.length>2)}));
+  plan._dspKey=ck; plan._dsp=val; return val; }
+function cxBoardPieceCount(c){ const pl=cxBoardPlan(c);
+  const tiles=cxShapeTiles(pl,[],S.cx.split||{mode:'off'});
+  let n=0; tiles.forEach(t=>{ n+=t.pieces?t.pieces.length:1; }); return n; }
+function cxJoinEdge(ax,ay,bx,by,mode,depth){
+  if(mode==='gear')return cxGearJoinEdge(ax,ay,bx,by,depth);
+  if(mode!=='finger'&&mode!=='dovetail')return [[ax,ay],[bx,by]];
   const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy);
   const pad=Math.max(depth+4,12), span=L-2*pad; if(L<70||span<36)return [[ax,ay],[bx,by]];
   const ux=dx/L,uy=dy/L,nx=-uy,ny=ux, N=Math.max(2,Math.round(span/38)), nSeg=2*N, seg=span/nSeg;
@@ -3184,13 +3481,35 @@ function cxJoinEdge(ax,ay,bx,by,mode,depth){ if(mode!=='finger'&&mode!=='dovetai
     if(dv>0){ out.push(P(t0+dv,0),P(t0,off),P(t1,off),P(t1-dv,0)); } // dovetail: wide head, narrow neck → undercut locks
     else { out.push(P(t0,off),P(t1,off)); } }
   out.push(P(L-pad,0),[bx,by]); return out; }
-function cxTileBoard(bw,bh,holes,opts){ const mode=(opts&&opts.mode)||'off';
+// A seam shaped like one arc of a very large gear. At large radius the involute tends to a
+// rack, so the teeth are straight-flanked at the 20 degree pressure angle, laid along a shallow
+// bow. Both tiles share this polyline (one forward, one reversed), so they mate exactly.
+function cxGearJoinEdge(ax,ay,bx,by,depth){
+  const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy);
+  const pad=Math.max(depth+4,12), span=L-2*pad;
+  if(L<70||span<36)return [[ax,ay],[bx,by]];
+  const ux=dx/L, uy=dy/L, nx=-uy, ny=ux;
+  const a=depth, tphi=Math.tan(20*Math.PI/180);
+  // enough teeth to read as a gear, but never so fine that the flanks eat the tip
+  const minP=Math.max(4.2*a*tphi, 14);
+  const N=Math.max(2,Math.min(Math.round(span/Math.max(minP,a*3.2)), Math.floor(span/minP)));
+  const p=span/N, bow=Math.min(a*1.4, L*0.05);
+  const arc=t=>bow*(1-Math.pow(2*t/L-1,2));            // shallow bow, flat at the ends
+  const P=(t,o)=>[ax+ux*t+nx*(o+arc(t)), ay+uy*t+ny*(o+arc(t))];
+  const out=[[ax,ay],P(pad,0)], run=a*tphi;
+  for(let k=0;k<N;k++){ const t0=pad+k*p, half=p/2;
+    out.push(P(t0+run,a), P(t0+half-run,a), P(t0+half,0));          // tooth
+    out.push(P(t0+half+run,-a), P(t0+p-run,-a), P(t0+p,0)); }       // space
+  out.push(P(L-pad,0),[bx,by]); return out; }
+function cxTileBoard(bw,bh,holes,opts,meta){ const mode=(opts&&opts.mode)||'off';
   let cols=1,rows=1; if(mode!=='off'){ cols=Math.max(1,Math.ceil(bw/(opts.maxW||600))); rows=Math.max(1,Math.ceil(bh/(opts.maxH||400))); }
-  if(cols*rows<=1)return [{poly:null,holes:holes.slice(),w:bw,h:bh,single:true,mnx:0,mny:0}];
+  if(cols*rows<=1){ if(meta){ meta.cols=1; meta.rows=1; meta.xE=[0,bw]; meta.yE=[0,bh]; meta.vB={}; meta.hB={}; meta.dep=0; meta.mode=mode; }
+    return [{poly:null,holes:holes.slice(),w:bw,h:bh,single:true,mnx:0,mny:0}]; }
   const xE=[],yE=[]; for(let i=0;i<=cols;i++)xE.push(bw*i/cols); for(let j=0;j<=rows;j++)yE.push(bh*j/rows);
   const dep=Math.min(opts.overlap||10,Math.min(bw/cols,bh/rows)*0.2), tiles=[], vB={}, hB={};
   for(let i=1;i<cols;i++)for(let j=0;j<rows;j++)vB[i+'_'+j]=cxJoinEdge(xE[i],yE[j],xE[i],yE[j+1],mode,dep);
   for(let j=1;j<rows;j++)for(let i=0;i<cols;i++)hB[j+'_'+i]=cxJoinEdge(xE[i],yE[j],xE[i+1],yE[j],mode,dep);
+  if(meta){ meta.cols=cols; meta.rows=rows; meta.xE=xE; meta.yE=yE; meta.vB=vB; meta.hB=hB; meta.dep=dep; meta.mode=mode; }
   for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){ let x0=xE[i],x1=xE[i+1],y0=yE[j],y1=yE[j+1], poly;
     let hx0=x0,hx1=x1,hy0=y0,hy1=y1;
     if(mode==='overlap'){ x0-=(i>0?dep:0); x1+=(i<cols-1?dep:0); y0-=(j>0?dep:0); y1+=(j<rows-1?dep:0); poly=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]]; hx0=x0;hx1=x1;hy0=y0;hy1=y1; }
@@ -3220,13 +3539,20 @@ function sceneFromComplex(){
   Object.values(shafts).forEach(s=>{ const h=(s.max-s.min)*LG+t*2.4, yOff=-(s.max)*LG-t*0.7;
     parts.push({tris:plateMesh([flipY(circleLoop(Math.max(boreDia()/2,1.5),18))],0,0,h,yOff),col:'#3a3226',hw:1,spin:{x:s.x-ox,z:s.y-oy,phase:0,rate:0}}); });
   // baseplate behind everything — tiled to fit the laser bed
-  const m2=Math.max(t*2,14), bw=c.bbox.w+2*m2, bh=c.bbox.h+2*m2;
+  const pl=cxBoardPlan(c), bw=pl.bw, bh=pl.bh;
   const bHoles=Object.values(shafts).map(s=>({x:(s.x-ox)+bw/2,y:(oy-s.y)+bh/2}));
   cxPostWorld(c).forEach(pp=>bHoles.push({x:(pp.x-ox)+bw/2,y:(oy-pp.y)+bh/2}));
-  cxTileBoard(bw,bh,bHoles,S.cx.split||{mode:'off'}).forEach(tile=>{
-    const outer=tile.single?flipY(roundRectLoop(bw,bh,Math.min(bh/2,16),7)):flipY(tile.poly.map(p=>[p[0]-bw/2,bh/2-p[1]]));
-    const loops=[outer]; tile.holes.forEach(h=>loops.push(flipY(circleLoop(Math.max(cxBaseHole()/2,1.5),20).map(p=>[p[0]+h.x-bw/2,p[1]+bh/2-h.y]))));
-    parts.push({tris:plateMesh(loops,0,0,t,(t+3)),col:WOOD_BASE,spin:null}); });
+  const toC=p=>[p[0]-bw/2,bh/2-p[1]], bHole=p=>flipY(circleLoop(Math.max(cxBaseHole()/2,1.5),20).map(q=>[q[0]+p.x-bw/2,q[1]+bh/2-p.y]));
+  cxShapeTiles(pl,bHoles,S.cx.split||{mode:'off'}).forEach(tile=>{
+    const lbl=(tile.cols>1||tile.rows>1)?`board ${tile.col+1},${tile.row+1}`:'board';
+    if(tile.pieces){ tile.pieces.forEach((pc,pi)=>{ const loops=[flipY(pc.outer.map(toC))];
+        pc.inner.forEach(h=>loops.push(flipY(h.map(toC))));
+        tile.holes.forEach(h=>{ if(cxPieceHas(pc,h.x,h.y))loops.push(bHole(h)); });
+        parts.push({tris:plateMesh(loops,0,0,t,(t+3)),col:WOOD_BASE,spin:null,label:(tile.pieces.length>1?lbl+' p'+(pi+1):lbl)}); });
+      return; }
+    const outer=tile.single?flipY(roundRectLoop(bw,bh,Math.min(bh/2,16),7)):flipY(tile.poly.map(toC));
+    const loops=[outer]; tile.holes.forEach(h=>loops.push(bHole(h)));
+    parts.push({tris:plateMesh(loops,0,0,t,(t+3)),col:WOOD_BASE,spin:null,label:lbl}); });
   if(S.cx.bearing&&S.cx.bearing.mode==='seat'){ const od=S.cx.bearing.od, rOut=od/2, rIn=Math.max(cxBore()/2,1.5);
     Object.values(shafts).forEach(s=>parts.push({tris:plateMesh([flipY(circleLoop(rOut,28)),flipY(circleLoop(rIn,18))],0,0,t*0.9,(t+2.4)),col:'#2b2620',hw:1,spin:{x:s.x-ox,z:s.y-oy,phase:0,rate:0}})); }
   if(c.pen){ c.pen.pins.forEach(pn=>{ const g=c.byId[pn.g]; if(!g)return; const r=pn.r, yo=-(g.layer)*LG-t*0.7;
@@ -3310,15 +3636,21 @@ function sceneFromComplex(){
 }
 function drawComplexPreview(){
   const c=computeComplex(), th=angA, pad=18, m2=Math.max(S.thick*2,14);
-  const bx0=c.bbox.minX-m2, bx1=c.bbox.maxX+m2, by0=c.bbox.minY-m2, by1=c.bbox.maxY+m2, bw=bx1-bx0, bh=by1-by0;
+  const pl=cxBoardPlan(c), bw=pl.bw, bh=pl.bh;
+  const bx0=c.bbox.cx-bw/2, bx1=bx0+bw, by0=c.bbox.cy-bh/2, by1=by0+bh;
   const lw=Math.max(bw,bh)/380, dcol='#6b6455', dfs=Math.max(7,Math.max(bw,bh)/34), gfs=Math.max(5.5,Math.max(bw,bh)/52);
   let s='';
-  // back board with axle holes
-  s+=`<rect x="${bx0.toFixed(1)}" y="${(-by1).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="${(Math.min(bw,bh)*0.04).toFixed(1)}" fill="#efe7d5" stroke="#8a6a3c" stroke-width="${(lw*1.3).toFixed(2)}"/>`;
-  if(S.cx.split&&S.cx.split.mode&&S.cx.split.mode!=='off'){ const bt=cxTileBoard(bw,bh,[],S.cx.split); if(bt.length>1){ bt.forEach(tile=>{ if(tile.single)return;
-    const d='M'+tile.poly.map(p=>(bx0+p[0]).toFixed(1)+' '+(-(by1-p[1])).toFixed(1)).join('L')+'Z';
-    s+=`<path d="${d}" fill="none" stroke="#bf3a2b" stroke-width="${(lw*1.1).toFixed(2)}" stroke-opacity="0.85"/>`; });
-    s+=`<text x="${(bx0+4).toFixed(1)}" y="${(-by1+dfs*1.2).toFixed(1)}" font-size="${(dfs*0.9).toFixed(1)}" fill="#bf3a2b" font-family="'Space Mono',monospace">${bt[0].cols}×${bt[0].rows} tiles · ${S.cx.split.mode}</text>`; } }
+  // back board with axle holes — board-local (y down) maps back to world with W()
+  const W=p=>[(bx0+p[0]).toFixed(1),(-(by1-p[1])).toFixed(1)];
+  const Wpath=L=>'M'+L.map(p=>{const q=W(p);return q[0]+' '+q[1];}).join('L')+'Z';
+  if(pl.pieces){ pl.pieces.forEach(pc=>{ s+=`<path d="${Wpath(pc.outer)}" fill="#efe7d5" stroke="#8a6a3c" stroke-width="${(lw*1.3).toFixed(2)}"/>`;
+      pc.inner.forEach(h=>{ s+=`<path d="${Wpath(h)}" fill="var(--paper)" stroke="#8a6a3c" stroke-width="${lw.toFixed(2)}"/>`; }); }); }
+  else s+=`<rect x="${bx0.toFixed(1)}" y="${(-by1).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="${(Math.min(bw,bh)*0.04).toFixed(1)}" fill="#efe7d5" stroke="#8a6a3c" stroke-width="${(lw*1.3).toFixed(2)}"/>`;
+  if(S.cx.split&&S.cx.split.mode&&S.cx.split.mode!=='off'){
+    const bt=pl.pieces?cxShapeTilesDisp(pl,S.cx.split):cxTileBoard(bw,bh,[],S.cx.split); if(bt.length>1){ bt.forEach(tile=>{ if(tile.single)return;
+    (tile.loops||[tile.poly]).forEach(L=>{
+      s+=`<path d="${Wpath(L)}" fill="none" stroke="#bf3a2b" stroke-width="${(lw*1.1).toFixed(2)}" stroke-opacity="0.85"/>`; }); });
+    s+=`<text x="${(bx0+4).toFixed(1)}" y="${(-by1+dfs*1.2).toFixed(1)}" font-size="${(dfs*0.9).toFixed(1)}" fill="#bf3a2b" font-family="'Space Mono',monospace">${bt[0].cols}×${bt[0].rows} tiles · ${S.cx.split.mode}${pl.pieces?' · '+cxBoardShapeLabel():''}</text>`; } }
   const shafts={}; c.gears.forEach(g=>{shafts[(Math.round(g.x*10))+'_'+(Math.round(g.y*10))]={x:g.x,y:g.y,ids:[]};}); c.gears.forEach(g=>shafts[(Math.round(g.x*10))+'_'+(Math.round(g.y*10))].ids.push(g.id));
   Object.values(shafts).forEach(sh=>{ const bh=cxBaseHole(); s+=`<circle cx="${sh.x.toFixed(1)}" cy="${(-sh.y).toFixed(1)}" r="${Math.max(bh/2,1.5).toFixed(1)}" fill="none" stroke="#8a6a3c" stroke-width="${lw.toFixed(2)}"/>`; if(S.cx.bearing&&S.cx.bearing.mode==='seat')s+=`<circle cx="${sh.x.toFixed(1)}" cy="${(-sh.y).toFixed(1)}" r="${Math.max(boreDia()/2,1).toFixed(1)}" fill="none" stroke="#8a6a3c" stroke-width="${(lw*0.6).toFixed(2)}" stroke-dasharray="2 1.5"/>`; });
   // gears low layers first
@@ -3426,10 +3758,10 @@ function drawComplexPreview(){
 function complexReadout(){
   const c=computeComplex(), set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;}, lab=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t;};
   lab('dtA','Gears'); lab('dtB','Layers'); lab('dtC','Output gear'); lab('dtD','Reduction (driver→output)'); lab('dtE','Back board size'); lab('dtF','1 driver turn → output');
-  const red=1/Math.abs(c.output.rate||1), dir=(c.output.rate<0)?'reverse':'same', m2=Math.max(S.thick*2,14);
+  const red=1/Math.abs(c.output.rate||1), dir=(c.output.rate<0)?'reverse':'same', rpl=cxBoardPlan(c);
   set('rRatio',`${c.gears.length}`); set('rDir',`${c.layers}`); set('rCount',`#${c.output.id} · ${c.output.N}T (${dir} direction)`);
   set('rCDs',`${red.toFixed(3)}× (${red>=1?red.toFixed(2)+':1 reduction':(1/red).toFixed(2)+':1 step-up'})`);
-  set('rBase',`${fmt(c.bbox.w+2*m2)} × ${fmt(c.bbox.h+2*m2)}`+(c.overlaps?` · ⚠ ${c.overlaps} overlap${c.overlaps>1?'s':''}`:''));
+  set('rBase',`${fmt(rpl.pw)} × ${fmt(rpl.ph)}`+(rpl.mode!=='rect'?` · ${cxBoardShapeLabel()}`:'')+(c.overlaps?` · ⚠ ${c.overlaps} overlap${c.overlaps>1?'s':''}`:''));
   set('baseDimVal','—'); set('rSpan',`${Math.abs(c.output.rate).toFixed(4)} turns`);
   const bw=document.getElementById('baseWarn'); if(bw)bw.textContent='';
   const msg=document.getElementById('meshMsg');
@@ -3444,7 +3776,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build board-01`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -3538,17 +3870,22 @@ function exportComplex(){
     const nH=Math.max(2,Math.round(edge.len/70)), hy=gap+(mxy-mny)-Math.max(c.m,3); for(let k=0;k<nH;k++){ const hx=x+(edge.len*(k+0.5)/nH); parts.push(`<path d="${svgCircle(boreR,hx,hy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); }
     parts.push(txt(x+(mxx-mnx)/2,gap+(mxy-mny)+2,`rack #${edge.gear} · ${fmt(edge.len)} (m${fmt(c.m)})`,SCORE,3));
     x=x+(mxx-mnx)+gap; rowH=Math.max(rowH,(mxy-mny)+gap*3); });
-  const m2=Math.max(S.thick*2,14), bw=c.bbox.w+2*m2, bh=c.bbox.h+2*m2;
+  const bpl=cxBoardPlan(c), bw=bpl.bw, bh=bpl.bh;
   const shafts={}; c.gears.forEach(g=>{const k=(Math.round(g.x*10))+'_'+(Math.round(g.y*10)); (shafts[k]||(shafts[k]={x:g.x,y:g.y,ids:[]})).ids.push(g.id);});
   const bHoles=Object.values(shafts).map(s=>({x:(s.x-c.bbox.cx)+bw/2, y:(c.bbox.cy-s.y)+bh/2, r:Math.max(cxBaseHole()/2-kh,0.3), lbl:s.ids.map(id=>{const g=c.byId[id];return '#'+id+'·'+(g?g.N+'T':'');}).join('/')}));
   cxPostWorld(c).forEach(pp=>bHoles.push({x:(pp.x-c.bbox.cx)+bw/2, y:(c.bbox.cy-pp.y)+bh/2, r:Math.max(cxDowelHole()/2-kh,0.3)}));
-  const tiles=cxTileBoard(bw,bh,bHoles,S.cx.split||{mode:'off'});
+  const tiles=cxShapeTiles(bpl,bHoles,S.cx.split||{mode:'off'});
   let bbx=gap, bby=rowH+gap, browH=0;
   tiles.forEach(tile=>{ if(bbx>gap && bbx+tile.w>Math.max(bw,1600)){ bby+=browH+gap; bbx=gap; browH=0; }
     const px=bbx-tile.mnx, py=bby-tile.mny;
-    if(tile.single){ parts.push(`<path d="${pathFrom(roundRectLoop(bw,bh,Math.min(bh/2,16),8),bbx+bw/2,bby+bh/2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(bbx+bw/2,bby-2,`baseplate · ${Object.keys(shafts).length} shafts`,SCORE,3.2)); }
-    else { parts.push(`<path d="M${tile.poly.map(p=>(p[0]+px).toFixed(2)+' '+(p[1]+py).toFixed(2)).join('L')}Z" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(bbx+tile.w/2,bby-2,`board ${tile.col+1},${tile.row+1} of ${tile.cols}×${tile.rows}`,SCORE,3)); }
-    tile.holes.forEach(h=>{ const hr=(h.r!=null)?h.r:Math.max(cxBaseHole()/2-kh,0.3); parts.push(`<path d="${svgCircle(hr,h.x+px,h.y+py)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); if(h.seat)parts.push(`<path d="${svgCircle(boreR,h.x+px,h.y+py)}" fill="none" stroke="${SCORE}" stroke-width="${SW}"/>`); if(h.lbl&&!!S.engraveLabels)parts.push(txt(h.x+px,h.y+py-hr-3,h.lbl,SCORE,3.4)); });
+    const nm=(tile.cols>1||tile.rows>1)?`board ${tile.col+1},${tile.row+1} of ${tile.cols}×${tile.rows}`:`baseplate · ${Object.keys(shafts).length} shafts`;
+    if(tile.pieces){ tile.pieces.forEach(pc=>{ [pc.outer].concat(pc.inner).forEach(L=>{
+          parts.push(`<path d="M${L.map(q=>(q[0]+px).toFixed(2)+' '+(q[1]+py).toFixed(2)).join('L')}Z" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); }); });
+      parts.push(txt(bbx+tile.w/2,bby-2,`${nm} · ${cxBoardShapeLabel()}${tile.pieces.length>1?` · ${tile.pieces.length} loose pieces`:''}`,SCORE,3)); }
+    else if(tile.single){ parts.push(`<path d="${pathFrom(roundRectLoop(bw,bh,Math.min(bh/2,16),8),bbx+bw/2,bby+bh/2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(bbx+bw/2,bby-2,nm,SCORE,3.2)); }
+    else { parts.push(`<path d="M${tile.poly.map(p=>(p[0]+px).toFixed(2)+' '+(p[1]+py).toFixed(2)).join('L')}Z" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(bbx+tile.w/2,bby-2,nm,SCORE,3)); }
+    tile.holes.forEach(h=>{ if(tile.pieces&&!tile.pieces.some(pc=>cxPieceHas(pc,h.x,h.y)))return;
+      const hr=(h.r!=null)?h.r:Math.max(cxBaseHole()/2-kh,0.3); parts.push(`<path d="${svgCircle(hr,h.x+px,h.y+py)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); if(h.seat)parts.push(`<path d="${svgCircle(boreR,h.x+px,h.y+py)}" fill="none" stroke="${SCORE}" stroke-width="${SW}"/>`); if(h.lbl&&!!S.engraveLabels)parts.push(txt(h.x+px,h.y+py-hr-3,h.lbl,SCORE,3.4)); });
     bbx+=tile.w+gap*1.5; browH=Math.max(browH,tile.h); });
   x=Math.max(x,bbx); rowH=bby+browH;
   const totalW=Math.max(x,bw+gap*2)+gap, totalH=rowH+gap;
@@ -3661,12 +3998,21 @@ function renderComplexUI(){
     bom.innerHTML=`<div class="lab"><label>Project materials</label><button class="btn ghost" id="cxBOMCopy" style="padding:2px 10px;font-size:12px">⧉ copy list</button></div>${summary}<div style="margin-top:6px"><div style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#7a5a1c;margin-bottom:2px">▸ LASER-CUT · ${S.thick}mm wood</div>${b.cut.map(row).join('')}</div><div style="margin-top:10px"><div style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#7a5a1c;margin-bottom:2px">▸ BUY SEPARATELY</div>${b.buy.map(row).join('')}</div>`;
   }
   const spl=document.getElementById('cxSplit');
-  if(spl){ const P=S.cx.split||{mode:'off',maxW:600,maxH:400,overlap:18}; const c2=computeComplex(), m2=Math.max(S.thick*2,14), bw=(c2.bbox.w+2*m2), bh=(c2.bbox.h+2*m2);
+  if(spl){ const P=S.cx.split||{mode:'off',maxW:600,maxH:400,overlap:18}; const c2=computeComplex();
+    if(!S.cx.board)S.cx.board={shape:'rect',off:8};
+    const bpl=cxBoardPlan(c2), bw=bpl.bw, bh=bpl.bh;
+    const BS=cxBoardShapeMode(), BO=cxBoardOff(), BR=cxBoardOffRange(), nPieces=bpl.pieces?bpl.pieces.length:1;
+    const shChips=[['rect','rectangle'],['curved','curved'],['minimal','minimal']]
+      .map(o=>`<button class="chip" data-cxbshape="${o[0]}" aria-pressed="${BS===o[0]?'true':'false'}" style="padding:4px 11px;cursor:pointer">${o[1]}</button>`).join('');
+    const offRow=(BS==='rect')?'':`<div class="cstage-top" style="margin-top:8px"><span class="clab">${BS==='minimal'?'strip width':'offset'}</span><span class="cstep"><button data-cxbo="-5">−</button><input type="number" value="${BO}" id="cxBoardOffN" min="${BR.min}" max="${BR.max}" step="5"><button data-cxbo="5">＋</button></span><span class="clab">mm (${BR.min} to +${BR.max})</span></div><div class="hint">${BS==='curved'?`Measured out from each gear's <b>tip circle</b>. <b>0</b> traces the teeth; <b>negative</b> pulls the discs inside the rims for a rounded skeleton; <b>positive</b> pads them out into one broad blob. Struts bridge the mesh links as soon as the discs stop touching.`:`Half-width of the strips running shaft to shaft. Anything under the minimum is lifted to it, so every bolt hole keeps its boss.`}</div>`;
+    const sizeTxt=bpl.pieces?`${fmt(bpl.pw)} × ${fmt(bpl.ph)} envelope`:`${fmt(bw)} × ${fmt(bh)}`;
+    const warn=(nPieces>1)?`<div class="hint" style="color:#bf3a2b"><b>⚠ The outline has fallen into ${nPieces} separate pieces</b> — they'll cut as loose parts that need joining. Raise the ${BS==='minimal'?'strip width':'offset'} to knit them back together.</div>`:'';
+    const shapeBox=`<div class="lab"><label>Back board shape</label><span class="val">${sizeTxt}</span></div><div class="hint">The plate the whole machine bolts to. <b>Rectangle</b> is the full sheet. <b>Curved</b> blends a disc round every gear into one organic outline. <b>Minimal</b> keeps only strips along the shafts — least wood, most air. Spacer rings and standoff posts always keep a full pad of wood under them, whatever the outline does.</div><div class="cstage-top" style="margin-top:8px"><span class="clab">shape</span><span style="display:flex;gap:5px;flex-wrap:wrap">${shChips}</span></div>${offRow}${warn}<div style="height:12px;border-bottom:1px solid var(--ink-soft);margin-bottom:12px"></div>`;
     const cols=P.mode==='off'?1:Math.max(1,Math.ceil(bw/P.maxW)), rows=P.mode==='off'?1:Math.max(1,Math.ceil(bh/P.maxH));
-    const ML={off:'off (one full board)',butt:'butt (glue flat edges)',overlap:'overlap lap (glue faces)',finger:'finger joint (interlock)',dovetail:'dovetail (interlock + lock)'};
-    const modes=['off','butt','overlap','finger','dovetail'];
+    const ML={off:'off (one full board)',butt:'butt (glue flat edges)',overlap:'overlap lap (glue faces)',finger:'finger joint (interlock)',dovetail:'dovetail (interlock + lock)',gear:'gear teeth (curved, matches the gears)'};
+    const modes=['off','butt','overlap','finger','dovetail','gear'];
     const shd=sheetDims();
-    spl.innerHTML=`<div class="lab"><label>Back board splitting</label><span class="val">${fmt(bw)} × ${fmt(bh)}</span></div><div class="hint">The board is ${fmt(bw)} × ${fmt(bh)} — if that's bigger than your laser sheet, split it into tiles that join. ${P.mode!=='off'?`<b>${cols}×${rows} = ${cols*rows} tiles</b> at ≤ ${P.maxW}×${P.maxH} mm.`:''}<br>Tile size follows your <b>laser sheet size</b> (${shd[0]}×${shd[1]} mm) ${P.custom?`\u2014 <b>overridden</b>`:`from 01 Set up the scale`}.</div><div class="cstage-top" style="margin-top:8px"><span class="clab">join</span><select class="selin" id="cxSplitMode" style="width:auto">${modes.map(m=>`<option value="${m}"${P.mode===m?' selected':''}>${ML[m]}</option>`).join('')}</select></div>`+(P.mode!=='off'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">max tile</span><span class="cstep"><button data-cxsp="maxW" data-d="-50">−</button><input type="number" value="${P.maxW}" id="cxSplitW" min="100" step="50"><button data-cxsp="maxW" data-d="50">＋</button></span><span class="cstep"><button data-cxsp="maxH" data-d="-50">−</button><input type="number" value="${P.maxH}" id="cxSplitH" min="100" step="50"><button data-cxsp="maxH" data-d="50">＋</button></span></div>${P.custom?`<button class="btn ghost" data-cxspreset="1" style="padding:4px 10px;font-size:11px;margin-top:6px">↺ match laser sheet (${shd[0]}×${shd[1]})</button>`:''}`+((P.mode==='overlap'||P.mode==='finger'||P.mode==='dovetail')?`<div class="cstage-top" style="margin-top:8px"><span class="clab">${P.mode==='overlap'?'overlap':'tooth depth'}</span><span class="cstep"><button data-cxsp="overlap" data-d="-2">−</button><input type="number" value="${P.overlap}" id="cxSplitO" min="4" max="40" step="2"><button data-cxsp="overlap" data-d="2">＋</button></span><span class="hint">mm</span></div>`:''):'');
+    spl.innerHTML=shapeBox+`<div class="lab"><label>Back board splitting</label><span class="val">${fmt(bw)} × ${fmt(bh)}</span></div><div class="hint">The board is ${fmt(bw)} × ${fmt(bh)} — if that's bigger than your laser sheet, split it into tiles that join. ${P.mode!=='off'?`<b>${cols}×${rows} = ${cols*rows} tiles</b> at ≤ ${P.maxW}×${P.maxH} mm.`:''}<br>Tile size follows your <b>laser sheet size</b> (${shd[0]}×${shd[1]} mm) ${P.custom?`\u2014 <b>overridden</b>`:`from 01 Set up the scale`}.${bpl.pieces?`<br>A <b>${cxBoardShapeLabel()}</b> board is clipped to the tiles, so the join teeth sit right on the cut line. Where a seam crosses a <b>narrow</b> strip the teeth can be wider than the wood — drop the tooth depth, or nudge the tile size so the seam falls on a thicker part.`:''}</div><div class="cstage-top" style="margin-top:8px"><span class="clab">join</span><select class="selin" id="cxSplitMode" style="width:auto">${modes.map(m=>`<option value="${m}"${P.mode===m?' selected':''}>${ML[m]}</option>`).join('')}</select></div>`+(P.mode!=='off'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">max tile</span><span class="cstep"><button data-cxsp="maxW" data-d="-50">−</button><input type="number" value="${P.maxW}" id="cxSplitW" min="100" step="50"><button data-cxsp="maxW" data-d="50">＋</button></span><span class="cstep"><button data-cxsp="maxH" data-d="-50">−</button><input type="number" value="${P.maxH}" id="cxSplitH" min="100" step="50"><button data-cxsp="maxH" data-d="50">＋</button></span></div>${P.custom?`<button class="btn ghost" data-cxspreset="1" style="padding:4px 10px;font-size:11px;margin-top:6px">↺ match laser sheet (${shd[0]}×${shd[1]})</button>`:''}`+((P.mode==='overlap'||P.mode==='finger'||P.mode==='dovetail')?`<div class="cstage-top" style="margin-top:8px"><span class="clab">${P.mode==='overlap'?'overlap':'tooth depth'}</span><span class="cstep"><button data-cxsp="overlap" data-d="-2">−</button><input type="number" value="${P.overlap}" id="cxSplitO" min="4" max="40" step="2"><button data-cxsp="overlap" data-d="2">＋</button></span><span class="hint">mm</span></div>`:''):'');
   }
   const brg=document.getElementById('cxBearing');
   if(brg){ let B=S.cx.bearing||{mode:'none',od:8}; if(B.mode==='seat')B.mode='gears'; if(B.hole==null)B.hole=B.od; S.cx.bearing=B;
@@ -4204,6 +4550,7 @@ function cxLoadExample2(){
   S.cx={ nextId:19, sel:18, m:2.25, scale:0.75, linkW:20,
     converters:[], edges:[], dowelHole:6,
     split:{mode:'off',overlap:10},
+    board:{shape:'rect',off:8},
     bearing:{mode:'none',od:8,hole:8},
     backlash:(S.cx&&S.cx.backlash!=null)?S.cx.backlash:0.08,
     penDia:(S.cx&&S.cx.penDia)||10, penSides:(S.cx&&S.cx.penSides)||0,
@@ -4599,11 +4946,17 @@ document.getElementById('cxEdge').addEventListener('change',e=>{const t=e.target
   renderComplexUI();everything();});
 document.getElementById('cxBOM').addEventListener('click',e=>{if(e.target.closest('#cxBOMCopy')){navigator.clipboard&&navigator.clipboard.writeText(cxBOMText());const b=e.target.closest('#cxBOMCopy');if(b){const o=b.textContent;b.textContent='copied ✓';setTimeout(()=>{b.textContent=o;},1400);}}});
 document.getElementById('cxSplit').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const P=S.cx.split;
+  if(b.dataset.cxbshape){ if(!S.cx.board)S.cx.board={shape:'rect',off:8}; S.cx.board.shape=b.dataset.cxbshape; renderComplexUI(); everything(); return; }
+  if(b.dataset.cxbo){ const R=cxBoardOffRange(); if(!S.cx.board)S.cx.board={shape:'rect',off:8};
+    S.cx.board.off=Math.max(R.min,Math.min(R.max,cxBoardOff()+(+b.dataset.cxbo))); renderComplexUI(); everything(); return; }
   if(b.dataset.cxspreset){ P.custom=false; cxSyncSplitMax(); renderComplexUI(); everything(); return; }
   if(!b.dataset.cxsp)return; const f=b.dataset.cxsp,d=+b.dataset.d;
   if(f==='maxW'||f==='maxH')P.custom=true;
   P[f]=Math.max(f==='overlap'?4:100,(P[f]||0)+d);renderComplexUI();everything();});
 document.getElementById('cxSplit').addEventListener('change',e=>{const t=e.target,P=S.cx.split;
+  if(t.id==='cxBoardOffN'){ const R=cxBoardOffRange(); if(!S.cx.board)S.cx.board={shape:'rect',off:8};
+    let v=Math.round(+t.value); if(!isFinite(v))v=cxBoardOff();
+    S.cx.board.off=Math.max(R.min,Math.min(R.max,v)); renderComplexUI(); everything(); return; }
   if(t.id==='cxSplitW'||t.id==='cxSplitH')P.custom=true;
   if(t.id==='cxSplitMode')P.mode=t.value; else if(t.id==='cxSplitW')P.maxW=Math.max(100,Math.round(+t.value)||P.maxW); else if(t.id==='cxSplitH')P.maxH=Math.max(100,Math.round(+t.value)||P.maxH); else if(t.id==='cxSplitO')P.overlap=Math.max(4,Math.min(40,Math.round(+t.value)||P.overlap)); else return;
   renderComplexUI();everything();});
@@ -4845,7 +5198,8 @@ window.addEventListener('resize',applySize);
 if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){S.playing=false;document.getElementById('playBtn').textContent='▶ play';document.getElementById('playBtn').setAttribute('aria-pressed','false');}
 
 /* movement switcher */
-function setMovement(m){ resetSvgView();
+function setMovement(m){ if(!cxDoorAllows(m))m=CX_DOOR.home;
+  resetSvgView();
   if(m===S.movement)return;
   S.movement=m; S.baseW=0; S.baseH=0;
   try{placeSpokes();}catch(_){}
@@ -4890,12 +5244,68 @@ document.getElementById('modeSeg').addEventListener('click',e=>{const b=e.target
   // if the current movement isn't in this mode, switch to the first one that is
   const inMode=mode==='combine'?COMBINE_MOVEMENTS.includes(S.movement):!COMBINE_MOVEMENTS.includes(S.movement);
   if(!inMode)setMovement(mode==='combine'?'composer':'gearing'); });
+/* ---- two doors, one codebase ------------------------------------------------------------
+   ?tool=movements     → Making Mechanical Movements (the single movements + Composer)
+   ?tool=contraptions  → The Clever Contraptions Corner (the Complex Workbench on its own)
+   no parameter        → the whole workshop, exactly as before, so old links still work.
+   Splitting this into two files would mean two copies of the gear geometry, the renderer, the
+   nesting and the manual — about three quarters of the code — so the tools are separated at the
+   door instead, and there is only ever one of everything to fix. -------------------------- */
+const CX_DOORS={
+  movements:{ name:'movements', title:'Making Mechanical Movements',
+    sub:'Manual — single movements, and chaining them together',
+    allow:['gearing','crank','cam','rack','ratchet','scotch','internal','planetary','fourbar','composer'],
+    home:'gearing', dropManual:[8], hideExamples:true },
+  contraptions:{ name:'contraptions', title:'The Clever Contraptions Corner',
+    sub:'Manual — the Complex Workbench',
+    allow:['complex'], home:'complex', dropManual:[4], hideExamples:false }
+};
+var CX_DOOR=null;
+function cxDoorAllows(m){ return !CX_DOOR || CX_DOOR.allow.indexOf(m)>=0; }
+function cxDoorName(str){
+  let v='';
+  try{ const q=String(str!=null?str:((location.search||'')+' '+(location.hash||''))).toLowerCase();
+    const mm=q.match(/tool=([a-z]+)/); v=mm?mm[1]:(q.indexOf('#')>=0?q.slice(q.indexOf('#')+1).trim():''); }catch(_){ return null; }
+  if(v==='movements'||v==='movement'||v==='mechanical')return 'movements';
+  if(v==='contraptions'||v==='contraption'||v==='complex')return 'contraptions';
+  return null; }
+// Hide whole manual sections and renumber what is left, so a door never shows 7 followed by 9.
+function cxFilterManual(drop,root){
+  root=root||document.querySelector('.mn-doc'); if(!root||!drop||!drop.length)return 0;
+  const kids=root.children?[].slice.call(root.children):[]; let sec=0, keep=true, out=0;
+  kids.forEach(el=>{
+    const isH=el.classList&&el.classList.contains('mn-h1');
+    if(isH){ sec++; keep=drop.indexOf(sec)<0;
+      if(keep){ out++; const t=String(el.textContent||''), i=t.indexOf('\u00b7');
+        el.textContent=out+' \u00b7 '+(i>=0?t.slice(i+1).trim():t.trim()); } }
+    if(!keep&&el.classList)el.classList.add('hide'); });
+  const toc=root.querySelector?root.querySelector('.mn-toc ol'):null;
+  if(toc&&toc.children){ [].slice.call(toc.children).forEach((li,i)=>{
+    if(drop.indexOf(i+1)>=0&&li.classList)li.classList.add('hide'); }); }
+  return out; }
+function applyDoor(){
+  const D=CX_DOORS[cxDoorName()]; if(!D)return null;
+  CX_DOOR=D;
+  try{ document.title=D.title+' \u00b7 Curiosity.diy'; }catch(_){}
+  const set=(sel,txt)=>{ const e=document.querySelector?document.querySelector(sel):null; if(e)e.textContent=txt; };
+  set('.brand',D.title); set('.mn-title',D.title); set('.mn-sub',D.sub);
+  // only this door's movement tabs
+  const tabs=document.querySelectorAll?document.querySelectorAll('#moveNav .mtab'):[];
+  [].slice.call(tabs).forEach(t=>{ const m=t.dataset&&t.dataset.m;
+    if(m&&!cxDoorAllows(m)&&t.classList)t.classList.add('hide'); });
+  if(D.allow.length===1){ ['modeSeg','singleTabs'].forEach(id=>{ const e=document.getElementById(id); if(e)e.classList.add('hide'); }); }
+  if(D.hideExamples){ ['exampleTab','exampleSection','exReveal'].forEach(id=>{ const e=document.getElementById(id); if(e)e.classList.add('hide'); }); }
+  cxFilterManual(D.dropManual);
+  if(!cxDoorAllows(S.movement)||D.allow.length===1)setMovement(D.home);
+  return D; }
 /* mobile: shrink / grow the pinned preview so controls get the screen */
 document.getElementById('shrinkBtn').addEventListener('click',()=>{document.querySelector('.hero').classList.toggle('compact');if(GL&&GL.ok)GL.draw();});
 
 (function(){const cm=document.querySelector('.ccmain'),hero=document.querySelector('.hero'),csp=document.getElementById('cutSheetPanel');
   if(cm&&hero){const col=document.createElement('div');col.className='leftcol';cm.insertBefore(col,hero);col.appendChild(hero);if(csp)col.appendChild(csp);}})();
-renderGearList();refreshBolts();syncSizeUI();try{renderPrep();placeSpokes();cxUndoBtn();}catch(_){} updateReadout();applySize();applyView();
+renderGearList();refreshBolts();syncSizeUI();try{renderPrep();placeSpokes();cxUndoBtn();}catch(_){}
+try{applyDoor();}catch(e){console.error('door routing failed',e);}
+updateReadout();applySize();applyView();
 </script>
 </body>
 </html>
