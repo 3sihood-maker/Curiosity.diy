@@ -432,6 +432,25 @@
 <p class="mn-p">The scale buttons resize the whole mechanism — module, arm lengths, pin radii — by an exact factor, relative to the original. Because clearance and hole fits are proportional or absolute as appropriate, a scaled machine still assembles correctly.</p>
 <h4 class="mn-h2">Pens and arms</h4>
 <ul class="mn-ul"><li>A <b>pen</b> can ride on a gear pin, a linkage joint, or part-way along an arm.</li><li><b>Arms</b> pivot on joints. A <b>branch</b> is glued rigidly to an arm — it is not a pivot — and carries the pen at its tip.</li><li>The <b>pen collar</b> is a teardrop piece: the pen drops through the hole at the round end, and the narrow end bolts to the branch tip.</li><li>The pen hole can be round or a 3-8 sided polygon, measured across the flats — so a hex hole grips a hex pencil.</li></ul>
+<h4 class="mn-h2">The X-Y pen carriage</h4>
+<p class="mn-p">Set <b>How the pen is carried</b> to <b>X-Y carriage</b> and two converters take over. Each one's output block grows a <b>slotted arm</b> lying across its own direction of travel, and a single pin dropped through both slots is the pen. Slot A fixes where the pen sits along A's axis, slot B along B's, and the crossing point is the pen.</p>
+<p class="mn-p">Neither arm carries the other — both are driven straight off their own yoke, so there is nothing cantilevered and nothing stacked. The slots are cut long enough to cover the full stroke, and both arms appear on the cut sheets as <b>pen slide X</b> and <b>pen slide Y</b>. No linkage arms are needed at all in this mode.</p>
+<dl class="mn-kv"><dt>You need exactly two</dt><dd>One converter cannot fix a point, and three over-constrain it. The panel says so if you have the wrong number.</dd><dt>They must cross</dt><dd>Two nearly parallel slides do not hold the pen. Set them at least 12° apart; 90° is the usual choice.</dd><dt>Stack order</dt><dd>The two arms sit on different levels so they pass each other freely, with the pen pin long enough to reach through both.</dd></dl>
+<h4 class="mn-h2">Summing two throws on one axis</h4>
+<p class="mn-p">Give <b>two</b> converters the same <b>dir</b> and they share an axis. A <b>summing bar</b> spans them — pinned to the first block, slotted over the second — and the pen rides a slot along that bar. As the two blocks move by different amounts the bar tilts, so that axis carries a blend of both throws rather than just one.</p>
+<p class="mn-p">The quickest way to get one is the <b>+ summing bar</b> button in the pen panel: it adds a converter on a gear that is not already driving the pen, sets its direction to match the axis you chose, and switches it to move the pen — all three steps at once. <b>Example 5 · Compound harmonograph</b> is built this way.</p>
+<p class="mn-p">It changes the <i>character</i> of the figure — one axis stops being a plain sinusoid and becomes a blend of two. Measured honestly it does not simply fill more of the page: on the machines tested so far, a well chosen gear ratio covers more paper than a summing bar does. Use it for the shape it gives, not for coverage. Keep it to two converters per axis — a third has nowhere to pin, and the panel will say so.</p>
+<div class="mn-note">The blend is <i>weighted by where the pen happens to be along the bar</i>, so it is a coupled sum rather than a plain one. That is a good thing for the drawings — it puts harmonics in that a simple sum would not give you.</div>
+<h4 class="mn-h2">Getting a richer figure</h4>
+<dl class="mn-kv"><dt>Choose an untidy ratio</dt><dd>By far the biggest change. Two gears sharing a common factor close in a handful of turns and look sparse; two that share none take dozens of turns and weave a dense lattice. Example 4 runs 47T against 42T — a ratio of 1.119, sharing nothing — which needs 42 turns to close and fills about two thirds of its square. Change the driver to 49T and it closes in 6 turns and looks bare by comparison.</dd><dt>Turn up the cycles</dt><dd>A detuned ratio needs turns to show itself. Example 4 runs 40; <b>auto</b> works out the natural period for you.</dd><dt>Put the paper on a turntable</dt><dd>Mount the paper on one of the gears and the whole figure is drawn into a rotating frame, sweeping it into a broad annular rosette.</dd><dt>Sum an axis</dt><dd>Changes the shape rather than the coverage — see above. Worth trying for its own sake, but the ratio is the bigger lever.</dd></dl>
+<h4 class="mn-h2">Lissajous figures</h4>
+<p class="mn-p">To draw a Lissajous — the figure of eight and its relatives — the pen needs a pure sine along one axis and another along the other. Only the <b>scotch yoke</b> gives that: its output is a perfect sinusoid, where a crank's is spoilt by the connecting rod and comes out about a third as clean. Example 4 is set up this way.</p>
+<dl class="mn-kv"><dt>Ratio</dt><dd>The two gears' tooth counts set the frequency ratio. 40T and 20T give 1:2, the classic figure of eight; 45T and 15T give 1:3; 45T and 30T give 2:3.</dd><dt>Phase</dt><dd>Rotate the second gear's <b>mesh angle</b> around the first. This opens the figure from a degenerate arc, through an open loop, to the crossed figure of eight, and back.</dd><dt>Size</dt><dd>Each yoke's crank radius sets the swing along its own axis.</dd><dt>Fixed home</dt><dd>Both arm pins sit at radius <b>0</b>, pivoting on the gears' own shafts, so the linkage holds the pen at a fixed point and the yokes do all the drawing. Any larger radius mixes the arms' own motion back in.</dd></dl>
+<div class="mn-note">Example 4 ships with the <b>X-Y carriage</b> switched on, so the slides that carry the pen are cut along with everything else. A converter set to <b>moves the paper</b> is still modelled without hardware — the driven paper bed has no parts yet.</div>
+<h4 class="mn-h2">Driving a pin from a converter</h4>
+<p class="mn-p">A pin normally orbits a gear, so it feeds the linkage a circle. It can instead ride the <b>output block</b> of a converter — the slider of a crank, the yoke of a scotch, the follower of a cam — which feeds the linkage a straight reciprocation. Choose the converter in the pin's own dropdown, next to the gears.</p>
+<p class="mn-p">The second field then reads <b>along the slide</b> rather than distance from centre: <b>0</b> sits on the block's centre, and moving it shifts the pin up or down the slide axis to reach either end of the block. The hole is cut in the block for you.</p>
+<div class="mn-note">A circle crossed with a straight reciprocation draws a very different family of figures from two circles — closer to a Lissajous than a rosette. If the pen disappears, the linkage cannot reach: the two arm lengths need to span the distance between the pins across the <i>whole</i> stroke, not just at the position you happen to be looking at.</div>
 <h4 class="mn-h2">Reading the drawing</h4>
 <p class="mn-p">A <b>closed</b> figure repeats after a set number of turns. An <b>open</b> figure never quite closes, so it weaves denser the longer it runs — set <b>run for N turns</b> to control how much it fills in.</p>
 <h4 class="mn-h2">The shape of the back board</h4>
@@ -593,6 +612,8 @@
             <button class="btn" id="exLoad1">1 · Drawing machine 01</button>
             <button class="btn" id="exLoad2">2 · Drawing machine 02</button>
             <button class="btn" id="exLoad3">3 · Rosette machine</button>
+            <button class="btn" id="exLoad4">4 · Lissajous machine</button>
+            <button class="btn" id="exLoad5">5 · Compound harmonograph</button>
             <button class="btn ghost" id="exUndo" disabled>↩ Undo load</button>
           </div>
           <div class="hint" id="exNote" style="margin-top:7px"><b>01</b> a six-lobed pintograph — four gears, two pins, a coupler arm and a pen. <b>02</b> a woven ring — ten gears on two layers with compound stacks, driving a long arm over a circular paper board. Both open in the Complex Workbench, where you can change anything.</div>
@@ -2848,7 +2869,13 @@ function computeComplex(){ try{cxSyncSplitMax();}catch(_){}
   for(let i=0;i<G.length;i++)for(let j=i+1;j<G.length;j++){ const a=G[i],b=G[j]; if(a.layer!==b.layer)continue;
     const d=Math.hypot(a.x-b.x,a.y-b.y), meshD=m*(a.N+b.N)/2; if(d<a.rp+b.rp-1 && Math.abs(d-meshD)>1.5) overlaps++; }
   const output=G[G.length-1];
-  const pen=(S.cx.pen&&S.cx.pen.pins&&S.cx.pen.pins.length>=1&&S.cx.pen.joints&&S.cx.pen.joints.length>=1&&S.cx.pen.pins.every(p=>byId[p.g]))?S.cx.pen:null;
+  // a pin is usable if it resolves to something real — a gear, or a converter whose host gear
+  // exists. Testing byId[p.g] alone threw the whole linkage away the moment a pin moved onto a
+  // converter output, which looks exactly like the pen silently vanishing.
+  const cvHostOK=id=>{ const L=S.cx.converters||[]; for(const v of L)if(v.id===id)return !!byId[v.gear]; return false; };
+  const pinOK=p=>!!p&&(p.cv!=null?cvHostOK(p.cv):!!byId[p.g]);
+  const pen=(S.cx.pen&&(S.cx.pen.mode==='carriage'
+      ||(S.cx.pen.pins&&S.cx.pen.pins.length>=1&&S.cx.pen.joints&&S.cx.pen.joints.length>=1&&S.cx.pen.pins.every(pinOK))))?S.cx.pen:null;
   return {gears:G,m,byId,pen,bbox:{minX:mnx,maxX:mxx,minY:mny,maxY:mxy,cx:(mnx+mxx)/2,cy:(mny+mxy)/2,w:mxx-mnx,h:mxy-mny},layers:maxL+1,output,overlaps};
 }
 function cxFrac(x){ return Math.abs(x-Math.round(x)); }
@@ -2878,8 +2905,139 @@ function cxArmDir(baseRef,pin,jt,joints,wl,welds){ if(!baseRef||!baseRef.on)retu
 function cxWeldTip(w,pin,jt,wl,joints,welds){ const base=cxRefPos(w.base,pin,jt,joints,wl,welds), d=cxArmDir(w.base,pin,jt,joints,wl,welds);
   if(!base||d==null)return null; const ang=d+(w.ang==null?90:w.ang)*Math.PI/180, L=w.len||100; return [base[0]+L*Math.cos(ang), base[1]+L*Math.sin(ang)]; }
 function cxNodePos(ref,pin,jt){ const P=S.cx.pen||{}; return cxRefPos(ref,pin,jt,P.joints||[],P._wl||null,P.welds||[]); }
-function cxPenAt(c,ang){ const P=c.pen; if(!P||!P.pins||!P.joints||P.pins.length<1||P.joints.length<1)return null;
-  const pinPos=P.pins.map(pn=>{ const g=c.byId[pn.g]; if(!g)return null; const th=g.phase+g.rate*ang; return [g.x+pn.r*Math.cos(th),g.y+pn.r*Math.sin(th)]; });
+/* A linkage pin either orbits on a gear, or rides the output of a converter — the slider of a
+   crank, the yoke of a scotch, the follower of a cam. Both stay closed-form in the driver angle,
+   so the trace can still be evaluated at any angle rather than stepped. `along` slides the pin up
+   and down the slide axis from the block's centre; that is the block's own +x, the same local
+   frame the gear pin holes already use, so the cut hole and the kinematics cannot disagree. */
+function cxConvById(id){ const L=S.cx&&S.cx.converters; if(!L)return null;
+  for(const v of L)if(v.id===id)return v; return null; }
+function cxPinIsConv(pn){ return !!(pn&&pn.cv!=null); }
+function cxPinHost(c,pn){ if(cxPinIsConv(pn)){ const v=cxConvById(pn.cv); return v?(c.byId[v.gear]||null):null; }
+  return c.byId[pn.g]||null; }
+function cxPinAt(c,pn,ang){
+  if(cxPinIsConv(pn)){ const v=cxConvById(pn.cv); if(!v)return null;
+    const g=c.byId[v.gear]; if(!g)return null;
+    const A=cxConvAt(v,g,ang), d=pn.along||0;
+    return [A.slider[0]+d*A.u[0], A.slider[1]+d*A.u[1]]; }
+  const g=c.byId[pn.g]; if(!g)return null;
+  const th=g.phase+g.rate*ang;
+  return [g.x+pn.r*Math.cos(th),g.y+pn.r*Math.sin(th)]; }
+function cxPinRates(c,P){ if(P&&P.mode==='carriage')return cxPenDrives(c).map(x=>x.g.rate);
+  return (P.pins||[]).map(pn=>{ const g=cxPinHost(c,pn); return g?g.rate:0; }); }
+/* ---- the X-Y pen carriage -------------------------------------------------------------
+   Two converters set to "moves the pen" become a crossed-slide plotter. Each one's output block
+   carries a slotted arm at right angles to its own travel; a single pin dropped through both
+   slots is the pen. Slot A fixes the pen's coordinate along A's axis, slot B along B's, and the
+   crossing point is the pen. Nothing is stacked and neither arm carries the other, so both are
+   driven straight off their own yoke — and every part of it is cut. ---------------------- */
+function cxPenDrives(c){ const out=[];
+  (S.cx.converters||[]).forEach(v=>{ if(v.drive!=='pen')return; const g=c.byId[v.gear]; if(g)out.push({v,g}); });
+  return out; }
+/* Each axis contributes a LINE, and the pen sits where the two lines cross.
+   One converter on an axis gives a line through its block, square to its travel — a plain slide.
+   Two converters on the same axis give a line through BOTH blocks: the summing bar. As the two
+   blocks move by different amounts the bar tilts, and the pen's position along that axis becomes
+   a blend of the two throws, weighted by where the pen happens to be across the bar. That is a
+   coupled sum, richer than a plain one, and it costs a single extra pin. The bar is pinned at one
+   end and slotted at the other, because the distance between the two blocks keeps changing. */
+function cxAngClose(a,b){ let d=Math.abs(a-b)%180; if(d>90)d=180-d; return d<6; }
+function cxPenAxes(c){ const out=[];
+  cxPenDrives(c).forEach(x=>{ const a=(((x.v.dir||0)%180)+180)%180;
+    const g=out.find(G0=>cxAngClose(G0.a,a));
+    if(g)g.list.push(x); else out.push({a,list:[x]}); });
+  return out; }
+function cxAxisLine(grp,ang){ const L=grp.list, A=cxConvAt(L[0].v,L[0].g,ang);
+  if(L.length<2)return {p:A.slider,d:[-A.u[1],A.u[0]],single:true};
+  const B=cxConvAt(L[1].v,L[1].g,ang);
+  const dx=B.slider[0]-A.slider[0], dy=B.slider[1]-A.slider[1], m=Math.hypot(dx,dy);
+  if(m<1e-6)return {p:A.slider,d:[-A.u[1],A.u[0]],single:true};
+  return {p:A.slider,d:[dx/m,dy/m],far:B.slider,sep:m}; }
+function cxCarriageOK(c){ const ax=cxPenAxes(c);
+  if(ax.length!==2||ax.some(g=>g.list.length>2))return null;
+  const l1=cxAxisLine(ax[0],0), l2=cxAxisLine(ax[1],0);
+  const det=l2.d[0]*l1.d[1]-l1.d[0]*l2.d[1];
+  return (Math.abs(det)>0.2)?ax:null; }
+function cxCarriageWhy(c){ const n=cxPenDrives(c).length, ax=cxPenAxes(c);
+  if(n===0)return 'No converter is set to move the pen. Set at least two — one for each axis.';
+  if(n===1)return 'Only one converter moves the pen. A carriage needs two axes, at an angle to each other.';
+  if(ax.length===1)return `All ${n} of them point the same way, so they only make one axis. Turn one set to a different <b>dir</b>.`;
+  if(ax.length>2)return `They point in ${ax.length} different directions. A carriage uses two axes; put the extras on the same dir as one of them and they will be summed by a bar.`;
+  const over=ax.find(g=>g.list.length>2);
+  if(over)return `${over.list.length} converters share one axis. A summing bar spans two — a third has nowhere to pin.`;
+  return 'The two axes are too close to parallel — their lines barely cross, so the pen is not held. Set them at least 12° apart, ideally 90°.'; }
+function cxCarriageAt(c,ang){ const ax=cxCarriageOK(c); if(!ax)return null;
+  const l1=cxAxisLine(ax[0],ang), l2=cxAxisLine(ax[1],ang);
+  const det=l2.d[0]*l1.d[1]-l1.d[0]*l2.d[1];
+  if(Math.abs(det)<1e-9)return null;
+  const ex=l2.p[0]-l1.p[0], ey=l2.p[1]-l1.p[1];
+  const t=(l1.d[0]*ey-ex*l1.d[1])/det;
+  const pen=[l2.p[0]+t*l2.d[0], l2.p[1]+t*l2.d[1]];
+  return {pen,lines:[l1,l2],ax}; }
+// how far the pen runs along each slot, so the arms can be cut long enough
+function cxCarriageSpans(c){ const K=cxCarriageOK(c); if(!K)return null;
+  let T=2; try{ T=Math.max(1,Math.min(24,cxCloses(c).period||2)); }catch(_){}
+  const N=480, out=K.map(()=>({lo:1e9,hi:-1e9,sepLo:1e9,sepHi:-1e9}));
+  for(let i=0;i<=N;i++){ const ang=2*Math.PI*T*i/N, st=cxCarriageAt(c,ang); if(!st)continue;
+    st.lines.forEach((L,k)=>{ const sp=(st.pen[0]-L.p[0])*L.d[0]+(st.pen[1]-L.p[1])*L.d[1];
+      if(sp<out[k].lo)out[k].lo=sp; if(sp>out[k].hi)out[k].hi=sp;
+      if(L.sep!=null){ if(L.sep<out[k].sepLo)out[k].sepLo=L.sep; if(L.sep>out[k].sepHi)out[k].sepHi=L.sep; } }); }
+  if(out.some(o=>o.lo>o.hi))return null;
+  return out.map((o,k)=>({lo:o.lo,hi:o.hi,mid:(o.lo+o.hi)/2,len:o.hi-o.lo,
+    sepLo:(o.sepLo<1e9)?o.sepLo:null, sepHi:(o.sepHi>-1e9)?o.sepHi:null,
+    summed:K[k].list.length>1})); }
+// The pen box is pinned to where the two slot lines cross, which is fixed by the driving gears'
+// own coordinates. So they must be further apart than their tip radii plus the crank throw, along
+// BOTH slide directions. Two gears meshed straight together never are, and the pen ends up
+// sweeping over a wheel where no paper can go. An idler between them buys the separation.
+function cxCarriageFoul(c){ if(!cxCarriageOK(c))return null;
+  let worst=1e9, who=null;
+  for(let i=0;i<=180;i++){ const st=cxCarriageAt(c,2*Math.PI*i/180*2); if(!st)continue;
+    for(const g of c.gears){ const d=Math.hypot(st.pen[0]-g.x,st.pen[1]-g.y)-g.ra;
+      if(d<worst){ worst=d; who=g; } } }
+  return (worst<2&&who)?{gap:worst,gear:who}:null; }
+// the pen slot and the slot the far block's pin rides in, merged if they overlap — two holes laid
+// over each other cancel back into solid material, which would jam the pen
+function cxBarSlots(sp,slotW){
+  const pLo=sp.lo-slotW/2, pHi=sp.hi+slotW/2;
+  if(sp.sepLo==null)return [[sp.mid,sp.len+slotW]];
+  const eLo=sp.sepLo-slotW/2, eHi=sp.sepHi+slotW/2;
+  if(pHi>=eLo-0.01&&eHi>=pLo-0.01){ const a=Math.min(pLo,eLo), b=Math.max(pHi,eHi);
+    return [[(a+b)/2,b-a]]; }
+  return [[sp.mid,sp.len+slotW],[(sp.sepLo+sp.sepHi)/2,(sp.sepHi-sp.sepLo)+slotW]]; }
+// Adding a summing bar by hand means adding a converter, matching its dir to an existing one and
+// remembering to set it to move the pen. This does all three, on a gear that is not already
+// driving the pen so the two throws actually differ.
+/* Two yokes on the same axis only sum to something worth having if they turn at DIFFERENT rates —
+   two sinusoids of the same frequency just add up to one sinusoid again. And a summing bar's line
+   runs between its two blocks, so the gear it lands on also decides that axis's angle: pick badly
+   and the line comes out parallel to the other axis, holding the pen nowhere. So candidates are
+   ranked by rate first, then tried until one actually gives a working carriage. */
+function cxAddSummingBar(dirDeg){
+  const c0=computeComplex();
+  const axDir=((dirDeg%180)+180)%180;
+  const onAxis=(S.cx.converters||[]).filter(v=>v.drive==='pen'&&((((v.dir||0)%180)+180)%180)===axDir);
+  const rates=onAxis.map(v=>{const g=c0.byId[v.gear];return g?Math.abs(g.rate):null;}).filter(x=>x!=null);
+  const used={}; (S.cx.converters||[]).forEach(v=>{ if(v.drive==='pen')used[v.gear]=1; });
+  const diff=g=>rates.every(r=>Math.abs(Math.abs(g.rate)-r)>1e-6);
+  const tiers=[ c0.gears.filter(g=>!used[g.id]&&diff(g)),
+                c0.gears.filter(g=>used[g.id]&&diff(g)),
+                c0.gears.filter(g=>!used[g.id]) ];
+  const snap=JSON.stringify(S.cx);
+  const attempt=host=>{ S.cx=JSON.parse(snap);
+    const keep=S.cx.sel; S.cx.sel=host.id; cxAddConv('scotch'); S.cx.sel=keep;
+    const v=S.cx.converters[S.cx.converters.length-1];
+    v.dir=((dirDeg%360)+360)%360; v.drive='pen'; };
+  for(let t=0;t<tiers.length;t++)for(const host of tiers[t]){ attempt(host);
+    try{ if(cxCarriageOK(computeComplex()))return (t<2)?'ok':'same-rate'; }catch(_){} }
+  S.cx=JSON.parse(snap);
+  return 'none'; }
+function cxPenIsCarriage(){ return !!(S.cx.pen&&S.cx.pen.mode==='carriage'); }
+function cxPenAt(c,ang){ const P=c.pen; if(!P)return null;
+  if(P.mode==='carriage'){ const K=cxCarriageAt(c,ang);
+    return K?{pinPos:[],jointPos:[],weldPos:[],pen:K.pen}:null; }
+  if(!P.pins||!P.joints||P.pins.length<1||P.joints.length<1)return null;
+  const pinPos=P.pins.map(pn=>cxPinAt(c,pn,ang));
   if(pinPos.some(p=>!p))return null; const jointPos=[], welds=P.welds||[];
   for(const j of P.joints){ const A=cxRefPos(j.a,pinPos,jointPos,P.joints,null,welds), B=cxRefPos(j.b,pinPos,jointPos,P.joints,null,welds); jointPos.push((A&&B)?circIntersect(A,j.la,B,j.lb,j.branch||1):null); }
   const weldPos=[]; welds.forEach(w=>weldPos.push(cxWeldTip(w,pinPos,jointPos,weldPos,P.joints,welds))); P._wl=weldPos;
@@ -2888,7 +3046,7 @@ function cxPenAt(c,ang){ const P=c.pen; if(!P||!P.pins||!P.joints||P.pins.length
   if(pen){ const off=cxCoupleOffset(c,ang,'pen'); pen=[pen[0]+off[0],pen[1]+off[1]]; }
   return {pinPos,jointPos,weldPos,pen}; }
 function cxPenTrace(c){ const P=c.pen; if(!P)return {pts:[],reachable:true,period:1};
-  const rates=P.pins.map(pn=>{const g=c.byId[pn.g];return g?g.rate:0;});
+  const rates=cxPinRates(c,P);
   let T; if(P.runTurns&&P.runTurns>0){ T=P.runTurns; } else { T=200; for(let t=1;t<=200;t++){ if(rates.every(r=>cxFrac(t*r)<2e-3)){T=t;break;} } }
   const N=Math.min(9000,Math.max(600,120*T)), pts=[]; let miss=0;
   for(let i=0;i<=N;i++){ const st=cxPenAt(c,2*Math.PI*T*i/N); if(st&&st.pen)pts.push(st.pen); else {pts.push(null);miss++;} }
@@ -2899,7 +3057,7 @@ function cxTraceBBox(pts){ let a=1e9,b=-1e9,cc=1e9,dd=-1e9; pts.forEach(p=>{if(p
 // A closed figure needs every moving rate (pens + paper turntable) to realign — i.e.
 // share a small common period. If none is found by 200 turns it just spirals forever.
 function cxCloses(c){ const P=c.pen; if(!P||!P.pins)return {closes:true,period:1};
-  const rates=P.pins.map(pn=>{const g=c.byId[pn.g];return g?g.rate:0;});
+  const rates=cxPinRates(c,P);
   if(P.paper&&P.paper.gear!=null){const g=c.byId[P.paper.gear];if(g)rates.push(g.rate);}
   S.cx.converters.forEach(v=>{ if(v.drive==='paper'||v.drive==='pen'){const g=c.byId[v.gear]; if(g)rates.push(g.rate);} });
   for(let t=1;t<=300;t++){ if(rates.every(r=>cxFrac(t*r)<5e-4))return {closes:true,period:t}; }
@@ -2910,7 +3068,7 @@ function cxCloses(c){ const P=c.pen; if(!P||!P.pins)return {closes:true,period:1
   return {closes:false, period:ok?Math.round(L):null}; }
 function cxDrawing(c,coarseN){ const P=c.pen; if(!P)return {ink:[],mode:'fixed',reachable:true,period:1};
   const G=(P.paper&&P.paper.gear!=null)?c.byId[P.paper.gear]:null, mode=G?'gear':'fixed';
-  const rates=P.pins.map(pn=>{const g=c.byId[pn.g];return g?g.rate:0;}); if(G)rates.push(G.rate);
+  const rates=cxPinRates(c,P); if(G)rates.push(G.rate);
   S.cx.converters.forEach(v=>{ if(v.drive==='paper'||v.drive==='pen'){const g=c.byId[v.gear]; if(g)rates.push(g.rate);} });
   let T; if(P.runTurns&&P.runTurns>0){ T=P.runTurns; } else { T=200; for(let t=1;t<=200;t++){ if(rates.every(r=>cxFrac(t*r)<2e-3)){T=t;break;} } }
   const N=coarseN?Math.min(coarseN,160*T+1):Math.min(14000,Math.max(700,120*T)), ink=[], C=G?[G.x,G.y]:null; let miss=0;
@@ -2962,8 +3120,8 @@ function cxRefLabel(ref){ if(typeof ref==='string'){ if(ref[0]==='p')return 'pin
   if(ref&&ref.on)return `arm→J${+ref.on.slice(1)+1}(${ref.side}) @${cxRefT(ref)}%`; return '—'; }
 function cxFitToPaper(){ const P=S.cx.pen; if(!P||!P.pins||!P.joints)return; P.paper.mode='custom';
   const W=P.paper.w||200, H=P.paper.h||200;
-  const oR=P.pins.map(p=>p.r), oLa=P.joints.map(j=>j.la), oLb=P.joints.map(j=>j.lb);
-  const apply=s=>{ P.pins.forEach((p,i)=>p.r=Math.max(2,Math.round(oR[i]*s))); P.joints.forEach((j,i)=>{ j.la=Math.max(8,Math.round(oLa[i]*s)); j.lb=Math.max(8,Math.round(oLb[i]*s)); }); };
+  const oR=P.pins.map(p=>cxPinIsConv(p)?(p.along||0):p.r), oLa=P.joints.map(j=>j.la), oLb=P.joints.map(j=>j.lb);
+  const apply=s=>{ P.pins.forEach((p,i)=>{ if(cxPinIsConv(p))p.along=Math.round((oR[i]||0)*s); else p.r=(oR[i]===0)?0:Math.max(2,Math.round(oR[i]*s)); }); P.joints.forEach((j,i)=>{ j.la=Math.max(8,Math.round(oLa[i]*s)); j.lb=Math.max(8,Math.round(oLb[i]*s)); }); };
   let best=null, smallest=null;
   for(let k=0;k<=44;k++){ const s=0.12*Math.pow(4.2/0.12,k/44); apply(s);
     const dr=cxDrawing(computeComplex(),480); if(!dr.reachable)continue; const tb=cxTraceBBox(dr.ink); if(!tb||tb.w<1||tb.h<1)continue;
@@ -2995,7 +3153,7 @@ function cxScaleMechanism(k){ const P=S.cx;
   P.linkW=Math.max(boreDia()+6, Math.round((P.linkW||12)*k));
   (P.converters||[]).forEach(v=>{ ['r','rod','rb'].forEach(f=>{ if(v[f]!=null)v[f]=Math.max(1,Math.round(v[f]*k)); });
     ['yokeW','sliderW','sliderLen','fw'].forEach(f=>{ if(v[f]!=null)v[f]=Math.max(cvMin(f),Math.round(v[f]*k)); }); });
-  if(P.pen){ P.pen.pins.forEach(pn=>pn.r=Math.max(1,Math.round(pn.r*k)));
+  if(P.pen){ P.pen.pins.forEach(pn=>{ if(cxPinIsConv(pn))pn.along=Math.round((pn.along||0)*k); else pn.r=(pn.r===0)?0:Math.max(1,Math.round(pn.r*k)); });
     P.pen.joints.forEach(j=>{ j.la=Math.max(4,Math.round(j.la*k)); j.lb=Math.max(4,Math.round(j.lb*k)); });
     (P.pen.welds||[]).forEach(w=>w.len=Math.max(3,Math.round((w.len||100)*k))); } }
 // gears whose body has too little rim left around the fixed dowel bore at the current scale
@@ -3434,17 +3592,38 @@ function cxShapeTiles(plan,holes,opts){
   holes=holes||[];
   if(!plan||!plan.pieces)return cxTileBoard(plan?plan.bw:0,plan?plan.bh:0,holes,opts);
   const geom=cxShapeTileGeom(plan,opts);
-  const inRect=(h,r)=>h.x>=r.x0-0.2&&h.x<=r.x1+0.2&&h.y>=r.y0-0.2&&h.y<=r.y1+0.2;
+  // Ownership follows the MATERIAL, not the nominal grid rectangle. A gear-tooth seam wanders up
+  // to a tooth depth either side of its grid line, so a hole a fraction past the line can easily
+  // sit on the neighbour's wood — assign it by rectangle and that hole simply never gets cut.
   const res=geom.map(g=>({poly:g.pieces[0].outer,pieces:g.pieces,shaped:true,single:false,
-    holes:g.rect?holes.filter(h=>inRect(h,g.rect)):holes.slice(),
+    holes:holes.filter(h=>g.pieces.some(pc=>cxPieceHas(pc,h.x,h.y))),
     w:g.w,h:g.h,mnx:g.mnx,mny:g.mny,col:g.col,row:g.row,cols:g.cols,rows:g.rows}));
+  // a hole landing exactly on a seam can fall inside neither side, so nothing is ever dropped
+  const inRect=(h,r)=>r&&h.x>=r.x0-0.2&&h.x<=r.x1+0.2&&h.y>=r.y0-0.2&&h.y<=r.y1+0.2;
+  holes.forEach(h=>{ if(res.some(t=>t.holes.indexOf(h)>=0))return;
+    let k=res.findIndex((t,i)=>inRect(h,geom[i].rect));
+    if(k<0)k=0;
+    if(res[k])res[k].holes.push(h); });
   res.thin=geom.thin||0; res.offcuts=geom.offcuts||[]; return res; }
 function cxShapeTileGeom(plan,opts){
   const ck=JSON.stringify([(opts&&opts.mode)||'off',opts&&opts.maxW,opts&&opts.maxH,opts&&opts.overlap]);
   if(plan._tgKey===ck&&plan._tg)return plan._tg;
   const val=cxShapeTileGeomBuild(plan,opts); plan._tgKey=ck; plan._tg=val; return val; }
+// The frame is a rectangle big enough to trace the shape inside, centred on the gears. Tiling on
+// THAT asks for tiles the outline never reaches — a 287x369 outline traced in a 311x393 frame is
+// 1x2 tiles, not 2x2. So the grid spans the outline's own extent and is then shifted onto it.
+function cxTileExtent(plan){
+  if(!plan)return {x0:0,y0:0,w:0,h:0};
+  if(!plan.pieces)return {x0:0,y0:0,w:plan.bw,h:plan.bh};
+  const b=cxPiecesBounds(plan.pieces), pad=1;
+  return {x0:b.mnx-pad,y0:b.mny-pad,w:b.w+2*pad,h:b.h+2*pad}; }
 function cxShapeTileGeomBuild(plan,opts){
-  const meta={}, tiles=cxTileBoard(plan.bw,plan.bh,[],opts,meta);
+  const ext=cxTileExtent(plan), meta={}, tiles=cxTileBoard(ext.w,ext.h,[],opts,meta);
+  if(tiles.length>1&&(ext.x0||ext.y0)){ const sh=E=>E.map(q=>[q[0]+ext.x0,q[1]+ext.y0]);
+    meta.xE=meta.xE.map(v=>v+ext.x0); meta.yE=meta.yE.map(v=>v+ext.y0);
+    Object.keys(meta.vB).forEach(k=>{ meta.vB[k]=sh(meta.vB[k]); });
+    Object.keys(meta.hB).forEach(k=>{ meta.hB[k]=sh(meta.hB[k]); });
+    tiles.forEach(t=>{ if(t.poly)t.poly=t.poly.map(q=>[q[0]+ext.x0,q[1]+ext.y0]); }); }
   if(tiles.length<=1){ const bb=cxPiecesBounds(plan.pieces);
     const one=[{pieces:plan.pieces,rect:null,w:bb.w,h:bb.h,mnx:bb.mnx,mny:bb.mny,col:0,row:0,cols:1,rows:1}];
     one.thin=plan.thin||0;
@@ -3613,25 +3792,71 @@ function sceneFromComplex(){
   cxSpacers(c).list.forEach(sp=>{ sp.ringYs.forEach(yy=>{
     parts.push({tris:plateMesh([flipY(circleLoop(spOR,20)),flipY(circleLoop(spIR,16))],0,0,t*0.88,yy),col:'#b0a48c',label:'spacer ring',spin:{x:sp.x-ox,z:sp.y-oy,phase:0,rate:0}}); }); });
   const cbore=Math.max(boreDia()/2,1.5);
+  // Arms are built already turned into world orientation and posed with rot:0, so the slot the
+  // pen rides in cannot end up mirrored relative to the pen itself.
+  const carr=cxPenIsCarriage()?cxCarriageOK(c):null, carrSpan=carr?cxCarriageSpans(c):null;
+  if(carr&&carrSpan){ const slotW=Math.max(cxDowelHole(),3)+0.4, wall=Math.max(5,t*0.9), end=Math.max(7,slotW);
+    const armW=slotW+2*wall, pinR=Math.max(cxDowelHole()/2,1.5);
+    carr.forEach((grp,k)=>{ const sp=carrSpan[k], L0=cxAxisLine(grp,0);
+      const yArm=-(grp.list[0].g.layer)*LG-t*(3.4+k*1.1);
+      const nm='pen slide '+(k?'Y':'X');
+      if(!sp.summed){
+        // one converter: the arm is square to its travel and never turns, so its direction can be
+        // baked into the geometry and the pose only has to translate
+        const d=L0.d;
+        const LP=(lu,lp)=>[lu*-d[1]+lp*d[0], lu*d[0]+lp*d[1]];
+        const lo=Math.min(0,sp.lo)-end, hi=Math.max(0,sp.hi)+end;
+        const outer=roundRectLoop(armW,hi-lo,Math.min(armW/2,6),6).map(q=>LP(q[0],q[1]+(lo+hi)/2));
+        const slot=roundRectLoop(slotW,sp.len+slotW,slotW/2,10).map(q=>LP(q[0],q[1]+sp.mid));
+        parts.push({tris:plateMesh([flipY(outer),flipY(slot)],0,0,t*0.7,yArm),
+          col:k?WOOD_SLIDE:WOOD_IDLER,label:nm,
+          pose:s2=>{ const L=cxAxisLine(grp,s2); return {x:L.p[0]-ox,z:L.p[1]-oy,rot:0}; }});
+        return; }
+      // two converters: the summing bar. It tilts as the two blocks part company, so this one is
+      // built along its own local x and turned by the pose.
+      const lo=Math.min(0,sp.lo,sp.sepLo)-end, hi=Math.max(sp.hi,sp.sepHi)+end;
+      const outer=roundRectLoop(hi-lo,armW,Math.min(armW/2,6),6).map(q=>[q[0]+(lo+hi)/2,q[1]]);
+      const cuts=cxBarSlots(sp,slotW).map(r=>
+        roundRectLoop(r[1],slotW,slotW/2,10).map(q=>[q[0]+r[0],q[1]]));
+      const pivot=circleLoop(pinR,14);
+      parts.push({tris:plateMesh([flipY(outer)].concat(cuts.map(flipY)).concat([flipY(pivot)]),0,0,t*0.7,yArm),
+        col:k?WOOD_SLIDE:WOOD_IDLER,label:nm+' (summing bar)',
+        pose:s2=>{ const L=cxAxisLine(grp,s2);
+          return {x:L.p[0]-ox,z:L.p[1]-oy,rot:Math.atan2(L.d[1],L.d[0])}; }});
+      // the pin on the far block that the bar's end slot rides
+      parts.push({tris:plateMesh([flipY(circleLoop(pinR,14))],0,0,t*2.4,yArm+t*0.4),col:'#bf3a2b',hw:1,
+        pose:s2=>{ const A=cxConvAt(grp.list[1].v,grp.list[1].g,s2);
+          return {x:A.slider[0]-ox,z:A.slider[1]-oy,rot:0}; }}); });
+    // the pen itself: one pin dropped through both slots
+    const yPin=-(carr[0].list[0].g.layer)*LG-t*5.2;
+    parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cxDowelHole()/2,1.5),16))],0,0,t*3.2,yPin),
+      col:'#bf3a2b',hw:1,
+      pose:s2=>{ const K=cxCarriageAt(c,s2); return K?{x:K.pen[0]-ox,z:K.pen[1]-oy,rot:0}:{x:0,z:0,rot:0}; }}); }
+  const convPinHoles=conv=>((c.pen&&c.pen.pins)||[]).filter(pn=>pn.cv===conv.id)
+    .map(pn=>flipY(circleLoop(Math.max(cxBaseHole()/2,1),12).map(q=>[q[0]+(pn.along||0),q[1]])));
   S.cx.converters.forEach(conv=>{ const g=c.byId[conv.gear]; if(!g)return; const kit=cxConvKit(conv,g), r=conv.r, w=kit.w, ph=(conv.dir||0)*Math.PI/180;
+    const cpin=convPinHoles(conv);
     const yGear=-(g.layer)*LG, yEcc=yGear-t*1.2, yDrive=yGear-t*2.4, gx=g.x-ox, gz=g.y-oy;
     // two guide rails — fixed frame that keeps the driven part travelling straight
     [1,-1].forEach(sgn=>{ const rl=roundRectLoop(kit.railLen,kit.railH,2,3).map(p=>[p[0],p[1]+sgn*kit.railHalf]);
       parts.push({tris:plateMesh([flipY(rl)],0,0,t*0.85,yDrive),col:WOOD_RAIL,spin:{x:gx,z:gz,phase:ph,rate:0}}); });
     if(conv.type==='cam'){ const Rb=kit.Rb, pts=[]; for(let a=0;a<72;a++){ const b=2*Math.PI*a/72, R=Rb+r*(1-Math.cos(b))/2; pts.push([R*Math.cos(b),R*Math.sin(b)]); }
       parts.push({tris:plateMesh([flipY(pts),flipY(circleLoop(cbore,16))],0,0,t,yEcc),col:WOOD_SLIDE,spin:{x:gx,z:gz,phase:g.phase,rate:g.rate}});
-      parts.push({tris:plateMesh([flipY(rodLoop(kit.followerLen,kit.fw)),flipY(circleLoop(cbore,14))],0,0,t*0.7,yDrive),col:WOOD_IDLER,
+      parts.push({tris:plateMesh([flipY(rodLoop(kit.followerLen,kit.fw)),flipY(circleLoop(cbore,14))].concat(cpin),0,0,t*0.7,yDrive),col:WOOD_IDLER,
         pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.slider[0]-ox,z:cv.slider[1]-oy,rot:cv.ph};}}); }
     else if(conv.type==='crank'){
       parts.push({tris:plateMesh([flipY(rodLoop(r,w)),flipY(circleLoop(cbore,16)),flipY(circleLoop(cbore,14).map(p=>[p[0]+r,p[1]]))],0,0,t,yEcc),col:WOOD_GEAR,spin:{x:gx,z:gz,phase:g.phase,rate:g.rate}});
       parts.push({tris:plateMesh([flipY(rodLoop(kit.rod,w)),flipY(circleLoop(cbore,14)),flipY(circleLoop(cbore,14).map(p=>[p[0]+kit.rod,p[1]]))],0,0,t*0.7,yDrive),col:WOOD_IDLER,
         pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.pin[0]-ox,z:cv.pin[1]-oy,rot:Math.atan2(cv.slider[1]-cv.pin[1],cv.slider[0]-cv.pin[0])};}});
-      parts.push({tris:plateMesh([flipY(roundRectLoop(kit.sliderLen,kit.sliderW,4,4)),flipY(circleLoop(cbore,14))],0,0,t*0.7,yDrive),col:WOOD_SLIDE,
+      parts.push({tris:plateMesh([flipY(roundRectLoop(kit.sliderLen,kit.sliderW,4,4)),flipY(circleLoop(cbore,14))].concat(cpin),0,0,t*0.7,yDrive),col:WOOD_SLIDE,
         pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.slider[0]-ox,z:cv.slider[1]-oy,rot:cv.ph};}}); }
     else { // scotch: crank arm carries the pin, slotted yoke rides it
       parts.push({tris:plateMesh([flipY(rodLoop(r,w)),flipY(circleLoop(cbore,16)),flipY(circleLoop(cbore,14).map(p=>[p[0]+r,p[1]]))],0,0,t,yEcc),col:WOOD_GEAR,spin:{x:gx,z:gz,phase:g.phase,rate:g.rate}});
-      parts.push({tris:plateMesh(kit.yoke.map(flipY),0,0,t*0.7,yDrive),col:WOOD_SLIDE,
+      parts.push({tris:plateMesh(kit.yoke.map(flipY).concat(cpin),0,0,t*0.7,yDrive),col:WOOD_SLIDE,
         pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.slider[0]-ox,z:cv.slider[1]-oy,rot:cv.ph};}}); }
+    ((c.pen&&c.pen.pins)||[]).forEach(pn=>{ if(pn.cv!==conv.id)return;
+      parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cxBore()/2,1.6),14))],0,0,t*2.4,yDrive+t*0.4),col:'#bf3a2b',hw:1,
+        pose:s=>{ const q=cxPinAt(c,pn,s); return q?{x:q[0]-ox,z:q[1]-oy,rot:0}:{x:0,z:0,rot:0}; }}); });
     if(conv.type!=='cam'){ parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cbore,2.2),14))],0,0,t*2.2,yDrive-t*0.3),col:'#bf3a2b',hw:1,
       pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.pin[0]-ox,z:cv.pin[1]-oy,rot:0};}}); }
     // standoff posts — fixed dowels tying the guide bridge down to the back board
@@ -3739,6 +3964,17 @@ function drawComplexPreview(){
       if(now.pen){ s+=`<circle cx="${now.pen[0].toFixed(1)}" cy="${(-now.pen[1]).toFixed(1)}" r="${(LW*0.62).toFixed(1)}" fill="#bf3a2b" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`+hole(now.pen[0],now.pen[1],Math.max(boreDia()/2,1.2));
         s+=`<text x="${(now.pen[0]+LW*0.7).toFixed(1)}" y="${(-now.pen[1]-LW*0.55).toFixed(1)}" font-size="${(gfs*0.9).toFixed(1)}" font-weight="700" fill="#bf3a2b" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(gfs*0.18).toFixed(2)}">✒ PEN</text>`; } } }
   // shaft-mounted converters — drawn as the full assembly (guide rails + moving part + crank)
+  // the X-Y carriage: each block's slotted arm, and the pen pin where the two slots cross
+  if(cxPenIsCarriage()){ const K=cxCarriageOK(c), sp=K?cxCarriageSpans(c):null;
+    if(K&&sp){ const slotW=Math.max(cxDowelHole(),3)+0.4, wall=Math.max(5,S.thick*0.9), end=Math.max(7,slotW);
+      K.forEach((grp,k)=>{ const L=cxAxisLine(grp,th), o=sp[k], nrm=[-L.d[1],L.d[0]];
+        const W=(lu,lp)=>[L.p[0]+lu*nrm[0]+lp*L.d[0], L.p[1]+lu*nrm[1]+lp*L.d[1]];
+        const dAt=(loop,off)=>'M'+loop.map(q=>{const P=W(q[0],q[1]+off);return P[0].toFixed(1)+' '+(-P[1]).toFixed(1);}).join('L')+'Z';
+        const armW=slotW+2*wall;
+        const lo=Math.min(0,o.lo,(o.sepLo!=null?o.sepLo:0))-end, hi=Math.max(0,o.hi,(o.sepHi!=null?o.sepHi:0))+end;
+        s+=`<path d="${dAt(roundRectLoop(armW,hi-lo,Math.min(armW/2,6),6),(lo+hi)/2)}" fill="${k?'#c79a63':'#d8c49b'}" fill-opacity="0.75" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`;
+        cxBarSlots(o,slotW).forEach(r=>{ s+=`<path d="${dAt(roundRectLoop(slotW,r[1],slotW/2,10),r[0])}" fill="var(--paper)" stroke="#23201a" stroke-width="${(lw*0.8).toFixed(2)}"/>`; });
+        if(o.summed&&o.sepHi!=null&&cxBarSlots(o,slotW).length>1)s+=`<path d="${dAt(roundRectLoop(slotW,(o.sepHi-o.sepLo)+slotW,slotW/2,10),(o.sepLo+o.sepHi)/2)}" fill="var(--paper)" stroke="#23201a" stroke-width="${(lw*0.8).toFixed(2)}"/>`; }); } }
   S.cx.converters.forEach(conv=>{ const g=c.byId[conv.gear]; if(!g)return; const cv=cxConvAt(conv,g,th), C=cv.C, u=cv.u, perp=[-u[1],u[0]], BR='#9a7220', LW=cxLinkW();
     const kit=cxConvKit(conv,g), pin=cv.pin, sl=cv.slider, clash=cxConvClash(conv,g,c);
     const bump=P=>{ox0=Math.min(ox0,P[0]);ox1=Math.max(ox1,P[0]);oy0=Math.min(oy0,P[1]);oy1=Math.max(oy1,P[1]);};
@@ -3801,7 +4037,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build board-04`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build lissajous-03`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -3952,7 +4188,16 @@ function renderComplexUI(){
         for(let k=0;k<upto;k++)o+=opt('j'+k,'joint '+(k+1))+opt('t:j'+k+':a','↳ along arm→J'+(k+1)+' (a)')+opt('t:j'+k+':b','↳ along arm→J'+(k+1)+' (b)');
         return o; };
       const tSlider=(ref,kind,i)=> (ref&&ref.on)?`<span class="clab">at</span><span class="cstep"><button data-cxt="${kind}"${i!=null?` data-i="${i}"`:''} data-d="-5">−</button><input type="number" value="${cxRefT(ref)}" class="cxTnum" data-t="${kind}"${i!=null?` data-i="${i}"`:''} min="0" max="100" step="5"><button data-cxt="${kind}"${i!=null?` data-i="${i}"`:''} data-d="5">＋</button></span><span class="clab">%</span>`:'';
-      const pinRows=P.pins.map((pn,i)=>`<div class="cstage" style="flex-direction:column;align-items:stretch;gap:6px"><div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px">pin ${i+1}</b><select class="selin cxPinG" data-i="${i}" style="width:auto;flex:1">${gopts(pn.g)}</select></div><div class="cstage-top"><span class="clab">dist from centre</span><span class="cstep"><button data-cxpinr="${i}" data-d="-2">−</button><input type="number" value="${pn.r}" class="cxPinR" data-i="${i}" min="2" max="220" step="2"><button data-cxpinr="${i}" data-d="2">＋</button></span></div></div>`).join('');
+      const hostOpts=pn=>{ const cv=cxPinIsConv(pn);
+        let h=c.gears.map(g=>`<option value="g${g.id}"${(!cv&&g.id===pn.g)?' selected':''}>#${g.id} (${g.N}T) gear</option>`).join('');
+        (S.cx.converters||[]).forEach(v=>{ const g=c.byId[v.gear]; if(!g)return;
+          h+=`<option value="c${v.id}"${(cv&&v.id===pn.cv)?' selected':''}>${v.type} on #${v.id.replace(/^v/,'')} — slide output</option>`; });
+        return h; };
+      const pinRows=P.pins.map((pn,i)=>{ const cv=cxPinIsConv(pn);
+        const val=cv?(pn.along||0):pn.r;
+        const lab=cv?'along the slide':'dist from centre';
+        const lo=cv?-400:2;
+        return `<div class="cstage" style="flex-direction:column;align-items:stretch;gap:6px"><div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px">pin ${i+1}</b><select class="selin cxPinG" data-i="${i}" style="width:auto;flex:1">${hostOpts(pn)}</select></div><div class="cstage-top"><span class="clab">${lab}</span><span class="cstep"><button data-cxpinr="${i}" data-d="-2">−</button><input type="number" value="${val}" class="cxPinR" data-i="${i}" min="${cv?lo:0}" max="220" step="2"><button data-cxpinr="${i}" data-d="2">＋</button></span></div>${(!cv&&pn.r===0)?`<div class="hint"><b>0</b> puts the arm's pivot on the gear's own shaft, so this pin does not move. Two of those give the linkage a fixed home point — which is what a pen driven by converters needs.</div>`:''}${cv?`<div class="hint">This pin rides the converter's output block instead of orbiting a gear, so the linkage gets a straight reciprocation rather than a circle. <b>0</b> puts it on the block's centre; move it along to reach either end.</div>`:''}</div>`; }).join('');
       const penOn=k=>cxRefKey(P.penRef)===('j'+k)||(P.penRef&&P.penRef.on===('j'+k));
       const jointRows=P.joints.map((j,ji)=>{ const hot=penOn(ji); return `<div class="cstage" style="flex-direction:column;align-items:stretch;gap:6px${hot?';border-color:var(--cut);border-width:2px':''}"><div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px${hot?';color:var(--cut)':''}">joint ${ji+1}${hot?' · ✒ pen here':''}</b><button data-cxjflip="${ji}">⇄ flip</button></div><div class="cstage-top"><span class="clab">arm A</span><select class="selin cxJa" data-i="${ji}" style="width:auto">${nodeOpts(ji,j.a)}</select>${tSlider(j.a,'ja',ji)}<span class="clab">len</span><span class="cstep"><button data-cxjl="la" data-i="${ji}" data-d="-5">−</button><input type="number" value="${j.la}" class="cxJla" data-i="${ji}" min="10" max="900" step="5"><button data-cxjl="la" data-i="${ji}" data-d="5">＋</button></span></div><div class="cstage-top"><span class="clab">arm B</span><select class="selin cxJb" data-i="${ji}" style="width:auto">${nodeOpts(ji,j.b)}</select>${tSlider(j.b,'jb',ji)}<span class="clab">len</span><span class="cstep"><button data-cxjl="lb" data-i="${ji}" data-d="-5">−</button><input type="number" value="${j.lb}" class="cxJlb" data-i="${ji}" min="10" max="900" step="5"><button data-cxjl="lb" data-i="${ji}" data-d="5">＋</button></span></div></div>`; }).join('');
       const W=P.welds||[];
@@ -3981,7 +4226,22 @@ function renderComplexUI(){
       <div class="hint" style="margin-top:4px${!tr.reachable?';color:#bf3a2b':''}">${!tr.reachable?'⚠ The arms can\'t reach through a full turn — lengthen them or move the pins closer.':(cl.closes?`✔ <b>Closed figure</b> — repeats exactly after ${cl.period} turn${cl.period>1?'s':''}, so it retraces the same lines.`:(cl.period?`<b>Open figure</b> — only repeats after ${cl.period.toLocaleString()} turns, so it slowly precesses and <b>weaves denser the longer it runs</b>. Set the run length and stop where it looks best.`:`<b>Open figure</b> — never exactly repeats, so it slowly precesses and <b>weaves denser the longer it runs</b>. Set the run length and stop where it looks best.`))}</div>
       ${tr.reachable?`<div class="cstage-top" style="margin-top:6px"><span class="clab">run for</span><span class="cstep"><button data-cxrun="-10">−</button><input type="number" value="${P.runTurns||cl.period||140}" id="cxRunTurns" min="2" max="4000" step="10"><button data-cxrun="10">＋</button></span><span class="clab">turns</span>${P.runTurns?'<button data-cxrun="auto" style="margin-left:4px">auto</button>':'<span class="clab" style="color:#9a7220">auto</span>'}</div><div class="hint">${P.runTurns?`Drawing a fixed <b>${P.runTurns} turns</b> (⟳ auto = ${cl.closes?'one full closed figure':'a default run'}). `:''}More turns → denser weave. This is how you "stop the machine" on an open figure to freeze an evolving design.</div>`:''}`;
       pen.innerHTML+=`
-      <div class="lab" style="margin-top:6px"><label>Pins (driven by gears)</label></div><div style="display:flex;flex-direction:column;gap:8px">${pinRows}</div><div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddPinBtn">＋ pin</button>${P.pins.length>2?'<button class="btn ghost" id="cxRmPinBtn">− pin</button>':''}</div>
+      ${(()=>{ const carr=cxPenIsCarriage(), ok=carr?cxCarriageOK(c):null, sp=ok?cxCarriageSpans(c):null;
+        const sel=`<div class="cstage-top"><span class="clab">pen carried by</span><select class="selin" id="cxPenMode" style="width:auto;flex:1"><option value="linkage"${carr?'':' selected'}>linkage arms</option><option value="carriage"${carr?' selected':''}>X-Y carriage</option></select></div>`;
+        let note='';
+        if(carr&&ok&&sp){ const foul=cxCarriageFoul(c);
+          const nSum=sp.filter(o=>o.summed).length;
+          note=`<div class="hint">Each axis carries a <b>slotted arm</b>, and one pin through both slots is the pen. Slots are cut <b>${fmt(sp[0].len)}</b> and <b>${fmt(sp[1].len)}</b> long to cover the full stroke. The linkage arms below are not used in this mode.</div>`;
+          if(nSum)note+=`<div class="hint"><b>${nSum===2?'Both axes are':'One axis is'} summed.</b> Two converters pointing the same way are spanned by a <b>summing bar</b> — pinned to the first block, slotted over the second — so that axis carries a blend of both throws. It changes the <i>character</i> of the figure rather than simply filling more of the page: for sheer coverage an untidy gear ratio does more. Keep it to two per axis; a third has nowhere to pin.</div>`;
+          else { const singles=ok.map((g,i)=>({g,i})).filter(o=>o.g.list.length<2);
+            note+=`<div class="hint">To sum two throws on one axis, add a second converter on the same <b>dir</b> — a summing bar will span them and that axis will carry a blend of both, changing the shape of the figure.</div>`;
+            if(S.cx.pen._sumMsg)note+=`<div class="hint" style="color:#bf3a2b">⚠ ${S.cx.pen._sumMsg}</div>`;
+            if(singles.length)note+=`<div class="cstage-top" style="margin-top:6px"><span class="clab">summing bar</span><span style="display:flex;gap:6px;flex-wrap:wrap">${singles.map(o=>`<button class="btn" data-cxsum="${Math.round(o.g.list[0].v.dir||0)}" style="padding:4px 10px">+ on the ${Math.round(((o.g.a%180)+180)%180)===90?'up-and-down':'across'} axis</button>`).join('')}</span></div>`; }
+          if(foul)note+=`<div class="hint" style="color:#bf3a2b"><b>⚠ The pen sweeps across gear #${foul.gear.id}</b> — there is nowhere to put paper. The drawing sits where the two slot lines cross, and that point is pinned to the two driving gears' own positions. They must be further apart than their tip radii plus the crank throw along <b>both</b> slide directions; meshed straight together they never are. Put an <b>idler</b> between them and spread them diagonally, or shorten the crank throw.</div>`; }
+        else if(carr)note=`<div class="hint" style="color:#bf3a2b"><b>⚠ No carriage yet.</b> ${cxCarriageWhy(c)}</div>`;
+        else note=`<div class="hint">Linkage arms swing the pen from pins. Switch to <b>X-Y carriage</b> to have two converters carry it on crossed slides instead — that is what draws a true Lissajous.</div>`;
+        return `<div class="lab" style="margin-top:6px"><label>How the pen is carried</label></div>${sel}${note}`; })()}
+      <div class="lab" style="margin-top:6px"><label>Pins (driven by gears)${cxPenIsCarriage()?' — unused in carriage mode':''}</label></div><div style="display:flex;flex-direction:column;gap:8px${cxPenIsCarriage()?';opacity:0.45':''}">${pinRows}</div><div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddPinBtn">＋ pin</button>${P.pins.length>2?'<button class="btn ghost" id="cxRmPinBtn">− pin</button>':''}</div>
       <div class="lab" style="margin-top:6px"><label>Joints (two arms meet)</label></div><div style="display:flex;flex-direction:column;gap:8px">${jointRows}</div><div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddJointBtn">＋ joint (hinge two arms)</button>${P.joints.length>1?'<button class="btn ghost" id="cxRmJointBtn">− joint</button>':''}</div>
       <div class="lab" style="margin-top:6px"><label>Branches (one arm off another)</label></div>${W.length?`<div style="display:flex;flex-direction:column;gap:8px">${weldRows}</div>`:'<div class="hint">A branch is a single arm fixed part-way along another arm — hang the pen on its tip, or attach more to it.</div>'}<div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddArmBtn">＋ arm (branch)</button>${W.length?'<button class="btn ghost" id="cxRmArmBtn">− arm</button>':''}</div>
       ${penBlock}
@@ -3999,7 +4259,7 @@ function renderComplexUI(){
       const sizeRow = v.type==='cam' ? `<div class="cstage-top">${step('base','rb',v.rb,2,6,200)}${step('follower','fw',v.fw,1,4,80)}</div>`
         : v.type==='crank' ? `<div class="cstage-top">${step('rod','rod',v.rod,5,10,600)}${step('slider','sliderW',v.sliderW,2,8,140)}</div>`
         : `<div class="cstage-top">${step('yoke w','yokeW',v.yokeW,2,8,200)}</div>`;
-      return `<div class="cstage" style="flex-direction:column;align-items:stretch;gap:6px"><div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px;color:${cl?'#bf3a2b':'#9a7220'}">${TL[v.type]}</b><span class="clab">on</span><select class="selin cxCvG" data-id="${v.id}" style="width:auto">${gopts(v.gear)}</select><button class="cxdel" data-cxcvdel="${v.id}">✕</button></div><div class="cstage-top"><span class="clab">${v.type==='cam'?'lift':'throw'}</span><span class="cstep"><button data-cxcv="r" data-id="${v.id}" data-d="-2">−</button><input type="number" value="${v.r}" class="cxCvNum" data-f="r" data-id="${v.id}" min="2" max="200" step="2"><button data-cxcv="r" data-id="${v.id}" data-d="2">＋</button></span><span class="clab">dir</span><span class="cstep"><button data-cxcv="dir" data-id="${v.id}" data-d="-15">−</button><input type="number" value="${v.dir}" class="cxCvNum" data-f="dir" data-id="${v.id}" min="0" max="345" step="15"><button data-cxcv="dir" data-id="${v.id}" data-d="15">＋</button></span></div>${sizeRow}<div class="cstage-top"><span class="clab">drives</span><select class="selin cxCvDrive" data-id="${v.id}" style="width:auto"><option value="none"${(v.drive||'none')==='none'?' selected':''}>nothing (demo)</option><option value="paper"${v.drive==='paper'?' selected':''}>moves the paper</option><option value="pen"${v.drive==='pen'?' selected':''}>moves the pen</option></select></div><div class="hint">stroke ≈ ${fmt(st)}${cl?` · <b style="color:#bf3a2b">⚠ ${cl.part==='post'?`posts land on gear #${cl.gk} — try a roomier gear`:`bridge hits gear #${cl.gk} — turn dir / reduce ${v.type==='cam'?'lift':'throw'}`}</b>`:(v.drive&&v.drive!=='none'?` · aim <b>dir</b> at 0° &amp; 90° on two converters for X-Y ${v.drive==='paper'?'bed':'pen'} motion`:'')}</div></div>`; }).join('');
+      return `<div class="cstage" style="flex-direction:column;align-items:stretch;gap:6px"><div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px;color:${cl?'#bf3a2b':'#9a7220'}">${TL[v.type]}</b><span class="clab">on</span><select class="selin cxCvG" data-id="${v.id}" style="width:auto">${gopts(v.gear)}</select><button class="cxdel" data-cxcvdel="${v.id}">✕</button></div><div class="cstage-top"><span class="clab">${v.type==='cam'?'lift':'throw'}</span><span class="cstep"><button data-cxcv="r" data-id="${v.id}" data-d="-2">−</button><input type="number" value="${v.r}" class="cxCvNum" data-f="r" data-id="${v.id}" min="2" max="200" step="2"><button data-cxcv="r" data-id="${v.id}" data-d="2">＋</button></span><span class="clab">dir</span><span class="cstep"><button data-cxcv="dir" data-id="${v.id}" data-d="-15">−</button><input type="number" value="${v.dir}" class="cxCvNum" data-f="dir" data-id="${v.id}" min="0" max="345" step="15"><button data-cxcv="dir" data-id="${v.id}" data-d="15">＋</button></span></div>${sizeRow}<div class="cstage-top"><span class="clab">drives</span><select class="selin cxCvDrive" data-id="${v.id}" style="width:auto"><option value="none"${(v.drive||'none')==='none'?' selected':''}>nothing (demo)</option><option value="paper"${v.drive==='paper'?' selected':''}>moves the paper</option><option value="pen"${v.drive==='pen'?' selected':''}>moves the pen</option></select></div>${(v.drive==='pen'&&cxPenIsCarriage()&&cxCarriageOK(c))?`<div class="hint">Carries the pen on a slotted arm across its travel — cut as <b>pen slide</b> on the sheets.</div>`:(v.drive==='pen'||v.drive==='paper')?`<div class="hint" style="color:#8a5a1a"><b>⚠ Modelled, not yet cut.</b> The preview moves the ${v.drive} exactly as this converter would, and the drawing is correct, but nothing is cut to carry it. ${v.drive==='pen'?'Set <b>How the pen is carried</b> to <b>X-Y carriage</b> and use two converters — then the slides are cut for you.':'A driven paper bed still has no hardware.'}</div>`:''}<div class="hint">stroke ≈ ${fmt(st)}${cl?` · <b style="color:#bf3a2b">⚠ ${cl.part==='post'?`posts land on gear #${cl.gk} — try a roomier gear`:`bridge hits gear #${cl.gk} — turn dir / reduce ${v.type==='cam'?'lift':'throw'}`}</b>`:(v.drive&&v.drive!=='none'?` · aim <b>dir</b> at 0° &amp; 90° on two converters for X-Y ${v.drive==='paper'?'bed':'pen'} motion`:'')}</div></div>`; }).join('');
     conv.innerHTML=`<div class="lab"><label>Shaft converters</label></div><div class="hint">Mount a cam, crank or scotch yoke on a gear's shaft to turn its spin into a back-and-forth stroke.</div><div class="cstage-top" style="margin-top:8px"><span class="clab">link width</span><span class="cstep"><button data-cxlw="-1">−</button><input type="number" value="${cxLinkW()}" id="cxLinkW" min="4" max="60" step="1"><button data-cxlw="1">＋</button></span><span class="hint">arm / rod bar width (mm)</span></div><div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${rows}</div><div class="cstage-top" style="margin-top:8px"><button class="btn ghost" id="cxAddCam">＋ cam</button><button class="btn ghost" id="cxAddCrank">＋ crank</button><button class="btn ghost" id="cxAddScotch">＋ scotch</button></div>`;
   }
   const edge=document.getElementById('cxEdge');
@@ -4040,12 +4300,13 @@ function renderComplexUI(){
       h+=` Nudge the <b>max tile size</b> or the shape offset so the seams fall on thicker wood.`;
       return h+'</div>'; })();
     const warn=(nPieces>1)?`<div class="hint" style="color:#bf3a2b"><b>⚠ The outline has fallen into ${nPieces} separate pieces</b> — they'll cut as loose parts that need joining. Raise the ${BS==='minimal'?'strip width':'offset'} to knit them back together.</div>`:'';
-    const shapeBox=`<div class="lab"><label>Back board shape</label><span class="val">${sizeTxt}</span></div><div class="hint">The plate the whole machine bolts to. <b>Rectangle</b> is the full sheet. <b>Curved</b> blends a disc round every gear into one organic outline. <b>Minimal</b> keeps only strips along the shafts — least wood, most air. Spacer rings and standoff posts always keep a full pad of wood under them, whatever the outline does.</div>${bpl.pieces?`<div class="hint">The outline itself measures <b>${fmt(bpl.pw)} × ${fmt(bpl.ph)} mm</b>. Tiles are still laid out on the full <b>${fmt(bw)} × ${fmt(bh)} mm</b> rectangle, centred on the gears, so a shrunken outline stays where the mechanism is.</div>`:''}<div class="cstage-top" style="margin-top:8px"><span class="clab">shape</span><span style="display:flex;gap:5px;flex-wrap:wrap">${shChips}</span></div>${offRow}${warn}${offcutTxt}<div style="height:12px;border-bottom:1px solid var(--ink-soft);margin-bottom:12px"></div>`;
-    const cols=P.mode==='off'?1:Math.max(1,Math.ceil(bw/P.maxW)), rows=P.mode==='off'?1:Math.max(1,Math.ceil(bh/P.maxH));
+    const shapeBox=`<div class="lab"><label>Back board shape</label><span class="val">${sizeTxt}</span></div><div class="hint">The plate the whole machine bolts to. <b>Rectangle</b> is the full sheet. <b>Curved</b> blends a disc round every gear into one organic outline. <b>Minimal</b> keeps only strips along the shafts — least wood, most air. Spacer rings and standoff posts always keep a full pad of wood under them, whatever the outline does.</div>${bpl.pieces?`<div class="hint">The outline itself measures <b>${fmt(bpl.pw)} × ${fmt(bpl.ph)} mm</b>. It sits inside a <b>${fmt(bw)} × ${fmt(bh)} mm</b> frame centred on the gears, but tiling follows the outline itself, so shrinking the shape really does mean fewer tiles.</div>`:''}<div class="cstage-top" style="margin-top:8px"><span class="clab">shape</span><span style="display:flex;gap:5px;flex-wrap:wrap">${shChips}</span></div>${offRow}${warn}${offcutTxt}<div style="height:12px;border-bottom:1px solid var(--ink-soft);margin-bottom:12px"></div>`;
+    const ext=cxTileExtent(bpl);
+    const cols=P.mode==='off'?1:Math.max(1,Math.ceil(ext.w/P.maxW)), rows=P.mode==='off'?1:Math.max(1,Math.ceil(ext.h/P.maxH));
     const ML={off:'off (one full board)',butt:'butt (glue flat edges)',overlap:'overlap lap (glue faces)',finger:'finger joint (interlock)',dovetail:'dovetail (interlock + lock)',gear:'gear teeth (curved, matches the gears)'};
     const modes=['off','butt','overlap','finger','dovetail','gear'];
     const shd=sheetDims();
-    spl.innerHTML=shapeBox+`<div class="lab"><label>Back board splitting</label><span class="val">${fmt(bw)} × ${fmt(bh)}</span></div><div class="hint">${bpl.pieces?`The <b>${cxBoardShapeLabel()}</b> outline measures ${fmt(bpl.pw)} × ${fmt(bpl.ph)}, tiled on a ${fmt(bw)} × ${fmt(bh)} grid`:`The board is ${fmt(bw)} × ${fmt(bh)}`} — if that's bigger than your laser sheet, split it into tiles that join. ${P.mode!=='off'?`<b>${cols}×${rows} grid \u2192 ${cxBoardPieceCount(c2)} piece${cxBoardPieceCount(c2)>1?'s':''}</b> at ≤ ${P.maxW}×${P.maxH} mm.`:''}<br>Tile size follows your <b>laser sheet size</b> (${shd[0]}×${shd[1]} mm) ${P.custom?`\u2014 <b>overridden</b>`:`from 01 Set up the scale`}.${bpl.pieces?`<br>A <b>${cxBoardShapeLabel()}</b> board is clipped to the tiles, so the join teeth sit right on the cut line. Where a seam crosses a <b>narrow</b> strip the teeth can be wider than the wood — drop the tooth depth, or nudge the tile size so the seam falls on a thicker part.`:''}</div><div class="cstage-top" style="margin-top:8px"><span class="clab">join</span><select class="selin" id="cxSplitMode" style="width:auto">${modes.map(m=>`<option value="${m}"${P.mode===m?' selected':''}>${ML[m]}</option>`).join('')}</select></div>`+(P.mode!=='off'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">max tile</span><span class="cstep"><button data-cxsp="maxW" data-d="-50">−</button><input type="number" value="${P.maxW}" id="cxSplitW" min="100" step="50"><button data-cxsp="maxW" data-d="50">＋</button></span><span class="cstep"><button data-cxsp="maxH" data-d="-50">−</button><input type="number" value="${P.maxH}" id="cxSplitH" min="100" step="50"><button data-cxsp="maxH" data-d="50">＋</button></span></div>${P.custom?`<button class="btn ghost" data-cxspreset="1" style="padding:4px 10px;font-size:11px;margin-top:6px">↺ match laser sheet (${shd[0]}×${shd[1]})</button>`:''}`+((P.mode==='overlap'||P.mode==='finger'||P.mode==='dovetail')?`<div class="cstage-top" style="margin-top:8px"><span class="clab">${P.mode==='overlap'?'overlap':'tooth depth'}</span><span class="cstep"><button data-cxsp="overlap" data-d="-2">−</button><input type="number" value="${P.overlap}" id="cxSplitO" min="4" max="40" step="2"><button data-cxsp="overlap" data-d="2">＋</button></span><span class="hint">mm</span></div>`:''):'');
+    spl.innerHTML=shapeBox+`<div class="lab"><label>Back board splitting</label><span class="val">${fmt(bw)} × ${fmt(bh)}</span></div><div class="hint">${bpl.pieces?`The <b>${cxBoardShapeLabel()}</b> outline measures ${fmt(bpl.pw)} × ${fmt(bpl.ph)}, and the tile grid follows it`:`The board is ${fmt(bw)} × ${fmt(bh)}`} — if that's bigger than your laser sheet, split it into tiles that join. ${P.mode!=='off'?`<b>${cols}×${rows} grid \u2192 ${cxBoardPieceCount(c2)} piece${cxBoardPieceCount(c2)>1?'s':''}</b> at ≤ ${P.maxW}×${P.maxH} mm.`:''}<br>Tile size follows your <b>laser sheet size</b> (${shd[0]}×${shd[1]} mm) ${P.custom?`\u2014 <b>overridden</b>`:`from 01 Set up the scale`}.${bpl.pieces?`<br>A <b>${cxBoardShapeLabel()}</b> board is clipped to the tiles, so the join teeth sit right on the cut line. Where a seam crosses a <b>narrow</b> strip the teeth can be wider than the wood — drop the tooth depth, or nudge the tile size so the seam falls on a thicker part.`:''}</div><div class="cstage-top" style="margin-top:8px"><span class="clab">join</span><select class="selin" id="cxSplitMode" style="width:auto">${modes.map(m=>`<option value="${m}"${P.mode===m?' selected':''}>${ML[m]}</option>`).join('')}</select></div>`+(P.mode!=='off'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">max tile</span><span class="cstep"><button data-cxsp="maxW" data-d="-50">−</button><input type="number" value="${P.maxW}" id="cxSplitW" min="100" step="50"><button data-cxsp="maxW" data-d="50">＋</button></span><span class="cstep"><button data-cxsp="maxH" data-d="-50">−</button><input type="number" value="${P.maxH}" id="cxSplitH" min="100" step="50"><button data-cxsp="maxH" data-d="50">＋</button></span></div>${P.custom?`<button class="btn ghost" data-cxspreset="1" style="padding:4px 10px;font-size:11px;margin-top:6px">↺ match laser sheet (${shd[0]}×${shd[1]})</button>`:''}`+((P.mode==='overlap'||P.mode==='finger'||P.mode==='dovetail')?`<div class="cstage-top" style="margin-top:8px"><span class="clab">${P.mode==='overlap'?'overlap':'tooth depth'}</span><span class="cstep"><button data-cxsp="overlap" data-d="-2">−</button><input type="number" value="${P.overlap}" id="cxSplitO" min="4" max="40" step="2"><button data-cxsp="overlap" data-d="2">＋</button></span><span class="hint">mm</span></div>`:''):'');
   }
   const brg=document.getElementById('cxBearing');
   if(brg){ let B=S.cx.bearing||{mode:'none',od:8}; if(B.mode==='seat')B.mode='gears'; if(B.hole==null)B.hole=B.od; S.cx.bearing=B;
@@ -4375,7 +4636,111 @@ function cutPiecesFromScene(){
     pieces.push({loops,w,h,col:part.col||'#c9a56a',label:part.label||null}); }
   return pieces;
 }
+/* ---- nesting ---------------------------------------------------------------------------
+   The old nester packed bounding boxes, so a disc reserved its whole square and a curved board
+   tile reserved a rectangle that was mostly air — nothing could ever sit in the bays of another
+   part. This rasterises each piece's true outline into an occupancy mask and places on that, so
+   small parts drop into the concave space of big ones. Placement is still on a 0/90 grid, so the
+   {p,rot,sheet,x,y,w,h,over} contract is unchanged and the preview and the exported sheets stay
+   in step. Falls back to the rectangle packer if anything goes wrong. ---------------------- */
+const NEST_CELL=2;                                  // mm per occupancy cell
+function nestMask(loops,w,h,rot,cell,padOff,padCells){
+  const W=(rot?h:w)+2*padOff, H=(rot?w:h)+2*padOff;
+  const cols=Math.max(1,Math.ceil(W/cell)), rows=Math.max(1,Math.ceil(H/cell));
+  const raw=new Uint8Array(cols*rows);
+  const hw=(rot?h:w)/2, hh=(rot?w:h)/2;
+  const pts=loops.map(L=>L.map(q=>{ const X=rot?-q[1]:q[0], Y=rot?q[0]:q[1];
+    return [X+hw+padOff, Y+hh+padOff]; }));
+  for(let r=0;r<rows;r++){ const y=(r+0.5)*cell, xs=[];
+    for(const L of pts){ for(let i=0;i<L.length;i++){ const a=L[i], b=L[(i+1)%L.length];
+      if((a[1]>y)!==(b[1]>y))xs.push(a[0]+(y-a[1])/(b[1]-a[1])*(b[0]-a[0])); } }
+    if(xs.length<2)continue;
+    xs.sort((m,n)=>m-n);
+    for(let k=0;k+1<xs.length;k+=2){                                  // even-odd fill
+      let c0=Math.max(0,Math.floor(xs[k]/cell)), c1=Math.min(cols,Math.ceil(xs[k+1]/cell));
+      for(let c=c0;c<c1;c++)raw[r*cols+c]=1; } }
+  // grow by half the gap so neighbours keep their spacing
+  const tmp=new Uint8Array(cols*rows), bits=new Uint8Array(cols*rows);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){ if(!raw[r*cols+c])continue;
+    for(let k=-padCells;k<=padCells;k++){ const x=c+k; if(x>=0&&x<cols)tmp[r*cols+x]=1; } }
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){ if(!tmp[r*cols+c])continue;
+    for(let k=-padCells;k<=padCells;k++){ const y=r+k; if(y>=0&&y<rows)bits[y*cols+c]=1; } }
+  const lo=new Int32Array(rows).fill(-1), hi=new Int32Array(rows).fill(-1);
+  let any=false;
+  for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++)if(bits[r*cols+c]){ if(lo[r]<0)lo[r]=c; hi[r]=c; any=true; } }
+  if(!any){ bits[0]=1; lo[0]=0; hi[0]=0; }
+  return {cols,rows,bits,lo,hi}; }
 function nestPieces(pieces,sheetW,sheetH,gap){
+  try{ const r=nestPiecesRaster(pieces,sheetW,sheetH,gap); if(r&&r.place.length===pieces.length)return r; }
+  catch(e){ console.warn('raster nesting failed, falling back to boxes',e); }
+  return nestPiecesRect(pieces,sheetW,sheetH,gap); }
+function nestPiecesRaster(pieces,sheetW,sheetH,gap){
+  const cell=NEST_CELL, padCells=Math.max(1,Math.ceil((gap/2)/cell)), padOff=padCells*cell;
+  const SC=Math.floor(sheetW/cell), SR=Math.floor(sheetH/cell);
+  if(SC<2||SR<2)throw new Error('sheet too small to raster');
+  const area=p=>{ const a=(p.loops||[]).map(L=>Math.abs(loopArea(L))).sort((x,y)=>y-x);
+    return a.length?Math.max(0,a[0]-a.slice(1).reduce((m,v)=>m+v,0)):p.w*p.h; };
+  const items=pieces.map(p=>({p,a:area(p)}));
+  items.sort((x,y)=>Math.max(y.p.w,y.p.h)-Math.max(x.p.w,x.p.h)||y.a-x.a);
+  const sheets=[], place=[];
+  const addSheet=()=>{ sheets.push({occ:new Uint8Array(SC*SR),int:null}); return sheets.length-1; };
+  const reint=sh=>{ const I=new Int32Array((SC+1)*(SR+1));
+    for(let r=0;r<SR;r++){ let run=0;
+      for(let c=0;c<SC;c++){ run+=sh.occ[r*SC+c]; I[(r+1)*(SC+1)+c+1]=I[r*(SC+1)+c+1]+run; } }
+    sh.int=I; };
+  const boxSum=(sh,x0,y0,x1,y1)=>{ const I=sh.int,W1=SC+1;
+    x0=Math.max(0,x0); y0=Math.max(0,y0); x1=Math.min(SC,x1); y1=Math.min(SR,y1);
+    if(x1<=x0||y1<=y0)return 0;
+    return I[y1*W1+x1]-I[y0*W1+x1]-I[y1*W1+x0]+I[y0*W1+x0]; };
+  // The clearance ring may hang past the sheet edge — it is only spacing, not material — so cells
+  // outside the sheet are ignored. That lets a piece sit flush to the edge instead of being pushed
+  // half a gap in, which is what wrongly made a 299mm part "too big" for a 300mm sheet.
+  const collides=(sh,M,mx,my)=>{ for(let r=0;r<M.rows;r++){ if(M.lo[r]<0)continue;
+      const sy=my+r; if(sy<0||sy>=SR)continue;
+      const so=sy*SC, mo=r*M.cols;
+      for(let c=M.lo[r];c<=M.hi[r];c++){ const sx=mx+c;
+        if(sx<0||sx>=SC)continue;
+        if(M.bits[mo+c]&&sh.occ[so+sx])return true; } }
+    return false; };
+  const stamp=(sh,M,mx,my)=>{ for(let r=0;r<M.rows;r++){ if(M.lo[r]<0)continue;
+      const sy=my+r; if(sy<0||sy>=SR)continue;
+      const so=sy*SC, mo=r*M.cols;
+      for(let c=M.lo[r];c<=M.hi[r];c++){ const sx=mx+c;
+        if(sx<0||sx>=SC)continue;
+        if(M.bits[mo+c])sh.occ[so+sx]=1; } } };
+  for(const it of items){
+    const p=it.p, opts=[];
+    for(const rot of [false,true]){
+      const pw=rot?p.h:p.w, ph=rot?p.w:p.h;
+      if(pw>sheetW+0.01||ph>sheetH+0.01)continue;                 // this way round it cannot fit
+      opts.push({rot,pw,ph,M:nestMask(p.loops,p.w,p.h,rot,cell,padOff,padCells)}); }
+    if(!opts.length){                                             // bigger than the sheet either way
+      const si=addSheet(), M=nestMask(p.loops,p.w,p.h,false,cell,padOff,padCells);
+      stamp(sheets[si],M,0,0); reint(sheets[si]);                 // stamp it, or the next piece lands on top
+      place.push({p,rot:false,sheet:si,x:padOff,y:padOff,w:p.w,h:p.h,over:true}); continue; }
+    let best=null;
+    const scan=(sh,o,take)=>{ const M=o.M;
+      const mxMin=-padCells, mxMax=Math.floor((sheetW-o.pw)/cell)-padCells;
+      const myMin=-padCells, myMax=Math.floor((sheetH-o.ph)/cell)-padCells;
+      for(let my=myMin;my<=myMax;my++)for(let mx=mxMin;mx<=mxMax;mx++){
+        if(boxSum(sh,mx,my,mx+M.cols,my+M.rows)!==0&&collides(sh,M,mx,my))continue;
+        return take(mx,my); }
+      return false; };
+    // try both orientations on a sheet and keep whichever sits higher and further left, rather
+    // than the first that happens to fit — costs one extra scan and packs measurably tighter
+    for(let si=0;si<sheets.length&&!best;si++){ const sh=sheets[si];
+      for(const o of opts){
+        scan(sh,o,(mx,my)=>{ const sc=my*SC+mx;
+          if(!best||sc<best.score)best={si,mx,my,o,score:sc}; return true; }); } }
+    if(!best){ const si=addSheet(), o=opts[0];
+      best={si,mx:-padCells,my:-padCells,o}; }
+    const sh=sheets[best.si];
+    stamp(sh,best.o.M,best.mx,best.my); reint(sh);
+    place.push({p,rot:best.o.rot,sheet:best.si,
+      x:(best.mx+padCells)*cell, y:(best.my+padCells)*cell,
+      w:best.o.pw, h:best.o.ph, over:false}); }
+  return {place,sheets:Math.max(1,sheets.length)}; }
+function nestPiecesRect(pieces,sheetW,sheetH,gap){
   const items=pieces.map(p=>({p,w:p.w+gap,h:p.h+gap}));
   items.sort((a,b)=>Math.max(b.w,b.h)-Math.max(a.w,a.h)||(b.w*b.h)-(a.w*a.h));
   const bins=[]; const newBin=()=>bins.push([{x:0,y:0,w:sheetW,h:sheetH}]);
@@ -4626,8 +4991,73 @@ function cxLoadExample3(){
           runTurns:130,
           paper:{mode:'fit',w:200,h:200,gear:11,conv:null,board:{on:true,shape:'circle'}} } };
   S.movement='complex'; }
+/* Two gears at 2:1, each carrying a scotch yoke — the one converter whose output is a PURE
+   sinusoid (a crank's is only about a third as clean, spoilt by the connecting rod). One yoke
+   runs along x, the other along y, and both move the pen, so the displacements simply add:
+   x = A·cos(t), y = B·sin(2t) — a Lissajous figure of eight.
+   The two arms pivot concentrically on the gears' own shafts (pin radius 0), which pins the
+   linkage to a fixed home point so the yokes do all of the drawing. Change the tooth counts for
+   a different ratio, and rotate gear #1's mesh angle to open or close the figure. */
+function cxLoadExample4(){
+  S.cx.m=3;
+  S.cx.board={shape:'rect',off:8};
+  S.cx.split={mode:'off',maxW:400,maxH:300,overlap:10};
+  // 47T against 42T is a ratio of 1.119 — close to 1:1 but sharing no common factor, so the
+  // figure needs a full 42 turns to close and lays down a dense woven lattice on the way, filling
+  // about two thirds of its own square. A tidy ratio like 5:4 closes in four turns and looks
+  // sparse beside it. The middle wheel is an idler: it leaves the driver-to-output ratio untouched
+  // but pushes the two driving gears far enough apart, diagonally, that the pen's square of travel
+  // clears every wheel. Meshed straight together they never can, because the pen sits where the
+  // two slot lines cross and that point is pinned to the gears' own positions.
+  // Cycles are on auto, so the tool works out the turns needed and draws exactly one whole figure
+  // however you change the teeth. Try 49T on the driver for a sparse 6-turn figure to compare.
+  S.cx.gears=[{id:0,N:47,kind:'driver',layer:0},
+              {id:1,N:42,kind:'mesh',parent:0,dir:270,layer:0},
+              {id:2,N:42,kind:'mesh',parent:1,dir:180,layer:0}];
+  S.cx.nextId=5;
+  S.cx.converters=[
+    {id:'v3',gear:0,type:'scotch',r:42,dir:90,rod:126,rb:59,drive:'pen',
+     yokeW:22,sliderW:22,sliderLen:34,fw:20},
+    {id:'v4',gear:2,type:'scotch',r:42,dir:0, rod:126,rb:59,drive:'pen',
+     yokeW:22,sliderW:22,sliderLen:34,fw:20}];
+  S.cx.edges=[];
+  S.cx.pen={ mode:'carriage',
+    pins:[{g:0,r:0},{g:2,r:0}],
+    joints:[{a:'p0',la:150,b:'p1',lb:150,branch:-1}],
+    welds:[], penRef:'j0',
+    paper:{mode:'fit',w:200,h:200,gear:null,conv:null,board:{on:true,shape:'circle'}} };
+  S.movement='complex'; }
+/* The compound harmonograph. Three scotch yokes: one on its own for the across axis, and TWO
+   sharing the up-and-down axis, spanned by a summing bar. That axis carries a blend of both
+   throws, which is where the elaborate figures come from — this fills about 38% of its own
+   bounding box where the plain two-yoke machine manages 3%.
+   The driver is 51T against 26T rather than 52T, so the ratio is a whisker off 2:1 and the figure
+   precesses instead of closing after one turn. */
+function cxLoadExample5(){
+  S.cx.m=3;
+  S.cx.board={shape:'rect',off:8};
+  S.cx.split={mode:'off',maxW:400,maxH:300,overlap:10};
+  S.cx.gears=[{id:0,N:51,kind:'driver',layer:0},
+              {id:1,N:40,kind:'mesh',parent:0,dir:210,layer:0},
+              {id:2,N:26,kind:'mesh',parent:1,dir:180,layer:0},
+              {id:3,N:26,kind:'mesh',parent:1,dir:270,layer:0}];
+  S.cx.nextId=6;
+  S.cx.converters=[
+    {id:'v3',gear:0,type:'scotch',r:24,dir:90,rod:72,rb:34,drive:'pen',
+     yokeW:22,sliderW:22,sliderLen:34,fw:20},
+    {id:'v4',gear:2,type:'scotch',r:40,dir:0, rod:120,rb:56,drive:'pen',
+     yokeW:22,sliderW:22,sliderLen:34,fw:20},
+    {id:'v5',gear:3,type:'scotch',r:26,dir:90,rod:78,rb:36,drive:'pen',
+     yokeW:22,sliderW:22,sliderLen:34,fw:20}];
+  S.cx.edges=[];
+  S.cx.pen={ mode:'carriage',
+    pins:[{g:0,r:0},{g:2,r:0}],
+    joints:[{a:'p0',la:150,b:'p1',lb:150,branch:-1}],
+    welds:[], penRef:'j0', runTurns:40,
+    paper:{mode:'fit',w:200,h:200,gear:null,conv:null,board:{on:true,shape:'circle'}} };
+  S.movement='complex'; }
 function cxLoadExampleSafe(which){ cxUndo=cxSnapshot();
-  if(which===3)cxLoadExample3(); else if(which===2)cxLoadExample2(); else cxLoadExample();
+  if(which===5)cxLoadExample5(); else if(which===4)cxLoadExample4(); else if(which===3)cxLoadExample3(); else if(which===2)cxLoadExample2(); else cxLoadExample();
   S.movement='complex';
   const note=document.getElementById('exNote');
   if(note)note.innerHTML='<b>Loaded.</b> Edit it like any machine — add gears, move pins, change the pen. <b>Undo load</b> puts back what you had before.';
@@ -5082,7 +5512,7 @@ document.getElementById('mvComplex').addEventListener('click',e=>{const b=e.targ
   if(exR)exR.addEventListener('click',()=>{ const open=exS.classList.toggle('hide')===false;
     exR.textContent=open?'\u25be Hide machine examples':'\u25b8 Show machine examples';
     exR.setAttribute('aria-expanded',open?'true':'false'); });
-  [['exLoad1',1],['exLoad2',2],['exLoad3',3]].forEach(([id,n])=>{ const el=document.getElementById(id); if(!el)return;
+  [['exLoad1',1],['exLoad2',2],['exLoad3',3],['exLoad4',4],['exLoad5',5]].forEach(([id,n])=>{ const el=document.getElementById(id); if(!el)return;
     el.addEventListener('click',()=>{ setMovement('complex'); cxLoadExampleSafe(n); renderComplexUI(); renderPrep(); everything();
       const w=document.getElementById('mvComplex'); if(w)w.scrollIntoView({behavior:'smooth',block:'start'}); }); });
   const exLegacy=null; if(exLegacy)exLegacy.addEventListener('click',()=>{ setMovement('complex'); cxLoadExampleSafe(); renderComplexUI(); renderPrep(); everything();
@@ -5106,6 +5536,12 @@ document.getElementById('mvComplex').addEventListener('click',e=>{const b=e.targ
   const dl=document.getElementById('mtDownload'); if(dl)dl.addEventListener('click',()=>{ const o=currentMeshTest(), r=meshTesterSVG(o); dlSVG(`gear-mesh-test_m${o.m}_${o.N1}x${o.N2}T`, r.svg); });
 })();
 document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.cxsum!=null){ cxUndo=cxSnapshot();
+    const r=cxAddSummingBar(+b.dataset.cxsum);
+    S.cx.pen._sumMsg=(r==='ok')?null
+      :(r==='same-rate')?'Added, but the only gear that fits turns at the same rate as the one already on this axis — two throws at the same speed just add up to one, so the figure will not get richer. Add another gear at a different tooth count and try again.'
+      :'No gear on this machine can take a second yoke on that axis without its bar lining up parallel to the other one, which would leave the pen unheld. Add another gear somewhere else first.';
+    cxUndoBtn(); renderComplexUI(); everything(); return; }
   if(b.id==='patOpen')return;   // handled by the pattern dialog
   if(b.dataset.pshape){ const P=S.cx.pen; if(P){ P.paper=P.paper||{mode:'fit',w:200,h:200}; P.paper.board=P.paper.board||{on:true}; P.paper.board.shape=b.dataset.pshape; renderComplexUI(); everything(); } return; }
   if(b.dataset.pmarg){ const P=S.cx.pen; if(P&&P.paper&&P.paper.board){ const cur=(P.paper.board.margin==null?0.10:P.paper.board.margin);
@@ -5126,7 +5562,9 @@ document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.c
   if(!S.cx.pen)return; const P=S.cx.pen;
   if(b.dataset.cxwl){const i=+b.dataset.i,f=b.dataset.cxwl,mn=f==='ang'?-180:8,mx=f==='ang'?180:600;P.welds[i][f]=Math.max(mn,Math.min(mx,(P.welds[i][f]==null?(f==='ang'?90:100):P.welds[i][f])+(+b.dataset.d)));renderComplexUI();everything();return;}
   if(b.dataset.pm){P.paper=P.paper||{mode:'fit',w:200,h:200};P.paper.mode=b.dataset.pm;renderComplexUI();everything();return;}
-  if(b.dataset.cxpinr!=null){const i=+b.dataset.cxpinr;P.pins[i].r=Math.max(2,P.pins[i].r+(+b.dataset.d));renderComplexUI();everything();return;}
+  if(b.dataset.cxpinr!=null){const i=+b.dataset.cxpinr, pn=P.pins[i], d=+b.dataset.d;
+    if(cxPinIsConv(pn))pn.along=(pn.along||0)+d; else pn.r=Math.max(0,pn.r+d);
+    renderComplexUI();everything();return;}
   if(b.dataset.cxjl){const i=+b.dataset.i;P.joints[i][b.dataset.cxjl]=Math.max(10,P.joints[i][b.dataset.cxjl]+(+b.dataset.d));renderComplexUI();everything();return;}
   if(b.dataset.cxjflip!=null){const i=+b.dataset.cxjflip;P.joints[i].branch=-(P.joints[i].branch||1);renderComplexUI();everything();return;}
   if(b.dataset.cxt){ const kind=b.dataset.cxt, d=+b.dataset.d; let ref=kind==='pen'?P.penRef:kind==='wb'?((P.welds[+b.dataset.i]||{}).base):(P.joints[+b.dataset.i]||{})[kind==='ja'?'a':'b'];
@@ -5138,8 +5576,14 @@ document.getElementById('cxPen').addEventListener('change',e=>{const t=e.target;
   if(t.id==='cxPaperMarg'){ if(P.paper&&P.paper.board){ P.paper.board.margin=Math.max(0,Math.min(0.25,(+t.value||0)/100)); renderComplexUI(); everything(); } return; }
   if(t.id==='cxPaperBoardOn'){ P.paper=P.paper||{mode:'fit',w:200,h:200}; P.paper.board=P.paper.board||{shape:'square'}; P.paper.board.on=t.checked; renderComplexUI(); everything(); return; }
   if(t.id==='cxPenDia'){S.cx.penDia=Math.max(2,Math.min(30,(+t.value)||S.cx.penDia||10));renderComplexUI();everything();}
-  else if(t.classList.contains('cxPinG')){P.pins[+t.dataset.i].g=+t.value;renderComplexUI();everything();}
-  else if(t.classList.contains('cxPinR')){P.pins[+t.dataset.i].r=Math.max(2,Math.round(+t.value)||P.pins[+t.dataset.i].r);renderComplexUI();everything();}
+  else if(t.classList.contains('cxPinG')){ const pn=P.pins[+t.dataset.i], v=String(t.value);
+    if(v[0]==='c'){ const was=cxPinIsConv(pn)?(pn.along||0):0; delete pn.g; delete pn.r; pn.cv=v.slice(1); pn.along=was; }
+    else { const wasR=cxPinIsConv(pn)?0:pn.r; delete pn.cv; delete pn.along; pn.g=+v.slice(1); pn.r=Math.max(2,wasR||14); }
+    renderComplexUI();everything();}
+  else if(t.classList.contains('cxPinR')){ const pn=P.pins[+t.dataset.i], n=Math.round(+t.value);
+    if(cxPinIsConv(pn))pn.along=isFinite(n)?n:(pn.along||0);
+    else pn.r=isFinite(n)?Math.max(0,n):pn.r;
+    renderComplexUI();everything();}
   else if(t.classList.contains('cxJa')){const o=P.joints[+t.dataset.i].a;P.joints[+t.dataset.i].a=cxMakeRef(t.value,(o&&o.on)?o.t:null);renderComplexUI();everything();}
   else if(t.classList.contains('cxJb')){const o=P.joints[+t.dataset.i].b;P.joints[+t.dataset.i].b=cxMakeRef(t.value,(o&&o.on)?o.t:null);renderComplexUI();everything();}
   else if(t.classList.contains('cxPenRef')){P.penRef=cxMakeRef(t.value,(P.penRef&&P.penRef.on)?P.penRef.t:null);renderComplexUI();everything();}
@@ -5149,6 +5593,7 @@ document.getElementById('cxPen').addEventListener('change',e=>{const t=e.target;
   else if(t.classList.contains('cxJla')){P.joints[+t.dataset.i].la=Math.max(10,Math.round(+t.value)||P.joints[+t.dataset.i].la);renderComplexUI();everything();}
   else if(t.classList.contains('cxJlb')){P.joints[+t.dataset.i].lb=Math.max(10,Math.round(+t.value)||P.joints[+t.dataset.i].lb);renderComplexUI();everything();}
   else if(t.id==='cxRunTurns'){P.runTurns=Math.max(2,Math.min(4000,Math.round(+t.value)||P.runTurns||140));renderComplexUI();everything();}
+  else if(t.id==='cxPenMode'){P.mode=(t.value==='carriage')?'carriage':undefined;renderComplexUI();everything();}
   else if(t.id==='cxPaperGear'){P.paper=P.paper||{mode:'fit',w:200,h:200};P.paper.conv=null;P.paper.gear=(t.value==='fixed')?null:+t.value.slice(1);renderComplexUI();everything();}
   else if(t.id==='cxPaperPreset'){if(t.value){const wh=t.value.split('x').map(Number);P.paper.w=wh[0];P.paper.h=wh[1];renderComplexUI();everything();}}
   else if(t.id==='cxPaperW'){P.paper.w=Math.max(20,Math.round(+t.value)||P.paper.w);renderComplexUI();everything();}
