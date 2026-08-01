@@ -436,6 +436,13 @@
 <p class="mn-p">Set <b>How the pen is carried</b> to <b>X-Y carriage</b> and two converters take over. Each one's output block grows a <b>slotted arm</b> lying across its own direction of travel, and a single pin dropped through both slots is the pen. Slot A fixes where the pen sits along A's axis, slot B along B's, and the crossing point is the pen.</p>
 <p class="mn-p">Neither arm carries the other — both are driven straight off their own yoke, so there is nothing cantilevered and nothing stacked. The slots are cut long enough to cover the full stroke, and both arms appear on the cut sheets as <b>pen slide X</b> and <b>pen slide Y</b>. No linkage arms are needed at all in this mode.</p>
 <dl class="mn-kv"><dt>You need exactly two</dt><dd>One converter cannot fix a point, and three over-constrain it. The panel says so if you have the wrong number.</dd><dt>They must cross</dt><dd>Two nearly parallel slides do not hold the pen. Set them at least 12° apart; 90° is the usual choice.</dd><dt>Stack order</dt><dd>The two arms sit on different levels so they pass each other freely, with the pen pin long enough to reach through both.</dd></dl>
+<div class="mn-note">A shaft that carries a movement has a guide bridge standing just off the board above it. Stacking a gear <b>above</b> that shaft puts the gear where the bridge is — the gear list flags it and the buttons explain. Stacking <b>below</b> keeps them apart, or move the movement to a shaft with nothing over it.</div>
+<h4 class="mn-h2">How a shaft converter is held</h4>
+<p class="mn-p">Each converter's sliding block runs between a pair of <b>guide rails</b>, and those rails are a bridge standing on <b>standoff posts</b> bolted through the back board at each end. The block is captive between them for the whole stroke — it cannot wander off the end.</p>
+<p class="mn-p">The order out from the board is: gear, then the slide deck, then the block running between its rails, then the caps, and only then the crank disc and its rod on top. That means a shaft carrying a movement runs on past the whole guide, so it is noticeably longer than a plain gear shaft — the bill of materials lists it separately. Where the guide crosses the shaft, the deck is cut with a clearance hole for it.</p>
+<p class="mn-p">Three more pieces make that a real slide rather than a channel with no floor. A <b>slide deck</b> spans the same posts underneath, and the block runs on its face. Two <b>slide cap</b> strips sit over the rails and overhang the channel far enough to stop the block lifting off the deck, while leaving a gap down the middle for the rod or follower to pass through. Deck, rails and caps all bolt down onto the same four posts, so the whole guide is one sandwich: deck, then the block between the rails, then the caps.</p>
+<p class="mn-p">Where that bridge sits depends on the type. A <b>scotch yoke</b>'s block slides straight across its own gear's centre, so its guide straddles the shaft. A <b>crank and rod</b> pushes its block out to roughly the rod's length away, and a <b>cam</b>'s follower out to the base circle, so those guides sit off to one side, centred on the run rather than on the gear. The schematic draws the rails where they really are, so if a block appears to be running outside its guide, that is worth reporting.</p>
+<div class="mn-note">A long rod pushes the block a long way out, which means a long bridge and posts landing further across the board. If the panel warns that a <b>post hits gear #N</b>, shorten the rod or the throw, or turn the converter's <b>dir</b> so the bridge runs into open board instead.</div>
 <h4 class="mn-h2">Summing two throws on one axis</h4>
 <p class="mn-p">Give <b>two</b> converters the same <b>dir</b> and they share an axis. A <b>summing bar</b> spans them — pinned to the first block, slotted over the second — and the pen rides a slot along that bar. As the two blocks move by different amounts the bar tilts, so that axis carries a blend of both throws rather than just one.</p>
 <p class="mn-p">The quickest way to get one is the <b>+ summing bar</b> button in the pen panel: it adds a converter on a gear that is not already driving the pen, sets its direction to match the axis you chose, and switches it to move the pen — all three steps at once. <b>Example 5 · Compound harmonograph</b> is built this way.</p>
@@ -919,11 +926,14 @@
           </div>
           <div class="field">
             <div class="lab"><label>Multi-layer gear stack</label><span class="val" id="cxCountVal">—</span></div>
-            <div class="hint">Select a gear, then <b>mesh</b> a new one beside it (same layer) or <b>stack</b> one on its shaft (next layer up — a compound gear). One crank drives the whole graph; ratios multiply through the stack.</div>
-            <div id="cxList" style="margin-top:10px"></div>
+            <div class="hint">Select a gear, then <b>mesh</b> a new one beside it (same layer), or <b>stack</b> one on its shaft — a compound gear, turning at the same rate. Stacking works in both directions: <b>above</b> puts it on the next free layer up, <b>below</b> on the next free layer down, and the whole machine shifts so the lowest layer still sits on the board. One crank drives the whole graph; ratios multiply through the stack.</div>
+            <div id="cxStackNote"></div><div id="cxList" style="margin-top:10px"></div>
             <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
               <button class="btn ghost" id="cxMeshBtn">＋ mesh gear</button>
-              <button class="btn ghost" id="cxStackBtn">＋ stack gear (compound)</button>
+              <button class="btn ghost" id="cxStackBtn">＋ stack gear above</button>
+              <button class="btn ghost" id="cxStackBelowBtn">＋ stack gear below</button>
+              <button class="btn ghost" id="cxUndoStep" title="Undo the last change" disabled>↩ undo</button>
+              <button class="btn ghost" id="cxRedoStep" title="Redo" disabled>↪ redo</button>
             </div>
             <div class="hint" style="margin-top:8px">Meshed gears sit on the same plane; stacked gears climb to a new layer on the same shaft. Cut each layer as its own sheet and thread them on dowels with spacers.</div>
 
@@ -2859,10 +2869,19 @@ function computeComplex(){ try{cxSyncSplitMax();}catch(_){}
   function resolve(g){ if(done[g.id])return; done[g.id]=1; g.rp=m*g.N/2; g.ra=m*g.N/2+m;
     if(g.kind==='driver'||g.parent==null||!byId[g.parent]){ g.x=g.x||0; g.y=g.y||0; g.layer=g.layer||0; g.rate=1; g.phase=0; return; }
     const p=byId[g.parent]; resolve(p);
-    if(g.kind==='compound'){ g.x=p.x; g.y=p.y; g.layer=p.layer+1; g.rate=p.rate; g.phase=p.phase; }
+    if(g.kind==='compound'){ g.x=p.x; g.y=p.y;
+      // lift is a signed offset from the parent's layer: +1 stacks above, -1 below, and larger
+      // magnitudes let several gears share one shaft without landing on each other
+      const lf=(g.lift==null)?1:(g.lift|0);
+      g.layer=p.layer+(lf===0?1:lf); g.rate=p.rate; g.phase=p.phase; }
     else { const cd=m*(p.N+g.N)/2, ang=(g.dir||0)*Math.PI/180; g.x=p.x+cd*Math.cos(ang); g.y=p.y+cd*Math.sin(ang); g.layer=p.layer;
       const k=p.N/g.N, phi=ang; g.rate=-k*p.rate; g.phase=(phi+Math.PI-Math.PI/g.N+k*phi)-k*p.phase; } }
   G.forEach(resolve);
+  // Stacking downwards puts gears on negative layers. Everything downstream — shaft lengths,
+  // spacer counts, bolt lengths, the board itself — assumes the bottom layer is zero, so shift
+  // the whole machine up rather than teach each of them about negatives.
+  if(G.length){ let minL=1e9; G.forEach(g=>{ if(g.layer<minL)minL=g.layer; });
+    if(minL!==0)G.forEach(g=>{ g.layer-=minL; }); }
   let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9,maxL=0; G.forEach(g=>{mnx=Math.min(mnx,g.x-g.ra);mxx=Math.max(mxx,g.x+g.ra);mny=Math.min(mny,g.y-g.ra);mxy=Math.max(mxy,g.y+g.ra);maxL=Math.max(maxL,g.layer);});
   // same-layer overlaps (excluding intended meshes: distance≈cd)
   let overlaps=0;
@@ -3158,6 +3177,10 @@ function cxScaleMechanism(k){ const P=S.cx;
     (P.pen.welds||[]).forEach(w=>w.len=Math.max(3,Math.round((w.len||100)*k))); } }
 // gears whose body has too little rim left around the fixed dowel bore at the current scale
 function cxTinyGears(c){ const br=boreDia()/2; return c.gears.filter(g=>((c.m*(g.N-2.5)/2)-br)<3); }
+// a guide piece that spans the gear's own axis must let the shaft through
+function cxShaftCut(kit,halfW){ const M=kit.mid||0;
+  return (Math.abs(M)<kit.railLen/2-2 && halfW>2)
+    ? [circleLoop(Math.max(cxDowelHole()/2+0.6,1.4),14)] : []; }
 function cxConvKit(conv,g){ const r=conv.r, br=boreDia(), w=br+8, gap=3, railH=br+4;
   const st=cxConvStroke(conv,g), stroke=Math.max(st.stroke,1); let kit;
   if(conv.type==='scotch'){ const L=scotchLayoutR(r,conv.yokeW||Math.max(br+8,r*0.6));
@@ -3167,12 +3190,43 @@ function cxConvKit(conv,g){ const r=conv.r, br=boreDia(), w=br+8, gap=3, railH=b
   else { const Rb=conv.rb||r*1.4, fw=conv.fw||Math.max(br+6,r*0.5);
     kit={type:'cam',r,w,Rb,fw,plateHalf:fw/2,railLen:stroke+fw+18,followerLen:stroke+22,stroke}; }
   kit.railH=railH; kit.railHalf=kit.plateHalf+gap+railH/2;
-  // extend the rails into a bridge whose ends land on open board beyond the gear,
-  // then anchor each end with a standoff post — this is what fixes the guide to the board
+  /* A scotch yoke's block slides across the gear's own centre, so rails centred on the shaft
+     hold it. A crank's does not: its block sits out at roughly the rod's length, and a cam's
+     follower out at the base radius. Centring their rails on the shaft too left the block running
+     entirely outside its own guide, with nothing holding it. So the guide is centred on the
+     MIDPOINT OF TRAVEL, and long enough to keep the block captive at both ends of the stroke. */
+  // Each type's railLen above is already the length of guide the block needs — the only thing
+  // wrong was WHERE it sat. Centre it on the middle of the block's actual run instead of on the
+  // shaft: a scotch yoke's run straddles the shaft (so nothing moves), but a crank's sits out at
+  // roughly the rod's length and a cam's at the base radius, and those were guiding thin air.
+  let tLo=1e9,tHi=-1e9;
+  for(let i=0;i<=72;i++){ const sU=cxConvAt(conv,g,2*Math.PI*i/72*(1/Math.max(Math.abs(g.rate),1e-6))).sU;
+    if(sU<tLo)tLo=sU; if(sU>tHi)tHi=sU; }
+  kit.travel=tHi-tLo;
+  const runMid=(tLo+tHi)/2;
+  let lo=runMid-kit.railLen/2, hi=runMid+kit.railLen/2;
+  // Each end must land on open board so a standoff post can anchor it. If an end sits over the
+  // gear, push it out past the tip circle — on the far side if the whole run is already out
+  // there, otherwise back across the shaft so the bridge spans the gear as it used to.
   const ra=g.ra||(S.cx.m*(g.N+2)/2), postD=br, clearR=ra+postD*1.6;
-  const need=2*(Math.sqrt(Math.max(clearR*clearR-kit.railHalf*kit.railHalf,0))+postD*1.3);
-  kit.railLen=Math.max(kit.railLen,need); kit.postD=postD;
-  const HL=kit.railLen/2, PH=kit.railHalf; kit.posts=[[HL,PH],[-HL,PH],[HL,-PH],[-HL,-PH]];
+  const reach=Math.sqrt(Math.max(clearR*clearR-kit.railHalf*kit.railHalf,0))+postD*1.3;
+  // only ever push an end OUTWARD: pulling one in would cut into the block's own run
+  if(lo>-reach&&lo<reach)lo=-reach;
+  if(hi>-reach&&hi<reach)hi=reach;
+  if(hi-lo<2*postD)hi=lo+2*postD;
+  kit.mid=(lo+hi)/2; kit.railLen=hi-lo; kit.postD=postD;
+  const HL=kit.railLen/2, PH=kit.railHalf, M=kit.mid;
+  kit.posts=[[M+HL,PH],[M-HL,PH],[M+HL,-PH],[M-HL,-PH]];
+  /* Two rails either side guide the block sideways, but on a board standing upright there was
+     nothing behind it or in front of it — the block had a channel and no floor. So the kit now
+     also cuts a DECK that spans the posts underneath, which the block slides on, and two CAP
+     strips over the rails that overhang the channel and stop the block lifting out. The strips
+     leave a gap down the middle for the rod or follower to pass through. */
+  kit.deckW=2*kit.railHalf+kit.railH;
+  kit.capOver=Math.min(3,Math.max(1.5,kit.plateHalf*0.35));
+  kit.capIn=Math.max(kit.plateHalf-kit.capOver, kit.plateHalf*0.35);
+  kit.capW=(kit.railHalf+kit.railH/2)-kit.capIn;
+  kit.capMid=(kit.capIn+kit.railHalf+kit.railH/2)/2;
   kit.pinCap=(conv.type!=='cam'); return kit; }
 // world-space positions of every converter's standoff posts (for board holes + 3D)
 function cxPostWorld(c){ const out=[]; S.cx.converters.forEach(conv=>{ const g=c.byId[conv.gear]; if(!g)return;
@@ -3183,7 +3237,7 @@ function cxPostWorld(c){ const out=[]; S.cx.converters.forEach(conv=>{ const g=c
 function cxConvClash(conv,g,c){ const kit=cxConvKit(conv,g), ph=(conv.dir||0)*Math.PI/180, u=[Math.cos(ph),Math.sin(ph)], p=[-u[1],u[0]];
   const toW=(lx,ly)=>[g.x+lx*u[0]+ly*p[0], g.y+lx*u[1]+ly*p[1]];
   const probes=[]; kit.posts.forEach(q=>probes.push({P:toW(q[0],q[1]),full:true}));
-  for(let i=-5;i<=5;i++){ const lx=i/5*kit.railLen/2; probes.push({P:toW(lx,kit.railHalf)},{P:toW(lx,-kit.railHalf)}); }
+  for(let i=-5;i<=5;i++){ const lx=(kit.mid||0)+i/5*kit.railLen/2; probes.push({P:toW(lx,kit.railHalf)},{P:toW(lx,-kit.railHalf)}); }
   for(const gk of c.gears){ if(gk.id===g.id)continue; const rTip=gk.ra||(c.m*(gk.N+2)/2);
     for(const s of probes){ const d=Math.hypot(s.P[0]-gk.x,s.P[1]-gk.y);
       if(s.full){ if(d<rTip+kit.postD/2-0.5)return {gk:gk.id,part:'post'}; }
@@ -3328,7 +3382,11 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
   if(nPc>1)cut.push([`back board piece`,nPc,`${shTxt}${tiles.length>1?`≤ ${P.maxW}×${P.maxH}mm · ${P.mode} join · `:''}${t}mm`]);
   else cut.push([`back board`,1,`${shTxt}${fmt(bpl.pw)}×${fmt(bpl.ph)} · ${t}mm`]);
   const shafts={}; c.gears.forEach(g=>{const k=Math.round(g.x*10)+'_'+Math.round(g.y*10); (shafts[k]||(shafts[k]={maxL:0})); shafts[k].maxL=Math.max(shafts[k].maxL,g.layer);});
-  const nsh=Object.keys(shafts).length, slens={}; Object.values(shafts).forEach(sh=>{ const L=Math.round(2*t+sh.maxL*LG+12); slens[L]=(slens[L]||0)+1; });
+  // a shaft carrying a movement must run on past the deck, rails and caps to reach its crank disc
+  c.gears.forEach(g=>{ const k=Math.round(g.x*10)+'_'+Math.round(g.y*10);
+    if((S.cx.converters||[]).some(v=>v.gear===g.id))shafts[k].conv=true; });
+  const nsh=Object.keys(shafts).length, slens={};
+  Object.values(shafts).forEach(sh=>{ const L=Math.round(2*t+sh.maxL*LG+12+(sh.conv?t*5.5:0)); slens[L]=(slens[L]||0)+1; });
   const M=cxBrgMode(), gBrg=(M==='gears'||M==='gearsRods'), rBrg=(M==='gearsRods'), dH=fmt(cxDowelHole());
   buy.push([gBrg?`shaft bolt`:`shaft / axle`,nsh,gBrg?`${S.bolt} bolt through the gear bearing into the back board — lengths ${Object.entries(slens).sort((a,b)=>a[0]-b[0]).map(([L,n])=>`${L}mm×${n}`).join(', ')} (+ nut each)`:`⌀${fmt(S.dowelD)} dowel (board hole cut ⌀${dH}) — lengths ${Object.entries(slens).sort((a,b)=>a[0]-b[0]).map(([L,n])=>`${L}mm×${n}`).join(', ')}`]);
   if(c.pen){ const nPin=c.pen.pins.length, nJt=c.pen.joints.length;
@@ -3836,17 +3894,36 @@ function sceneFromComplex(){
     .map(pn=>flipY(circleLoop(Math.max(cxBaseHole()/2,1),12).map(q=>[q[0]+(pn.along||0),q[1]])));
   S.cx.converters.forEach(conv=>{ const g=c.byId[conv.gear]; if(!g)return; const kit=cxConvKit(conv,g), r=conv.r, w=kit.w, ph=(conv.dir||0)*Math.PI/180;
     const cpin=convPinHoles(conv);
-    const yGear=-(g.layer)*LG, yEcc=yGear-t*1.2, yDrive=yGear-t*2.4, gx=g.x-ox, gz=g.y-oy;
+    /* Order out from the board: gear, then the slide deck, then the block running between its
+       rails, then the caps, and only then the crank disc and its rod. Putting the disc right
+       above the gear — as it used to be — meant it and the deck wanted the same wood. The shaft
+       carries on past the whole guide to reach the disc, so it has to be that much longer. */
+    const yGear=-(g.layer)*LG, yDrive=yGear-t*2.4, yEcc=yDrive-t*2.1, gx=g.x-ox, gz=g.y-oy;
+    // deck first — the surface the block actually runs on, spanning the same posts
+    { const M=kit.mid||0, pe=kit.railLen/2-kit.railH/2;
+      const dk=roundRectLoop(kit.railLen,kit.deckW,3,4).map(p=>[p[0]+M,p[1]]);
+      const holes=[[M+pe,kit.railHalf],[M-pe,kit.railHalf],[M+pe,-kit.railHalf],[M-pe,-kit.railHalf]]
+        .map(q=>circleLoop(Math.max(kit.postD/2,1.2),12).map(z=>[z[0]+q[0],z[1]+q[1]]));
+      const sc=cxShaftCut(kit,kit.deckW/2).map(flipY);
+      parts.push({tris:plateMesh([flipY(dk)].concat(holes.map(flipY)).concat(sc),0,0,t*0.7,yDrive+t*0.95),
+        col:WOOD_RAIL,label:`slide deck #${conv.gear}`,spin:{x:gx,z:gz,phase:ph,rate:0}}); }
     // two guide rails — fixed frame that keeps the driven part travelling straight
-    [1,-1].forEach(sgn=>{ const rl=roundRectLoop(kit.railLen,kit.railH,2,3).map(p=>[p[0],p[1]+sgn*kit.railHalf]);
-      parts.push({tris:plateMesh([flipY(rl)],0,0,t*0.85,yDrive),col:WOOD_RAIL,spin:{x:gx,z:gz,phase:ph,rate:0}}); });
+    [1,-1].forEach(sgn=>{ const rl=roundRectLoop(kit.railLen,kit.railH,2,3).map(p=>[p[0]+(kit.mid||0),p[1]+sgn*kit.railHalf]);
+      parts.push({tris:plateMesh([flipY(rl)],0,0,t*0.85,yDrive),col:WOOD_RAIL,label:`guide rail #${conv.gear}`,spin:{x:gx,z:gz,phase:ph,rate:0}}); });
+    // and two cap strips over them, overhanging the channel so the block cannot lift out
+    [1,-1].forEach(sgn=>{ const M=kit.mid||0, pe=kit.railLen/2-kit.railH/2;
+      const cp=roundRectLoop(kit.railLen,kit.capW,2,3).map(p=>[p[0]+M,p[1]+sgn*kit.capMid]);
+      const hs=[[M+pe,sgn*kit.railHalf],[M-pe,sgn*kit.railHalf]]
+        .map(q=>circleLoop(Math.max(kit.postD/2,1.2),12).map(z=>[z[0]+q[0],z[1]+q[1]]));
+      parts.push({tris:plateMesh([flipY(cp)].concat(hs.map(flipY)),0,0,t*0.6,yDrive-t*0.95),
+        col:WOOD_RAIL,label:`slide cap #${conv.gear}`,spin:{x:gx,z:gz,phase:ph,rate:0}}); });
     if(conv.type==='cam'){ const Rb=kit.Rb, pts=[]; for(let a=0;a<72;a++){ const b=2*Math.PI*a/72, R=Rb+r*(1-Math.cos(b))/2; pts.push([R*Math.cos(b),R*Math.sin(b)]); }
       parts.push({tris:plateMesh([flipY(pts),flipY(circleLoop(cbore,16))],0,0,t,yEcc),col:WOOD_SLIDE,spin:{x:gx,z:gz,phase:g.phase,rate:g.rate}});
       parts.push({tris:plateMesh([flipY(rodLoop(kit.followerLen,kit.fw)),flipY(circleLoop(cbore,14))].concat(cpin),0,0,t*0.7,yDrive),col:WOOD_IDLER,
         pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.slider[0]-ox,z:cv.slider[1]-oy,rot:cv.ph};}}); }
     else if(conv.type==='crank'){
       parts.push({tris:plateMesh([flipY(rodLoop(r,w)),flipY(circleLoop(cbore,16)),flipY(circleLoop(cbore,14).map(p=>[p[0]+r,p[1]]))],0,0,t,yEcc),col:WOOD_GEAR,spin:{x:gx,z:gz,phase:g.phase,rate:g.rate}});
-      parts.push({tris:plateMesh([flipY(rodLoop(kit.rod,w)),flipY(circleLoop(cbore,14)),flipY(circleLoop(cbore,14).map(p=>[p[0]+kit.rod,p[1]]))],0,0,t*0.7,yDrive),col:WOOD_IDLER,
+      parts.push({tris:plateMesh([flipY(rodLoop(kit.rod,w)),flipY(circleLoop(cbore,14)),flipY(circleLoop(cbore,14).map(p=>[p[0]+kit.rod,p[1]]))],0,0,t*0.7,yEcc),col:WOOD_IDLER,
         pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.pin[0]-ox,z:cv.pin[1]-oy,rot:Math.atan2(cv.slider[1]-cv.pin[1],cv.slider[0]-cv.pin[0])};}});
       parts.push({tris:plateMesh([flipY(roundRectLoop(kit.sliderLen,kit.sliderW,4,4)),flipY(circleLoop(cbore,14))].concat(cpin),0,0,t*0.7,yDrive),col:WOOD_SLIDE,
         pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.slider[0]-ox,z:cv.slider[1]-oy,rot:cv.ph};}}); }
@@ -3857,7 +3934,7 @@ function sceneFromComplex(){
     ((c.pen&&c.pen.pins)||[]).forEach(pn=>{ if(pn.cv!==conv.id)return;
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cxBore()/2,1.6),14))],0,0,t*2.4,yDrive+t*0.4),col:'#bf3a2b',hw:1,
         pose:s=>{ const q=cxPinAt(c,pn,s); return q?{x:q[0]-ox,z:q[1]-oy,rot:0}:{x:0,z:0,rot:0}; }}); });
-    if(conv.type!=='cam'){ parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cbore,2.2),14))],0,0,t*2.2,yDrive-t*0.3),col:'#bf3a2b',hw:1,
+    if(conv.type!=='cam'){ parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cbore,2.2),14))],0,0,t*2.2,yEcc-t*0.9),col:'#bf3a2b',hw:1,
       pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.pin[0]-ox,z:cv.pin[1]-oy,rot:0};}}); }
     // standoff posts — fixed dowels tying the guide bridge down to the back board
     { const uu=[Math.cos(ph),Math.sin(ph)], pp=[-uu[1],uu[0]], hP=(t+3)-yDrive;
@@ -3888,7 +3965,7 @@ function drawComplexPreview(){
   const c=computeComplex(), th=angA, pad=18, m2=Math.max(S.thick*2,14);
   const pl=cxBoardPlan(c), bw=pl.bw, bh=pl.bh;
   const bx0=c.bbox.cx-bw/2, bx1=bx0+bw, by0=c.bbox.cy-bh/2, by1=by0+bh;
-  const lw=Math.max(bw,bh)/380, dcol='#6b6455', dfs=Math.max(7,Math.max(bw,bh)/34), gfs=Math.max(5.5,Math.max(bw,bh)/52);
+  const lw=Math.max(bw,bh)/380, dcol='#6b6455', dfs=Math.max(7,Math.max(bw,bh)/34), gfs=Math.max(8.5,Math.max(bw,bh)/34);
   let s='';
   // back board with axle holes — board-local (y down) maps back to world with W()
   const W=p=>[(bx0+p[0]).toFixed(1),(-(by1-p[1])).toFixed(1)];
@@ -3914,10 +3991,10 @@ function drawComplexPreview(){
       s+=`<path d="${sd}" fill="var(--paper-2)" fill-opacity="0.95" stroke="#23201a" stroke-width="${(lw*0.8).toFixed(2)}"/>`; });
     if(g.kind==='driver')s+=`<circle cx="${g.x.toFixed(1)}" cy="${(-g.y).toFixed(1)}" r="${(g.rp*0.4).toFixed(1)}" fill="none" stroke="#bf3a2b" stroke-width="${(lw*1.4).toFixed(2)}"/>`; });
   // labels on top, uniform size, offset by layer so stacked gears don't collide
-  c.gears.forEach(g=>{ const dy=(g.layer-(c.layers-1)/2)*gfs*1.2;
+  c.gears.forEach(g=>{ const gf=Math.max(4.5,Math.min(gfs,g.ra*0.5)), dy=(g.layer-(c.layers-1)/2)*gf*1.2;
     s+=`<circle cx="${g.x.toFixed(1)}" cy="${(-g.y).toFixed(1)}" r="${(lw*1.6).toFixed(1)}" fill="#3a3226"/>`;
-    s+=`<text x="${g.x.toFixed(1)}" y="${(-g.y+dy-gfs*0.15).toFixed(1)}" font-size="${gfs.toFixed(1)}" font-weight="700" fill="#23201a" text-anchor="middle" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(gfs*0.2).toFixed(2)}">#${g.id}</text>`;
-    s+=`<text x="${g.x.toFixed(1)}" y="${(-g.y+dy+gfs*0.9).toFixed(1)}" font-size="${(gfs*0.82).toFixed(1)}" fill="#5a4a34" text-anchor="middle" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(gfs*0.16).toFixed(2)}">${g.N}T·L${g.layer}</text>`; });
+    s+=`<text x="${g.x.toFixed(1)}" y="${(-g.y+dy-gf*0.15).toFixed(1)}" font-size="${gf.toFixed(1)}" font-weight="700" fill="#23201a" text-anchor="middle" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(gf*0.2).toFixed(2)}">#${g.id}</text>`;
+    s+=`<text x="${g.x.toFixed(1)}" y="${(-g.y+dy+gf*0.9).toFixed(1)}" font-size="${(gf*0.82).toFixed(1)}" fill="#5a4a34" text-anchor="middle" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(gf*0.16).toFixed(2)}">${g.N}T·L${g.layer}</text>`; });
   // paper + drawing pen (multi-arm chain)
   let ox0=bx0,ox1=bx1,oy0=by0,oy1=by1;
   if(c.pen){ const dr=cxDrawing(c), G=dr.G, C=dr.C, now=cxPenAt(c,th), pOff=cxCoupleOffset(c,th,'paper');
@@ -3982,8 +4059,9 @@ function drawComplexPreview(){
     const dPoly=w=>'M'+w.map(p=>p[0].toFixed(1)+' '+(-p[1]).toFixed(1)).join('L')+'Z';
     const fillLoop=(O,loop,fill,sw)=>{ s+=`<path d="${dPoly(wl(O,loop))}" fill="${fill}" stroke="#23201a" stroke-width="${sw}"/>`; };
     // guide rails (fixed, centred on the shaft, along the reciprocation axis)
-    [1,-1].forEach(sgn=>fillLoop(C,roundRectLoop(kit.railLen,kit.railH,2,3).map(p=>[p[0],p[1]+sgn*kit.railHalf]),'#8a6a3c33',(lw*0.8).toFixed(2)));
-    { const a=[C[0]-u[0]*kit.railLen/2,C[1]-u[1]*kit.railLen/2], b=[C[0]+u[0]*kit.railLen/2,C[1]+u[1]*kit.railLen/2];
+    [1,-1].forEach(sgn=>fillLoop(C,roundRectLoop(kit.railLen,kit.railH,2,3).map(p=>[p[0]+(kit.mid||0),p[1]+sgn*kit.railHalf]),'#8a6a3c33',(lw*0.8).toFixed(2)));
+    { const m0=(kit.mid||0)-kit.railLen/2, m1=(kit.mid||0)+kit.railLen/2;
+      const a=[C[0]+u[0]*m0,C[1]+u[1]*m0], b=[C[0]+u[0]*m1,C[1]+u[1]*m1];
       s+=`<line x1="${a[0].toFixed(1)}" y1="${(-a[1]).toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${(-b[1]).toFixed(1)}" stroke="#23201a" stroke-width="${(lw*0.5).toFixed(2)}" stroke-dasharray="4 3" opacity="0.3"/>`; }
     if(conv.type==='cam'){ let d='M'; for(let a=0;a<=64;a++){ const al=2*Math.PI*a/64, R=cv.camR(al); d+=(a?'L':'')+(C[0]+R*Math.cos(al)).toFixed(1)+' '+(-(C[1]+R*Math.sin(al))).toFixed(1)+' '; } d+='Z';
       s+=`<path d="${d}" fill="#c08a4e" fill-opacity="0.7" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`;
@@ -4037,7 +4115,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build lissajous-03`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build slide-02`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -4113,17 +4191,23 @@ function exportComplex(){
     const dot=cx0=>circleLoop(1,16).map(p=>[p[0]+cx0,p[1]]);   // bore marker (≤20 pts)
     const pe=kit.railLen/2-kit.railH/2;   // post-hole inset from each rail end
     const rail=()=>place([roundRectLoop(kit.railLen,kit.railH,2,3),dot(pe),dot(-pe)],'guide rail + post holes');
+    const deck=()=>{ const hs=[[pe,kit.railHalf],[-pe,kit.railHalf],[pe,-kit.railHalf],[-pe,-kit.railHalf]]
+        .map(q=>circleLoop(1,16).map(z=>[z[0]+q[0],z[1]+q[1]]));
+      place([roundRectLoop(kit.railLen,kit.deckW,3,4)].concat(hs).concat(cxShaftCut(kit,kit.deckW/2)),
+        `slide deck #${conv.gear} — the block runs on this`); };
+    const capStrip=()=>{ const hs=[[pe,0],[-pe,0]].map(q=>circleLoop(1,16).map(z=>[z[0]+q[0],z[1]+q[1]]));
+      place([roundRectLoop(kit.railLen,kit.capW,2,3)].concat(hs),`slide cap #${conv.gear} — traps the block`); };
     const cap=()=>place([circleLoop(kit.postD/2+3.5,40),dot(0)],`pin cap #${conv.gear}`);
     if(conv.type==='cam'){ const Rb=kit.Rb, cx=x+Rb+r, cy=Rb+r+gap, pts=[]; for(let a=0;a<80;a++){ const b=2*Math.PI*a/80, R=Rb+r*(1-Math.cos(b))/2+kh; pts.push([cx+R*Math.cos(b),cy+R*Math.sin(b)]); }
       parts.push(`<path d="M${pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}Z" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
       parts.push(`<path d="${svgCircle(boreR,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
       parts.push(txt(cx,cy,`cam #${conv.gear}`,SCORE,3)); x=cx+Rb+r+gap; rowH=Math.max(rowH,2*(Rb+r)+gap*2);
-      place([rodLoop(kit.followerLen,kit.fw),dot(kit.followerLen)],`follower #${conv.gear}`); rail(); rail(); }
+      place([rodLoop(kit.followerLen,kit.fw),dot(kit.followerLen)],`follower #${conv.gear}`); deck(); rail(); rail(); capStrip(); capStrip(); }
     else if(conv.type==='crank'){ place([rodLoop(r,w),dot(0),dot(r)],`crank #${conv.gear} · r${Math.round(r)}`);
       place([rodLoop(kit.rod,w),dot(0),dot(kit.rod)],`conrod #${conv.gear} · ${fmt(kit.rod)}`);
-      place([roundRectLoop(kit.sliderLen,kit.sliderW,4,4),dot(0)],`slider #${conv.gear}`); rail(); rail(); cap(); }
+      place([roundRectLoop(kit.sliderLen,kit.sliderW,4,4),dot(0)],`slider #${conv.gear}`); deck(); rail(); rail(); capStrip(); capStrip(); cap(); }
     else { place([rodLoop(r,w),dot(0),dot(r)],`crank #${conv.gear} · r${Math.round(r)}`);
-      place(kit.yoke,`slotted yoke #${conv.gear} · stroke ${fmt(2*r)}`); rail(); rail(); cap(); } });
+      place(kit.yoke,`slotted yoke #${conv.gear} · stroke ${fmt(2*r)}`); deck(); rail(); rail(); capStrip(); capStrip(); cap(); } });
   S.cx.edges.forEach(edge=>{ const g=c.byId[edge.gear]; if(!g)return; const poly=cxRackWindow(c.m,edge.len,0,cxBacklashDelta(c.m));
     let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9; poly.forEach(p=>{mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);});
     const pts=poly.map(p=>[x+(p[0]-mnx),gap+(mxy-p[1])]);
@@ -4158,24 +4242,78 @@ ${parts.join('\n')}
 }
 function cxDescendants(id){ const out=new Set([id]); let added=true; while(added){ added=false; S.cx.gears.forEach(g=>{ if(g.parent!=null&&out.has(g.parent)&&!out.has(g.id)){out.add(g.id);added=true;} }); } return out; }
 function cxAddMesh(){ const p=S.cx.gears.find(g=>g.id===S.cx.sel)||S.cx.gears[0]; const used=S.cx.gears.filter(g=>g.parent===p.id&&g.kind==='mesh').map(g=>g.dir); let dir=0; for(const d of [0,180,90,270,45,135,225,315,60,120,240,300]){ if(!used.includes(d)){dir=d;break;} } S.cx.gears.push({id:S.cx.nextId,N:20,kind:'mesh',parent:p.id,dir}); S.cx.sel=S.cx.nextId++; }
-function cxAddCompound(){ const p=S.cx.gears.find(g=>g.id===S.cx.sel)||S.cx.gears[0]; S.cx.gears.push({id:S.cx.nextId,N:12,kind:'compound',parent:p.id}); S.cx.sel=S.cx.nextId++; }
+function cxAddCompound(down){
+  const p=S.cx.gears.find(g=>g.id===S.cx.sel)||S.cx.gears[0]; if(!p)return;
+  // find what is already on this shaft so the new gear goes clear of it rather than through it
+  let lo=0, hi=0;
+  try{ const c=computeComplex(), pl=c.byId[p.id];
+    if(pl)c.gears.forEach(g=>{ if(Math.hypot(g.x-pl.x,g.y-pl.y)>0.5)return;
+      const d=g.layer-pl.layer; if(d<lo)lo=d; if(d>hi)hi=d; }); }catch(_){}
+  const lift=down?(lo-1):(hi+1);
+  // stacking OVER a shaft that already carries a movement puts a gear where the guide bridge is
+  const hasConv=(S.cx.converters||[]).some(v=>v.gear===p.id);
+  S.cx.stackNote=(hasConv&&!down)
+    ? `#${p.id} already carries a movement on its shaft. Its guide bridge stands off the board just above the gear, so a gear stacked on top will run into it. Stacking <b>below</b> keeps them apart, or move the movement to a shaft with nothing over it.`
+    : null;
+  S.cx.gears.push({id:S.cx.nextId,N:12,kind:'compound',parent:p.id,lift});
+  S.cx.sel=S.cx.nextId++; }
 function cxDelete(id){ if(id===0)return; const rm=cxDescendants(id); S.cx.gears=S.cx.gears.filter(g=>!rm.has(g.id)); if(rm.has(S.cx.sel))S.cx.sel=0; }
+/* Walk the drive from the crank outwards so the list reads in the order the motion actually
+   travels, rather than the order gears happened to be added. Where one gear drives several, its
+   children sit indented beneath it — stacks first (they share the shaft), then meshes by angle. */
+function cxDriveOrder(c){
+  const kids={};
+  c.gears.forEach(g=>{ if(g.parent==null||!c.byId[g.parent])return;
+    (kids[g.parent]||(kids[g.parent]=[])).push(g); });
+  Object.keys(kids).forEach(k=>kids[k].sort((x,y)=>{
+    const cx1=x.kind==='compound', cy=y.kind==='compound';
+    if(cx1!==cy)return cx1?-1:1;
+    if(cx1)return ((x.lift==null?1:x.lift)-(y.lift==null?1:y.lift));
+    return ((x.dir||0)-(y.dir||0)); }));
+  const out=[], seen={};
+  const walk=(g,d)=>{ if(seen[g.id])return; seen[g.id]=1;
+    out.push({g,depth:d,kids:(kids[g.id]||[]).length});
+    (kids[g.id]||[]).forEach(k=>walk(k,d+1)); };
+  c.gears.filter(g=>g.parent==null||!c.byId[g.parent]).forEach(r=>walk(r,0));
+  c.gears.forEach(g=>{ if(!seen[g.id]){ seen[g.id]=1; out.push({g,depth:0,kids:0}); } });
+  return out; }
 function renderComplexUI(){
   const host=document.getElementById('cxList'); if(!host)return; const c=computeComplex();
   const KIND={driver:'crank',mesh:'mesh',compound:'stack'};
-  host.innerHTML=c.gears.map(g=>{ const isSel=g.id===S.cx.sel;
+  const CONVN={crank:'crank',scotch:'scotch yoke',cam:'cam'};
+  host.innerHTML=cxDriveOrder(c).map(node=>{ const g=node.g, isSel=g.id===S.cx.sel;
+    const ind=Math.min(node.depth,4)*11;
+    const hangs=(S.cx.converters||[]).filter(v=>v.gear===g.id);
+    // a gear can carry a movement AND have gears stacked over it — the movement sits on the drive
+    // plane just under its own gear, so anything stacked above has to clear the whole bridge
+    const above=c.gears.filter(x=>x.id!==g.id&&Math.hypot(x.x-g.x,x.y-g.y)<0.5&&x.layer>g.layer).length;
+    const tags='';
+    const drives=node.kids>1?`<span class="clab" style="color:#6b6455">drives ${node.kids}</span>`:'';
     const dirCtl=g.kind==='mesh'?`<span class="clab">dir</span><span class="cstep"><button data-cxdir="-1" data-id="${g.id}">−</button><input type="number" value="${g.dir}" data-cxdirn="${g.id}" min="0" max="345" step="15"><button data-cxdir="1" data-id="${g.id}">＋</button></span>`:'';
-    return `<div class="cstage" style="${isSel?'border-color:var(--brass);border-width:2px':''}">
+    const movRow=hangs.map(v=>{
+      const warn=above>0;
+      return `<div class="cstage" style="margin-left:${ind+11}px;border-left:3px solid #b0553a;background:#f3e6dd">
+        <div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px;color:#b0553a">↳ ${CONVN[v.type]||v.type}</b>
+        <span class="clab">on #${g.id}'s shaft</span>
+        <span class="clab" style="color:#b0553a">movement</span>
+        ${v.drive==='pen'?'<span class="clab">→ pen</span>':v.drive==='paper'?'<span class="clab">→ paper</span>':''}
+        ${warn?`<span class="clab" style="color:#bf3a2b">⚠ ${above} gear${above>1?'s':''} stacked over this shaft — the guide bridge and the stacked gear share the space. Move the movement to a free shaft, or stack below instead.</span>`:''}
+        </div></div>`; }).join('');
+    return movRow+`<div class="cstage" style="margin-left:${ind}px;${node.depth?`border-left:3px solid ${cxLayerCol(g.layer)};`:''}${isSel?'border-color:var(--brass);border-width:2px':''}">
       <div class="cstage-top"><button class="cxsel ${isSel?'on':''}" data-cxsel="${g.id}">${isSel?'◉':'○'} #${g.id}</button>
         <b data-cxsel="${g.id}" style="cursor:pointer;color:${cxLayerCol(g.layer)};-webkit-text-stroke:0.3px #23201a">${KIND[g.kind]}</b>
         <span class="clab">L${g.layer}</span>
         <span class="clab">teeth</span><span class="cstep"><button data-cxn="-1" data-id="${g.id}">−</button><input type="number" value="${g.N}" data-cxnn="${g.id}" min="6" max="120" step="1"><button data-cxn="1" data-id="${g.id}">＋</button></span>
         <span class="clab" style="color:#9a7220">ø${fmt(2*g.ra)}</span>
         ${dirCtl}
+        ${drives}${tags}
         ${g.id!==0?`<button class="cxdel" data-cxdel="${g.id}">✕</button>`:''}</div></div>`; }).join('');
   const selG=c.byId[S.cx.sel]||c.gears[0];
   const mb=document.getElementById('cxMeshBtn'); if(mb)mb.textContent=`＋ mesh a gear beside #${selG.id}`;
-  const sb=document.getElementById('cxStackBtn'); if(sb)sb.textContent=`＋ stack a gear on #${selG.id}'s shaft`;
+  const sn=document.getElementById('cxStackNote');
+  if(sn)sn.innerHTML=S.cx.stackNote?`<div class="hint" style="color:#bf3a2b;margin-top:8px">⚠ ${S.cx.stackNote}</div>`:'';
+  const sb=document.getElementById('cxStackBtn'); if(sb)sb.textContent=`＋ stack above #${selG.id}`;
+  const sbl=document.getElementById('cxStackBelowBtn'); if(sbl)sbl.textContent=`＋ stack below #${selG.id}`;
   const sc=document.getElementById('cxCountVal'); if(sc)sc.textContent=`${c.gears.length} gears · ${c.layers} layers`;
   const sw=document.getElementById('cxScaleWarn'); const curScale=S.cx.scale||1; const scaleLbl=({'0.5':'½','0.6667':'⅔','0.75':'¾','1':'1','1.3333':'1⅓','1.5':'1½','2':'2'})[String(curScale)]||('×'+(+curScale.toFixed(2)));
   document.querySelectorAll('#mvComplex [data-cxscale]').forEach(b=>b.setAttribute('aria-pressed',Math.abs(+b.dataset.cxscale-curScale)<0.01?'true':'false'));
@@ -4321,6 +4459,7 @@ function renderComplexUI(){
     const penHoleRow=`<div class="lab" style="margin-top:12px"><label>Pencil / pen hole</label></div><div class="cstage-top"><span class="clab">shape</span><span style="display:flex;gap:5px;flex-wrap:wrap" id="cxPenShape">${penShapeBtns}</span></div><div class="cstage-top" style="margin-top:6px"><span class="clab">pen/pencil ${pnS<3?'⌀':'A/F'}</span><span class="cstep"><button data-cxpen="-0.1">−</button><input type="number" value="${S.cx.penDia||10}" id="cxPenDia" min="2" max="30" step="0.1"><button data-cxpen="0.1">＋</button></span><span class="clab">mm to cut</span></div><div class="hint">The teardrop collar's hole (grips the pen/pencil). <b>${pnS>=3?CX_SIDE_NAME[pnS]+' — measured across the flats, grips a hex pencil':'round — for round barrels'}</b>. Cut a test hole in the Kerf Hole Maker and set the size that grips.</div>`;
     brg.innerHTML=`<div class="lab"><label>Bearing, dowel &amp; pen fits</label>${M!=='none'?`<span class="val">⌀${B.od}mm</span>`:''}</div><div class="hint">Press-fit sizes for this machine. Bearings on/off and the seat size are set above; these are the extras.</div>${M!=='none'?`<div class="cstage-top" style="margin-top:8px"><span class="clab">bearing</span><select class="selin" id="cxBrgSel" style="width:auto">${presets.map(p=>`<option value="${p[0]}"${sel===p[0]?' selected':''}>${p[1]} mm</option>`).join('')}<option value="custom"${sel==='custom'?' selected':''}>custom…</option></select>${sel==='custom'?`<span class="cstep"><button data-cxbrg="-1">−</button><input type="number" value="${B.od}" id="cxBrgOD" min="6" max="80" step="1"><button data-cxbrg="1">＋</button></span><span class="clab">OD</span>`:''}</div>`:''}${dowelHoleRow}${penHoleRow}`;
   }
+  try{ cxHistNote(); }catch(_){}          // one hook: every change passes through here
 }
 function renderChainUI(){
   const box=document.getElementById('chainList'); if(!box)return;
@@ -4940,6 +5079,40 @@ function renderPrep(){ const host=document.getElementById('prepBody'); if(!host)
 
 
 /* ---- example machines: load with a one-step undo ---- */
+/* ---- global undo -----------------------------------------------------------------------
+   Every handler in the workbench ends by calling renderComplexUI(), and the animation loop does
+   not, so one hook there catches every change without having to touch ninety-odd handlers. The
+   snapshot is compared as text: if it differs from last time, the PREVIOUS state goes on the
+   stack. Restoring re-enters renderComplexUI, hence the busy flag. -------------------------- */
+var cxHist=[], cxRedoStack=[], cxLastSnap=null, cxHistBusy=false;
+const CX_HIST_MAX=80;
+function cxHistBtns(){
+  const u=document.getElementById('cxUndoStep'), r=document.getElementById('cxRedoStep');
+  if(u){ u.disabled=!cxHist.length; u.style.opacity=cxHist.length?'1':'0.4'; }
+  if(r){ r.disabled=!cxRedoStack.length; r.style.opacity=cxRedoStack.length?'1':'0.4'; } }
+function cxHistNote(){
+  if(cxHistBusy)return;
+  let now; try{ now=cxSnapshot(); }catch(_){ return; }
+  if(cxLastSnap===null){ cxLastSnap=now; cxHistBtns(); return; }
+  if(now===cxLastSnap)return;
+  cxHist.push(cxLastSnap);
+  if(cxHist.length>CX_HIST_MAX)cxHist.shift();
+  cxRedoStack.length=0;
+  cxLastSnap=now;
+  cxHistBtns(); }
+function cxHistApply(str){
+  cxHistBusy=true;
+  let okr=false;
+  try{ okr=cxRestore(str); }catch(_){ okr=false; }
+  cxLastSnap=str; cxHistBusy=false;
+  try{ renderComplexUI(); }catch(_){}
+  try{ everything(); }catch(_){}
+  cxHistBtns();
+  return okr; }
+function cxUndoStepDo(){ if(!cxHist.length)return false;
+  const prev=cxHist.pop(); cxRedoStack.push(cxLastSnap); return cxHistApply(prev); }
+function cxRedoStepDo(){ if(!cxRedoStack.length)return false;
+  const nxt=cxRedoStack.pop(); cxHist.push(cxLastSnap); return cxHistApply(nxt); }
 var cxUndo=null;
 function cxSnapshot(){ try{ return JSON.stringify({cx:S.cx, movement:S.movement, spokes:S.spokes}); }catch(_){ return null; } }
 function cxRestore(js){ try{ const d=JSON.parse(js); S.cx=d.cx; S.movement=d.movement; S.spokes=d.spokes; return true; }catch(_){ return false; } }
@@ -5488,7 +5661,8 @@ document.getElementById('cxConv').addEventListener('change',e=>{const t=e.target
   else if(t.classList.contains('cxCvNum')){ const f=t.dataset.f; if(f==='dir')v.dir=((Math.round(+t.value)%360)+360)%360; else v[f]=Math.max(cvMin(f),Math.round(+t.value)||v[f]); }
   renderComplexUI();everything();});
 document.getElementById('cxMeshBtn').addEventListener('click',()=>{cxAddMesh();renderComplexUI();everything();});
-document.getElementById('cxStackBtn').addEventListener('click',()=>{cxAddCompound();renderComplexUI();everything();});
+document.getElementById('cxStackBtn').addEventListener('click',()=>{cxAddCompound(false);renderComplexUI();everything();});
+document.getElementById('cxStackBelowBtn').addEventListener('click',()=>{cxAddCompound(true);renderComplexUI();everything();});
 document.getElementById('mvComplex').addEventListener('click',e=>{const b=e.target.closest('[data-cxscale]');if(!b)return;const target=+b.dataset.cxscale,cur=S.cx.scale||1;if(Math.abs(target-cur)<1e-4)return;cxScaleMechanism(target/cur);S.cx.scale=target;renderComplexUI();everything();});
 (function(){ const mp=document.getElementById('manualPanel'), mb=document.getElementById('manualBtn');
   if(mb)mb.addEventListener('click',()=>{ const opening=mp.classList.contains('hide'); mp.classList.toggle('hide');
@@ -5518,6 +5692,8 @@ document.getElementById('mvComplex').addEventListener('click',e=>{const b=e.targ
   const exLegacy=null; if(exLegacy)exLegacy.addEventListener('click',()=>{ setMovement('complex'); cxLoadExampleSafe(); renderComplexUI(); renderPrep(); everything();
     const w=document.getElementById('mvComplex'); if(w)w.scrollIntoView({behavior:'smooth',block:'start'}); });
   const exU=document.getElementById('exUndo');
+  const uS=document.getElementById('cxUndoStep'); if(uS)uS.addEventListener('click',()=>{ cxUndoStepDo(); });
+  const rS=document.getElementById('cxRedoStep'); if(rS)rS.addEventListener('click',()=>{ cxRedoStepDo(); });
   if(exU)exU.addEventListener('click',()=>{ if(cxUndo&&cxRestore(cxUndo)){ cxUndo=null; cxUndoBtn();
     const note=document.getElementById('exNote'); if(note)note.innerHTML='Put back what you had before loading the example.';
     renderComplexUI(); renderPrep(); everything(); } });
