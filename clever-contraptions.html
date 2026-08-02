@@ -453,7 +453,10 @@
 <h4 class="mn-h2">Pivots partway along an arm</h4>
 <p class="mn-p">A joint does not have to hang off the <i>end</i> of another arm. Set an arm's anchor to <b>along arm</b> and give it a percentage, and it pivots from a point partway down that arm instead. That is the trick behind the classic multi-arm drawing machines: each extra pivot multiplies the harmonics, so a machine with only three wheels can fill most of its page.</p>
 <p class="mn-p"><b>Example 6 · Arm chain drawing machine</b> is built this way. Three wheels at unrelated ratios carry two pins; a first pair of arms meets at a joint, a second pair hangs off a pivot 45% along one of those arms, and the pen rides further out again on a short welded arm. Move that percentage and the figure changes completely — it is the most expressive single control on the machine.</p>
-<p class="mn-p">The fraction is not limited to the arm itself. Push it <b>below 0</b> and the anchor moves out beyond the arm's own pin, on the far side — so that pin ends up <i>partway along</i> a straight member rather than at its end. That is the arrangement in Robert Balke's drawing machines, and it is what lets several wheels drive one linkage at once: a wheel bearing on the interior of a member shares the work rather than fighting the others. Push it <b>above 1</b> and the anchor runs out past the joint instead.</p>
+<p class="mn-p">Each arm says <b>how far along itself it is pinned</b>. At 0 the pin is at the very end, as on an ordinary arm. Raise it and the wood runs on past the pin at both ends, so the pin is through the middle of a solid member — 50% puts it dead centre. That is how a Balke machine's arms are made, and it is what lets several wheels drive one linkage without fighting each other. The panel shows the length of the stick you would actually cut, which is longer than the pin-to-joint distance once the pin sits inside.</p>
+<p class="mn-p">An arm can also carry <b>pivot holes</b> — marked out before anything hangs on them, exactly as you would at the bench. Add one, slide it to where you want it along the arm, and it appears in every attachment list further down as <i>pivot 1 on arm 1A</i>. That means a machine can be built forwards: lay out the arms you want, drill the holes, then hang the next pair on them.</p>
+<p class="mn-p">A machine does not have to carry a pen at all. Choose <b>no pen, just the linkage</b> and it still moves and still cuts — useful when the arms are driving something else, or when you are still working out the shape.</p>
+<p class="mn-p">That one setting decides a member's length. Anything else fastened to that member — another arm, a pen branch — simply picks a spot on the wood already there, given as a percentage of its <b>whole</b> length: 0% is one end, 100% the other. Push it <b>below 0</b> and the anchor moves out beyond the arm's own pin, on the far side — so that pin ends up <i>partway along</i> a straight member rather than at its end. That is the arrangement in Robert Balke's drawing machines, and it is what lets several wheels drive one linkage at once: a wheel bearing on the interior of a member shares the work rather than fighting the others. Push it <b>above 1</b> and the anchor runs out past the joint instead.</p>
 <p class="mn-p"><b>Example 7 · Balke-style interior drive</b> works this way. Three wheels at 49, 36 and 29 teeth all push at once; the member from joint 1 runs back through wheel #0's pin and half an arm's length beyond it, and wheel #2 drives a second pair off that far end. The three ratios share no common factor, so the figure never quite repeats — it is drawn for a set number of turns rather than until it closes, which is how those machines behave.</p>
 <p class="mn-p">A joint's arms can also start at <b>other joints</b> rather than at pins. That is what builds the full Balke arrangement: two elbows, each found from a pair of wheel pins, then a third pair of arms rising from those two elbows with the pen at their apex. Six pivots — three pins on the wheels and three elbows — and the pen carried by members that are themselves carried by members. It looks like a closed loop in a photograph, but it resolves as a tree three levels deep, which is why the tool can solve it at all. <b>Example 8 · Six-pivot Balke machine</b> is built this way.</p>
 <div class="mn-note">Chains like this can run out of reach: if the arms cannot close at some angle the pen simply vanishes for part of the turn. Lengthen both arms of the offending joint, or move the pivot fraction, until the trace is unbroken all the way round.</div>
@@ -2932,6 +2935,7 @@ function computeComplex(){ try{cxSyncSplitMax();}catch(_){}
   // a pin is usable if it resolves to something real — a gear, or a converter whose host gear
   // exists. Testing byId[p.g] alone threw the whole linkage away the moment a pin moved onto a
   // converter output, which looks exactly like the pen silently vanishing.
+  if(S.cx.pen)cxMigrateArms(S.cx.pen);
   const cvHostOK=id=>{ const L=S.cx.converters||[]; for(const v of L)if(v.id===id)return !!byId[v.gear]; return false; };
   const pinOK=p=>!!p&&(p.cv!=null?cvHostOK(p.cv):!!byId[p.g]);
   const pen=(S.cx.pen&&(S.cx.pen.mode==='carriage'
@@ -2951,8 +2955,12 @@ function cxRefPos(ref,pin,jt,joints,wl,welds){ if(ref==null)return null;
     if(ref[0]==='p')return (i>=0&&i<pin.length)?pin[i]:null;
     if(ref[0]==='j')return (i>=0&&i<jt.length)?jt[i]:null;
     if(ref[0]==='w')return (wl&&i>=0&&i<wl.length)?wl[i]:null; return null; }
-  if(ref.on){ const on=ref.on, k=+on.slice(1), t=(ref.t==null?0.5:ref.t); let base,tip;
-    if(on[0]==='j'){ const j=joints&&joints[k]; if(!j)return null; base=cxRefPos(ref.side==='b'?j.b:j.a,pin,jt,joints,wl,welds); tip=jt[k]; }
+  if(ref.on){ const on=ref.on, k=+on.slice(1); let t=(ref.t==null?0.5:ref.t); let base,tip;
+    if(on[0]==='j'){ const j=joints&&joints[k]; if(!j)return null;
+      base=cxRefPos(ref.side==='b'?j.b:j.a,pin,jt,joints,wl,welds); tip=jt[k];
+      // t runs 0..1 along the WHOLE member, overhang included, so 0 really is one end of the wood
+      const sp=cxArmSpan(k,ref.side==='b'?'b':'a');
+      t=Math.max(0,Math.min(1,t)); t=sp[0]+(sp[1]-sp[0])*t; }
     else if(on[0]==='w'){ const w=welds&&welds[k]; if(!w)return null; base=cxRefPos(w.base,pin,jt,joints,wl,welds); tip=wl&&wl[k]; }
     else return null;
     if(!base||!tip)return null; return [base[0]+(tip[0]-base[0])*t, base[1]+(tip[1]-base[1])*t]; }
@@ -2969,14 +2977,23 @@ function cxNodePos(ref,pin,jt){ const P=S.cx.pen||{}; return cxRefPos(ref,pin,jt
    something is anchored at a fraction outside that, the real piece of wood carries on past the
    end to reach it, and the pin it hangs from ends up partway ALONG the member rather than at its
    tip. Drawn only from 0 to 1, such a member looks like two arms floating apart. */
-function cxArmSpan(i,side){ const P=S.cx.pen||{}; let lo=0,hi=1;
-  const look=ref=>{ if(!ref||!ref.on)return; if(ref.on!=='j'+i)return;
-    if((ref.side==='b'?'b':'a')!==side)return;
-    const t=(ref.t==null?0.5:ref.t); if(t<lo)lo=t; if(t>hi)hi=t; };
-  (P.joints||[]).forEach(j=>{ look(j.a); look(j.b); });
-  (P.welds||[]).forEach(w=>look(w.base));
-  look(P.penRef);
-  return [lo,hi]; }
+/* Where the attachment sits along a member, as a fraction of the member's whole length.
+   0 means at one end, 0.5 dead centre. The member simply carries on past its attachment by
+   however much is needed, so a wheel pin can be pinned halfway across a solid arm exactly as it
+   is on a real machine — rather than only ever at the end of one. */
+function cxArmAt(i,side){ const P=S.cx.pen||{}, j=(P.joints||[])[i]; if(!j)return 0;
+  const e=(side==='b')?j.bExt:j.aExt; const t=(e==null?0:e);
+  return (t<0)?(-t/(1-t)):0; }
+function cxSetArmAt(i,side,f){ const P=S.cx.pen||{}, j=(P.joints||[])[i]; if(!j)return;
+  f=Math.max(0,Math.min(0.9,f));
+  const e=(f<=0.001)?0:(-f/(1-f));
+  if(side==='b')j.bExt=e; else j.aExt=e; }
+/* A member's length is settled by ONE thing: where its own attachment sits along it. Anything
+   ELSE fastened to that member simply picks a spot on the wood that is already there — it cannot
+   make the member longer. Two controls both stretching the same end is how this got confusing. */
+function cxArmSpan(i,side){ const P=S.cx.pen||{}, j=(P.joints||[])[i];
+  const e=j?((side==='b')?j.bExt:j.aExt):0;
+  return [(e!=null&&e<0)?e:0, 1]; }
 function cxArmEnds(i,side,base,tip){ const [lo,hi]=cxArmSpan(i,side);
   return [[base[0]+(tip[0]-base[0])*lo, base[1]+(tip[1]-base[1])*lo],
           [base[0]+(tip[0]-base[0])*hi, base[1]+(tip[1]-base[1])*hi]]; }
@@ -3200,11 +3217,42 @@ function cxCarriagePinY(c,t){ return cxCarriageArmY(c,t,1)-t*1.45; }
 function cxCarriagePenY(c,t){ const ax=cxCarriageOK(c); if(!ax)return null;
   // sit the paper clear of the outermost pen slide, not between the two of them
   return cxCarriagePinY(c,t)-t*0.42; }
+/* Before, a NEGATIVE anchor fraction was how you stretched a member so its pin ended up partway
+   along. That job now belongs to the member itself, so an old project's negative anchors are
+   converted: the member takes the overhang, and the anchor becomes a plain fraction of the
+   member's whole length. Machines saved either way come out the same shape. */
+function cxMigrateArms(P){ if(!P||!P.joints||P._armsV===2)return P;
+  const setExt=(k,side,e)=>{ const j=P.joints[k]; if(!j)return;
+    const cur=(side==='b')?j.bExt:j.aExt;
+    const v=(cur==null)?e:Math.min(cur,e);
+    if(side==='b')j.bExt=v; else j.aExt=v; };
+  const fix=ref=>{ if(!ref||!ref.on||ref.on[0]!=='j')return;
+    const k=+ref.on.slice(1), side=(ref.side==='b')?'b':'a', t=(ref.t==null?0.5:ref.t);
+    if(t<0){ setExt(k,side,t); ref.t=0; }
+    else if(t>1){ ref.t=1; } };
+  P.joints.forEach(j=>{ fix(j.a); fix(j.b); });
+  (P.welds||[]).forEach(w=>fix(w.base));
+  fix(P.penRef);
+  // an anchor written as a fraction of the old 0..1 now has to be read against the whole member
+  P.joints.forEach((j,k)=>['a','b'].forEach(side=>{
+    const e=(side==='b')?j.bExt:j.aExt; if(e==null||e>=0)return;
+    const scale=t=>(t-e)/(1-e);
+    const rescale=ref=>{ if(!ref||!ref.on||ref.on!=='j'+k)return;
+      if(((ref.side==='b')?'b':'a')!==side)return;
+      if(ref.t>0&&ref.t<1)ref.t=scale(ref.t); };
+    P.joints.forEach(j2=>{ rescale(j2.a); rescale(j2.b); });
+    (P.welds||[]).forEach(w=>rescale(w.base));
+    rescale(P.penRef); }));
+  P._armsV=2; return P; }
+// a machine can be built as arms alone, with no pen fitted; it moves but draws nothing
+function cxHasPen(){ const P=S.cx.pen; return !!(P&&(P.mode==='carriage'||P.penRef!=null)); }
 function cxPenIsCarriage(){ return !!(S.cx.pen&&S.cx.pen.mode==='carriage'); }
 function cxPenAt(c,ang){ const P=c.pen; if(!P)return null;
   if(P.mode==='carriage'){ const K=cxCarriageAt(c,ang);
     return K?{pinPos:[],jointPos:[],weldPos:[],pen:K.pen}:null; }
   if(!P.pins||!P.joints||P.pins.length<1||P.joints.length<1)return null;
+  // a machine may be built with arms and no pen at all — the linkage still moves, it just
+  // does not draw. Anything downstream that wants a pen checks for one.
   const pinPos=P.pins.map(pn=>cxPinAt(c,pn,ang));
   if(pinPos.some(p=>!p))return null; const jointPos=[], welds=P.welds||[];
   for(const j of P.joints){ const A=cxRefPos(j.a,pinPos,jointPos,P.joints,null,welds), B=cxRefPos(j.b,pinPos,jointPos,P.joints,null,welds); jointPos.push((A&&B)?circIntersect(A,j.la,B,j.lb,j.branch||1):null); }
@@ -3234,7 +3282,7 @@ function cxCloses(c){ const P=c.pen; if(!P||!P.pins)return {closes:true,period:1
   let L=1, ok=true;
   for(const r of rates){ if(Math.abs(r)<1e-9)continue; let q=0; for(let d=1;d<=20000;d++){ if(Math.abs(r*d-Math.round(r*d))<1e-7){q=d;break;} } if(!q){ok=false;break;} L=L/gcd(L,q)*q; if(L>1e12){ok=false;break;} }
   return {closes:false, period:ok?Math.round(L):null}; }
-function cxDrawing(c,coarseN){ const P=c.pen; if(!P)return {ink:[],mode:'fixed',reachable:true,period:1};
+function cxDrawing(c,coarseN){ const P=c.pen; if(!P||!cxHasPen())return {ink:[],mode:'fixed',reachable:true,period:1};
   const G=(P.paper&&P.paper.gear!=null)?c.byId[P.paper.gear]:null, mode=G?'gear':'fixed';
   const rates=cxPinRates(c,P); if(G)rates.push(G.rate);
   S.cx.converters.forEach(v=>{ if(v.drive==='paper'||v.drive==='pen'){const g=c.byId[v.gear]; if(g)rates.push(g.rate);} });
@@ -3283,7 +3331,23 @@ function cxRemoveJoint(){ if(S.cx.pen&&S.cx.pen.joints.length>1)S.cx.pen.joints.
 function cxRemovePen(){ S.cx.pen=null; }
 function cxRefKey(ref){ return (typeof ref==='string')?ref:(ref&&ref.on?`t:${ref.on}:${ref.side}`:''); }
 function cxRefT(ref){ return (ref&&ref.on&&ref.t!=null)?Math.round(ref.t*100):50; }
-function cxMakeRef(key,oldT){ if(key&&key.indexOf('t:')===0){ const p=key.split(':'); return {on:p[1],side:p[2],t:(oldT==null?0.5:oldT)}; } return key; }
+/* A pivot hole can be drilled in an arm before anything hangs off it, exactly as you would mark
+   one out at the bench. It is stored on the arm as a fraction of its length, shows in the arm's
+   own box, and appears in every attachment list so a later pair of arms can be hung on it. */
+function cxArmPivots(i,side){ const P=S.cx.pen||{}, j=(P.joints||[])[i]; if(!j)return [];
+  const k=(side==='b')?'bPiv':'aPiv'; if(!Array.isArray(j[k]))j[k]=[]; return j[k]; }
+function cxPivotUsed(i,side,t){ const P=S.cx.pen||{};
+  const hit=ref=>!!(ref&&ref.on==='j'+i&&((ref.side==='b'?'b':'a')===side)&&Math.abs((ref.t==null?0.5:ref.t)-t)<1e-6);
+  return (P.joints||[]).some(j=>hit(j.a)||hit(j.b))
+      || (P.welds||[]).some(w=>hit(w.base)) || hit(P.penRef); }
+function cxAddArmPivot(i,side){ const L=cxArmPivots(i,side); if(L.length>=4)return;
+  L.push(L.length?Math.min(0.95,L[L.length-1]+0.2):0.5); }
+function cxDelArmPivot(i,side,n){ const L=cxArmPivots(i,side); if(n>=0&&n<L.length)L.splice(n,1); }
+function cxSetArmPivot(i,side,n,v){ const L=cxArmPivots(i,side);
+  if(n>=0&&n<L.length)L[n]=Math.max(0,Math.min(1,v)); }
+function cxMakeRef(key,oldT){ if(key&&key.indexOf('t:')===0){ const p=key.split(':');
+    const at=p[3]!=null?parseFloat(p[3]):null;
+    return {on:p[1],side:p[2],t:(at!=null?at:(oldT==null?0.5:oldT))}; } return key; }
 function cxRefLabel(ref){ if(typeof ref==='string'){ if(ref[0]==='p')return 'pin '+(+ref.slice(1)+1); if(ref[0]==='j')return 'joint '+(+ref.slice(1)+1); }
   if(ref&&ref.on)return `arm→J${+ref.on.slice(1)+1}(${ref.side}) @${cxRefT(ref)}%`; return '—'; }
 function cxFitToPaper(){ const P=S.cx.pen; if(!P||!P.pins||!P.joints)return; P.paper.mode='custom';
@@ -4196,7 +4260,7 @@ function drawComplexPreview(){
   const c=computeComplex(), th=angA, pad=18, m2=Math.max(S.thick*2,14);
   const pl=cxBoardPlan(c), bw=pl.bw, bh=pl.bh;
   const bx0=c.bbox.cx-bw/2, bx1=bx0+bw, by0=c.bbox.cy-bh/2, by1=by0+bh;
-  const lw=Math.max(bw,bh)/380, dcol='#6b6455', dfs=Math.max(7,Math.max(bw,bh)/34), gfs=Math.max(8.5,Math.max(bw,bh)/34);
+  const lw=Math.max(bw,bh)/380, dcol='#6b6455', dfs=Math.max(8.5,Math.max(bw,bh)/28), gfs=Math.max(9,Math.max(bw,bh)/32);
   let s='';
   // back board with axle holes — board-local (y down) maps back to world with W()
   const W=p=>[(bx0+p[0]).toFixed(1),(-(by1-p[1])).toFixed(1)];
@@ -4258,6 +4322,17 @@ function drawComplexPreview(){
         const A=cxNodePos(j.a,now.pinPos,now.jointPos), B=cxNodePos(j.b,now.pinPos,now.jointPos);
         if(A){ const e=cxArmEnds(i,'a',A,J); s+=bar(e[0],e[1]); }
         if(B){ const e=cxArmEnds(i,'b',B,J); s+=bar(e[0],e[1]); } });
+      // pivot holes drilled in an arm: filled where something hangs on them, hollow and red
+      // where nothing does yet, so an empty one is obvious rather than invisible
+      c.pen.joints.forEach((j,i)=>['a','b'].forEach(sd=>{
+        const J=now.jointPos[i]; if(!J)return;
+        const base=cxNodePos(sd==='a'?j.a:j.b,now.pinPos,now.jointPos); if(!base)return;
+        const e=cxArmEnds(i,sd,base,J);
+        cxArmPivots(i,sd).forEach((t,n)=>{
+          const P2=[e[0][0]+(e[1][0]-e[0][0])*t, e[0][1]+(e[1][1]-e[0][1])*t];
+          const used=cxPivotUsed(i,sd,t);
+          s+=`<circle cx="${P2[0].toFixed(1)}" cy="${(-P2[1]).toFixed(1)}" r="${(LW*0.42).toFixed(1)}" fill="${used?'#c79a63':'none'}" stroke="${used?'#23201a':'#bf3a2b'}" stroke-width="${(lw*(used?1:1.6)).toFixed(2)}"/>`;
+          if(!used)s+=`<text x="${(P2[0]+LW*0.6).toFixed(1)}" y="${(-P2[1]-LW*0.5).toFixed(1)}" font-size="${(gfs*0.9).toFixed(1)}" font-weight="700" fill="#bf3a2b" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(gfs*0.18).toFixed(2)}">${i+1}${sd.toUpperCase()}·${n+1}</text>`; }); }));
       // mark every pivot that sits partway along a member, so the joint reads as a joint
       c.pen.joints.forEach((j,i)=>{ [j.a,j.b].forEach(ref=>{ if(!ref||!ref.on)return;
         const p2=cxNodePos(ref,now.pinPos,now.jointPos); if(!p2)return;
@@ -4360,7 +4435,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build six-01`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build pivots-02`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -4571,11 +4646,24 @@ function renderComplexUI(){
   const pen=document.getElementById('cxPen');
   if(pen){ if(!c.pen){ pen.innerHTML=`<div class="lab"><label>Drawing pen (pintograph)</label></div><div class="hint">Two gears at a rich ratio, two arms meeting at a joint, and a pen carried on a coupler branch — with the paper on a slow turntable it weaves a dense rosette.</div><div class="hint" style="margin-top:6px">Want a working start point? Use <b>Example machines</b> at the top of this workbench.</div><button class="btn ghost" id="cxAddPenBtn" style="margin-top:8px">＋ blank pen</button><div class="hint" style="margin-top:6px">The example replaces the current gears &amp; pen — a great starting point to vary.</div>`; }
     else { const P=c.pen, tr=cxPenTrace(c), cl=cxCloses(c), gopts=id=>c.gears.map(g=>`<option value="${g.id}"${g.id===id?' selected':''}>#${g.id} (${g.N}T)</option>`).join('');
-      const nodeOpts=(upto,sel)=>{ const sk=cxRefKey(sel); const opt=(v,l)=>`<option value="${v}"${v===sk?' selected':''}>${l}</option>`;
-        let o=P.pins.map((_,i)=>opt('p'+i,'pin '+(i+1))).join('');
-        for(let k=0;k<upto;k++)o+=opt('j'+k,'joint '+(k+1))+opt('t:j'+k+':a','↳ along arm→J'+(k+1)+' (a)')+opt('t:j'+k+':b','↳ along arm→J'+(k+1)+' (b)');
+      const nodeOpts=(upto,sel)=>{ const sk=cxRefKey(sel);
+        // a pivot entry carries its position, so match on that too — otherwise picking one
+        // silently reverts to the plain "a point along…" entry and looks as if it failed
+        const st=(sel&&sel.on!=null)?(sel.t==null?0.5:sel.t):null;
+        const opt=(v,l)=>{ const parts=v.split(':');
+          const isPiv=(parts.length===4);
+          const on=isPiv?(v===sk+':'+parts[3]&&Math.abs(parseFloat(parts[3])-st)<1e-6)
+                        :(v===sk&&!(st!=null&&cxArmPivots(+((sk.split(':')[1]||'j0').slice(1)),sk.split(':')[2]||'a').some(t=>Math.abs(t-st)<1e-6)));
+          return `<option value="${v}"${on?' selected':''}>${l}</option>`; };
+        /* Say it in arms, since arms are what you build. "join 2" meant nothing on its own;
+           "the end of arms 2A+2B" says where the wood actually is. */
+        let o=P.pins.map((_,i)=>opt('p'+i,'pin '+(i+1)+' (on a wheel)')).join('');
+        for(let k=0;k<upto;k++){ o+=opt('j'+k,'the end of arms '+(k+1)+'A + '+(k+1)+'B (join '+(k+1)+')');
+          ['a','b'].forEach(sd=>{ cxArmPivots(k,sd).forEach((t,n)=>
+              o+=opt('t:j'+k+':'+sd+':'+t,'pivot '+(n+1)+' on arm '+(k+1)+sd.toUpperCase()+' ('+Math.round(100*t)+'%)'));
+            o+=opt('t:j'+k+':'+sd,'a point along arm '+(k+1)+sd.toUpperCase()); }); }
         return o; };
-      const tSlider=(ref,kind,i)=> (ref&&ref.on)?`<span class="clab">at</span><span class="cstep"><button data-cxt="${kind}"${i!=null?` data-i="${i}"`:''} data-d="-5">−</button><input type="number" value="${cxRefT(ref)}" class="cxTnum" data-t="${kind}"${i!=null?` data-i="${i}"`:''} min="-100" max="200" step="5"><button data-cxt="${kind}"${i!=null?` data-i="${i}"`:''} data-d="5">＋</button></span><span class="clab">%</span>`:'';
+      const tSlider=(ref,kind,i)=> (ref&&ref.on)?`<span class="clab">at</span><span class="cstep"><button data-cxt="${kind}"${i!=null?` data-i="${i}"`:''} data-d="-5">−</button><input type="number" value="${cxRefT(ref)}" class="cxTnum" data-t="${kind}"${i!=null?` data-i="${i}"`:''} min="0" max="100" step="5"><button data-cxt="${kind}"${i!=null?` data-i="${i}"`:''} data-d="5">＋</button></span><span class="clab">%</span>`:'';
       const hostOpts=pn=>{ const cv=cxPinIsConv(pn);
         let h=c.gears.map(g=>`<option value="g${g.id}"${(!cv&&g.id===pn.g)?' selected':''}>#${g.id} (${g.N}T) gear</option>`).join('');
         (S.cx.converters||[]).forEach(v=>{ const g=c.byId[v.gear]; if(!g)return;
@@ -4598,13 +4686,22 @@ function renderComplexUI(){
           <div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:11px;color:${side==='a'?'#9a7220':'#4f7a63'}">arm ${ji+1}${side.toUpperCase()}</b>
             <span class="clab">${mid?'starts partway along another arm':'starts at'}</span></div>
           <div class="cstage-top" style="margin-top:4px"><select class="selin ${cls}" data-i="${ji}" style="width:auto;flex:1">${nodeOpts(ji,ref)}</select></div>
-          ${mid?`<div class="cstage-top" style="margin-top:4px"><span class="clab">how far along</span><span class="cstep"><button data-cxt="${lk}" data-i="${ji}" data-d="-5">−</button><input type="number" value="${cxRefT(ref)}" class="cxTnum" data-t="${lk}" data-i="${ji}" min="-100" max="200" step="5"><button data-cxt="${lk}" data-i="${ji}" data-d="5">＋</button></span><span class="clab">% ${cxRefT(ref)<0?'— out past the pin, so the pin sits inside this arm':cxRefT(ref)>100?'— out past the joint':''}</span></div>`:''}
-          <div class="cstage-top" style="margin-top:4px"><span class="clab">length</span><span class="cstep"><button data-cxjl="${lf}" data-i="${ji}" data-d="-5">−</button><input type="number" value="${len}" class="${side==='a'?'cxJla':'cxJlb'}" data-i="${ji}" min="10" max="900" step="5"><button data-cxjl="${lf}" data-i="${ji}" data-d="5">＋</button></span><span class="clab">mm to the joint</span></div>
+          ${mid?`<div class="cstage-top" style="margin-top:4px"><span class="clab">at</span><span class="cstep"><button data-cxt="${lk}" data-i="${ji}" data-d="-5">−</button><input type="number" value="${cxRefT(ref)}" class="cxTnum" data-t="${lk}" data-i="${ji}" min="0" max="100" step="5"><button data-cxt="${lk}" data-i="${ji}" data-d="5">＋</button></span><span class="clab">% along that arm's whole length</span></div>`:''}
+          <div class="cstage-top" style="margin-top:4px"><span class="clab">length</span><span class="cstep"><button data-cxjl="${lf}" data-i="${ji}" data-d="-5">−</button><input type="number" value="${len}" class="${side==='a'?'cxJla':'cxJlb'}" data-i="${ji}" min="10" max="900" step="5"><button data-cxjl="${lf}" data-i="${ji}" data-d="5">＋</button></span><span class="clab">mm from there to the joint${cxArmAt(ji,side)>0.02?` — the stick itself is ${fmt(len/(1-cxArmAt(ji,side)))} long`:''}</span></div>
+          ${(()=>{ const L=cxArmPivots(ji,side);
+            return `<div class="cstage-top" style="margin-top:4px"><span class="clab">pivot holes</span>${L.map((t,n)=>`<span class="cstep"><button data-cxpv="${side}" data-i="${ji}" data-n="${n}" data-d="-5">−</button><input type="number" value="${Math.round(100*t)}" class="cxPvNum" data-s="${side}" data-i="${ji}" data-n="${n}" min="0" max="100" step="5"><button data-cxpv="${side}" data-i="${ji}" data-n="${n}" data-d="5">＋</button></span><button class="cxdel" data-cxpvdel="${side}" data-i="${ji}" data-n="${n}">✕</button>`).join('')}<button data-cxpvadd="${side}" data-i="${ji}">＋ pivot</button></div>${L.length?`<div class="hint">Drilled at ${L.map(t=>Math.round(100*t)+'%').join(', ')} along this arm. A later pair of arms can be hung on any of them.</div>`:''}`; })()}
+          <div class="cstage-top" style="margin-top:4px"><span class="clab">pinned</span><span class="cstep"><button data-cxat="${side}" data-i="${ji}" data-d="-5">−</button><input type="number" value="${Math.round(100*cxArmAt(ji,side))}" class="cxAtNum" data-s="${side}" data-i="${ji}" min="0" max="90" step="5"><button data-cxat="${side}" data-i="${ji}" data-d="5">＋</button></span><span class="clab">% along this arm ${cxArmAt(ji,side)>0.02?'— so the wood runs on past the pin at both ends':'— at the very end'}</span></div>
         </div>`; };
-      const jointRows=P.joints.map((j,ji)=>{ const hot=penOn(ji);
-        return `<div class="cstage" style="flex-direction:column;align-items:stretch;gap:0${hot?';border-color:var(--cut);border-width:2px':''}">
-          <div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px${hot?';color:var(--cut)':''}">joint ${ji+1}${hot?' · ✒ pen here':''}</b><span class="clab">where arm ${ji+1}A and ${ji+1}B meet</span><button data-cxjflip="${ji}">⇄ flip</button></div>
-          ${armBox(j,ji,'a')}${armBox(j,ji,'b')}</div>`; }).join('');
+      /* Arms are the things you build, so they get the list. Each is its own box, in the order
+         the linkage is assembled. Which two arms meet at which join is a short summary below —
+         it is a consequence of the arms, not a container for them. */
+      const armRows=P.joints.map((j,ji)=>
+        `<div class="cstage" style="flex-direction:column;align-items:stretch;gap:0">${armBox(j,ji,'a')}</div>
+         <div class="cstage" style="flex-direction:column;align-items:stretch;gap:0">${armBox(j,ji,'b')}</div>`).join('');
+      const joinRows=P.joints.map((j,ji)=>{ const hot=penOn(ji);
+        return `<div class="cstage" style="padding:6px 10px${hot?';border-color:var(--cut);border-width:2px':''}">
+          <div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px${hot?';color:var(--cut)':''}">join ${ji+1}${hot?' · ✒ pen here':''}</b><span class="clab">the far ends of <b>arm ${ji+1}A</b> and <b>arm ${ji+1}B</b> are pinned together</span><button data-cxjflip="${ji}">⇄ flip</button></div></div>`; }).join('');
+      const jointRows=armRows;
       const W=P.welds||[];
       const weldBaseOpts=(sel,upto)=>{ const sk=cxRefKey(sel); const opt=(v,l)=>`<option value="${v}"${v===sk?' selected':''}>${l}</option>`; let o='';
         P.joints.forEach((_,k)=>o+=opt('t:j'+k+':a','arm→J'+(k+1)+' (a)')+opt('t:j'+k+':b','arm→J'+(k+1)+' (b)'));
@@ -4619,13 +4716,16 @@ function renderComplexUI(){
           <div style="border-left:3px solid #9a7220;padding:6px 0 4px 9px;margin-top:6px">
             <div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:11px;color:#9a7220">arm W${wi+1}</b><span class="clab">${mid?'starts partway along another arm':'starts at'}</span></div>
             <div class="cstage-top" style="margin-top:4px"><select class="selin cxWb" data-i="${wi}" style="width:auto;flex:1">${weldBaseOpts(w.base,wi)}</select></div>
-            ${mid?`<div class="cstage-top" style="margin-top:4px"><span class="clab">how far along</span><span class="cstep"><button data-cxt="wb" data-i="${wi}" data-d="-5">−</button><input type="number" value="${cxRefT(w.base)}" class="cxTnum" data-t="wb" data-i="${wi}" min="-100" max="200" step="5"><button data-cxt="wb" data-i="${wi}" data-d="5">＋</button></span><span class="clab">% ${cxRefT(w.base)<0?'— out past the pin':cxRefT(w.base)>100?'— out past the joint':''}</span></div>`:''}
+            ${mid?`<div class="cstage-top" style="margin-top:4px"><span class="clab">how far along</span><span class="cstep"><button data-cxt="wb" data-i="${wi}" data-d="-5">−</button><input type="number" value="${cxRefT(w.base)}" class="cxTnum" data-t="wb" data-i="${wi}" min="0" max="100" step="5"><button data-cxt="wb" data-i="${wi}" data-d="5">＋</button></span><span class="clab">% along that arm's whole length</span></div>`:''}
             <div class="cstage-top" style="margin-top:4px"><span class="clab">length</span><span class="cstep"><button data-cxwl="len" data-i="${wi}" data-d="-5">−</button><input type="number" value="${w.len}" class="cxWnum" data-f="len" data-i="${wi}" min="8" max="600" step="5"><button data-cxwl="len" data-i="${wi}" data-d="5">＋</button></span><span class="clab">mm out</span></div>
             <div class="cstage-top" style="margin-top:4px"><span class="clab">angle</span><span class="cstep"><button data-cxwl="ang" data-i="${wi}" data-d="-15">−</button><input type="number" value="${w.ang==null?90:w.ang}" class="cxWnum" data-f="ang" data-i="${wi}" min="-180" max="180" step="15"><button data-cxwl="ang" data-i="${wi}" data-d="15">＋</button></span><span class="clab">° from the arm it sits on</span></div>
           </div></div>`; }).join('');
       const penOpts=(sel)=>{ const sk=cxRefKey(sel); const opt=(v,l)=>`<option value="${v}"${v===sk?' selected':''}>${l}</option>`; let o=P.pins.map((_,i)=>opt('p'+i,'pin '+(i+1))).join('');
-        P.joints.forEach((_,k)=>o+=opt('j'+k,'joint '+(k+1))+opt('t:j'+k+':a','↳ along arm→J'+(k+1)+' (a)')+opt('t:j'+k+':b','↳ along arm→J'+(k+1)+' (b)'));
-        W.forEach((_,m)=>o+=opt('w'+m,'branch W'+(m+1)+' tip')+opt('t:w'+m,'↳ along branch W'+(m+1))); return o; };
+        P.joints.forEach((_,k)=>o+=opt('j'+k,'the end of arms '+(k+1)+'A + '+(k+1)+'B (join '+(k+1)+')')
+          +opt('t:j'+k+':a','a point along arm '+(k+1)+'A')
+          +opt('t:j'+k+':b','a point along arm '+(k+1)+'B'));
+        W.forEach((_,m)=>o+=opt('w'+m,'the tip of branch W'+(m+1))+opt('t:w'+m,'a point along branch W'+(m+1)));
+        o+=opt('none','— no pen, just the linkage —'); return o; };
       const penBlock=`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label><button class="btn ghost" id="patOpen" style="padding:3px 10px;font-size:11px">🖼 Export pattern</button></div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="hint">The pen sticks to this arm as you build the rest. Set the <b>pencil / pen hole</b> size &amp; shape down in <b>Bearings, bolts &amp; dowels</b>.</div>`;
       const custom=P.paper&&P.paper.mode==='custom';
       const paperCtl=`<div class="lab" style="margin-top:10px"><label>Paper</label></div><div class="cstage-top" style="margin-bottom:8px"><span class="clab">attach to</span><select class="selin" id="cxPaperGear" style="width:auto">${'<option value="fixed"'+((P.paper&&P.paper.gear!=null)?'':' selected')+'>fixed / moving bed</option>'+c.gears.map(g=>`<option value="g${g.id}"${(P.paper&&P.paper.gear===g.id)?' selected':''}>turntable on #${g.id}</option>`).join('')}</select></div><div class="seg" id="cxPaperSeg"><button data-pm="fit" aria-pressed="${custom?'false':'true'}">Fit to drawing</button><button data-pm="custom" aria-pressed="${custom?'true':'false'}">Custom</button></div>`+(custom?`<div class="cstage-top" style="margin-top:8px"><span class="clab">size</span><select class="selin" id="cxPaperPreset" style="width:auto"><option value="">preset…</option><option value="297x210">A4 · 297×210</option><option value="210x148">A5 · 210×148</option><option value="420x297">A3 · 420×297</option><option value="200x200">square 200</option><option value="300x300">square 300</option></select></div><div class="cstage-top" style="margin-top:6px"><span class="clab">W×H</span><span class="cstep"><button data-cxpaper="w" data-d="-10">−</button><input type="number" value="${P.paper.w}" id="cxPaperW" min="20" step="10"><button data-cxpaper="w" data-d="10">＋</button></span><span class="cstep"><button data-cxpaper="h" data-d="-10">−</button><input type="number" value="${P.paper.h}" id="cxPaperH" min="20" step="10"><button data-cxpaper="h" data-d="10">＋</button></span></div><button class="btn" id="cxFitPaper" style="margin-top:8px">⤢ fit drawing to this paper</button><div class="hint" style="margin-top:4px">Sizes the pins &amp; arms so the pattern fills the sheet.</div>`:'');
@@ -4677,7 +4777,13 @@ function renderComplexUI(){
           if(sp[0]<0||sp[1]>1)through++; });
         const total=nPivot+nPin;
         return `<div class="hint" style="margin-top:8px"><b>${nArm} arm${nArm===1?'':'s'}</b>${W.length?` and ${W.length} rigid branch${W.length===1?'':'es'}`:''} on <b>${total} pivot${total===1?'':'s'}</b> — ${nPin} pin${nPin===1?'':'s'} on the wheels, ${nJ} where two arms meet${midJ?`, ${midJ} where an arm hangs off a point partway along another`:''}.${through?` ${through} member${through===1?' is':'s are'} cut as one straight piece with a pin partway <b>along</b> it rather than at its end.`:''}</div>`; })()}
-      <div class="lab" style="margin-top:6px"><label>Joints (two arms meet)</label></div><div style="display:flex;flex-direction:column;gap:8px">${jointRows}</div><div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddJointBtn">＋ joint (hinge two arms)</button>${P.joints.length>1?'<button class="btn ghost" id="cxRmJointBtn">− joint</button>':''}</div>
+      <div class="lab" style="margin-top:6px"><label>Arms</label><span class="val">${P.joints.length*2} sticks</span></div>
+      <div class="hint">Each arm is a stick of wood: what it is pinned to, how far along itself that pin sits, and how long it is. Arms are added in pairs, because a single arm pinned at one point could still swing — it takes a second arm, joined at the far ends, to hold them both still.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${armRows}</div>
+      <div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddJointBtn">＋ pair of arms</button>${P.joints.length>1?'<button class="btn ghost" id="cxRmJointBtn">− last pair</button>':''}</div>
+      <div class="lab" style="margin-top:10px"><label>Joins</label><span class="val">${P.joints.length}</span></div>
+      <div class="hint">Where two arm ends are pinned together. <b>Flip</b> sends that join to the other side — the same lengths fold the other way, which often turns a machine that will not reach into one that will.</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">${joinRows}</div>
       <div class="lab" style="margin-top:6px"><label>Branches (one arm off another)</label></div>${W.length?`<div style="display:flex;flex-direction:column;gap:8px">${weldRows}</div>`:'<div class="hint">A branch is a single arm fixed part-way along another arm — hang the pen on its tip, or attach more to it.</div>'}<div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddArmBtn">＋ arm (branch)</button>${W.length?'<button class="btn ghost" id="cxRmArmBtn">− arm</button>':''}</div>
       ${penBlock}
       ${paperCtl}${boardCtl}<div class="cstage-top" style="margin-top:10px"><button class="btn ghost" id="cxRmPenBtn">✕ remove pen</button></div>
@@ -5572,8 +5678,8 @@ function cxLoadExample7(){
   S.cx.converters=[]; S.cx.edges=[];
   S.cx.pen={
     pins:[{g:0,r:24},{g:1,r:22},{g:2,r:20}],
-    joints:[{a:'p0',la:250,b:'p1',lb:250,branch:1},
-            {a:{on:'j0',side:'a',t:-0.5},la:130,b:'p2',lb:150,branch:1}],
+    joints:[{a:'p0',la:250,b:'p1',lb:250,branch:1,aExt:-0.5},   // #0's pin sits 33% along arm 1A
+            {a:{on:'j0',side:'a',t:0},la:130,b:'p2',lb:150,branch:1}],
     welds:[{base:{on:'j1',side:'a',t:0.75},len:55,ang:-35}],
     penRef:'w0', runTurns:60,
     paper:{mode:'fit',w:200,h:200,gear:null,conv:null,board:{on:true,shape:'circle'}} };
@@ -6118,9 +6224,15 @@ document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.c
     if(cxPinIsConv(pn))pn.along=(pn.along||0)+d; else pn.r=Math.max(0,pn.r+d);
     renderComplexUI();everything();return;}
   if(b.dataset.cxjl){const i=+b.dataset.i;P.joints[i][b.dataset.cxjl]=Math.max(10,P.joints[i][b.dataset.cxjl]+(+b.dataset.d));renderComplexUI();everything();return;}
+  if(b.dataset.cxpvadd!=null){ cxAddArmPivot(+b.dataset.i,b.dataset.cxpvadd); renderComplexUI();everything(); return; }
+  if(b.dataset.cxpvdel!=null){ cxDelArmPivot(+b.dataset.i,b.dataset.cxpvdel,+b.dataset.n); renderComplexUI();everything(); return; }
+  if(b.dataset.cxpv!=null){ const i=+b.dataset.i, sd=b.dataset.cxpv, n=+b.dataset.n;
+    cxSetArmPivot(i,sd,n,cxArmPivots(i,sd)[n]+(+b.dataset.d)/100); renderComplexUI();everything(); return; }
+  if(b.dataset.cxat!=null){ const i=+b.dataset.i, sd=b.dataset.cxat;
+    cxSetArmAt(i,sd,cxArmAt(i,sd)+(+b.dataset.d)/100); renderComplexUI();everything(); return; }
   if(b.dataset.cxjflip!=null){const i=+b.dataset.cxjflip;P.joints[i].branch=-(P.joints[i].branch||1);renderComplexUI();everything();return;}
   if(b.dataset.cxt){ const kind=b.dataset.cxt, d=+b.dataset.d; let ref=kind==='pen'?P.penRef:kind==='wb'?((P.welds[+b.dataset.i]||{}).base):(P.joints[+b.dataset.i]||{})[kind==='ja'?'a':'b'];
-    if(ref&&ref.on){ ref.t=Math.max(-1,Math.min(2,(ref.t==null?0.5:ref.t)+d/100)); renderComplexUI();everything(); } return; }
+    if(ref&&ref.on){ ref.t=Math.max(0,Math.min(1,(ref.t==null?0.5:ref.t)+d/100)); renderComplexUI();everything(); } return; }
   if(b.dataset.cxrun){ if(b.dataset.cxrun==='auto'){P.runTurns=null;} else { const cur=P.runTurns||cxCloses(computeComplex()).period||140; P.runTurns=Math.max(2,Math.min(4000,cur+(+b.dataset.cxrun))); } renderComplexUI();everything();return; }
   if(b.dataset.cxpaper){P.paper=P.paper||{mode:'custom',w:200,h:200};P.paper[b.dataset.cxpaper]=Math.max(20,(P.paper[b.dataset.cxpaper]||200)+(+b.dataset.d));renderComplexUI();everything();return;}
   if(b.id==='cxFitPaper'){cxFitToPaper();renderComplexUI();everything();return;}});
@@ -6138,10 +6250,12 @@ document.getElementById('cxPen').addEventListener('change',e=>{const t=e.target;
     renderComplexUI();everything();}
   else if(t.classList.contains('cxJa')){const o=P.joints[+t.dataset.i].a;P.joints[+t.dataset.i].a=cxMakeRef(t.value,(o&&o.on)?o.t:null);renderComplexUI();everything();}
   else if(t.classList.contains('cxJb')){const o=P.joints[+t.dataset.i].b;P.joints[+t.dataset.i].b=cxMakeRef(t.value,(o&&o.on)?o.t:null);renderComplexUI();everything();}
-  else if(t.classList.contains('cxPenRef')){P.penRef=cxMakeRef(t.value,(P.penRef&&P.penRef.on)?P.penRef.t:null);renderComplexUI();everything();}
+  else if(t.classList.contains('cxPenRef')){P.penRef=(t.value==='none')?null:cxMakeRef(t.value,(P.penRef&&P.penRef.on)?P.penRef.t:null);renderComplexUI();everything();}
   else if(t.classList.contains('cxWb')){const w=P.welds[+t.dataset.i];const o=w.base;w.base=cxMakeRef(t.value,(o&&o.on)?o.t:null);renderComplexUI();everything();}
   else if(t.classList.contains('cxWnum')){const w=P.welds[+t.dataset.i],f=t.dataset.f;if(f==='ang')w.ang=Math.max(-180,Math.min(180,Math.round(+t.value)||0));else w.len=Math.max(8,Math.round(+t.value)||w.len);renderComplexUI();everything();}
-  else if(t.classList.contains('cxTnum')){const kind=t.dataset.t;let ref=kind==='pen'?P.penRef:kind==='wb'?((P.welds[+t.dataset.i]||{}).base):(P.joints[+t.dataset.i]||{})[kind==='ja'?'a':'b'];if(ref&&ref.on){ref.t=Math.max(-1,Math.min(2,(Math.round(+t.value)||0)/100));renderComplexUI();everything();}}
+  else if(t.classList.contains('cxTnum')){const kind=t.dataset.t;let ref=kind==='pen'?P.penRef:kind==='wb'?((P.welds[+t.dataset.i]||{}).base):(P.joints[+t.dataset.i]||{})[kind==='ja'?'a':'b'];if(ref&&ref.on){ref.t=Math.max(0,Math.min(1,(Math.round(+t.value)||0)/100));renderComplexUI();everything();}}
+  else if(t.classList.contains('cxPvNum')){ cxSetArmPivot(+t.dataset.i,t.dataset.s,+t.dataset.n,(Math.round(+t.value)||0)/100); renderComplexUI();everything(); }
+  else if(t.classList.contains('cxAtNum')){ cxSetArmAt(+t.dataset.i,t.dataset.s,(Math.round(+t.value)||0)/100); renderComplexUI();everything(); }
   else if(t.classList.contains('cxJla')){P.joints[+t.dataset.i].la=Math.max(10,Math.round(+t.value)||P.joints[+t.dataset.i].la);renderComplexUI();everything();}
   else if(t.classList.contains('cxJlb')){P.joints[+t.dataset.i].lb=Math.max(10,Math.round(+t.value)||P.joints[+t.dataset.i].lb);renderComplexUI();everything();}
   else if(t.id==='cxRunTurns'){P.runTurns=Math.max(2,Math.min(4000,Math.round(+t.value)||P.runTurns||140));renderComplexUI();everything();}
