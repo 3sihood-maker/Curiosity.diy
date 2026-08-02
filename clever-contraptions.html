@@ -453,6 +453,12 @@
 <h4 class="mn-h2">Lissajous figures</h4>
 <p class="mn-p">To draw a Lissajous — the figure of eight and its relatives — the pen needs a pure sine along one axis and another along the other. Only the <b>scotch yoke</b> gives that: its output is a perfect sinusoid, where a crank's is spoilt by the connecting rod and comes out about a third as clean. Example 4 is set up this way.</p>
 <dl class="mn-kv"><dt>Ratio</dt><dd>The two gears' tooth counts set the frequency ratio. 40T and 20T give 1:2, the classic figure of eight; 45T and 15T give 1:3; 45T and 30T give 2:3.</dd><dt>Phase</dt><dd>Rotate the second gear's <b>mesh angle</b> around the first. This opens the figure from a degenerate arc, through an open loop, to the crossed figure of eight, and back.</dd><dt>Size</dt><dd>Each yoke's crank radius sets the swing along its own axis.</dd><dt>Fixed home</dt><dd>Both arm pins sit at radius <b>0</b>, pivoting on the gears' own shafts, so the linkage holds the pen at a fixed point and the yokes do all the drawing. Any larger radius mixes the arms' own motion back in.</dd></dl>
+<p class="mn-p">A <b>scotch yoke</b> in the workbench has no crank disc: its pin is pressed straight into the gear it sits on, since that gear is already turning on the shaft. The pin reaches out through a clearance opening in the slide deck into the yoke's slot. Only a crank or a cam carries a separate disc, because their rod or follower has to pick up motion outboard of the guide.</p>
+<p class="mn-p">The slotted arm bolts to its block through a <b>standoff</b> — a short dowel that lifts the arm clear of the caps and the crank disc on its way past. It cannot sit on the block's centreline, because the disc is spinning in the plane it passes through, so it is offset across the travel where its distance from the shaft stays constant. On a scotch yoke there is nothing outboard of the plate for it to clear, so it simply sits beside the slot.</p>
+<p class="mn-p">A yoke driving a carriage is cut as an <b>H</b> rather than the usual T. The T's crossbar bears on its guide rails over its own narrow width — on a big yoke that can be 23mm of bearing spanning 125mm between the rails, where a slider wants nearer one and a half times its span. With a rod pushing on it that is fine; with nothing steadying it, it racks in its grooves and can walk out of them. The H puts a full-depth cheek along each rail, so the guide becomes two long widely spaced bearings instead of one short one, and the rod tail is dropped since a carriage yoke has no rod to push. Cheeks are cut 60–80mm long.</p>
+<p class="mn-p">The arm carries a small <b>H-shaped foot</b> at its block end, echoing the yoke's own H: a pad about 27mm long at each of the two fin stations, wide enough to take a fin either side of the slot, joined by the arm itself. Only the pads are widened — the arm stays slim everywhere it does not need the width.</p>
+<p class="mn-p">The arm is joined to its block by <b>four carriage fins</b> — thin slices of ply standing on edge, two at each end of the yoke's slot and one either side of it, each tabbed into a mortise cut in the block below and another in the arm above. A fin is only one sheet thick, so it fits in the narrow strip beside the slot where a round post never would, and standing on edge it is far stiffer than a dowel of the same footprint. The tabs mean the joint is located by the wood rather than by the glue; glue or pin them once everything lines up.</p>
+<div class="mn-note">Since a scotch yoke has no crank disc, a carriage driven entirely by yokes brings its pen slides in close and the whole machine stands about <b>42mm</b> off the board. Put a crank or a cam on either axis and the slides move back out to clear its disc, adding roughly 18mm. On a carriage the paper is drawn see-through, so the mechanism behind it stays visible.</div>
 <div class="mn-note">Example 4 ships with the <b>X-Y carriage</b> switched on, so the slides that carry the pen are cut along with everything else. A converter set to <b>moves the paper</b> is still modelled without hardware — the driven paper bed has no parts yet.</div>
 <h4 class="mn-h2">Driving a pin from a converter</h4>
 <p class="mn-p">A pin normally orbits a gear, so it feeds the linkage a circle. It can instead ride the <b>output block</b> of a converter — the slider of a crank, the yoke of a scotch, the follower of a cam — which feeds the linkage a straight reciprocation. Choose the converter in the pin's own dropdown, next to the gears.</p>
@@ -2084,16 +2090,41 @@ ${parts.join('\n')}
    clean sine the slider-crank only approximates.
    ============================================================ */
 function scotchDiskR(){ return S.scotchR+Math.max(boreDia(),8)+4; }
-function scotchLayoutR(r,yokeW){ const br=boreDia();
-  const slotW=br+2, slotH=2*r+br+6, wall=6, Wy=Math.max(yokeW,slotW+2*wall), Hy=slotH+2*wall;
+function scotchLayoutR(r,yokeW,extraWall){ const br=boreDia();
+  // extraWall widens the plate ACROSS the slot. The carriage bolts its slotted arm to this plate
+  // through a standoff, and that standoff has to sit outside the crank disc spinning beneath —
+  // which lands just past the plain plate's edge, so it needs a little more wood to land on.
+  const slotW=br+2, slotH=2*r+br+6, wall=6+Math.max(0,extraWall||0),
+    Wy=Math.max(yokeW,slotW+2*wall), Hy=slotH+2*wall;
   const rodW=Math.max(br+8,r*0.4), outLen=r+22, railH=6, gap=3, railHalf=Hy/2+gap+railH/2, railLen=Wy+2*r+16;
   return {r,slotW,slotH,Wy,Hy,rodW,outLen,railH,railHalf,railLen}; }
 function scotchLayout(){ const L=scotchLayoutR(S.scotchR,S.yokeW); L.Rd=scotchDiskR(); return L; }
 function scotchDiskLoops(){ const r=S.scotchR, Rd=scotchDiskR(), br=Math.max(boreDia()/2,0.6);
   return [circleLoop(Rd,72), circleLoop(br,32), circleLoop(br,32).map(p=>[p[0]+r,p[1]])]; }
-function scotchYokeLoopsR(L){ const hw=L.Wy/2, hh=L.Hy/2, rw=L.rodW/2, xl=-hw-L.outLen;
-  const outer=[[xl,-rw],[-hw,-rw],[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh],[-hw,rw],[xl,rw]];
+/* Two shapes of yoke, for two jobs.
+
+   The T is the classic one: a slotted crossbar with a tail that pushes a rod. Its weakness is
+   that it bears on its guide rails only over the width of that crossbar — on a big yoke that can
+   be 23mm of bearing spanning 125mm between the rails, a ratio of about 0.18 where a slider
+   wants nearer 1.5. It is fine when a rod steadies it, and it racks in its grooves when nothing
+   does.
+
+   The H is for when the yoke drives a carriage and has no rod. Full-depth cheeks at each end of
+   the crossbar ride the rails over a long bearing length, so the guide becomes two widely spaced
+   long bearings instead of one short one. It also gives the carriage arm real wood to be tabbed
+   into, out at the ends where the leverage is. Same slot, same pin, same rails. */
+function scotchYokeLoopsR(L){
+  const hw=L.Wy/2, hh=L.Hy/2, rw=L.rodW/2, xl=-hw-L.outLen;
   const slot=roundRectLoop(L.slotW,L.slotH,L.slotW/2,6);
+  /* Local frame here is x along travel, y across it, and the rails bear on the plate at
+     y = ±hh. So the cheeks are bars lying along x at each of those edges — the plate touches
+     its rails over the cheek's whole length instead of over the crossbar's narrow width — with
+     the slotted web joining them up the middle. */
+  if(L.hShape){ const ch=L.cheek/2, cd=Math.max(10,Math.min(L.Wy,16));
+    const outer=[[-ch,-hh],[ch,-hh],[ch,-hh+cd],[hw,-hh+cd],[hw,hh-cd],[ch,hh-cd],
+                 [ch,hh],[-ch,hh],[-ch,hh-cd],[-hw,hh-cd],[-hw,-hh+cd],[-ch,-hh+cd]];
+    return [outer, slot]; }
+  const outer=[[xl,-rw],[-hw,-rw],[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh],[-hw,rw],[xl,rw]];
   return [outer, slot]; }
 function scotchYokeLoops(){ return scotchYokeLoopsR(scotchLayout()); }
 function scotchBBox(){ const L=scotchLayout(), r=L.r;
@@ -3051,6 +3082,99 @@ function cxAddSummingBar(dirDeg){
     try{ if(cxCarriageOK(computeComplex()))return (t<2)?'ok':'same-rate'; }catch(_){} }
   S.cx=JSON.parse(snap);
   return 'none'; }
+/* The slotted arm has to be bolted to the block that drives it, but the arm sits well outboard —
+   it has to clear the caps and the crank disc on its way past. So a STANDOFF runs between them:
+   a short length of dowel pressed into the block, carrying the arm on its outer end. It travels
+   with the block along the gap between the cap strips, so it has to be slimmer than that gap. */
+function cxRiserDia(grp){ let d=cxDowelHole();
+  grp.list.forEach(x=>{ const k=cxConvKit(x.v,x.g); d=Math.min(d,2*k.capIn-2); });
+  return Math.max(3,Math.min(d,cxDowelHole())); }
+/* The standoff cannot sit on the block's centreline: the crank disc spins in the plane it passes
+   through, and for a scotch yoke the block slides straight over that disc. Offsetting it ACROSS
+   the travel keeps its distance from the shaft constant, so it clears the disc all the way along
+   the stroke — provided the block reaches out that far. cxRiserFit reports whether it does. */
+function cxRiserFit(grp){ const R=cxFinLen(grp)/2;   // a fin is long across travel; measure by that
+  let worst=null;
+  grp.list.forEach(x=>{ const k=cxConvKit(x.v,x.g);
+    // the standoff runs OUTBOARD of the block. A scotch yoke has nothing out there any more, so
+    // it only has to miss the slot; the other types still have to clear their crank disc.
+    const discR=(x.v.type==='scotch')?((k.L?k.L.slotW:6)/2+3):k.discR;
+    const need=discR+R+3, have=k.plateHalf-R-2;
+    const o={conv:x.v,discR,need,have,gap:have-need};
+    if(!worst||o.gap<worst.gap)worst=o; });
+  return worst; }
+function cxRiserOffset(grp){ const f=cxRiserFit(grp); return f?Math.max(f.need,f.have):0; }
+/* FOUR fins rather than posts or dowels. A fin is only one sheet thick, so it fits in the narrow
+   strip either side of the yoke's slot where a round post never could — two at each end of the
+   slot, standing on edge between the block and the arm, tabbed into a mortise in each. On edge
+   they are far stiffer than a dowel of the same footprint, and the tabs mean the joint is located
+   by the wood rather than by the glue. */
+function cxRiserPostW(grp){ return Math.max(10,Math.min(18,cxRiserDia(grp)*2.2)); }
+function cxFinT(){ return S.thick; }
+function cxFinLen(grp){ const k=cxConvKit(grp.list[0].v,grp.list[0].g);
+  return Math.max(14,Math.min(30,k.plateHalf*0.35)); }
+// how much wood there is along travel where the fins land: the cheek on an H, the crossbar on a T
+function cxFinHostHalf(grp){ const k=cxConvKit(grp.list[0].v,grp.list[0].g);
+  if(!k.L)return k.plateHalf;
+  return (k.L.hShape?k.L.cheek:k.L.Wy)/2; }
+function cxFinU(grp){ const k=cxConvKit(grp.list[0].v,grp.list[0].g);
+  const slotHalf=(k.L?k.L.slotW:6)/2, T=cxFinT();
+  // sit the fin midway between the slot and the edge of the wood, so it is not crowding either
+  const lo=slotHalf+T/2+0.6, hi=cxFinHostHalf(grp)-T/2-1.5;
+  return (hi>lo)?(lo+hi)/2:lo; }
+function cxFinFits(grp){ return (cxFinU(grp)+cxFinT()/2)<=cxFinHostHalf(grp)-0.4; }
+function cxFinSpots(grp){ const u=cxFinU(grp), o=cxRiserOffset(grp), out=[];
+  [1,-1].forEach(su=>[1,-1].forEach(sp=>out.push([su*u,sp*o])));
+  return out; }
+/* The arm is a slim bar, far narrower across than the fins are spaced apart, so on its own it
+   misses them completely. It gets a small H-shaped FOOT at the block end: a pad at each of the
+   two fin stations, wide enough to take a fin either side of the slot, joined by the bar itself.
+   Only the pads are widened, so the arm stays slim everywhere it does not need to be. */
+function cxArmFootHalf(grp){ return cxFinU(grp)+cxFinT()/2+3; }
+function cxArmPadHalf(grp){ return Math.max(10,Math.min(15,cxFinLen(grp)*0.7)); }
+// outline in (lu across the arm, lp along it): a bar from lo to hi with a pad at each station
+function cxArmOutline(grp,armW,lo,hi){
+  const aw=armW/2, fw=cxArmFootHalf(grp), off=cxRiserOffset(grp), ch=cxArmPadHalf(grp);
+  if(lo>-off-ch-1||hi<off+ch+1)return roundRectLoop(armW,hi-lo,Math.min(aw,6),6).map(q=>[q[0],q[1]+(lo+hi)/2]);
+  const R=[], L=[];
+  R.push([aw,lo]);
+  [-1,1].forEach(sg=>{ R.push([aw,sg*off-ch],[fw,sg*off-ch],[fw,sg*off+ch],[aw,sg*off+ch]); });
+  R.push([aw,hi]);
+  L.push([-aw,hi]);
+  [1,-1].forEach(sg=>{ L.push([-aw,sg*off+ch],[-fw,sg*off+ch],[-fw,sg*off-ch],[-aw,sg*off-ch]); });
+  L.push([-aw,lo]);
+  return R.concat(L); }
+function cxFinMortises(grp){ const T=cxFinT()+0.25, L=cxFinLen(grp)*0.62;
+  return cxFinSpots(grp).map(([lu,lp])=>roundRectLoop(T,L,0.6,2).map(q=>[q[0]+lu,q[1]+lp])); }
+function cxRiser(parts,grp,yArm,t,ox,oy){
+  const yBlock=-(grp.list[0].g.layer)*(t*2)-t*2.4;
+  const T=cxFinT(), FL=cxFinLen(grp);
+  const h=(yBlock-yArm)+t*0.7, yc=(yBlock+yArm)/2;   // face of the block to face of the arm
+  /* The fin is long ALONG the arm and thin across it, so its footprint has to turn with the axis.
+     Built in world axes and merely translated, both axes came out with the same orientation and
+     one of them stood square to where it belonged. Build it along local x — which the pose's
+     rotation maps onto the axis direction — and it follows whichever way the axis runs. */
+  cxFinSpots(grp).forEach(([lu,lp])=>{
+    parts.push({tris:plateMesh([flipY(roundRectLoop(FL,T,0.6,2))],0,0,h,yc),
+      col:'#c79a63',label:'carriage fin',
+      pose:s2=>{ const L=cxAxisLine(grp,s2), pu=[-L.d[1],L.d[0]];
+        return {x:L.p[0]-ox+lu*pu[0]+lp*L.d[0], z:L.p[1]-oy+lu*pu[1]+lp*L.d[1],
+                rot:Math.atan2(L.d[1],L.d[0])}; }}); }); }
+// the depth the pen tip reaches on a carriage, so the paper can be set just under it
+/* How far out the converter stack reaches, in thicknesses. A crank or a cam still puts a disc
+   outboard of the guide; a scotch yoke has nothing past its caps any more, so a machine driven
+   entirely by yokes can bring the pen slides in by three thicknesses and lose nearly 20mm of
+   standoff. Everything beyond the slides — the pen pin, the paper — follows from this. */
+function cxCarriageBase(c){ const ax=cxCarriageOK(c); if(!ax)return 4.6;
+  let disc=false;
+  ax.forEach(g=>g.list.forEach(x=>{ if(x.v.type!=='scotch')disc=true; }));
+  return disc?7.6:4.6; }
+function cxCarriageArmY(c,t,k){ const ax=cxCarriageOK(c); if(!ax)return 0;
+  return -(ax[0].list[0].g.layer)*(t*2)-t*(cxCarriageBase(c)+k*1.15); }
+function cxCarriagePinY(c,t){ return cxCarriageArmY(c,t,1)-t*1.45; }
+function cxCarriagePenY(c,t){ const ax=cxCarriageOK(c); if(!ax)return null;
+  // sit the paper clear of the outermost pen slide, not between the two of them
+  return cxCarriagePinY(c,t)-t*0.42; }
 function cxPenIsCarriage(){ return !!(S.cx.pen&&S.cx.pen.mode==='carriage'); }
 function cxPenAt(c,ang){ const P=c.pen; if(!P)return null;
   if(P.mode==='carriage'){ const K=cxCarriageAt(c,ang);
@@ -3183,8 +3307,21 @@ function cxShaftCut(kit,halfW){ const M=kit.mid||0;
     ? [circleLoop(Math.max(cxDowelHole()/2+0.6,1.4),14)] : []; }
 function cxConvKit(conv,g){ const r=conv.r, br=boreDia(), w=br+8, gap=3, railH=br+4;
   const st=cxConvStroke(conv,g), stroke=Math.max(st.stroke,1); let kit;
-  if(conv.type==='scotch'){ const L=scotchLayoutR(r,conv.yokeW||Math.max(br+8,r*0.6));
-    kit={type:'scotch',r,w,L,yoke:scotchYokeLoopsR(L),plateHalf:L.Hy/2,railLen:L.railLen}; }
+  if(conv.type==='scotch'){ const yw=conv.yokeW||Math.max(br+8,r*0.6);
+    // If this yoke drives a pen carriage it must carry a standoff outside the crank disc. Work
+    // out how far short the plain plate falls and widen it by exactly that, so a machine that
+    // does not need the fitting is left the size it always was.
+    // A carriage arm is tabbed onto this plate by fins standing in the strip either side of the
+    // slot, so the plate needs to be at least a slot plus two sheet thicknesses wide across that
+    // strip. It is usually within a millimetre of that already; this makes sure of it.
+    let yw2=yw;
+    const carr=(conv.drive==='pen'&&S.cx&&S.cx.pen&&S.cx.pen.mode==='carriage');
+    if(carr)yw2=Math.max(yw,(br+2)+2*S.thick+2.2);
+    const L=scotchLayoutR(r,yw2,0);
+    // driving a carriage there is no rod to steady the yoke, so it becomes an H: cheeks along
+    // travel at each end, long enough to stop it racking between its rails
+    if(carr){ L.hShape=true; L.cheek=Math.max(60,Math.min(80,L.railLen*0.55)); L.outLen=0; }
+    kit={type:'scotch',r,w,L,yoke:scotchYokeLoopsR(L),plateHalf:L.Hy/2,railLen:L.railLen,extraWall:0}; }
   else if(conv.type==='crank'){ const rod=conv.rod||r*3, sliderLen=conv.sliderLen||Math.max(w*1.7,br+16), sliderW=conv.sliderW||Math.max(w,br+8);
     kit={type:'crank',r,w,rod,sliderLen,sliderW,plateHalf:sliderW/2,railLen:stroke+sliderLen+14,stroke}; }
   else { const Rb=conv.rb||r*1.4, fw=conv.fw||Math.max(br+6,r*0.5);
@@ -3222,14 +3359,34 @@ function cxConvKit(conv,g){ const r=conv.r, br=boreDia(), w=br+8, gap=3, railH=b
      also cuts a DECK that spans the posts underneath, which the block slides on, and two CAP
      strips over the rails that overhang the channel and stop the block lifting out. The strips
      leave a gap down the middle for the rod or follower to pass through. */
+  // A scotch yoke drives from a plain DISC with a dowel in it — that is how the standalone
+  // movement has always been cut. An arm out to the pin was wrong: it is a bar the yoke's
+  // fittings have to clear, and it is not a part anyone builds.
+  // for a scotch yoke there is no disc at all — the pin is pressed straight into the gear, so
+  // the only thing sweeping out here is the dowel itself
+  kit.pinSweep=r+Math.max(boreDia()/2,1.5)+2;
+  kit.discR=(conv.type==='scotch')?kit.pinSweep:(r+w/2);
   kit.deckW=2*kit.railHalf+kit.railH;
   kit.capOver=Math.min(3,Math.max(1.5,kit.plateHalf*0.35));
   kit.capIn=Math.max(kit.plateHalf-kit.capOver, kit.plateHalf*0.35);
   kit.capW=(kit.railHalf+kit.railH/2)-kit.capIn;
   kit.capMid=(kit.capIn+kit.railHalf+kit.railH/2)/2;
-  kit.pinCap=(conv.type!=='cam'); return kit; }
+  // a crank still needs a washer to keep its rod on the pin; a scotch yoke's block is already
+  // trapped between the deck and the slide caps, so the washer was floating on the pen arm
+  kit.pinCap=(conv.type==='crank'); return kit; }
 // world-space positions of every converter's standoff posts (for board holes + 3D)
-function cxPostWorld(c){ const out=[]; S.cx.converters.forEach(conv=>{ const g=c.byId[conv.gear]; if(!g)return;
+/* On a carriage the sheet stands well off the board with the machine underneath it, so it needs
+   its own legs. Four standoff posts run from the back board out to the sheet, spaced round its
+   edge and clear of the drawing itself. On a linkage machine the sheet sits close to the board
+   and needs none. */
+function cxPaperPosts(c){ if(!cxPenIsCarriage())return [];
+  const B=cxPaperBoard(c); if(!B||B.gear!=null)return [];
+  const R=((B.shape==='circle')?B.dia/2:Math.hypot(B.w,B.h)/2)+8;
+  const out=[], d=Math.max(cxDowelHole(),6);
+  for(let i=0;i<4;i++){ const a=Math.PI/4+i*Math.PI/2;
+    out.push({x:(B.cx||0)+R*Math.cos(a), y:(B.cy||0)+R*Math.sin(a), d, paper:true}); }
+  return out; }
+function cxPostWorld(c){ const out=cxPaperPosts(c); S.cx.converters.forEach(conv=>{ const g=c.byId[conv.gear]; if(!g)return;
   const kit=cxConvKit(conv,g), ph=(conv.dir||0)*Math.PI/180, u=[Math.cos(ph),Math.sin(ph)], p=[-u[1],u[0]];
   kit.posts.forEach(([lx,ly])=>out.push({x:g.x+lx*u[0]+ly*p[0], y:g.y+lx*u[1]+ly*p[1], d:kit.postD})); }); return out; }
 // does this converter's fixed structure foul another gear? posts run full depth (any gear),
@@ -3296,6 +3453,7 @@ function cxPaperBoard(c){ const P=c.pen; if(!P||!P.paper)return null; const pb=P
   let ink=null, tb=null; try{ const dr=cxDrawing(c); ink=dr.ink; tb=cxTraceBBox(ink); }catch(_){}
   const box=cxPaperBox(c,tb||{cx:0,cy:0,w:200,h:200,minX:-100,maxX:100,minY:-100,maxY:100});
   if(!box)return null;
+  const inkC={cx:(tb&&tb.w>1)?tb.cx:0, cy:(tb&&tb.h>1)?tb.cy:0};
   // margin is a percentage of the design, so the board hugs the drawing
   const pct=Math.max(0,Math.min(0.25,(pb.margin==null?0.10:pb.margin)));
   const dw=(tb&&tb.w>1)?tb.w:box.w, dh=(tb&&tb.h>1)?tb.h:box.h;
@@ -3312,6 +3470,7 @@ function cxPaperBoard(c){ const P=c.pen; if(!P||!P.paper)return null; const pb=P
   const nScrew=6, screwR=(ringOD+ringID)/4, screws=[];
   for(let i=0;i<nScrew;i++){ const a=i*2*Math.PI/nScrew; screws.push([screwR*Math.cos(a),screwR*Math.sin(a)]); }
   return {shape,w,h,dia,pct,marg:Math.min(dw,dh)*pct/2,ringOD,ringID,strip,screws,screwD:2.5,
+    cx:inkC.cx,cy:inkC.cy,
           gear:g?g.id:null,gearRa,size:shape==='circle'?dia:Math.max(w,h)}; }
 function cxPaperBoardLoops(B){ const out=[];
   if(B.shape==='circle')out.push(circleLoop(B.dia/2,72));
@@ -3370,6 +3529,8 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
   if(cv.crank){ cut.push([`crank arm`,cv.crank,`${t}mm`],[`con-rod`,cv.crank,`${cxLinkW()}mm wide · ${t}mm`],[`slider block`,cv.crank,`${t}mm`],[`crank guide rail`,cv.crank*2,`bridges over the gear · post-hole each end · ${t}mm`]); }
   if(cv.cam){ cut.push([`cam disc`,cv.cam,`${t}mm`],[`cam follower`,cv.cam,`${t}mm`],[`cam guide rail`,cv.cam*2,`bridges over the gear · post-hole each end · ${t}mm`]); }
   if(cv.scotch){ cut.push([`scotch crank arm`,cv.scotch,`${t}mm`],[`slotted yoke`,cv.scotch,`${t}mm`],[`scotch guide rail`,cv.scotch*2,`bridges over the gear · post-hole each end · ${t}mm`]); }
+  const nPP=cxPaperPosts(c).length;
+  if(nPP)buy.push([`paper standoff post`,nPP,`⌀${fmt(Math.max(cxDowelHole(),6))} dowel — holds the sheet off the board, clear of the machine`]);
   const nCap=(cv.crank||0)+(cv.scotch||0); if(nCap)cut.push([`pin cap`,nCap,`⌀${fmt(boreDia()+7)} washer · bore ${fmt(boreDia())} · retains the yoke/slider on the pin · ${t}mm`]);
   const nPins=(cv.crank||0)+(cv.scotch||0); if(nPins)buy.push([`crank pin`,nPins,`⌀${fmt(boreDia())} dowel — press-fit in the crank arm, rides the ${cv.scotch&&!cv.crank?'yoke slot':'rod / yoke slot'}`]);
   const convs=S.cx.converters.filter(v=>c.byId[v.gear]); if(convs.length){ const plen={}; convs.forEach(v=>{ const g=c.byId[v.gear], L=Math.round((t+3)+g.layer*LG+t*2.4); plen[L]=(plen[L]||0)+4; });
@@ -3384,7 +3545,7 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
   const shafts={}; c.gears.forEach(g=>{const k=Math.round(g.x*10)+'_'+Math.round(g.y*10); (shafts[k]||(shafts[k]={maxL:0})); shafts[k].maxL=Math.max(shafts[k].maxL,g.layer);});
   // a shaft carrying a movement must run on past the deck, rails and caps to reach its crank disc
   c.gears.forEach(g=>{ const k=Math.round(g.x*10)+'_'+Math.round(g.y*10);
-    if((S.cx.converters||[]).some(v=>v.gear===g.id))shafts[k].conv=true; });
+    if((S.cx.converters||[]).some(v=>v.gear===g.id&&v.type!=='scotch'))shafts[k].conv=true; });
   const nsh=Object.keys(shafts).length, slens={};
   Object.values(shafts).forEach(sh=>{ const L=Math.round(2*t+sh.maxL*LG+12+(sh.conv?t*5.5:0)); slens[L]=(slens[L]||0)+1; });
   const M=cxBrgMode(), gBrg=(M==='gears'||M==='gearsRods'), rBrg=(M==='gearsRods'), dH=fmt(cxDowelHole());
@@ -3798,7 +3959,16 @@ function sceneFromComplex(){
     parts.push({tris:plateMesh(gloops,0,0,t,yOff),col:cxLayerCol(g.layer),label:'#'+g.id+'·'+g.N+'T',spin:{x:g.x-ox,z:g.y-oy,phase:g.phase,rate:g.rate}}); });
   // shafts (one dowel per unique x,y through its layer span)
   const shafts={}; c.gears.forEach(g=>{ const k=(Math.round(g.x*10))+'_'+(Math.round(g.y*10)); (shafts[k]||(shafts[k]={x:g.x,y:g.y,min:g.layer,max:g.layer})); shafts[k].min=Math.min(shafts[k].min,g.layer); shafts[k].max=Math.max(shafts[k].max,g.layer); });
-  Object.values(shafts).forEach(s=>{ const h=(s.max-s.min)*LG+t*2.4, yOff=-(s.max)*LG-t*0.7;
+  // A shaft carrying a movement runs on past the guide to reach its crank disc — but it ENDS
+  // at the disc, standing about a millimetre proud of its outer face for a collar. Running it
+  // out beyond the disc would leave bare dowel in mid air, which is not a thing anyone builds.
+  // only a crank or cam still has a disc out there for the shaft to reach; a scotch yoke's pin
+  // is pressed into the gear, so its shaft is no longer than any other
+  const shConv={}; (S.cx.converters||[]).forEach(v=>{ const g=c.byId[v.gear]; if(!g)return;
+    if(v.type==='scotch')return;
+    shConv[(Math.round(g.x*10))+'_'+(Math.round(g.y*10))]=1; });
+  Object.entries(shafts).forEach(([sk,s])=>{ const ext=shConv[sk]?(t*3.1+1):0;
+    const h=(s.max-s.min)*LG+t*2.4+ext, yOff=-(s.max)*LG-t*0.7-ext/2;
     parts.push({tris:plateMesh([flipY(circleLoop(Math.max(boreDia()/2,1.5),18))],0,0,h,yOff),col:'#3a3226',hw:1,spin:{x:s.x-ox,z:s.y-oy,phase:0,rate:0}}); });
   // baseplate behind everything — tiled to fit the laser bed
   const pl=cxBoardPlan(c), bw=pl.bw, bh=pl.bh;
@@ -3819,7 +3989,12 @@ function sceneFromComplex(){
     Object.values(shafts).forEach(s=>parts.push({tris:plateMesh([flipY(circleLoop(rOut,28)),flipY(circleLoop(rIn,18))],0,0,t*0.9,(t+2.4)),col:'#2b2620',hw:1,spin:{x:s.x-ox,z:s.y-oy,phase:0,rate:0}})); }
   if(c.pen){ c.pen.pins.forEach(pn=>{ const g=c.byId[pn.g]; if(!g)return; const r=pn.r, yo=-(g.layer)*LG-t*0.7;
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.6),16))],0,0,t*1.7,yo),col:'#bf3a2b',hw:1,pose:s=>({x:(g.x-ox)+r*Math.cos(g.phase+g.rate*s),z:(g.y-oy)+r*Math.sin(g.phase+g.rate*s),rot:0})}); });
-    const yLink=-(c.layers)*LG-t*0.5, barW=cxLinkW(), OFF=99999;
+    /* The pen rides on the carriage, which stands well outboard of the gear train, so the paper
+       has to be out there with it. Left on the linkage plane it sat some 40mm short and the pen
+       could never touch it. In carriage mode the whole pen-and-paper assembly moves out to sit
+       just under the pen's own tip. */
+    const yCarr=cxPenIsCarriage()?cxCarriagePenY(c,t):null;
+    const yLink=(yCarr!=null)?yCarr:(-(c.layers)*LG-t*0.5), barW=cxLinkW(), OFF=99999;
     const aMaxS=cxArmMax();
     c.pen.joints.forEach((j,ji)=>{ [[j.a,j.la,'a'],[j.b,j.lb,'b']].forEach(rl=>{ const ref=rl[0], L=rl[1], side=rl[2];
       const locs=(c.pen.welds||[]).map((wd,wi)=>({wd,wi})).filter(o=>o.wd.base&&o.wd.base.on===('j'+ji)&&o.wd.base.side===side);
@@ -3837,10 +4012,22 @@ function sceneFromComplex(){
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.4),14))],0,0,t*1.3,yLink-t*0.4),col:'#c79a63',hw:1,pose:s=>{ const st=cxPenAt(c,s), T=st?st.weldPos[wi]:null; if(!T)return {x:OFF,z:OFF,rot:0}; return {x:T[0]-ox,z:T[1]-oy,rot:0}; }}); });
     parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',hw:1,pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }});
     { const B=cxPaperBoard(c);
-      if(B){ const g=(B.gear!=null)?c.byId[B.gear]:null, gx=g?g.x-ox:0, gz=g?g.y-oy:0;
+      if(B){ const g=(B.gear!=null)?c.byId[B.gear]:null;
+        // A sheet on a turntable is centred on its gear. A FIXED sheet has to sit under the
+        // drawing — on a carriage the pen works well off to one side, so centring it on the
+        // machine put the paper 90mm from anything the pen could reach.
+        const gx=g?(g.x-ox):((B.cx||0)-ox), gz=g?(g.y-oy):((B.cy||0)-oy);
+        // On a carriage the paper stands in front of the whole machine, so it is drawn
+        // see-through — otherwise it hides the mechanism it is supposed to be drawn by.
         parts.push({tris:plateMesh(cxPaperBoardLoops(B).map(flipY),0,0,t*0.7,yLink+6),col:'#cbbf9f',label:'paper backing board',
+          alpha:cxPenIsCarriage()?0.35:1,
           spin:g?{x:gx,z:gz,phase:g.phase,rate:g.rate}:{x:gx,z:gz,phase:0,rate:0}});
+        // the legs that hold a fixed sheet off the board, plus the holes they land in
+        cxPaperPosts(c).forEach(pp=>{
+          parts.push({tris:plateMesh([flipY(circleLoop(pp.d/2,14))],0,0,Math.abs(yLink+6)+t,(yLink+6+t)/2),
+            col:'#9a7220',hw:1,spin:{x:pp.x-ox,z:pp.y-oy,phase:0,rate:0}}); });
         parts.push({tris:plateMesh(cxPaperRingLoops(B).map(flipY),0,0,t,yLink+9.5),col:'#b9a882',label:'paper spacer rings',
+          alpha:cxPenIsCarriage()?0.45:1,
           spin:g?{x:gx,z:gz,phase:g.phase,rate:g.rate}:{x:gx,z:gz,phase:0,rate:0}}); } }
     { const H=cxPenHolder();
       const collar=[flipY(H.outline), flipY(cxPenHoleLoop(0,0,cxPenAF())), flipY(circleLoop(Math.max(boreDia()/2,1),12).map(p=>[p[0]+H.mount[0],p[1]+H.mount[1]]))];
@@ -3856,19 +4043,26 @@ function sceneFromComplex(){
   if(carr&&carrSpan){ const slotW=Math.max(cxDowelHole(),3)+0.4, wall=Math.max(5,t*0.9), end=Math.max(7,slotW);
     const armW=slotW+2*wall, pinR=Math.max(cxDowelHole()/2,1.5);
     carr.forEach((grp,k)=>{ const sp=carrSpan[k], L0=cxAxisLine(grp,0);
-      const yArm=-(grp.list[0].g.layer)*LG-t*(3.4+k*1.1);
+      // the converter stack now reaches out to the crank disc at 5×thickness, so the pen slides
+      // have to start beyond that or they cut straight through the caps and the disc
+      const yArm=cxCarriageArmY(c,t,k);
       const nm='pen slide '+(k?'Y':'X');
       if(!sp.summed){
         // one converter: the arm is square to its travel and never turns, so its direction can be
         // baked into the geometry and the pose only has to translate
         const d=L0.d;
         const LP=(lu,lp)=>[lu*-d[1]+lp*d[0], lu*d[0]+lp*d[1]];
-        const lo=Math.min(0,sp.lo)-end, hi=Math.max(0,sp.hi)+end;
-        const outer=roundRectLoop(armW,hi-lo,Math.min(armW/2,6),6).map(q=>LP(q[0],q[1]+(lo+hi)/2));
+        // the arm must reach BOTH pairs of fins, not just the pair on the slot's far side —
+        // otherwise two of the four have nothing to tab into
+        const fo=cxRiserOffset(grp)+cxFinLen(grp)/2+end;
+        const lo=Math.min(0,sp.lo,-fo)-end, hi=Math.max(0,sp.hi,fo)+end;
+        const outer=cxArmOutline(grp,armW,lo,hi).map(q=>LP(q[0],q[1]));
         const slot=roundRectLoop(slotW,sp.len+slotW,slotW/2,10).map(q=>LP(q[0],q[1]+sp.mid));
-        parts.push({tris:plateMesh([flipY(outer),flipY(slot)],0,0,t*0.7,yArm),
+        const mort=cxFinMortises(grp).map(m=>m.map(q=>LP(q[0],q[1])));
+        parts.push({tris:plateMesh([flipY(outer),flipY(slot)].concat(mort.map(flipY)),0,0,t*0.7,yArm),
           col:k?WOOD_SLIDE:WOOD_IDLER,label:nm,
           pose:s2=>{ const L=cxAxisLine(grp,s2); return {x:L.p[0]-ox,z:L.p[1]-oy,rot:0}; }});
+        cxRiser(parts,grp,yArm,t,ox,oy);
         return; }
       // two converters: the summing bar. It tilts as the two blocks part company, so this one is
       // built along its own local x and turned by the pose.
@@ -3877,6 +4071,7 @@ function sceneFromComplex(){
       const cuts=cxBarSlots(sp,slotW).map(r=>
         roundRectLoop(r[1],slotW,slotW/2,10).map(q=>[q[0]+r[0],q[1]]));
       const pivot=circleLoop(pinR,14);
+      cxRiser(parts,grp,yArm,t,ox,oy);
       parts.push({tris:plateMesh([flipY(outer)].concat(cuts.map(flipY)).concat([flipY(pivot)]),0,0,t*0.7,yArm),
         col:k?WOOD_SLIDE:WOOD_IDLER,label:nm+' (summing bar)',
         pose:s2=>{ const L=cxAxisLine(grp,s2);
@@ -3886,7 +4081,7 @@ function sceneFromComplex(){
         pose:s2=>{ const A=cxConvAt(grp.list[1].v,grp.list[1].g,s2);
           return {x:A.slider[0]-ox,z:A.slider[1]-oy,rot:0}; }}); });
     // the pen itself: one pin dropped through both slots
-    const yPin=-(carr[0].list[0].g.layer)*LG-t*5.2;
+    const yPin=cxCarriagePinY(c,t);
     parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cxDowelHole()/2,1.5),16))],0,0,t*3.2,yPin),
       col:'#bf3a2b',hw:1,
       pose:s2=>{ const K=cxCarriageAt(c,s2); return K?{x:K.pen[0]-ox,z:K.pen[1]-oy,rot:0}:{x:0,z:0,rot:0}; }}); }
@@ -3905,6 +4100,8 @@ function sceneFromComplex(){
       const holes=[[M+pe,kit.railHalf],[M-pe,kit.railHalf],[M+pe,-kit.railHalf],[M-pe,-kit.railHalf]]
         .map(q=>circleLoop(Math.max(kit.postD/2,1.2),12).map(z=>[z[0]+q[0],z[1]+q[1]]));
       const sc=cxShaftCut(kit,kit.deckW/2).map(flipY);
+      // the pin sweeps a circle between the gear and the yoke, straight through the deck
+      if(conv.type==='scotch')sc.push(flipY(circleLoop(kit.pinSweep+2,48)));
       parts.push({tris:plateMesh([flipY(dk)].concat(holes.map(flipY)).concat(sc),0,0,t*0.7,yDrive+t*0.95),
         col:WOOD_RAIL,label:`slide deck #${conv.gear}`,spin:{x:gx,z:gz,phase:ph,rate:0}}); }
     // two guide rails — fixed frame that keeps the driven part travelling straight
@@ -3928,19 +4125,28 @@ function sceneFromComplex(){
       parts.push({tris:plateMesh([flipY(roundRectLoop(kit.sliderLen,kit.sliderW,4,4)),flipY(circleLoop(cbore,14))].concat(cpin),0,0,t*0.7,yDrive),col:WOOD_SLIDE,
         pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.slider[0]-ox,z:cv.slider[1]-oy,rot:cv.ph};}}); }
     else { // scotch: crank arm carries the pin, slotted yoke rides it
-      parts.push({tris:plateMesh([flipY(rodLoop(r,w)),flipY(circleLoop(cbore,16)),flipY(circleLoop(cbore,14).map(p=>[p[0]+r,p[1]]))],0,0,t,yEcc),col:WOOD_GEAR,spin:{x:gx,z:gz,phase:g.phase,rate:g.rate}});
-      parts.push({tris:plateMesh(kit.yoke.map(flipY).concat(cpin),0,0,t*0.7,yDrive),col:WOOD_SLIDE,
+      // no crank disc: the gear on this shaft carries the pin itself, so the only part here is
+      // the dowel, running from the gear out to the yoke's slot.
+      const ymort=(cxPenIsCarriage()&&conv.drive==='pen')
+        ? (()=>{ const gp=(cxCarriageOK(c)||[]).find(G0=>G0.list.some(x=>x.v===conv));
+                 return gp?cxFinMortises(gp).map(flipY):[]; })() : [];
+      parts.push({tris:plateMesh(kit.yoke.map(flipY).concat(cpin).concat(ymort),0,0,t*0.7,yDrive),col:WOOD_SLIDE,
         pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.slider[0]-ox,z:cv.slider[1]-oy,rot:cv.ph};}}); }
     ((c.pen&&c.pen.pins)||[]).forEach(pn=>{ if(pn.cv!==conv.id)return;
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cxBore()/2,1.6),14))],0,0,t*2.4,yDrive+t*0.4),col:'#bf3a2b',hw:1,
         pose:s=>{ const q=cxPinAt(c,pn,s); return q?{x:q[0]-ox,z:q[1]-oy,rot:0}:{x:0,z:0,rot:0}; }}); });
-    if(conv.type!=='cam'){ parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cbore,2.2),14))],0,0,t*2.2,yEcc-t*0.9),col:'#bf3a2b',hw:1,
+    // the pin is what couples disc to block, so it must span the gap between their two planes
+    // a scotch yoke's pin is pressed into the gear and reaches out to the slot; the other types
+    // still drive from a crank disc sitting outboard of the guide
+    const pinLo=(conv.type==='scotch')?(yDrive-t*0.45):(yEcc-t*1.0),
+          pinHi=(conv.type==='scotch')?(yGear+t*0.5):(yDrive+t*0.45);
+    if(conv.type!=='cam'){ parts.push({tris:plateMesh([flipY(circleLoop(Math.max(cbore,2.2),14))],0,0,pinHi-pinLo,(pinHi+pinLo)/2),col:'#bf3a2b',hw:1,
       pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.pin[0]-ox,z:cv.pin[1]-oy,rot:0};}}); }
     // standoff posts — fixed dowels tying the guide bridge down to the back board
     { const uu=[Math.cos(ph),Math.sin(ph)], pp=[-uu[1],uu[0]], hP=(t+3)-yDrive;
       kit.posts.forEach(([lx,ly])=>{ const wx=g.x+lx*uu[0]+ly*pp[0], wy=g.y+lx*uu[1]+ly*pp[1];
         parts.push({tris:plateMesh([flipY(circleLoop(Math.max(kit.postD/2,1.6),16))],0,0,hP,yDrive),col:'#5a4632',hw:1,spin:{x:wx-ox,z:wy-oy,phase:0,rate:0}}); }); }
-    if(kit.pinCap){ parts.push({tris:plateMesh([flipY(circleLoop(kit.postD/2+3.5,20)),flipY(circleLoop(cbore,14))],0,0,t*0.5,yDrive-t*0.9),col:WOOD_IDLER,
+    if(kit.pinCap){ parts.push({tris:plateMesh([flipY(circleLoop(kit.postD/2+3.5,20)),flipY(circleLoop(cbore,14))],0,0,t*0.5,yEcc-t*1.45),col:WOOD_IDLER,
       pose:s=>{const cv=cxConvAt(conv,g,s);return {x:cv.pin[0]-ox,z:cv.pin[1]-oy,rot:0};}}); } });
   S.cx.edges.forEach(edge=>{ const g=c.byId[edge.gear]; if(!g)return; const p=Math.PI*c.m, dir=(edge.dir||0)*Math.PI/180, cd=Math.cos(dir), sd=Math.sin(dir), tg=[-sd,cd], rot=Math.atan2(cd,-sd), yE=-(g.layer)*LG-t*0.9;
     const mesh=plateMesh([flipY(cxRackWindow(c.m,edge.len,0,cxBacklashDelta(c.m)))],0,0,t*0.85,yE);
@@ -4048,9 +4254,16 @@ function drawComplexPreview(){
         const W=(lu,lp)=>[L.p[0]+lu*nrm[0]+lp*L.d[0], L.p[1]+lu*nrm[1]+lp*L.d[1]];
         const dAt=(loop,off)=>'M'+loop.map(q=>{const P=W(q[0],q[1]+off);return P[0].toFixed(1)+' '+(-P[1]).toFixed(1);}).join('L')+'Z';
         const armW=slotW+2*wall;
-        const lo=Math.min(0,o.lo,(o.sepLo!=null?o.sepLo:0))-end, hi=Math.max(0,o.hi,(o.sepHi!=null?o.sepHi:0))+end;
-        s+=`<path d="${dAt(roundRectLoop(armW,hi-lo,Math.min(armW/2,6),6),(lo+hi)/2)}" fill="${k?'#c79a63':'#d8c49b'}" fill-opacity="0.75" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`;
+        // match the 3D: the arm has to reach both pairs of fins, not just the far pair
+        const fo=cxRiserOffset(grp)+cxFinLen(grp)/2+end;
+        const lo=Math.min(0,o.lo,(o.sepLo!=null?o.sepLo:0),-fo)-end,
+              hi=Math.max(0,o.hi,(o.sepHi!=null?o.sepHi:0),fo)+end;
+        s+=`<path d="${'M'+cxArmOutline(grp,armW,lo,hi).map(q=>{const P=W(q[0],q[1]);return P[0].toFixed(1)+' '+(-P[1]).toFixed(1);}).join('L')+'Z'}" fill="${k?'#c79a63':'#d8c49b'}" fill-opacity="0.75" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`;
         cxBarSlots(o,slotW).forEach(r=>{ s+=`<path d="${dAt(roundRectLoop(slotW,r[1],slotW/2,10),r[0])}" fill="var(--paper)" stroke="#23201a" stroke-width="${(lw*0.8).toFixed(2)}"/>`; });
+        // and the fins that tab it to its block
+        { const T=cxFinT(), FL=cxFinLen(grp);
+          cxFinSpots(grp).forEach(([lu,lp])=>{
+            s+=`<path d="${'M'+roundRectLoop(T,FL,0.6,2).map(q=>{const P=W(q[0]+lu,q[1]+lp);return P[0].toFixed(1)+' '+(-P[1]).toFixed(1);}).join('L')+'Z'}" fill="#b8894e" stroke="#23201a" stroke-width="${(lw*0.8).toFixed(2)}"/>`; }); }
         if(o.summed&&o.sepHi!=null&&cxBarSlots(o,slotW).length>1)s+=`<path d="${dAt(roundRectLoop(slotW,(o.sepHi-o.sepLo)+slotW,slotW/2,10),(o.sepLo+o.sepHi)/2)}" fill="var(--paper)" stroke="#23201a" stroke-width="${(lw*0.8).toFixed(2)}"/>`; }); } }
   S.cx.converters.forEach(conv=>{ const g=c.byId[conv.gear]; if(!g)return; const cv=cxConvAt(conv,g,th), C=cv.C, u=cv.u, perp=[-u[1],u[0]], BR='#9a7220', LW=cxLinkW();
     const kit=cxConvKit(conv,g), pin=cv.pin, sl=cv.slider, clash=cxConvClash(conv,g,c);
@@ -4115,7 +4328,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build slide-02`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build foot-02`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -4193,7 +4406,8 @@ function exportComplex(){
     const rail=()=>place([roundRectLoop(kit.railLen,kit.railH,2,3),dot(pe),dot(-pe)],'guide rail + post holes');
     const deck=()=>{ const hs=[[pe,kit.railHalf],[-pe,kit.railHalf],[pe,-kit.railHalf],[-pe,-kit.railHalf]]
         .map(q=>circleLoop(1,16).map(z=>[z[0]+q[0],z[1]+q[1]]));
-      place([roundRectLoop(kit.railLen,kit.deckW,3,4)].concat(hs).concat(cxShaftCut(kit,kit.deckW/2)),
+      const swp=(conv.type==='scotch')?[circleLoop(kit.pinSweep+2,64)]:[];
+      place([roundRectLoop(kit.railLen,kit.deckW,3,4)].concat(hs).concat(cxShaftCut(kit,kit.deckW/2)).concat(swp),
         `slide deck #${conv.gear} — the block runs on this`); };
     const capStrip=()=>{ const hs=[[pe,0],[-pe,0]].map(q=>circleLoop(1,16).map(z=>[z[0]+q[0],z[1]+q[1]]));
       place([roundRectLoop(kit.railLen,kit.capW,2,3)].concat(hs),`slide cap #${conv.gear} — traps the block`); };
@@ -4206,8 +4420,12 @@ function exportComplex(){
     else if(conv.type==='crank'){ place([rodLoop(r,w),dot(0),dot(r)],`crank #${conv.gear} · r${Math.round(r)}`);
       place([rodLoop(kit.rod,w),dot(0),dot(kit.rod)],`conrod #${conv.gear} · ${fmt(kit.rod)}`);
       place([roundRectLoop(kit.sliderLen,kit.sliderW,4,4),dot(0)],`slider #${conv.gear}`); deck(); rail(); rail(); capStrip(); capStrip(); cap(); }
-    else { place([rodLoop(r,w),dot(0),dot(r)],`crank #${conv.gear} · r${Math.round(r)}`);
-      place(kit.yoke,`slotted yoke #${conv.gear} · stroke ${fmt(2*r)}`); deck(); rail(); rail(); capStrip(); capStrip(); cap(); } });
+    else { place([circleLoop(kit.discR,72),dot(0),dot(r)],`crank disc #${conv.gear} · r${Math.round(r)}`);
+      const gp=(cxPenIsCarriage()&&conv.drive==='pen')?(cxCarriageOK(c)||[]).find(G0=>G0.list.some(x=>x.v===conv)):null;
+      place(kit.yoke.concat(gp?cxFinMortises(gp):[]),`slotted yoke #${conv.gear} · stroke ${fmt(2*r)}`);
+      deck(); rail(); rail(); capStrip(); capStrip(); cap();
+      if(gp){ const T=cxFinT(), FL=cxFinLen(gp), tab=FL*0.6;
+        for(let i=0;i<4;i++)place([roundRectLoop(T,FL,0.6,2)],`carriage fin #${conv.gear} · tabs into the yoke and the pen arm`); } } });
   S.cx.edges.forEach(edge=>{ const g=c.byId[edge.gear]; if(!g)return; const poly=cxRackWindow(c.m,edge.len,0,cxBacklashDelta(c.m));
     let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9; poly.forEach(p=>{mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);});
     const pts=poly.map(p=>[x+(p[0]-mnx),gap+(mxy-p[1])]);
@@ -4375,6 +4593,8 @@ function renderComplexUI(){
             note+=`<div class="hint">To sum two throws on one axis, add a second converter on the same <b>dir</b> — a summing bar will span them and that axis will carry a blend of both, changing the shape of the figure.</div>`;
             if(S.cx.pen._sumMsg)note+=`<div class="hint" style="color:#bf3a2b">⚠ ${S.cx.pen._sumMsg}</div>`;
             if(singles.length)note+=`<div class="cstage-top" style="margin-top:6px"><span class="clab">summing bar</span><span style="display:flex;gap:6px;flex-wrap:wrap">${singles.map(o=>`<button class="btn" data-cxsum="${Math.round(o.g.list[0].v.dir||0)}" style="padding:4px 10px">+ on the ${Math.round(((o.g.a%180)+180)%180)===90?'up-and-down':'across'} axis</button>`).join('')}</span></div>`; }
+          ok.forEach((grp,gi)=>{ const f=cxRiserFit(grp); if(!f||f.gap>=0)return;
+            note+=`<div class="hint" style="color:#bf3a2b"><b>⚠ The ${gi?'second':'first'} axis's block is too narrow to carry its standoff.</b> The slotted arm bolts to the block through a standoff, and that standoff has to sit clear of the crank disc spinning beneath it — ${fmt(f.need)} out from the shaft, where the block only reaches ${fmt(f.have)}. It is short by about ${fmt(-f.gap)} whatever the throw or yoke width is set to, so this one needs the block itself made wider — noted as a known gap, not something you can dial out. Until then, treat this machine as a design study rather than a build.</div>`; });
           if(foul)note+=`<div class="hint" style="color:#bf3a2b"><b>⚠ The pen sweeps across gear #${foul.gear.id}</b> — there is nowhere to put paper. The drawing sits where the two slot lines cross, and that point is pinned to the two driving gears' own positions. They must be further apart than their tip radii plus the crank throw along <b>both</b> slide directions; meshed straight together they never are. Put an <b>idler</b> between them and spread them diagonally, or shorten the crank throw.</div>`; }
         else if(carr)note=`<div class="hint" style="color:#bf3a2b"><b>⚠ No carriage yet.</b> ${cxCarriageWhy(c)}</div>`;
         else note=`<div class="hint">Linkage arms swing the pen from pins. Switch to <b>X-Y carriage</b> to have two converters carry it on crossed slides instead — that is what draws a true Lissajous.</div>`;
