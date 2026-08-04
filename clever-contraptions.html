@@ -638,8 +638,8 @@
             <button class="btn" id="exLoad4">4 · Lissajous machine</button>
             <button class="btn" id="exLoad5">5 · Compound harmonograph</button>
             <button class="btn" id="exLoad6">6 · Arm chain drawing machine</button>
-            <button class="btn" id="exLoad7">7 · Balke-style interior drive</button>
-            <button class="btn" id="exLoad8">8 · Six-pivot Balke machine</button>
+            <button class="btn" id="exLoad7">7 · Four Arm Machine style</button>
+            <button class="btn" id="exLoad8">8 · Six Arm Machine style</button>
             <button class="btn ghost" id="exUndo" disabled>↩ Undo load</button>
           </div>
           <div class="hint" id="exNote" style="margin-top:7px"><b>01</b> a six-lobed pintograph — four gears, two pins, a coupler arm and a pen. <b>02</b> a woven ring — ten gears on two layers with compound stacks, driving a long arm over a circular paper board. Both open in the Complex Workbench, where you can change anything.</div>
@@ -3297,20 +3297,27 @@ function cxDrawing(c,coarseN){ const P=c.pen; if(!P||!cxHasPen())return {ink:[],
 // a worked pintograph example: two gears at a rich ratio → one joint → pen on a
 // coupler branch → paper on a slowly-turning turntable. Traces a dense 5-fold rosette.
 function cxLoadExample(){
-  S.cx.m=3;
+  /* Si's drawing machine. One crank driving three wheels at 15:35, 15:57 and 15:70 — no common
+     factor anywhere, so the figure takes hundreds of turns to come near repeating. Two of those
+     wheels carry pins; a single pair of arms meets between them, and the pen rides on a short
+     branch half way along one of them, set over at 60 degrees. The paper turns on the 70T wheel,
+     which sweeps the whole figure round into a rosette. */
+  S.cx.m=3; S.cx.scale=1; S.cx.linkW=20; S.cx.dowelHole=6;
   S.cx.board={shape:'rect',off:8};
-  S.cx.split={mode:'off',maxW:400,maxH:300,overlap:10};
+  S.cx.split={mode:'off',maxW:300,maxH:300,overlap:10};
+  S.cx.bearing={mode:'none',od:8,hole:8};
+  S.cx.converters=[]; S.cx.edges=[]; S.cx.nextId=4; S.cx.sel=1;
   S.cx.gears=[{id:0,N:15,kind:'driver',layer:0},
-    {id:1,N:35,kind:'mesh',parent:0,dir:0},
-    {id:2,N:50,kind:'mesh',parent:0,dir:125},
-    {id:3,N:60,kind:'mesh',parent:0,dir:245}];
-  S.cx.nextId=4; S.cx.sel=1; S.cx.converters=[]; S.cx.edges=[]; S.cx.scale=1;
-  const c=computeComplex(), g1=c.byId[1], g2=c.byId[2], g3=c.byId[3], T=[g3.x,g3.y];
-  const la=Math.round(Math.hypot(g1.x-T[0],g1.y-T[1])*1.05), lb=Math.round(Math.hypot(g2.x-T[0],g2.y-T[1])*0.7);
-  S.cx.pen={pins:[{g:1,r:Math.round(g1.rp*0.7)},{g:2,r:Math.round(g2.rp*0.3)}],
-    joints:[{a:'p0',la,b:'p1',lb,branch:1}],
+              {id:1,N:35,kind:'mesh',parent:0,dir:0,layer:0},
+              {id:2,N:57,kind:'mesh',parent:0,dir:125,layer:0},
+              {id:3,N:70,kind:'mesh',parent:0,dir:245,layer:0}];
+  S.cx.pen={
+    pins:[{g:1,r:37},{g:2,r:23}],
+    joints:[{a:'p0',la:167,b:'p1',lb:127,branch:1,aPiv:[],bPiv:[]}],
     welds:[{base:{on:'j0',side:'a',t:0.5},len:70,ang:60}],
-    penRef:'w0', paper:{mode:'fit',w:200,h:200,gear:3,conv:null}}; }
+    penRef:'w0', runTurns:266, _armsV:2,
+    paper:{mode:'fit',w:200,h:200,gear:3,conv:null,board:{shape:'circle',on:true}} };
+  S.movement='complex'; }
 function cxPaperBox(c,tb){ const P=c.pen; if(!P||!tb)return null; const pp=P.paper||{mode:'fit'};
   if(pp.mode==='custom'){ const w=pp.w||200,h=pp.h||200; return {minX:tb.cx-w/2,maxX:tb.cx+w/2,minY:tb.cy-h/2,maxY:tb.cy+h/2,w,h,cx:tb.cx,cy:tb.cy}; }
   const mg=Math.max(15,Math.max(tb.w,tb.h)*0.08); return {minX:tb.minX-mg,maxX:tb.maxX+mg,minY:tb.minY-mg,maxY:tb.maxY+mg,w:tb.w+2*mg,h:tb.h+2*mg,cx:tb.cx,cy:tb.cy}; }
@@ -4305,7 +4312,7 @@ function drawComplexPreview(){
       const lab=toW(0,hh); s+=`<text x="${lab[0].toFixed(1)}" y="${(-lab[1]-dfs*0.4).toFixed(1)}" font-size="${(dfs*0.9).toFixed(1)}" fill="${dcol}" text-anchor="middle" font-family="'Space Mono',monospace">paper ${fmt(2*hw)} × ${fmt(2*hh)} · on #${G.id}</text>`;
       const R=Math.hypot(hw,hh); ox0=Math.min(ox0,C[0]+pOff[0]-R);ox1=Math.max(ox1,C[0]+pOff[0]+R);oy0=Math.min(oy0,C[1]+pOff[1]-R);oy1=Math.max(oy1,C[1]+pOff[1]+R);
       let d='',started=false; dr.ink.forEach(p=>{ if(!p){started=false;return;} const w=toW(p[0],p[1]); d+=(started?'L':'M')+w[0].toFixed(1)+' '+(-w[1]).toFixed(1)+' '; started=true; });
-      if(d)s+=`<path d="${d}" fill="none" stroke="#2c5f8a" stroke-width="${(lw*1.1).toFixed(2)}" stroke-opacity="0.9"/>`;
+      if(d)s+=`<path d="${d}" fill="none" stroke="#2c5f8a" stroke-width="${(lw*0.55).toFixed(2)}" stroke-opacity="0.9"/>`;
     } else { const tb=cxTraceBBox(dr.ink), paper=tb?cxPaperBox(c,tb):null, offx=pOff[0], offy=pOff[1];
       if(paper){ if(dr.bed){ let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9; for(let k=0;k<=32;k++){ const o=cxCoupleOffset(c,2*Math.PI*dr.period*k/32,'paper'); mnx=Math.min(mnx,o[0]);mxx=Math.max(mxx,o[0]);mny=Math.min(mny,o[1]);mxy=Math.max(mxy,o[1]); }
           ox0=Math.min(ox0,paper.minX+mnx);ox1=Math.max(ox1,paper.maxX+mxx);oy0=Math.min(oy0,paper.minY+mny);oy1=Math.max(oy1,paper.maxY+mxy); }
@@ -4316,7 +4323,7 @@ function drawComplexPreview(){
         else s+=`<rect x="${(paper.minX+offx).toFixed(1)}" y="${(-(paper.maxY+offy)).toFixed(1)}" width="${paper.w.toFixed(1)}" height="${paper.h.toFixed(1)}" rx="1.5" fill="#ffffff" fill-opacity="0.5" stroke="#b9a888" stroke-width="${(lw*1.2).toFixed(2)}"/>`;
         s+=`<text x="${(paper.cx+offx).toFixed(1)}" y="${(-(paper.maxY+offy)-dfs*0.4).toFixed(1)}" font-size="${(dfs*0.9).toFixed(1)}" fill="${dcol}" text-anchor="middle" font-family="'Space Mono',monospace">paper ${fmt(paper.w)} × ${fmt(paper.h)}${dr.bed?' · moving bed':''}</text>`; }
       let d='',st2=false; dr.ink.forEach(p=>{ if(!p){st2=false;return;} d+=(st2?'L':'M')+(p[0]+offx).toFixed(1)+' '+(-(p[1]+offy)).toFixed(1)+' '; st2=true; });
-      if(d)s+=`<path d="${d}" fill="none" stroke="#2c5f8a" stroke-width="${(lw*1.1).toFixed(2)}" stroke-opacity="0.9"/>`; }
+      if(d)s+=`<path d="${d}" fill="none" stroke="#2c5f8a" stroke-width="${(lw*0.55).toFixed(2)}" stroke-opacity="0.9"/>`; }
     if(now){ const LW=cxLinkW(), bar=(A,B)=>cxBarSVG(A,B,LW,'#a3763a');
       c.pen.joints.forEach((j,i)=>{ const J=now.jointPos[i]; if(!J)return;
         const A=cxNodePos(j.a,now.pinPos,now.jointPos), B=cxNodePos(j.b,now.pinPos,now.jointPos);
@@ -4435,7 +4442,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build pivots-02`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build examples-02`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -5695,21 +5702,41 @@ function cxLoadExample7(){
    solve. But it is not one: each elbow is found from two points already known, and the apex from
    the two elbows. A tree, three levels deep. */
 function cxLoadExample8(){
-  S.cx.m=3;
+  /* Si's Balke machine. Ten wheels in one train, three of them carrying pins: a 31T off a small
+     idler, a 30T at the end of a long reduction, and a 30T off a 67T. Two pairs of arms meet at
+     their own joints, and a third pair rises from a pivot hole drilled at the very start of each
+     of those, with the pen at its apex.
+
+     Most of the arms are pinned partway along themselves rather than at an end, so the wood runs
+     on past the pin both ways — arm 1B most of all. That is what lets three wheels turning at
+     quite different rates all drive the one linkage without fighting each other.
+
+     Half scale on 3mm ply, and 270 turns before it comes near repeating. */
+  S.cx.m=3; S.cx.scale=0.5; S.cx.linkW=12.5; S.cx.dowelHole=6;
   S.cx.board={shape:'rect',off:8};
-  S.cx.split={mode:'off',maxW:400,maxH:300,overlap:10};
-  S.cx.gears=[{id:0,N:49,kind:'driver',layer:0},
-              {id:1,N:36,kind:'mesh',parent:0,dir:0,layer:0},
-              {id:2,N:29,kind:'mesh',parent:1,dir:300,layer:0}];
-  S.cx.nextId=4;
-  S.cx.converters=[]; S.cx.edges=[];
+  S.cx.split={mode:'off',maxW:300,maxH:300,overlap:10};
+  S.cx.bearing={mode:'none',od:8,hole:8};
+  S.cx.converters=[]; S.cx.edges=[]; S.cx.nextId=12; S.cx.sel=11;
+  S.cx.gears=[{id:0,N:21,kind:'driver',layer:0},
+              {id:1,N:30,kind:'mesh',parent:0,dir:0,layer:0},
+              {id:2,N:15,kind:'compound',parent:1,layer:1},
+              {id:3,N:80,kind:'mesh',parent:2,dir:250,layer:1},
+              {id:4,N:30,kind:'mesh',parent:3,dir:270,layer:1},
+              {id:5,N:30,kind:'mesh',parent:4,dir:270,layer:1},
+              {id:6,N:67,kind:'mesh',parent:1,dir:30,layer:0},
+              {id:9,N:12,kind:'mesh',parent:0,dir:150,layer:0},
+              {id:10,N:31,kind:'mesh',parent:9,dir:120,layer:0},
+              {id:11,N:30,kind:'mesh',parent:6,dir:0,layer:0}];
   S.cx.pen={
-    pins:[{g:0,r:26},{g:1,r:24},{g:2,r:22}],
-    joints:[{a:'p0',la:150,b:'p1',lb:150,branch:1},
-            {a:'p1',la:150,b:'p2',lb:150,branch:-1},
-            {a:'j0',la:200,b:'j1',lb:200,branch:1}],
-    welds:[], penRef:'j2', runTurns:60,
-    paper:{mode:'fit',w:200,h:200,gear:null,conv:null,board:{on:true,shape:'circle'}} };
+    pins:[{g:10,r:16},{g:5,r:24},{g:11,r:28}],
+    joints:[{a:'p0',la:437,b:'p2',lb:112,branch:1,aPiv:[0],bPiv:[0],
+             aExt:-0.1111111111111112,bExt:-0.4285714285714289},
+            {a:'p0',la:502,b:'p1',lb:187,branch:-1,aPiv:[],bPiv:[0],
+             aExt:-0.11111111111111113,bExt:-1.0408163265306132},
+            {a:{on:'j0',side:'b',t:0},la:307,b:{on:'j1',side:'b',t:0},lb:302,branch:-1,
+             aPiv:[],bPiv:[],aExt:0,bExt:0}],
+    welds:[], penRef:'j2', runTurns:270, _armsV:2,
+    paper:{mode:'fit',w:200,h:200,gear:3,conv:null,board:{shape:'circle',on:true}} };
   S.movement='complex'; }
 function cxLoadExampleSafe(which){ cxUndo=cxSnapshot();
   if(which===8)cxLoadExample8(); else if(which===7)cxLoadExample7(); else if(which===6)cxLoadExample6(); else if(which===5)cxLoadExample5(); else if(which===4)cxLoadExample4(); else if(which===3)cxLoadExample3(); else if(which===2)cxLoadExample2(); else cxLoadExample();
