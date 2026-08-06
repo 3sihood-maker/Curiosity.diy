@@ -462,6 +462,10 @@
 <p class="mn-p">Anything meshed to an oscillating gear <b>oscillates as well</b>, scaled by the tooth ratio and reversed; anything stacked on its shaft shares its angle exactly. So a whole sub-train can be made to sweep back and forth from one rack.</p>
 <p class="mn-p">A free-standing rack has <b>stands at</b> controls to move it across and up, and its gear comes with it — the gear is bolted to the rack, not to the board. An oscillating gear carries things like any other: mount a cam, crank or scotch yoke on its shaft and that converter reverses too, or put a pen pin on it and the linkage follows its sweep.</p>
 <div class="mn-note">Length is measured end to end, but everything that has to fit on a rack is measured from its middle: the pinion sits so far off centre, and the bar slides half its stroke each way. So it needs to be twice the pinion's offset, plus the stroke, plus about three teeth of engagement at each end. The panel works that out and offers to lengthen it; it also says when the bar is laid across a wheel, and offers to move it somewhere clear.</div>
+<h4 class="mn-h2">The rack's track, and joining it to a movement</h4>
+<p class="mn-p">A rack has to run dead straight or it climbs out of its mesh, so every rack is now cut with a <b>track</b>: guide rails either side of the bar with cap strips over them, standing on dowel posts off the back board — the same channel a converter's block runs in. The rail on a toothed face comes in <b>segments</b>, because the pinion is bolted to the board and sits where that rail would run, so it stops short either side of it. The panel says how many rails and posts the track needs, and the back board grows to reach them.</p>
+<p class="mn-p">A movement joins the rack in one of two ways. <b>A bolted bracket</b> makes the rack part of the block: rigid, simple, and it must run parallel to the block's travel. <b>A rod with pins</b> makes it a slider-crank instead — pinned at the block and again at a hole in the middle of the bar — and then the rack does not have to be parallel to anything. Set its <b>angle</b> and where it <b>stands</b>, and the rod follows.</p>
+<p class="mn-p">What reaches the rack through a rod is the block's travel foreshortened by the angle between them: square on it is the full stroke, at 45° about three quarters, and across the travel almost nothing at all — there the rod comes up square to the bar and the pair sit on a <b>dead point</b>. Standing the bar out along its own line keeps the rod shallow and the motion honest, which is where <b>re-fit the rod</b> puts it.</p>
 <div class="mn-note">Against a wheel of fewer than 17 teeth the rack's own teeth are cut shorter than full height. A full-height rack tooth digs into the flank of a small wheel — the classic undercut interference — and shortening the rack is the standard cure. The panel says when it has done it.</div>
 <h4 class="mn-h2">Pivots partway along an arm</h4>
 <p class="mn-p">A joint does not have to hang off the <i>end</i> of another arm. Set an arm's anchor to <b>along arm</b> and give it a percentage, and it pivots from a point partway down that arm instead. That is the trick behind the classic multi-arm drawing machines: each extra pivot multiplies the harmonics, so a machine with only three wheels can fill most of its page.</p>
@@ -2987,6 +2991,18 @@ function computeComplex(){ try{cxSyncSplitMax();}catch(_){}
   if(G.length){ let minL=1e9; G.forEach(g=>{ if(g.layer<minL)minL=g.layer; });
     if(minL!==0)G.forEach(g=>{ g.layer-=minL; }); }
   let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9,maxL=0; G.forEach(g=>{mnx=Math.min(mnx,g.x-g.ra);mxx=Math.max(mxx,g.x+g.ra);mny=Math.min(mny,g.y-g.ra);mxy=Math.max(mxy,g.y+g.ra);maxL=Math.max(maxL,g.layer);});
+  /* A rack's guide track bolts to the back board, so the board has to reach it — measuring the
+     plate from the gears alone left the posts hanging off the edge. */
+  try{ const cRef={gears:G,byId,m};
+    (S.cx.edges||[]).forEach(edge=>{ const hg=byId[edge.gear]; if(!hg)return;
+      const fr=cxEdgeFrame(edge,hg,0), tk=cxRackTrack(edge,cRef);
+      const pts=tk.posts.slice();
+      tk.sides.forEach(sd=>sd.segs.forEach(sg=>{ pts.push([sg[0],sd.y],[sg[1],sd.y]); }));
+      pts.push([-tk.half,0],[tk.half,0]);
+      pts.forEach(([lx,ly])=>{ const P=fr.toW(lx,ly);
+        mnx=Math.min(mnx,P[0]-tk.postD); mxx=Math.max(mxx,P[0]+tk.postD);
+        mny=Math.min(mny,P[1]-tk.postD); mxy=Math.max(mxy,P[1]+tk.postD); }); });
+  }catch(_){}
   // same-layer overlaps (excluding intended meshes: distance≈cd)
   let overlaps=0;
   for(let i=0;i<G.length;i++)for(let j=i+1;j<G.length;j++){ const a=G[i],b=G[j]; if(a.layer!==b.layer)continue;
@@ -3547,7 +3563,14 @@ function cxPaperPosts(c){ if(!cxPenIsCarriage())return [];
   for(let i=0;i<4;i++){ const a=Math.PI/4+i*Math.PI/2;
     out.push({x:(B.cx||0)+R*Math.cos(a), y:(B.cy||0)+R*Math.sin(a), d, paper:true}); }
   return out; }
-function cxPostWorld(c){ const out=cxPaperPosts(c); S.cx.converters.forEach(conv=>{ const g=c.byId[conv.gear]; if(!g)return;
+function cxPostWorld(c){ const out=cxPaperPosts(c);
+  // the rack's own guide stands on posts too, and the board needs holes for them
+  try{ S.cx._c={byId:c.byId};
+    (S.cx.edges||[]).forEach(edge=>{ const g=c.byId[edge.gear]; if(!g)return;
+      const fr=cxEdgeFrame(edge,g,0), tk=cxRackTrack(edge,c);
+      tk.posts.forEach(([lx,ly])=>{ const P=fr.toW(lx,ly); out.push({x:P[0],y:P[1],d:tk.postD}); }); });
+  }catch(_){}
+  S.cx.converters.forEach(conv=>{ const g=c.byId[conv.gear]; if(!g)return;
   const kit=cxConvKit(conv,g), ph=(conv.dir||0)*Math.PI/180, u=[Math.cos(ph),Math.sin(ph)], p=[-u[1],u[0]];
   kit.posts.forEach(([lx,ly])=>out.push({x:g.x+lx*u[0]+ly*p[0], y:g.y+lx*u[1]+ly*p[1], d:kit.postD})); }); return out; }
 // does this converter's fixed structure foul another gear? posts run full depth (any gear),
@@ -3611,14 +3634,47 @@ function cxTheta(g,ang){
     if(e){ const hg=(S.cx._c&&S.cx._c.byId)?S.cx._c.byId[e.gear]:null;
       if(hg)return (g.osc.base||0)+g.osc.sign*cxEdgeFrame(e,hg,ang).d/Math.max(g.rp,1e-6); } }
   return g.phase+g.rate*ang; }
+/* Where a rack stands and which way it runs, before anything driving it is taken into account.
+   Rod-linked racks need this on its own: the stroke has to be solved from the rod, and solving
+   it cannot ask the frame for the answer it is trying to work out. */
+function cxRackBase(edge,g){ const dir=(edge.dir||0)*Math.PI/180, cd=Math.cos(dir), sd=Math.sin(dir);
+  const t=[-sd,cd], n=[-cd,-sd], rp=(g&&g.rp)||0;
+  const P0=(edge.free&&edge.x!=null)?[edge.x,edge.y]:[((g&&g.x)||0)+rp*cd,((g&&g.y)||0)+rp*sd];
+  return {P0,t,n}; }
+/* A rod with a pin at each end, between the block and a hole in the middle of the bar. The bar
+   is held to its own line by its track, so this is a slider-crank: the rod swings, and the bar
+   goes where the rod's far end can reach along that line. Being a joint rather than a bolted
+   bracket, the rack no longer has to run parallel to the block — it can lie at any angle, and
+   what reaches it is the component of the block's travel along the bar. */
+function cxRackRodS(edge,v,vg,base,ang){
+  const my=cxRackMidY(S.cx.m||6,cxRackDbl(edge.id));
+  const A0=[base.P0[0]+my*base.n[0], base.P0[1]+my*base.n[1]];
+  const B=cxConvAt(v,vg,ang).slider;
+  const w=[B[0]-A0[0], B[1]-A0[1]];
+  const wt=w[0]*base.t[0]+w[1]*base.t[1], wn=w[0]*base.n[0]+w[1]*base.n[1];
+  const L=Math.max(edge.rodL||60, Math.abs(wn)+2);   // a rod too short to reach would jam
+  return wt+((edge.rodB<0)?-1:1)*Math.sqrt(Math.max(L*L-wn*wn,0)); }
 function cxRackDriver(edge){ if(!edge||!edge.drive)return null;
   return (S.cx.converters||[]).find(v=>v.id===edge.drive)||null; }
 function cxRackStroke(edge,c){ const v=cxRackDriver(edge); if(!v)return null;
   const g=c.byId[v.gear]; if(!g)return null;
+  const rod=(edge.link==='rod');
+  let base=null, reach=0;
+  if(rod){ const byId=(c&&c.byId)||{};
+    const hg=byId[edge.gear]||((S.cx._c&&S.cx._c.byId)?S.cx._c.byId[edge.gear]:null);
+    base=cxRackBase(edge,hg||{x:0,y:0,rp:0}); }
   let lo=1e9,hi=-1e9;
-  for(let i=0;i<=72;i++){ const sU=cxConvAt(v,g,2*Math.PI*i/72*(1/Math.max(Math.abs(g.rate),1e-6))).sU;
-    if(sU<lo)lo=sU; if(sU>hi)hi=sU; }
-  return {lo,hi,stroke:hi-lo,mid:(lo+hi)/2}; }
+  for(let i=0;i<=72;i++){ const a=2*Math.PI*i/72*(1/Math.max(Math.abs(g.rate),1e-6));
+    let s;
+    if(rod){ s=cxRackRodS(edge,v,g,base,a);
+      const my=cxRackMidY(S.cx.m||6,cxRackDbl(edge.id));
+      const A0=[base.P0[0]+my*base.n[0], base.P0[1]+my*base.n[1]], B=cxConvAt(v,g,a).slider;
+      reach=Math.max(reach,Math.abs((B[0]-A0[0])*base.n[0]+(B[1]-A0[1])*base.n[1])); }
+    else s=cxConvAt(v,g,a).sU;
+    if(s<lo)lo=s; if(s>hi)hi=s; }
+  // a rod-driven bar swings about wherever it was put, so zero is where it stands, not mid-stroke
+  const mid=rod?0:(lo+hi)/2;
+  return {lo,hi,stroke:hi-lo,mid,dLo:lo-mid,dHi:hi-mid,rod,reach}; }
 // the rack has to stay in mesh at both ends of the stroke, so it must be at least the stroke
 // plus enough teeth to keep the pinion engaged
 /* Length is measured END TO END but everything that has to fit on the rack is measured from its
@@ -3629,8 +3685,10 @@ function cxRackNeed(edge,c){ const st=cxRackStroke(edge,c);
   const m=S.cx.m||6, engage=Math.PI*m*3;       // three teeth still meshed at the extremes
   const stroke=st?st.stroke:0;
   let far=0; (S.cx.gears||[]).forEach(g=>{ if(g.kind==='rackgear'&&g.edge===edge.id)far=Math.max(far,Math.abs(g.along||0)); });
-  const half=far+stroke/2+engage;
-  return {stroke, engage, far, half, need:2*half, driven:!!st}; }
+  const swing=st?Math.max(Math.abs(st.dLo),Math.abs(st.dHi)):0;
+  const half=far+swing+engage;
+  return {stroke, engage, far, half, swing, need:2*half, driven:!!st,
+          short:!!(st&&st.rod&&st.reach>=(edge.rodL||0))}; }
 function cxRackFit(edge,c){ const nd=cxRackNeed(edge,c||computeComplex()), p=Math.PI*(S.cx.m||6);
   const want=Math.ceil(Math.max(nd.need,p*4)/p)*p;
   if((edge.len||0)<want-1e-6)edge.len=want; return edge.len; }
@@ -3655,7 +3713,8 @@ function cxEdgeFrame(edge,g,ang){ const dir=(edge.dir||0)*Math.PI/180, cd=Math.c
   const v=cxRackDriver(edge);
   const vg=(v&&S.cx._c&&S.cx._c.byId)?S.cx._c.byId[v.gear]:null;
   let mount='side', off=0, lead=0;
-  if(v&&vg){ const cph=(v.dir||0)*Math.PI/180;
+  const rodLink=!!(v&&vg&&edge.link==='rod');
+  if(v&&vg&&!rodLink){ const cph=(v.dir||0)*Math.PI/180;
     t=[Math.cos(cph),Math.sin(cph)]; fdir=cph-Math.PI/2;      // runs along the block's travel
     const n0=[-t[1],t[0]];
     /* Two ways to bolt a rack to a block. SIDE: a bracket holds it alongside the block's travel,
@@ -3670,27 +3729,36 @@ function cxEdgeFrame(edge,g,ang){ const dir=(edge.dir||0)*Math.PI/180, cd=Math.c
     P0=[B[0]+off*n0[0]+lead*t[0], B[1]+off*n0[1]+lead*t[1]];
     d=cxConvAt(v,vg,ang).sU-st.mid; slide=d; driven=true; }
   const rp=(g&&g.rp)||0;
-  if(!P0){ P0=(edge.free&&edge.x!=null)?[edge.x,edge.y]:[g.x+rp*cd,g.y+rp*sd];
-    d=rp*cxTheta(g,ang);
-    dph=Math.PI*(S.cx.m||6)/2-rp*dir; }                       // teeth line up with the host's
+  if(!P0){ P0=cxRackBase(edge,g).P0;
+    /* Linked by a rod, the bar is not rolling on anything — it stands where it was put and is
+       pulled along its own line, so it takes no phase from a wheel. */
+    if(rodLink){ d=0; dph=0; driven=true; }
+    else { d=rp*cxTheta(g,ang);
+      dph=Math.PI*(S.cx.m||6)/2-rp*dir; } }                   // teeth line up with the host's
   const n=[-t[1],t[0]];
-  return {P0,t,n,d,slide,dph,ph:(driven?0:d)+dph,rp,dir:fdir,alpha:Math.atan2(t[1],t[0]),driven,mount,off,lead,
+  if(rodLink){ d=cxRackRodS(edge,v,vg,{P0,t,n},ang); slide=d; }
+  return {P0,t,n,d,slide,dph,ph:(driven?0:d)+dph,rp,dir:fdir,alpha:Math.atan2(t[1],t[0]),driven,mount,off,lead,rodLink,
     toW:(lx,ly)=>[P0[0]+lx*t[0]+ly*n[0],P0[1]+lx*t[1]+ly*n[1]]}; }
 /* Does the bar itself cut through a wheel? A rack is a long straight part and it is easy to lay
    one straight across the machine — the pinion may be perfectly placed while the bar runs through
    two other gears on the way to it. Only wheels on the rack's own layer can foul it. */
-function cxRackClash(edge,c){ const g=c.byId[edge.gear]; if(!g)return null;
+/* `strict` asks a different question: not "does this foul anything at its own height" but "is
+   this standing clear of the running gears altogether". Automatic placement uses the strict
+   answer, because a rack dropped in among the wheels — even one passing safely over them — is
+   not somewhere anybody can build. The warning in the panel stays the lenient one. */
+function cxRackClash(edge,c,strict){ const g=c.byId[edge.gear]; if(!g)return null;
   S.cx._c={byId:c.byId};
   const fr=cxEdgeFrame(edge,g,0), m=c.m||6, dbl=cxRackDbl(edge.id);
   const nd=cxRackNeed(edge,c), sweep=fr.driven?nd.stroke/2:0;
-  const half=edge.len/2+sweep, top=m, bot=-(cxRackDepth(m,dbl)+(dbl?m:0));
+  const pad=strict?m*3:0;
+  const half=edge.len/2+sweep+pad, top=m+pad, bot=-(cxRackDepth(m,dbl)+(dbl?m:0))-pad;
   const dv=cxRackDriver(edge), dg=dv?c.byId[dv.gear]:null;
   for(const o of c.gears){ if(o.kind==='rackgear')continue;
     if(o.id===edge.gear&&!fr.driven&&!edge.free)continue;   // the wheel it rolls on is meant to touch
     // a pushed bar rides the drive plane, clear over its own layer — only gears stacked ABOVE
     // that plane share its space
-    if(dg){ if(o.layer<=dg.layer)continue; }
-    else if(o.layer!==g.layer)continue;
+    if(!strict){ if(dg){ if(o.layer<=dg.layer)continue; }
+      else if(o.layer!==g.layer)continue; }
     const dx=o.x-fr.P0[0], dy=o.y-fr.P0[1];
     const A=dx*fr.t[0]+dy*fr.t[1], B=dx*fr.n[0]+dy*fr.n[1];
     const ac=Math.max(-half,Math.min(half,A)), bc=Math.max(bot,Math.min(top,B));
@@ -3698,16 +3766,33 @@ function cxRackClash(edge,c){ const g=c.byId[edge.gear]; if(!g)return null;
   return null; }
 /* Point a rim-mounted rack somewhere it can actually be built: a wheel to roll on and a direction
    where the bar clears the machine AND a pinion has room to stand. Shortest workable rack wins. */
+/* The envelope of the running gears: what a new part should start outside of. */
+function cxTrainEnvelope(c){ const gs=c.gears.filter(g=>g.kind!=='rackgear'); if(!gs.length)return null;
+  let sx=0,sy=0; gs.forEach(g=>{sx+=g.x;sy+=g.y;});
+  const cx0=sx/gs.length, cy0=sy/gs.length;
+  let R=0; gs.forEach(g=>{ R=Math.max(R,Math.hypot(g.x-cx0,g.y-cy0)+g.ra); });
+  return {x:cx0,y:cy0,R}; }
 function cxRackAim(ed){ const c0=computeComplex(), m=c0.m||6, p=Math.PI*m, N=18;
   const hosts=c0.gears.filter(g=>g.kind!=='rackgear').sort((a,b)=>b.rp-a.rp).slice(0,4);
   const keep={gear:ed.gear,dir:ed.dir,len:ed.len};
+  const env=cxTrainEnvelope(c0);
   let best=null;
   for(const h of hosts)for(let d=0;d<360;d+=15){
     ed.gear=h.id; ed.dir=d;
     const sp=cxRackGearSpot(ed,N);
     ed.len=Math.ceil(2*(Math.abs(sp.along)+p*3)/p)*p;
-    if(cxRackClash(ed,computeComplex()))continue;
-    if(!best||ed.len<best.len)best={gear:h.id,dir:d,len:ed.len,along:sp.along,side:sp.side}; }
+    const cc=computeComplex();
+    if(cxRackClash(ed,cc,true))continue;
+    /* Shortest is not the same as buildable. A rack tucked into the crook between two wheels
+       clears them and is still nowhere anyone can put a shaft, a track and a pinion — so a
+       placement standing OUTSIDE the running gears beats a shorter one that does not. */
+    S.cx._c={byId:cc.byId};
+    const fr=cxEdgeFrame(ed,cc.byId[h.id],0), rpN=m*N/2;
+    const offN=(sp.side>0)?rpN:-(cxRackDepth(m,true)+rpN);
+    const px=fr.P0[0]+sp.along*fr.t[0]+offN*fr.n[0], py=fr.P0[1]+sp.along*fr.t[1]+offN*fr.n[1];
+    const out=env?(Math.hypot(px-env.x,py-env.y)>=env.R):true;
+    const score=ed.len+(out?0:4000);
+    if(!best||score<best.score)best={gear:h.id,dir:d,len:ed.len,along:sp.along,side:sp.side,score,out}; }
   ed.gear=keep.gear; ed.dir=keep.dir; ed.len=keep.len;
   return best; }
 function cxAddRack(){ const c=computeComplex();
@@ -3740,12 +3825,10 @@ function cxRackSpot(e,N,side){
     for(const sgn of (a?[1,-1]:[1])){
       const px=fr.P0[0]+sgn*a*fr.t[0]+offN*fr.n[0], py=fr.P0[1]+sgn*a*fr.t[1]+offN*fr.n[1];
       let clear=1e9;
-      const dv=cxRackDriver(e), dg=dv?c.byId[dv.gear]:null;
       c.gears.forEach(o=>{ if(o.kind==='rackgear')return;
         // on the far face the bar's own body is what holds the pair apart, exactly as it does
         // for the wheel the rack rolls on — so that one is not an obstacle
         if(side<0&&o.id===e.gear)return;
-        if(dg&&o.layer<=dg.layer)return;        // a pushed pinion stands above these
         clear=Math.min(clear,Math.hypot(px-o.x,py-o.y)-(o.ra+rpN+m*2)); });
       if(clear>m*2)return sgn*a; } }
   return null; }
@@ -3814,12 +3897,18 @@ function cxPushThisRack(eid,type){
   return true; }
 function cxRackStand(ed){
   const gs=(S.cx.gears||[]).filter(g=>g.kind==='rackgear'&&g.edge===ed.id);
-  const keep=ed.off==null?46:ed.off;
-  for(let o=40;o<=420;o+=10){ ed.off=o;
+  /* Re-planning the layout, so the pinions are re-placed and the bar re-cut to size. Twice,
+     because an end-pushed bar's own position depends on its length. */
+  const place=()=>{ for(let i=0;i<2;i++){
     gs.forEach(g=>{ const sp=cxRackGearSpot(ed,g.N); g.along=sp.along+0; g.side=sp.side; });
-    ed.len=0; cxRackFit(ed);        // re-planning the layout, so re-cut it to size too
-    if(!cxRackClash(ed,computeComplex()))return true; }
-  ed.off=keep; cxRackFit(ed); return false; }
+    ed.len=0; cxRackFit(ed); } };
+  const clear=()=>!cxRackClash(ed,computeComplex(),true);
+  if(ed.link==='rod'&&cxRackDriver(ed))return cxRackRodInit(ed);
+  if(ed.mount==='end'){ for(const sg of [1,-1]){ ed.endSign=sg; place(); if(clear())return true; }
+    ed.endSign=1; place(); return false; }
+  const keep=ed.off==null?46:ed.off;
+  for(let o=40;o<=520;o+=10){ ed.off=o; place(); if(clear())return true; }
+  ed.off=keep; place(); return false; }
 function cxAddRackAndGear(){
   const c=computeComplex(), m=c.m||3, N=18, rpN=m*N/2;
   const v=(S.cx.converters||[])[0]||null;
@@ -3839,9 +3928,80 @@ function cxAddRackAndGear(){
   if(!hg){ const aim=cxRackAim(ed); if(aim){ ed.gear=aim.gear; ed.dir=aim.dir; ed.len=aim.len; } }
   const sp=cxRackGearSpot(ed,N), along=sp.along, side=sp.side;
   S.cx.gears.push({id:S.cx.nextId,N,kind:'rackgear',edge:eid,side,along});
-  if(hg)cxRackStand(ed); else cxRackFit(ed);
   S.cx.sel=S.cx.nextId++;
+  /* A rim rack scrolls away and never comes back, so a pair dropped on a rim could not work
+     wherever it was put. The button now adds the pusher too, and stands the whole assembly off
+     clear of the running gears. */
+  if(hg)cxRackStand(ed);
+  else { cxRackFit(ed); cxPushThisRack(eid,'scotch'); }
   return true; }
+/* Put a rack on a rod: it comes off the rim and stands where it already is, and the rod is
+   sized so it can reach right through the block's travel without jamming. */
+/* A rack has to run dead straight, and nothing was holding it: a rim rack has only the wheel it
+   rolls on, and a rod-linked one has only the rod, which would simply swing it aside. So every
+   rack now gets a TRACK — a pair of guide rails either side of the bar with cap strips over them,
+   standing on dowel posts off the back board, exactly like the guide a converter's block runs in.
+   The rail on a toothed face has to come in segments: the pinion is bolted to the board and sits
+   where the rail would run, so the rail stops short either side of it. */
+function cxRackTrack(edge,c){
+  const m=c.m||6, dbl=cxRackDbl(edge.id), a=cxRackAdd(edge,c), dd=1.25*m, back=cxRackBack(m,dbl);
+  const nd=cxRackNeed(edge,c), swing=nd.swing||0;
+  const railH=Math.max(boreDia()+4,8), clr=0.4, minSeg=Math.max(railH*2.2,18);
+  const len=edge.len+2*swing+railH;                      // spans the bar's whole run
+  const half=len/2, pins=c.gears.filter(g=>g.kind==='rackgear'&&g.edge===edge.id);
+  const faces=[{y:a+clr+railH/2, side:1},
+               dbl?{y:-(cxRackDepth(m,true)+a+clr+railH/2), side:-1}
+                  :{y:-(dd+back+clr+railH/2), side:-1, plain:true}];
+  const sides=[], posts=[];
+  faces.forEach(f=>{
+    let cuts=[];
+    if(!f.plain)pins.filter(g=>((g.side==null?1:g.side)<0?-1:1)===f.side)
+      .forEach(g=>cuts.push([(g.along||0)-(g.ra+4),(g.along||0)+(g.ra+4)]));
+    cuts.sort((p,q)=>p[0]-q[0]);
+    let segs=[], x0=-half;
+    cuts.forEach(cu=>{ if(cu[0]>x0)segs.push([x0,Math.min(cu[0],half)]); x0=Math.max(x0,cu[1]); });
+    if(x0<half)segs.push([x0,half]);
+    segs=segs.filter(sg=>sg[1]-sg[0]>=minSeg);
+    segs.forEach(sg=>{ const pe=Math.min((sg[1]-sg[0])/2-railH/2, (sg[1]-sg[0])/2);
+      posts.push([(sg[0]+sg[1])/2-pe, f.y],[(sg[0]+sg[1])/2+pe, f.y]); });
+    if(segs.length)sides.push({y:f.y, segs, side:f.side}); });
+  const capOver=Math.min(3,railH*0.35);
+  return {railH, len, half, sides, posts, capOver, capW:railH+capOver,
+          postD:Math.max(cxDowelHole(),5), swing, dbl}; }
+/* Putting a rack on a rod is a slider-crank: the block swings the rod, the rod pushes the bar,
+   and the bar keeps to its own line because its track holds it there. The one thing that must be
+   got right is WHERE the bar stands. Off to one side, the rod comes up square to the bar's line
+   and the pair sit on a dead point — the bar hardly moves however long the rod is. Out ALONG the
+   bar's own line, the rod stays shallow and what reaches the rack is the block's travel times the
+   cosine of the angle between them. So the bar is placed out along its own line, far enough to
+   stand clear of the running gears, and the rod is cut to match. */
+function cxRackRodInit(ed){
+  const c0=computeComplex(); S.cx._c={byId:c0.byId};
+  const v=cxRackDriver(ed), vg=v?c0.byId[v.gear]:null; if(!v||!vg)return false;
+  ed.link='rod'; ed.free=true;
+  const dir=(ed.dir||0)*Math.PI/180, t=[-Math.sin(dir),Math.cos(dir)];
+  const u=[Math.cos((v.dir||0)*Math.PI/180),Math.sin((v.dir||0)*Math.PI/180)];
+  const stv=cxConvStroke(v,vg)||{lo:0,hi:0};
+  let lo=1e9,hi=-1e9;
+  for(let i=0;i<=72;i++){ const sU=cxConvAt(v,vg,2*Math.PI*i/72*(1/Math.max(Math.abs(vg.rate),1e-6))).sU;
+    lo=Math.min(lo,sU); hi=Math.max(hi,sU); }
+  const Bm=[vg.x+((lo+hi)/2)*u[0], vg.y+((lo+hi)/2)*u[1]];        // block at mid travel
+  const gs=(S.cx.gears||[]).filter(g=>g.kind==='rackgear'&&g.edge===ed.id);
+  const start=Math.max(vg.ra, cxRackEndPad(v))+40;
+  let placed=false;
+  for(let s0=start; s0<=1400; s0+=15){
+    ed.x=Math.round(Bm[0]+s0*t[0]); ed.y=Math.round(Bm[1]+s0*t[1]);
+    ed.rodL=Math.round(Math.hypot(s0,cxRackMidY(c0.m,cxRackDbl(ed.id))));
+    ed.rodB=1;                                     // block behind the bar: the near root
+    for(let k=0;k<2;k++){
+      gs.forEach(g=>{ const sp=cxRackGearSpot(ed,g.N); g.along=sp.along+0; g.side=sp.side; });
+      ed.len=0; cxRackFit(ed); }
+    if(!cxRackClash(ed,computeComplex(),true)){ placed=true; break; } }
+  if(!placed)cxRackFit(ed);
+  return true; }
+/* Re-size an existing rod for wherever the rack has been moved or turned to. */
+function cxRackRodFit(ed){ if(ed.link!=='rod')return false; const keep={x:ed.x,y:ed.y,dir:ed.dir,free:ed.free};
+  const ok=cxRackRodInit(ed); Object.assign(ed,keep); cxRackFit(ed); return ok; }
 function cxRackRefit(g){ const e=(S.cx.edges||[]).find(x=>x.id===g.edge); if(e)cxRackFit(e); }
 function cxDelEdge(id){ S.cx.edges=S.cx.edges.filter(e=>e.id!==id); }
 function cxBore(){ return boreDia(); }
@@ -3962,7 +4122,15 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
   const nPins=(cv.crank||0)+(cv.scotch||0); if(nPins)buy.push([`crank pin`,nPins,`⌀${fmt(boreDia())} dowel — press-fit in the crank arm, rides the ${cv.scotch&&!cv.crank?'yoke slot':'rod / yoke slot'}`]);
   const convs=S.cx.converters.filter(v=>c.byId[v.gear]); if(convs.length){ const plen={}; convs.forEach(v=>{ const g=c.byId[v.gear], L=Math.round((t+3)+g.layer*LG+t*2.4); plen[L]=(plen[L]||0)+4; });
     buy.push([`standoff post`,convs.length*4,`⌀${fmt(boreDia())} dowel — hold each guide bridge off the board — lengths ${Object.entries(plen).sort((a,b)=>a[0]-b[0]).map(([L,n])=>`${L}mm×${n}`).join(', ')}`]); }
-  const eds=S.cx.edges.filter(e=>c.byId[e.gear]); if(eds.length)cut.push([`rack`,eds.length,`${eds.map(e=>fmt(e.len)).join(', ')} long · ${t}mm`]);
+  const eds=S.cx.edges.filter(e=>c.byId[e.gear]);
+  if(eds.length){ cut.push([`rack`,eds.length,`${eds.map(e=>fmt(e.len)).join(', ')} long · ${t}mm`]);
+    let segs=0, posts=0, rods=0;
+    eds.forEach(e=>{ try{ const tk=cxRackTrack(e,c); tk.sides.forEach(sd=>{segs+=sd.segs.length;}); posts+=tk.posts.length; }catch(_){}
+      if(cxRackDriver(e)&&e.link==='rod')rods++; });
+    if(segs){ cut.push([`rack guide rail`,segs,`the bar runs between them · ${t}mm`]);
+      cut.push([`rack guide cap`,segs,`traps the bar in its track · ${t}mm`]); }
+    if(rods)cut.push([`rack rod`,rods,`${eds.filter(e=>e.link==='rod').map(e=>fmt(e.rodL||0)).join(', ')} between pins · ${t}mm`]);
+    if(posts)buy.push([`dowel ⌀${fmt(cxDowelHole())} — rack guide posts`,posts,`stand the track off the board`]); }
   const sp=cxSpacers(c); if(sp.totalRings)cut.push([`spacer ring`,sp.totalRings,`⌀${fmt(boreDia()+8)} · bore ${fmt(boreDia())} · ${t}mm`]);
   const bpl=cxBoardPlan(c), bw=bpl.bw, bh=bpl.bh, P=S.cx.split||{mode:'off'}, tiles=cxShapeTiles(bpl,[],P);
   const shTxt=(bpl.mode==='rect')?'':`${cxBoardShapeLabel()} outline (offset ${bpl.off>0?'+':''}${fmt(bpl.off)}mm) · `;
@@ -4585,6 +4753,14 @@ function sceneFromComplex(){
     /* A pushed rack travels its block's stroke, so the whole bar moves. A rack rolling on a rim
        scrolls away for ever, so the bar is stepped back a tooth at a time instead — the teeth
        run past the gear, and the bar stays on the board. */
+    { const tk=cxRackTrack(edge,c), fr0=cxEdgeFrame(edge,g,0), rot0=Math.atan2(fr0.t[1],fr0.t[0]);
+      tk.sides.forEach(sd=>sd.segs.forEach(sg=>{
+        const L=sg[1]-sg[0], cm=(sg[0]+sg[1])/2, P=fr0.toW(cm,sd.y);
+        parts.push({tris:plateMesh([flipY(roundRectLoop(L,tk.railH,2,3))],0,0,t*0.85,yE),
+          col:WOOD_RAIL,label:`rack guide`,spin:{x:P[0]-ox,z:P[1]-oy,phase:rot0,rate:0}}); }));
+      tk.posts.forEach(([lx,ly])=>{ const P=fr0.toW(lx,ly);
+        parts.push({tris:plateMesh([flipY(circleLoop(Math.max(tk.postD/2,1.6),16))],0,0,Math.abs(yE)+t,yE),
+          col:'#5a4632',hw:1,spin:{x:P[0]-ox,z:P[1]-oy,phase:0,rate:0}}); }); }
     parts.push({tris:mesh,col:'#c08a4e',pose:s=>{ const fr=cxEdgeFrame(edge,g,s);
       const shift=fr.driven?fr.slide:(((fr.ph%p)+p)%p-p/2);
       return {x:(fr.P0[0]-ox)+shift*fr.t[0], z:(fr.P0[1]-oy)+shift*fr.t[1], rot:Math.atan2(fr.t[1],fr.t[0])}; }}); });
@@ -4751,12 +4927,25 @@ function drawComplexPreview(){
   // edge-mounted movements (rack meshing a gear rim)
   S.cx.edges.forEach(edge=>{ const g=c.byId[edge.gear]; if(!g)return; const ef=cxEdgeFrame(edge,g,th);
     const dbl=cxRackDbl(edge.id);
+    // the guide the bar runs in — drawn first, so the bar reads as sitting in its channel
+    { const tk=cxRackTrack(edge,c);
+      tk.sides.forEach(sd=>sd.segs.forEach(sg=>{
+        const L=sg[1]-sg[0], cxm=(sg[0]+sg[1])/2;
+        const loop=roundRectLoop(L,tk.railH,2,3).map(q=>ef.toW(q[0]+cxm,q[1]+sd.y));
+        s+=`<path d="M${loop.map(q=>q[0].toFixed(1)+' '+(-q[1]).toFixed(1)).join('L')}Z" fill="#b9a887" fill-opacity="0.5" stroke="#7a6a4c" stroke-width="${lw.toFixed(2)}"/>`;
+        loop.forEach(q=>{ ox0=Math.min(ox0,q[0]);ox1=Math.max(ox1,q[0]);oy0=Math.min(oy0,q[1]);oy1=Math.max(oy1,q[1]); }); }));
+      tk.posts.forEach(([lx,ly])=>{ const P=ef.toW(lx,ly);
+        s+=`<circle cx="${P[0].toFixed(1)}" cy="${(-P[1]).toFixed(1)}" r="${(tk.postD/2).toFixed(1)}" fill="#efe7d5" stroke="#8a6a3c" stroke-width="${(lw*1.1).toFixed(2)}"/>`; }); }
     const poly=cxRackWindow(c.m,edge.len,ef.ph,0,dbl,cxRackAdd(edge,c)).map(pt=>ef.toW(pt[0]+ef.slide,pt[1]));
     let d='M'; poly.forEach((p,i)=>{ d+=(i?'L':'')+p[0].toFixed(1)+' '+(-p[1]).toFixed(1)+' '; }); d+='Z';
     poly.forEach(p=>{ ox0=Math.min(ox0,p[0]);ox1=Math.max(ox1,p[0]);oy0=Math.min(oy0,p[1]);oy1=Math.max(oy1,p[1]); });
     s+=`<path d="${d}" fill="#c08a4e" fill-opacity="0.55" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`;
     // the bracket that bolts a pushed rack to its block — the two move as one piece
-    if(ef.driven){ const my=cxRackMidY(c.m,dbl);
+    if(ef.driven&&ef.rodLink){ const dv=cxRackDriver(edge), dg=dv?c.byId[dv.gear]:null;
+      if(dg){ const my=cxRackMidY(c.m,dbl), A=ef.toW(ef.slide,my), B=cxConvAt(dv,dg,th).slider;
+        s+=`<line x1="${A[0].toFixed(1)}" y1="${(-A[1]).toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${(-B[1]).toFixed(1)}" stroke="#8a6a3c" stroke-width="${(lw*3.2).toFixed(2)}" stroke-linecap="round"/>`;
+        [A,B].forEach(P=>{ s+=`<circle cx="${P[0].toFixed(1)}" cy="${(-P[1]).toFixed(1)}" r="${(lw*2).toFixed(1)}" fill="#efe7d5" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`; }); } }
+    else if(ef.driven){ const my=cxRackMidY(c.m,dbl);
       // end-mounted: the block pushes the bar's near end, in line. Side-mounted: a bracket
       // reaches across (and along) to the middle of the bar.
       const grip=(ef.mount==='end')?(ef.slide-((edge.endSign<0)?-1:1)*edge.len/2):ef.slide;
@@ -4792,7 +4981,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-13`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-14`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -4898,6 +5087,23 @@ function exportComplex(){
     // mounting holes down the middle of the bar — the only wood a double-sided rack has spare
     const nH=Math.max(2,Math.round(edge.len/70)), hy=gap+(mxy-cxRackMidY(c.m,dblE)); for(let k=0;k<nH;k++){ const hx=x+(edge.len*(k+0.5)/nH); parts.push(`<path d="${svgCircle(boreR,hx,hy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); }
     parts.push(txt(x+(mxx-mnx)/2,gap+(mxy-mny)+2,`rack #${edge.gear} · ${fmt(edge.len)}${dblE?' · teeth both faces':''} (m${fmt(c.m)})`,SCORE,3));
+    { const tk=cxRackTrack(edge,c), pr=Math.max(tk.postD/2-kh,0.4);
+      let xx=x+(mxx-mnx)+gap, hh=0;
+      tk.sides.forEach(sd=>sd.segs.forEach(sg=>{ const L=sg[1]-sg[0];
+        [[tk.railH,'rack guide rail'],[tk.capW,'rack guide cap — traps the bar']].forEach(([H,lbl],k)=>{
+          const cy2=gap+H/2;
+          parts.push(`<path d="${pathFrom(offsetPolygon(roundRectLoop(L,H,2,3),kh),xx+L/2,cy2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+          const pe2=L/2-Math.max(tk.railH,6)/2;
+          [-pe2,pe2].forEach(q=>parts.push(`<path d="${svgCircle(pr,xx+L/2+q,cy2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
+          parts.push(txt(xx+L/2,cy2+H/2+3,`${lbl} · ${fmt(L)}`,SCORE,2.6));
+          xx+=L+gap; hh=Math.max(hh,H+gap*2+4); }); }));
+      const dv2=cxRackDriver(edge);
+      if(dv2&&edge.link==='rod'){ const w2=cxLinkW(), L2=edge.rodL||60;
+        parts.push(`<path d="${pathFrom(offsetPolygon(rodLoop(L2,w2),kh),xx,gap+w2/2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+        [0,L2].forEach(q=>parts.push(`<path d="${svgCircle(boreR,xx+q,gap+w2/2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
+        parts.push(txt(xx+L2/2,gap+w2+3,`rack rod · ${fmt(L2)}`,SCORE,2.6));
+        xx+=L2+w2+gap; hh=Math.max(hh,w2+gap*2+4); }
+      x=xx-(mxx-mnx)-gap; rowH=Math.max(rowH,hh); }
     x=x+(mxx-mnx)+gap; rowH=Math.max(rowH,(mxy-mny)+gap*3); });
   const bpl=cxBoardPlan(c), bw=bpl.bw, bh=bpl.bh;
   const shafts={}; c.gears.forEach(g=>{const k=(Math.round(g.x*10))+'_'+(Math.round(g.y*10)); (shafts[k]||(shafts[k]={x:g.x,y:g.y,ids:[]})).ids.push(g.id);});
@@ -5181,18 +5387,24 @@ function renderComplexUI(){
       const lenCtl=`<span class="clab">length</span><span class="cstep"><button data-cxed="len" data-id="${ed.id}" data-d="-19">−</button><input type="number" value="${Math.round(ed.len)}" class="cxEdL" data-id="${ed.id}" min="30" step="19"><button data-cxed="len" data-id="${ed.id}" data-d="19">＋</button></span>`;
       // a pushed rack runs along its block, so what is left to set is how far off the block it
       // stands; a rim rack is set by which way round the wheel it sits
-      const endMt=!!drv&&ed.mount==='end';
-      const posCtl = !drv
+      const rodLink=!!drv&&ed.link==='rod';
+      const endMt=!!drv&&!rodLink&&ed.mount==='end';
+      const posCtl = (!drv||rodLink)
         ? `<span class="clab">${ed.free?'angle':'side'}</span><span class="cstep"><button data-cxed="dir" data-id="${ed.id}" data-d="-15">−</button><input type="number" value="${ed.dir}" class="cxEdD" data-id="${ed.id}" min="0" max="345" step="15"><button data-cxed="dir" data-id="${ed.id}" data-d="15">＋</button></span>`
         : endMt
         ? `<span class="clab">in line with the block</span><button class="btn ghost" data-cxedendflip="${ed.id}">⇄ push from the other end</button>`
         : `<span class="clab">across</span><span class="cstep"><button data-cxedoff="${ed.id}" data-d="-10">−</button><input type="number" value="${Math.round(ed.off==null?46:ed.off)}" class="cxEdOff" data-id="${ed.id}" min="-600" max="600" step="10"><button data-cxedoff="${ed.id}" data-d="10">＋</button></span><span class="clab">along</span><span class="cstep"><button data-cxedlead="${ed.id}" data-d="-10">−</button><input type="number" value="${Math.round(ed.lead||0)}" class="cxEdLead" data-id="${ed.id}" min="-800" max="800" step="10"><button data-cxedlead="${ed.id}" data-d="10">＋</button></span><span class="clab">mm of bracket</span>`;
+      let trk=null; try{ trk=cxRackTrack(ed,c); }catch(_){}
+      const trkTxt=trk?`runs in a track of ${trk.sides.reduce((a,sd)=>a+sd.segs.length,0)} guide rail${trk.sides.reduce((a,sd)=>a+sd.segs.length,0)>1?'s':''} on ${trk.posts.length} posts`:'';
       const meshTxt=partners.length
         ? `meshes ${partners.map(x=>`#${x.id} (${x.N}T)`).join(' and ')}${dbl?' · cut with teeth on both faces':''}`
         : `nothing meshes it yet`;
       const drow=mrow
         +`<div class="cstage-top"><span class="clab">pushed by</span><select class="selin cxEdDrv" data-id="${ed.id}" style="width:auto;flex:1">${dopts}</select></div>`
-        +(drv?`<div class="cstage-top" style="margin-top:4px"><span class="clab">pushed at</span><span style="display:flex;gap:5px"><button class="chip" data-cxedmount="side" data-id="${ed.id}" aria-pressed="${endMt?'false':'true'}" style="padding:4px 11px;cursor:pointer">its side</button><button class="chip" data-cxedmount="end" data-id="${ed.id}" aria-pressed="${endMt?'true':'false'}" style="padding:4px 11px;cursor:pointer">its end</button></span></div>`
+        +(drv?`<div class="cstage-top" style="margin-top:4px"><span class="clab">joined by</span><span style="display:flex;gap:5px"><button class="chip" data-cxedlink="bracket" data-id="${ed.id}" aria-pressed="${rodLink?'false':'true'}" style="padding:4px 11px;cursor:pointer">a bolted bracket</button><button class="chip" data-cxedlink="rod" data-id="${ed.id}" aria-pressed="${rodLink?'true':'false'}" style="padding:4px 11px;cursor:pointer">a rod with pins</button></span></div>`:'')
+        +(rodLink?`<div class="cstage-top" style="margin-top:4px"><span class="clab">rod</span><span class="cstep"><button data-cxedrod="${ed.id}" data-d="-10">−</button><input type="number" value="${Math.round(ed.rodL||0)}" class="cxEdRodL" data-id="${ed.id}" min="20" max="1200" step="10"><button data-cxedrod="${ed.id}" data-d="10">＋</button></span><span class="clab">mm between pins</span><button class="btn ghost" data-cxedrodfit="${ed.id}">↔ re-fit the rod</button></div>`
+          +`<div class="hint">Pinned at both ends, so the rack no longer has to run parallel to the block — set its <b>angle</b> and <b>stands at</b> freely and the rod follows. What reaches the rack is the block's travel foreshortened by that angle: <b>${fmt(nd.stroke)}</b> of ${fmt(cxConvStroke(drv,c.byId[drv.gear]||{x:0,y:0}).stroke)}.${nd.stroke<15?` <b style="color:#bf3a2b">⚠ Almost nothing.</b> The bar is lying across the block's travel, where the rod comes up square to it and the pair sit on a dead point. Turn its angle back towards the travel, or press re-fit to stand it out along its own line again.`:''}${nd.short?` <b style="color:#bf3a2b">⚠ The rod is too short to reach right round</b> — it would jam. Press re-fit.`:''}</div>`:'')
+        +((drv&&!rodLink)?`<div class="cstage-top" style="margin-top:4px"><span class="clab">pushed at</span><span style="display:flex;gap:5px"><button class="chip" data-cxedmount="side" data-id="${ed.id}" aria-pressed="${endMt?'false':'true'}" style="padding:4px 11px;cursor:pointer">its side</button><button class="chip" data-cxedmount="end" data-id="${ed.id}" aria-pressed="${endMt?'true':'false'}" style="padding:4px 11px;cursor:pointer">its end</button></span></div>`
           +`<div class="hint">Bolted to that block, so it runs <b>along the block's travel</b> and comes back every turn — travel ${fmt(nd.stroke)}. The block's own rails guide it, so the rack needs no guide of its own. Turn the converter's <b>dir</b> to swing the whole rack round.${endMt?' <b>Pushed at its end</b>, the bar is an extension of the pushrod, in line with the travel — nothing stands beside the block, and the bar reaches out as far as it is long.':' <b>Pushed at its side</b>, a bracket holds it clear of the block; <b>across</b> and <b>along</b> set how far that bracket reaches, so the rack and its gear can be put anywhere on the board.'}</div>`:'')
         +(!drv?`<div class="cstage-top" style="margin-top:4px"><button class="btn ghost" data-cxedfree="${ed.id}">${ed.free?'↺ put it back on a wheel':'⤢ stand it free — move it anywhere'}</button></div>`:'')
         +`<div class="cstage-top" style="margin-top:4px"><button class="btn ghost" data-cxrg="${ed.id}">＋ gear driven by this rack</button><span class="clab">turns back and forth instead of round</span></div>`
@@ -5204,7 +5416,7 @@ function renderComplexUI(){
         +(!drv?(ed.free?`<div class="hint" style="color:#bf3a2b">⚠ This rack stands on its own, clear of the train, but nothing is pushing it — so it does not move at all and neither does its gear. Pick a shaft converter above. If there are none, add a cam, crank or scotch yoke first.</div>`
           :`<div class="hint" style="color:#bf3a2b">⚠ Rolling on the rim, this rack scrolls <b>${fmt(trav)}</b> in one turn of that wheel and never returns — it leaves its pinion almost at once and nothing brings it back. Pick a converter above to push it instead.</div>`):'')
         +(smallest<17?`<div class="hint">#${(partners.find(x=>x.N===smallest)||{}).id} has only ${smallest} teeth, so the rack's own teeth are cut <b>${fmt(cxRackAdd(ed,c))} tall instead of ${fmt(c.m)}</b> — a full-height rack tooth digs into the flank of a wheel that small. 17+ teeth takes the full height.</div>`:'');
-      return `<div class="cstage" style="flex-direction:column;align-items:stretch;gap:6px"><div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px;color:#9a7220">rack</b><span class="clab">${ed.free?'standing free':drv?`bolted to the ${drv.type} on #${drv.gear}`:'on rim of'}</span><select class="selin cxEdG"${(ed.free||drv)?' style="display:none"':''} data-id="${ed.id}" style="width:auto">${gopts(ed.gear)}</select><button class="cxdel" data-cxeddel="${ed.id}">✕</button></div><div class="cstage-top">${posCtl}${lenCtl}</div><div class="hint">${meshTxt}${(!drv&&!ed.free)?` · travel ≈ ${fmt(trav)} per turn`:''}</div>${drow}</div>`; }).join('');
+      return `<div class="cstage" style="flex-direction:column;align-items:stretch;gap:6px"><div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px;color:#9a7220">rack</b><span class="clab">${ed.free?'standing free':drv?`bolted to the ${drv.type} on #${drv.gear}`:'on rim of'}</span><select class="selin cxEdG"${(ed.free||drv)?' style="display:none"':''} data-id="${ed.id}" style="width:auto">${gopts(ed.gear)}</select><button class="cxdel" data-cxeddel="${ed.id}">✕</button></div><div class="cstage-top">${posCtl}${lenCtl}</div><div class="hint">${meshTxt}${(!drv&&!ed.free)?` · travel ≈ ${fmt(trav)} per turn`:''}${trkTxt?` · ${trkTxt}`:''}</div>${drow}</div>`; }).join('');
     edge.innerHTML=`<div class="lab"><label>Edge-mounted movements</label></div><div class="hint">Parts that mesh at a gear's <b>rim</b> (not its shaft). A rack turns the gear's spin into a straight-line scroll — good for carriages and moving beds.</div><div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${rows}</div><div class="cstage-top" style="margin-top:8px"><button class="btn ghost" id="cxAddRackAndGear" style="margin-right:6px">＋ rack &amp; gear (placed clear)</button><button class="btn ghost" id="cxAddRack">＋ rack</button></div>`;
   }
   const bom=document.getElementById('cxBOM');
@@ -6511,6 +6723,14 @@ document.getElementById('cxEdge').addEventListener('click',e=>{const b=e.target.
   if(b.dataset.cxrg!=null){ cxAddRackGear(b.dataset.cxrg); renderComplexUI(); everything(); return; }
   if(b.dataset.cxedoff!=null){ const ed=S.cx.edges.find(x=>x.id===b.dataset.cxedoff);
     if(ed){ ed.off=(ed.off==null?46:ed.off)+(+b.dataset.d); cxRackFit(ed); renderComplexUI(); everything(); } return; }
+  if(b.dataset.cxedlink!=null){ const ed=S.cx.edges.find(x=>x.id===b.dataset.id);
+    if(ed){ if(b.dataset.cxedlink==='rod')cxRackRodInit(ed);
+      else { ed.link='bracket'; ed.free=false; cxRackStand(ed); }
+      renderComplexUI(); everything(); } return; }
+  if(b.dataset.cxedrod!=null){ const ed=S.cx.edges.find(x=>x.id===b.dataset.cxedrod);
+    if(ed){ ed.rodL=Math.max(20,(ed.rodL||60)+(+b.dataset.d)); cxRackFit(ed); renderComplexUI(); everything(); } return; }
+  if(b.dataset.cxedrodfit!=null){ const ed=S.cx.edges.find(x=>x.id===b.dataset.cxedrodfit);
+    if(ed){ cxRackRodInit(ed); renderComplexUI(); everything(); } return; }
   if(b.dataset.cxedlead!=null){ const ed=S.cx.edges.find(x=>x.id===b.dataset.cxedlead);
     if(ed){ ed.lead=(ed.lead||0)+(+b.dataset.d); cxRackFit(ed); renderComplexUI(); everything(); } return; }
   if(b.dataset.cxedmount!=null){ const ed=S.cx.edges.find(x=>x.id===b.dataset.id);
@@ -6550,6 +6770,7 @@ document.getElementById('cxEdge').addEventListener('change',e=>{const t=e.target
   else if(t.classList.contains('cxEdL'))ed.len=Math.max(30,Math.round(+t.value)||ed.len);
   else if(t.classList.contains('cxEdOff'))ed.off=Math.round(+t.value)||0;
   else if(t.classList.contains('cxEdLead'))ed.lead=Math.round(+t.value)||0;
+  else if(t.classList.contains('cxEdRodL'))ed.rodL=Math.max(20,Math.round(+t.value)||ed.rodL);
   if(!t.classList.contains('cxEdL'))cxRackFit(ed);   // never leave it too short to mesh
   renderComplexUI();everything();});
 document.getElementById('cxBOM').addEventListener('click',e=>{if(e.target.closest('#cxBOMCopy')){navigator.clipboard&&navigator.clipboard.writeText(cxBOMText());const b=e.target.closest('#cxBOMCopy');if(b){const o=b.textContent;b.textContent='copied ✓';setTimeout(()=>{b.textContent=o;},1400);}}});
