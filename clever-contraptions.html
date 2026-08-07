@@ -3121,8 +3121,23 @@ function cxPinAt(c,pn,ang){
   const g=c.byId[pn.g]; if(!g)return null;
   const th=cxTheta(g,ang);
   return [g.x+pn.r*Math.cos(th),g.y+pn.r*Math.sin(th)]; }
-function cxPinRates(c,P){ if(P&&P.mode==='carriage')return cxPenDrives(c).map(x=>x.g.rate);
-  return (P.pins||[]).map(pn=>{ const g=cxPinHost(c,pn); return g?g.rate:0; }); }
+/* How often a wheel repeats itself, per turn of the driver. A wheel that turns has its own rate.
+   A wheel that ROCKS has a rate of zero — it never gets anywhere — but it still repeats, once per
+   turn of whatever wheel carries the converter pushing its rack. Reading that as zero was what
+   made the figure stop early: the tool looked for the point where everything came back to its
+   start, saw nothing to wait for from the rocking half of the machine, and closed the drawing
+   after the first few turns. */
+function cxCycleRate(g,c,seen){
+  if(!g)return 0;
+  if(!g.osc)return g.rate;
+  seen=seen||{}; if(seen[g.id])return 0; seen[g.id]=1;
+  const e=(S.cx.edges||[]).find(x=>x.id===g.osc.edge); if(!e)return 0;
+  const v=cxRackDriver(e);
+  if(v){ const vg=c.byId[v.gear]; return vg?cxCycleRate(vg,c,seen):0; }
+  const hg=c.byId[e.gear];                       // rolling on a wheel that itself rocks
+  return hg?cxCycleRate(hg,c,seen):0; }
+function cxPinRates(c,P){ if(P&&P.mode==='carriage')return cxPenDrives(c).map(x=>cxCycleRate(x.g,c));
+  return (P.pins||[]).map(pn=>{ const g=cxPinHost(c,pn); return g?cxCycleRate(g,c):0; }); }
 /* ---- the X-Y pen carriage -------------------------------------------------------------
    Two converters set to "moves the pen" become a crossed-slide plotter. Each one's output block
    carries a slotted arm at right angles to its own travel; a single pin dropped through both
@@ -3413,14 +3428,15 @@ function cxInkBB(dr){ if(dr._bb)return dr._bb;
   if(a>b){a=b=cc=dd=0;} dr._bb=[a,b,cc,dd]; return dr._bb; }
 function cxDrawing(c,coarseN){ const P=c.pen; if(!P||!cxHasPen())return {ink:[],mode:'fixed',reachable:true,period:1};
   const G=(P.paper&&P.paper.gear!=null)?c.byId[P.paper.gear]:null, mode=G?'gear':'fixed';
-  const rates=cxPinRates(c,P); if(G)rates.push(G.rate);
-  S.cx.converters.forEach(v=>{ if(v.drive==='paper'||v.drive==='pen'){const g=c.byId[v.gear]; if(g)rates.push(g.rate);} });
+  const rates=cxPinRates(c,P); if(G)rates.push(cxCycleRate(G,c));
+  S.cx.converters.forEach(v=>{ if(v.drive==='paper'||v.drive==='pen'){const g=c.byId[v.gear]; if(g)rates.push(cxCycleRate(g,c));} });
   let T; if(P.runTurns&&P.runTurns>0){ T=P.runTurns; } else { T=200; for(let t=1;t<=200;t++){ if(rates.every(r=>cxFrac(t*r)<2e-3)){T=t;break;} } }
   const N=coarseN?Math.min(coarseN,160*T+1):Math.min(14000,Math.max(700,120*T)), ink=[], C=G?[G.x,G.y]:null; let miss=0;
   for(let i=0;i<=N;i++){ const a=2*Math.PI*T*i/N, st=cxPenAt(c,a);
     if(!st||!st.pen){ink.push(null);miss++;continue;}
     const po=cxCoupleOffset(c,a,'paper'), px=st.pen[0]-po[0], py=st.pen[1]-po[1];
-    if(G){ const th=-(G.phase+G.rate*a), dx=px-C[0], dy=py-C[1]; ink.push([dx*Math.cos(th)-dy*Math.sin(th),dx*Math.sin(th)+dy*Math.cos(th)]); }
+    // the paper may be on a wheel that rocks rather than turns, so ask for its actual angle
+    if(G){ const th=-cxTheta(G,a), dx=px-C[0], dy=py-C[1]; ink.push([dx*Math.cos(th)-dy*Math.sin(th),dx*Math.sin(th)+dy*Math.cos(th)]); }
     else ink.push([px,py]); }
   return {ink,mode,C,G,reachable:miss<N*0.03,period:T,bed:S.cx.converters.some(v=>v.drive==='paper')}; }
 // a worked pintograph example: two gears at a rich ratio → one joint → pen on a
@@ -4699,7 +4715,7 @@ function sceneFromComplex(){
   if(S.cx.bearing&&S.cx.bearing.mode==='seat'){ const od=S.cx.bearing.od, rOut=od/2, rIn=Math.max(cxBore()/2,1.5);
     Object.values(shafts).forEach(s=>parts.push({tris:plateMesh([flipY(circleLoop(rOut,28)),flipY(circleLoop(rIn,18))],0,0,t*0.9,(t+2.4)),col:'#2b2620',hw:1,spin:{x:s.x-ox,z:s.y-oy,phase:0,rate:0}})); }
   if(c.pen){ c.pen.pins.forEach(pn=>{ const g=c.byId[pn.g]; if(!g)return; const r=pn.r, yo=-(g.layer)*LG-t*0.7;
-      parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.6),16))],0,0,t*1.7,yo),col:'#bf3a2b',hw:1,pose:s=>({x:(g.x-ox)+r*Math.cos(g.phase+g.rate*s),z:(g.y-oy)+r*Math.sin(g.phase+g.rate*s),rot:0})}); });
+      parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.6),16))],0,0,t*1.7,yo),col:'#bf3a2b',hw:1,pose:s=>{const th=cxTheta(g,s);return {x:(g.x-ox)+r*Math.cos(th),z:(g.y-oy)+r*Math.sin(th),rot:0};}}); });
     /* The pen rides on the carriage, which stands well outboard of the gear train, so the paper
        has to be out there with it. Left on the linkage plane it sat some 40mm short and the pen
        could never touch it. In carriage mode the whole pen-and-paper assembly moves out to sit
@@ -4890,7 +4906,7 @@ function sceneFromComplex(){
       const frame=pv?[flipY(circleLoop(R0,72)),flipY(circleLoop(Math.max(R0-bw2,2),64))]
                     :[flipY(roundRectLoop(w,h,Math.min(w,h)*0.03,7)),flipY(roundRectLoop(Math.max(w-2*bw2,4),Math.max(h-2*bw2,4),Math.min(w,h)*0.03,7))];
       let part={tris:plateMesh(frame,0,0,t*0.5,yo),col:'#fbf7ec',hw:1,alpha:0.42};
-      if(dr.mode==='gear'){ const G=dr.G; part.pose=s=>{const o=cxCoupleOffset(c,s,'paper');return {x:px-ox+o[0],z:py-oy+o[1],rot:G.phase+G.rate*s};}; }
+      if(dr.mode==='gear'){ const G=dr.G; part.pose=s=>{const o=cxCoupleOffset(c,s,'paper');return {x:px-ox+o[0],z:py-oy+o[1],rot:cxTheta(G,s)};}; }
       else if(dr.bed){ part.pose=s=>{const o=cxCoupleOffset(c,s,'paper');return {x:(px-ox)+o[0],z:(py-oy)+o[1],rot:0};}; }
       else part.spin={x:px-ox,z:py-oy,phase:0,rate:0};
       parts.push(part); } } }
@@ -4936,7 +4952,7 @@ function drawComplexPreview(){
     if(G){ const bbI=cxInkBB(dr), a=bbI[0], b=bbI[1], cc=bbI[2], dd=bbI[3];
       const pp=c.pen.paper||{mode:'fit'}; let hw,hh;
       if(pp.mode==='custom'){hw=(pp.w||200)/2;hh=(pp.h||200)/2;} else {const mg=Math.max(15,Math.max(b-a,dd-cc)*0.08); hw=Math.max(Math.abs(a),Math.abs(b))+mg; hh=Math.max(Math.abs(cc),Math.abs(dd))+mg;}
-      const pa=G.phase+G.rate*th, ctp=Math.cos(pa), stp=Math.sin(pa), toW=(vx,vy)=>[C[0]+pOff[0]+vx*ctp-vy*stp, C[1]+pOff[1]+vx*stp+vy*ctp];
+      const pa=cxTheta(G,th), ctp=Math.cos(pa), stp=Math.sin(pa), toW=(vx,vy)=>[C[0]+pOff[0]+vx*ctp-vy*stp, C[1]+pOff[1]+vx*stp+vy*ctp];
       const corners=[[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh]].map(v=>toW(v[0],v[1]));
       const pvis=cxPaperVis(c);
       if(pvis){ const ctr=toW(0,0), Rv=pvis.r||Math.hypot(hw,hh);
@@ -4979,7 +4995,7 @@ function drawComplexPreview(){
         s+=`<circle cx="${p2[0].toFixed(1)}" cy="${(-p2[1]).toFixed(1)}" r="${(LW*0.42).toFixed(1)}" fill="#c79a63" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`; }); });
       const hole=(x,y,r)=>`<circle cx="${x.toFixed(1)}" cy="${(-y).toFixed(1)}" r="${r.toFixed(1)}" fill="#efe7d5" stroke="#23201a" stroke-width="${(lw*0.8).toFixed(2)}"/>`;
       now.pinPos.forEach((pp,i)=>{ if(!pp)return; s+=`<circle cx="${pp[0].toFixed(1)}" cy="${(-pp[1]).toFixed(1)}" r="${(LW*0.5).toFixed(1)}" fill="#c79a63" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`+hole(pp[0],pp[1],Math.max(boreDia()/2,1.4));
-        s+=`<text x="${(pp[0]+LW*0.6).toFixed(1)}" y="${(-pp[1]-LW*0.5).toFixed(1)}" font-size="${(gfs*0.82).toFixed(1)}" font-weight="700" fill="#7a5a1c" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(gfs*0.16).toFixed(2)}">P${i+1}·#${c.pen.pins[i].g}</text>`; });
+        s+=`<text x="${(pp[0]+LW*0.6).toFixed(1)}" y="${(-pp[1]-LW*0.5).toFixed(1)}" font-size="${(gfs*0.82).toFixed(1)}" font-weight="700" fill="#7a5a1c" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(gfs*0.16).toFixed(2)}">P${i+1}·${cxPinIsConv(c.pen.pins[i])?('the '+((cxConvById(c.pen.pins[i].cv)||{}).type||'block')):('#'+c.pen.pins[i].g)}</text>`; });
       now.jointPos.forEach((J,i)=>{ if(!J)return;
         s+=`<circle cx="${J[0].toFixed(1)}" cy="${(-J[1]).toFixed(1)}" r="${(LW*0.5).toFixed(1)}" fill="#8a6a3c" stroke="#23201a" stroke-width="${(lw*0.9).toFixed(2)}"/>`+hole(J[0],J[1],Math.max(boreDia()/2,1.4));
         s+=`<text x="${(J[0]+LW*0.6).toFixed(1)}" y="${(-J[1]-LW*0.5).toFixed(1)}" font-size="${(gfs*0.82).toFixed(1)}" font-weight="700" fill="#5a4632" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(gfs*0.16).toFixed(2)}">J${i+1}</text>`; });
@@ -5097,7 +5113,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-18`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-19`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
