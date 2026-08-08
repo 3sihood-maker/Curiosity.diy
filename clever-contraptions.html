@@ -415,14 +415,14 @@
 <p class="mn-p">There are two ways to work. <b>Single movements</b> builds one mechanism on its own — a gear pair, a cam, a rack. <b>Combining parts</b> chains several into one machine on a shared baseplate, using either the Composer Workbench (one layer) or the Complex Workbench (multiple layers, stacked gears, pens and arms).</p>
 <div class="mn-note">Everything is cut from flat sheet. The tool assumes plywood or acrylic, bolts for shafts, and optional bearings and dowels.</div>
 <h3 class="mn-h1">2 · Before you cut: the numbers that matter</h3>
-<p class="mn-p">Four settings in the <b>Parameters</b> panel decide whether your machine runs sweetly or seizes. Get these right once for your laser and material, and everything afterwards just works.</p>
+<p class="mn-p">Four settings decide whether your machine runs sweetly or seizes. Wood thickness lives in <b>01 · Set up the scale</b>; kerf and gear mesh clearance live in <b>04 · Prepare for cutting</b>; bearings and other hardware live at the bottom of <b>03 · Build the machine</b>. Get these right once for your laser and material, and everything afterwards just works.</p>
 <dl class="mn-kv"><dt>Wood thickness</dt><dd>Your actual sheet, measured. Used for spacers, standoffs and stack heights.</dd><dt>Kerf</dt><dd>The width of material the laser beam burns away. Typically 0.10-0.25mm in ply. The tool grows outlines and shrinks holes by half of this, so finished parts come out on size.</dd><dt>Gear mesh clearance</dt><dd>Backlash between meshing teeth, set as a fraction of module. Default 0.08. This is the single most important setting for gears that turn freely.</dd><dt>Bearings</dt><dd>Whether gears get a bearing seat or a plain bolt hole, and the exact hole diameter to cut for a press fit.</dd></dl>
 <h4 class="mn-h2">Kerf is not the same as a hole fit</h4>
 <p class="mn-p">Kerf is the beam width — the same whether you cut a hole or a slot — and the tool compensates for it automatically. A <b>press-fit hole size</b> (for a bearing or a dowel) is a separate, tested number: an “8mm” bearing is rarely exactly 8mm, and wood compresses. Set kerf once for your machine; set hole sizes by testing.</p>
 <h4 class="mn-h2">Measuring your kerf</h4>
-<ol class="mn-ol"><li>Cut a 50mm square with kerf set to 0.</li><li>Measure it with calipers. It will come out undersize, say 49.85mm.</li><li>The difference (0.15mm) is your kerf. Enter it in Parameters.</li><li>Re-cut and check: the square should now measure 50.0mm.</li></ol>
+<ol class="mn-ol"><li>Cut a 50mm square with kerf set to 0.</li><li>Measure it with calipers. It will come out undersize, say 49.85mm.</li><li>The difference (0.15mm) is your kerf. Enter it in <b>Prepare for cutting</b>.</li><li>Re-cut and check: the square should now measure 50.0mm.</li></ol>
 <h3 class="mn-h1">3 · Quick start</h3>
-<ol class="mn-ol"><li>Pick a movement, or open Combining parts for a full machine.</li><li>Set the teeth counts, module and any lengths. Watch it run in 3D wood or 2D schematic.</li><li>In Parameters set wood thickness, kerf, gear mesh clearance and bearings.</li><li>Open <b>Cut sheets to laser</b> and check the nesting and the piece count.</li><li>Download each numbered sheet. Cut at your usual settings for the material.</li><li>Build it using the <b>Reference sheet</b> and the materials list, which tell you every part, bolt, bearing and dowel you need.</li></ol>
+<ol class="mn-ol"><li>Pick a movement, or open Combining parts for a full machine.</li><li>Set the teeth counts, module and any lengths. Watch it run in 3D wood or 2D schematic.</li><li>Set your wood thickness in <b>Set up the scale</b>, your hardware (bolts, dowels, bearings) at the bottom of <b>Build the machine</b>, and kerf &amp; gear mesh clearance in <b>Prepare for cutting</b>.</li><li>Open <b>Cut sheets to laser</b> and check the nesting and the piece count.</li><li>Download each numbered sheet. Cut at your usual settings for the material.</li><li>Build it using the <b>Reference sheet</b> and the materials list, which tell you every part, bolt, bearing and dowel you need.</li></ol>
 <div class="mn-note">New to gears? Cut a Gear Mesh Tester board first (section 6). Twenty minutes there saves a whole sheet of gears that bind.</div>
 <h3 class="mn-h1">4 · The movements</h3>
 <table class="mn-tbl"><thead><tr><th>Movement</th><th>Converts</th><th>Notes</th></tr></thead><tbody><tr><td>Spur gearing</td><td>rotary to rotary</td><td>Pairs and trains, 2-7 gears. Idlers set direction, not ratio.</td></tr><tr><td>Crank & connecting rod</td><td>rotary to reciprocating</td><td>The classic engine linkage; works both ways.</td></tr><tr><td>Cam & follower</td><td>rotary to reciprocating</td><td>Choose the motion law: heart, dwell, and others.</td></tr><tr><td>Rack & pinion</td><td>rotary to linear</td><td>Straight-line travel; rack length sets the stroke.</td></tr><tr><td>Ratchet & pawl</td><td>oscillating to intermittent</td><td>One-way motion, steps forward and holds.</td></tr><tr><td>Scotch yoke</td><td>rotary to sine reciprocation</td><td>Pure sine motion, fewer parts than a crank.</td></tr><tr><td>Internal ring gear</td><td>rotary to rotary</td><td>Same direction, compact centre distance.</td></tr><tr><td>Epicyclic / planetary</td><td>compound ratios</td><td>Big reductions in a small space; traces hypocycloid paths.</td></tr><tr><td>Four-bar linkage</td><td>rotary to complex curve</td><td>Coupler curves — the heart of drawing machines.</td></tr><tr><td>Composer Workbench</td><td>chained</td><td>Several movements on one baseplate, one crank.</td></tr><tr><td>Complex Workbench</td><td>chained, multi-layer</td><td>Stacked gears on shafts, plus pens and arms.</td></tr></tbody></table>
@@ -437,9 +437,9 @@
 <dl class="mn-kv"><dt>0</dt><dd>No clearance. Gears will almost certainly seize.</dd><dt>0.05</dt><dd>Tight. Precise, but stiff in plywood.</dd><dt>0.08</dt><dd>Good running fit for laser-cut ply. The default.</dd><dt>0.12 - 0.15</dt><dd>Free-running. A little lost motion, useful for rough material.</dd><dt>0.20+</dt><dd>Loose. Noticeable slack; fine for hand-turned toys, poor for drawing.</dd></dl>
 <h4 class="mn-h2">Using the tester</h4>
 <p class="mn-p">The Gear Mesh Tester (in the Combining menu, or the button at the top) cuts a small board of gear pairs at different clearances so you can feel the difference before committing a whole machine.</p>
-<ol class="mn-ol"><li>Press <b>match my machine</b> so the module matches what you are building.</li><li>Drag the clearance slider. The live close-up shows two teeth meshing, with the backlash gap shaded blue — watch it open as you go looser.</li><li>Set <b>also cut</b> to 5 to bracket your guess, or to 1 to test a single value.</li><li>Choose the shaft holes: match my machine, bearing seat, or bolt clearance.</li><li>Download and cut the board. Each pair is engraved with its clearance, centre distance and tooth count.</li><li>Mount each pair on its tile and turn them. Pick the one that turns freely without rattling.</li><li>Enter that number as your Gear mesh clearance in Parameters.</li></ol>
+<ol class="mn-ol"><li>Press <b>match my machine</b> so the module matches what you are building.</li><li>Drag the clearance slider. The live close-up shows two teeth meshing, with the backlash gap shaded blue — watch it open as you go looser.</li><li>Set <b>also cut</b> to 5 to bracket your guess, or to 1 to test a single value.</li><li>Choose the shaft holes: match my machine, bearing seat, or bolt clearance.</li><li>Download and cut the board. Each pair is engraved with its clearance, centre distance and tooth count.</li><li>Mount each pair on its tile and turn them. Pick the one that turns freely without rattling.</li><li>Enter that number as your Gear mesh clearance in <b>Prepare for cutting</b>.</li></ol>
 <h3 class="mn-h1">7 · Bearings, bolts and dowels</h3>
-<p class="mn-p">Rotating parts need something to turn on. The <b>Bearings</b> setting in Parameters offers three arrangements:</p>
+<p class="mn-p">Rotating parts need something to turn on. The <b>Bearings</b> setting (bottom of <b>Build the machine</b>) offers three arrangements:</p>
 <dl class="mn-kv"><dt>None</dt><dd>Every gear gets a bolt-clearance bore and spins directly on the bolt. Simplest, and fine for slow hand-turned machines.</dd><dt>In gears</dt><dd>Each gear gets a bearing seat; the baseplate keeps a smaller bolt hole. The bearing takes the load and the gear spins freely. This is the usual choice.</dd><dt>In gears + rod pivots</dt><dd>As above, plus bearings at linkage rod pivots. Smoothest, most hardware.</dd></dl>
 <p class="mn-p">The <b>bearing hole diameter</b> is the size actually cut. Start at the bearing's nominal outside diameter and adjust by a tenth of a millimetre at a time until it presses in firmly without splitting the ply. <b>Dowel holes</b> work the same way for shafts and standoff posts.</p>
 <div class="mn-note">Use the Kerf Hole Maker on curiosity.diy to test hole sizes quickly: it cuts a strip of holes in small increments so you can find the one that grips.</div>
@@ -588,7 +588,6 @@
         <button data-mode="combine" aria-pressed="false"><b>Combining parts</b><span>Chain several parts into one machine on a shared baseplate</span></button>
       </div>
       <div class="movetabs" id="singleTabs">
-        <button class="mtab" id="meshTestTab"><b>🔧 Gear Mesh Tester</b><span>cut a tiny test · find your clearance first</span></button>
         <button class="mtab active" data-m="gearing" aria-pressed="true"><b>Spur gearing</b><span>pair &amp; trains · rotary→rotary</span></button>
         <button class="mtab" data-m="crank"><b>Crank &amp; rod</b><span>rotary↔reciprocating</span></button>
         <button class="mtab" data-m="cam"><b>Cam &amp; follower</b><span>rotary→reciprocating</span></button>
@@ -598,6 +597,7 @@
         <button class="mtab" data-m="internal"><b>Internal ring gear</b><span>rotary → rotary (same way)</span></button>
         <button class="mtab" data-m="planetary"><b>Epicyclic / planetary</b><span>sun · planets · ring</span></button>
         <button class="mtab" data-m="fourbar"><b>Linkage / connector kit</b><span>links · arms · dowel joints</span></button>
+        <button class="mtab" id="meshTestTab"><b>🔧 Gear Mesh Tester</b><span>cut a tiny test · find your clearance first</span></button>
       </div>
       <div class="movetabs hide" id="combineTabs">
         <button class="mtab" data-m="composer"><b>Composer Workbench</b><span>one layer · belts · meshing · links</span></button>
@@ -607,21 +607,37 @@
       </div>
     </nav>
     <div class="panel">
-      <div class="panel-h"><span>Set up the scale</span><span class="n">01</span></div>
-      <div class="panel-b">
-        <div class="hint">Units, material and the overall size of the finished machine.</div>
-<div class="field">
+      <div class="panel-h" id="panel01Head" style="cursor:pointer" role="button" aria-expanded="true" title="Tap to collapse or expand"><span>Set up the scale <span id="panel01Chev" style="font-weight:400">▾</span></span><span class="n">01</span></div>
+      <div class="panel-b" id="panel01Body">
+        <div class="hint">Units, material, your stock, and the machine's overall size. Set these once — then tap the header above to fold this box away.</div>
+        <div class="cxmajor" style="border-top:none;padding-top:4px;margin-top:10px">Material &amp; units</div>
+        <div class="field">
           <div class="lab"><label>Units</label></div>
           <div class="seg" id="unitSeg">
             <button data-u="mm" aria-pressed="true">Metric (mm)</button>
             <button data-u="in" aria-pressed="false">Imperial (in)</button>
           </div>
         </div>
-<div class="field">
+        <div class="field">
             <div class="lab"><label>Wood thickness</label><span class="val" id="thickVal">6 mm</span></div>
             <input type="number" id="thick" min="1" max="25" step="0.5" value="6">
           </div>
-<div class="field" style="border-top:1px dotted #23201a30;padding-top:14px">
+        <div class="cxmajor">Laser sheet</div>
+        <div class="field">
+          <div class="lab"><label>Laser sheet size</label></div>
+          <select id="sheetSize" class="selin">
+              <option value="300x200">300 × 200 mm</option>
+              <option value="300x300">300 × 300 mm</option>
+              <option value="400x300" selected>400 × 300 mm</option>
+              <option value="600x300">600 × 300 mm</option>
+              <option value="600x400">600 × 400 mm</option>
+              <option value="297x210">A4 (297 × 210)</option>
+              <option value="420x297">A3 (420 × 297)</option>
+            </select>
+          <div class="hint">The stock you cut from. Parts are nested onto sheets this size — if a piece is too big you will be warned in Cut sheets.</div>
+        </div>
+        <div class="cxmajor">Baseplate</div>
+        <div class="field">
           <div class="lab">
             <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
               <input type="checkbox" id="baseChk" checked style="width:auto;accent-color:var(--brass)"> Overall baseplate size
@@ -639,19 +655,6 @@
               <input type="range" id="margin" min="4" max="40" step="1" value="12">
               <div class="hint">One plate carrying every axle at the exact centre distances.</div>
             </div>
-        <div class="field">
-          <div class="lab"><label>Laser sheet size</label></div>
-          <select id="sheetSize" class="selin">
-              <option value="300x200">300 × 200 mm</option>
-              <option value="300x300">300 × 300 mm</option>
-              <option value="400x300" selected>400 × 300 mm</option>
-              <option value="600x300">600 × 300 mm</option>
-              <option value="600x400">600 × 400 mm</option>
-              <option value="297x210">A4 (297 × 210)</option>
-              <option value="420x297">A3 (420 × 297)</option>
-            </select>
-          <div class="hint">The stock you cut from. Parts are nested onto sheets this size — if a piece is too big you will be warned in Cut sheets.</div>
-        </div>
             <div id="customCtl" class="hide">
               <div class="row2" style="margin-top:10px">
                 <div><div class="lab"><label>Width</label><span class="val" id="baseWunit">mm</span></div><input type="number" id="baseW" min="10" step="1"></div>
@@ -660,6 +663,22 @@
               <div class="hint">Axle holes stay locked to their true positions, centred on the plate.</div>
             </div>
             <div class="hint" id="baseWarn" style="color:var(--cut)"></div>
+          </div>
+        </div>
+        <div id="scaleField" class="hide">
+          <div class="cxmajor">Machine scale</div>
+          <div class="field">
+            <div class="lab"><label>Machine scale</label><span class="val" id="cxScaleWarn">—</span></div>
+            <div class="hint">Shrink or grow the whole mechanism — gears, arms, pins, converters — while dowels, bearings, thickness &amp; paper stay standard. Tooth counts (and so the drawing) are unchanged; the pattern just scales with the machine. These multiply the current size.</div>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+              <button class="btn ghost" data-cxscale="0.5">× ½</button>
+              <button class="btn ghost" data-cxscale="0.6667">× ⅔</button>
+              <button class="btn ghost" data-cxscale="0.75">× ¾</button>
+              <button class="btn ghost" data-cxscale="1">× 1</button>
+              <button class="btn ghost" data-cxscale="1.3333">× 1⅓</button>
+              <button class="btn ghost" data-cxscale="1.5">× 1½</button>
+              <button class="btn ghost" data-cxscale="2">× 2</button>
+            </div>
           </div>
         </div>
       </div>
@@ -971,19 +990,7 @@
         </div>
 
         <div id="mvComplex" class="hide">
-          <div class="field">
-            <div class="lab"><label>Machine scale</label><span class="val" id="cxScaleWarn">—</span></div>
-            <div class="hint">Shrink or grow the whole mechanism — gears, arms, pins, converters — while dowels, bearings, thickness &amp; paper stay standard. Tooth counts (and so the drawing) are unchanged; the pattern just scales with the machine. These multiply the current size.</div>
-            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-              <button class="btn ghost" data-cxscale="0.5">× ½</button>
-              <button class="btn ghost" data-cxscale="0.6667">× ⅔</button>
-              <button class="btn ghost" data-cxscale="0.75">× ¾</button>
-              <button class="btn ghost" data-cxscale="1">× 1</button>
-              <button class="btn ghost" data-cxscale="1.3333">× 1⅓</button>
-              <button class="btn ghost" data-cxscale="1.5">× 1½</button>
-              <button class="btn ghost" data-cxscale="2">× 2</button>
-            </div>
-          </div>
+          <div class="cxmajor" style="border-top:none;padding-top:2px;margin-top:6px">The machine<small>gears &amp; layers — everything added so far is listed here</small></div>
           <div class="field">
             <div class="lab"><label>Multi-layer gear stack</label><span class="val" id="cxCountVal">—</span></div>
             <div class="hint">Select a gear, then <b>mesh</b> a new one beside it (same layer), or <b>stack</b> one on its shaft — a compound gear, turning at the same rate. Stacking works in both directions: <b>above</b> puts it on the next free layer up, <b>below</b> on the next free layer down, and the whole machine shifts so the lowest layer still sits on the board. One crank drives the whole graph; ratios multiply through the stack.</div>
@@ -1002,7 +1009,7 @@
           <div class="cxmajor">Add other movements<small>shaft converters &amp; edge-mounted parts</small></div>
             <div id="cxConv" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
             <div id="cxEdge" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
-          <div class="cxmajor">Add pen &amp; arms<small>pins · joints · branches · pen · paper</small></div>
+          <div class="cxmajor">Pen, pins &amp; arms<small>pins · joints · branches · pen · paper</small></div>
           <div class="pencard">
             <div id="cxPen" style="margin-top:12px;border-top:1.5px solid var(--ink);padding-top:12px"></div>
           </div>
@@ -1075,19 +1082,23 @@
         </dl>
 <div class="mesh-ok good" id="meshMsg">✔ Every gear meshes.</div>
         </div>
+        <div class="cxmajor">The backboard<small>the plate everything mounts on</small></div>
+        <div class="pcard" id="prepBoard">
+          <div class="pcard-h"><span>Preparing the backboard</span><em>size · shape · splitting into tiles</em></div>
+          <div class="pnote" id="prepBoardNote" style="margin-top:0"></div>
+          <div id="cxSplit" style="margin-top:10px"></div>
+        </div>
+        <div class="cxmajor">Bolts, dowels &amp; bearings<small>the hardware this build uses</small></div>
+        <div id="prepHwBody"></div>
+        <div id="cxBearing" style="display:none"></div>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel-h"><span>Prepare for cutting</span><span class="n">04</span></div>
       <div class="panel-b">
+        <div class="hint">Kerf and gear mesh clearance — the two numbers that decide whether parts come out on size and gears turn freely.</div>
         <div id="prepBody"></div>
-        <div class="pcard" id="prepBoard">
-          <div class="pcard-h"><span>Preparing the backboard</span><em>the plate everything mounts on</em></div>
-          <div class="pnote" id="prepBoardNote" style="margin-top:0"></div>
-          <div id="cxSplit" style="margin-top:10px"></div>
-        </div>
-        <div id="cxBearing" style="display:none"></div>
       </div>
     </div>
     <div class="panel" style="background:#f6f1e4">
@@ -3463,7 +3474,7 @@ function cxLoadExample(){
     penRef:'w0', runTurns:266, _armsV:2,
     paper:{mode:'fit',w:200,h:200,gear:3,conv:null,board:{shape:'circle',on:true}} };
   S.movement='complex'; }
-function cxPaperBox(c,tb){ const P=c.pen; if(!P||!tb)return null; const pp=P.paper||{mode:'fit'};
+function cxPaperBox(c,tb){ const P=c.pen; if(!P||!tb||!cxHasPen())return null; const pp=P.paper||{mode:'fit'};
   if(pp.mode==='custom'){ const w=pp.w||200,h=pp.h||200; return {minX:tb.cx-w/2,maxX:tb.cx+w/2,minY:tb.cy-h/2,maxY:tb.cy+h/2,w,h,cx:tb.cx,cy:tb.cy}; }
   const mg=Math.max(15,Math.max(tb.w,tb.h)*0.08); return {minX:tb.minX-mg,maxX:tb.maxX+mg,minY:tb.minY-mg,maxY:tb.maxY+mg,w:tb.w+2*mg,h:tb.h+2*mg,cx:tb.cx,cy:tb.cy}; }
 function cxAddPen(){ const c=computeComplex(); let a=c.gears[0],b=c.output; for(const g of c.gears){if(Math.abs(g.rate-a.rate)>1e-4){b=g;break;}}  const ra=Math.max(a.rp*0.55,6), rb=Math.max(b.rp*0.55,6), cd=Math.hypot(a.x-b.x,a.y-b.y), L=Math.round(Math.max((cd+ra+rb)*0.72,cd*0.6+20));
@@ -4163,11 +4174,11 @@ function cxGearSpokes(g,c){ if(!S.spokes)return [];
 // Paper backing board: a stiff sheet, bigger than the drawing, that the paper pins onto.
 // It stands off the gear on a 20mm-wide spacer ring, screwed through with small screws.
 // If a circular backing board is fitted, the paper visual becomes a circle to match.
-function cxPaperVis(c){ const pb=c.pen&&c.pen.paper&&c.pen.paper.board;
+function cxPaperVis(c){ if(!cxHasPen())return null; const pb=c.pen&&c.pen.paper&&c.pen.paper.board;
   if(!pb||!pb.on||pb.shape!=='circle')return null;
   let B=null; try{ B=cxPaperBoard(c); }catch(_){}
   return {circle:true, r:(B&&B.dia)?B.dia/2:null}; }
-function cxPaperBoard(c){ const P=c.pen; if(!P||!P.paper)return null; const pb=P.paper.board;
+function cxPaperBoard(c){ const P=c.pen; if(!P||!P.paper||!cxHasPen())return null; const pb=P.paper.board;
   if(!pb||!pb.on)return null;
   let ink=null, tb=null; try{ const dr=cxDrawingC(c); ink=dr.ink; tb=cxTraceBBox(ink); }catch(_){}
   const box=cxPaperBox(c,tb||{cx:0,cy:0,w:200,h:200,minX:-100,maxX:100,minY:-100,maxY:100});
@@ -4241,7 +4252,7 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
     if(B){ cut.push([`paper backing board`,1,`${B.shape==='circle'?'⌀'+fmt(B.dia):fmt(B.w)+' × '+fmt(B.h)} — the paper pins to this · ${t}mm`]);
       cut.push([`paper spacer ring`,1,`⌀${fmt(B.ringOD)} outside, ${fmt(B.strip)} wide strip — lifts the board off gear #${B.gear!=null?B.gear:'—'} · ${t}mm`]);
       buy.push([`small screws`,B.screws.length*2,`~⌀${fmt(B.screwD)} × 10mm — board to ring, ring to gear`]); } }
-  if(c.pen&&(c.pen.joints.length||c.pen.welds&&c.pen.welds.length)){ const H=cxPenHolder();
+  if(c.pen&&cxHasPen()&&(c.pen.joints.length||c.pen.welds&&c.pen.welds.length)){ const H=cxPenHolder();
     cut.push([`pen collar`,1,`teardrop — pen/pencil drops through the ${cxPenSides()<3?'⌀'+fmt(cxPenAF()):CX_SIDE_NAME[cxPenSides()]+' '+fmt(cxPenAF())+' (across flats)'} hole, narrow end bolts to the branch tip · ${t}mm`]);
     buy.push([`collar bolt`,1,`${S.bolt} bolt — fixes the pen collar to the arm (+ nut)`]); }
   const cv={}; S.cx.converters.forEach(v=>{ if(c.byId[v.gear])cv[v.type]=(cv[v.type]||0)+1; });
@@ -4730,14 +4741,14 @@ function sceneFromComplex(){
         if(pc.pivE)loops.push(flipY(circleLoop(hr,18).map(p=>[p[0]+pc.len,p[1]])));
         pc.aligns.forEach(d=>loops.push(flipY(circleLoop(Math.max(cxBore()/2,1.2),12).map(p=>[p[0]+d,p[1]]))));
         locs.forEach(o=>{ const local=(cxRefT(o.wd.base)/100)*L-(pc.start||0); if(local>hr&&local<pc.len-hr)loops.push(flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12).map(p=>[p[0]+local,p[1]]))); });
-        parts.push({tris:plateMesh(loops,0,0,t*0.55,yLink-(pc.idx||0)*0.4),col:'#8a6a3c',label:'pen arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*pc.start-ox,z:A[1]+Math.sin(ang)*pc.start-oy,rot:ang}; }}); }); }); });
+        parts.push({tris:plateMesh(loops,0,0,t*0.55,yLink-(pc.idx||0)*0.4),col:'#8a6a3c',label:cxHasPen()?'pen arm':'linkage arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*pc.start-ox,z:A[1]+Math.sin(ang)*pc.start-oy,rot:ang}; }}); }); }); });
     c.pen.joints.forEach((j,ji)=>{ const isLast=ji===c.pen.joints.length-1;
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.6,2.2),14))],0,0,t*1.2,yLink-t*0.3),col:'#5a4632',hw:1,pose:s=>{ const st=cxPenAt(c,s), J=st?st.jointPos[ji]:null; if(!J)return {x:OFF,z:OFF,rot:0}; return {x:J[0]-ox,z:J[1]-oy,rot:0}; }}); });
     (c.pen.welds||[]).forEach((w,wi)=>{ const L0=w.len||100, bw2=barW*0.9;
       const bl=[flipY(rodLoop(L0,bw2)), flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12)), flipY(circleLoop(Math.max(cxRodBore()/2,1),16).map(p=>[p[0]+L0,p[1]]))];
-      parts.push({tris:plateMesh(bl,0,0,t*0.5,yLink-0.6),col:'#a3763a',label:'pen mount arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const base=cxRefPos(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds), d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(!base||d==null)return {x:OFF,z:OFF,rot:0}; return {x:base[0]-ox,z:base[1]-oy,rot:d+(w.ang==null?90:w.ang)*Math.PI/180}; }});
+      parts.push({tris:plateMesh(bl,0,0,t*0.5,yLink-0.6),col:'#a3763a',label:cxHasPen()?'pen mount arm':'branch arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const base=cxRefPos(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds), d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(!base||d==null)return {x:OFF,z:OFF,rot:0}; return {x:base[0]-ox,z:base[1]-oy,rot:d+(w.ang==null?90:w.ang)*Math.PI/180}; }});
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.4),14))],0,0,t*1.3,yLink-t*0.4),col:'#c79a63',hw:1,pose:s=>{ const st=cxPenAt(c,s), T=st?st.weldPos[wi]:null; if(!T)return {x:OFF,z:OFF,rot:0}; return {x:T[0]-ox,z:T[1]-oy,rot:0}; }}); });
-    parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',hw:1,pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }});
+    if(cxHasPen())parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',hw:1,pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }});
     { const B=cxPaperBoard(c);
       if(B){ const g=(B.gear!=null)?c.byId[B.gear]:null;
         // A sheet on a turntable is centred on its gear. A FIXED sheet has to sit under the
@@ -4756,7 +4767,7 @@ function sceneFromComplex(){
         parts.push({tris:plateMesh(cxPaperRingLoops(B).map(flipY),0,0,t,yLink+9.5),col:'#b9a882',label:'paper spacer rings',
           alpha:cxPenIsCarriage()?0.45:1,
           spin:g?{x:gx,z:gz,phase:g.phase,rate:g.rate}:{x:gx,z:gz,phase:0,rate:0}}); } }
-    { const H=cxPenHolder();
+    if(cxHasPen()){ const H=cxPenHolder();
       const collar=[flipY(H.outline), flipY(cxPenHoleLoop(0,0,cxPenAF())), flipY(circleLoop(Math.max(boreDia()/2,1),12).map(p=>[p[0]+H.mount[0],p[1]+H.mount[1]]))];
       parts.push({tris:plateMesh(collar,0,0,t*0.6,yLink-1.2),col:'#b98c52',label:'pen collar',pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; let rot=0; if(c.pen.welds&&c.pen.welds.length){ const w=c.pen.welds[0], d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(d!=null)rot=d-Math.PI/2; } return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot}; }}); } }
   // spacer ring stacks lifting elevated gears off the backing wood
@@ -5007,7 +5018,7 @@ function drawComplexPreview(){
         ox0=Math.min(ox0,tip[0]);ox1=Math.max(ox1,tip[0]);oy0=Math.min(oy0,tip[1]);oy1=Math.max(oy1,tip[1]); });
       // tap points — where an arm attaches part-way along another arm
       c.pen.joints.forEach(j=>{ [j.a,j.b].forEach(ref=>{ if(ref&&ref.on){ const T=cxRefPos(ref,now.pinPos,now.jointPos,c.pen.joints); if(T)s+=`<circle cx="${T[0].toFixed(1)}" cy="${(-T[1]).toFixed(1)}" r="${(LW*0.34).toFixed(1)}" fill="#efe7d5" stroke="#9a7220" stroke-width="${(lw*1.2).toFixed(2)}"/>`; } }); });
-      if(now.pen){ s+=`<circle cx="${now.pen[0].toFixed(1)}" cy="${(-now.pen[1]).toFixed(1)}" r="${(LW*0.62).toFixed(1)}" fill="#bf3a2b" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`+hole(now.pen[0],now.pen[1],Math.max(boreDia()/2,1.2));
+      if(now.pen&&cxHasPen()){ s+=`<circle cx="${now.pen[0].toFixed(1)}" cy="${(-now.pen[1]).toFixed(1)}" r="${(LW*0.62).toFixed(1)}" fill="#bf3a2b" stroke="#23201a" stroke-width="${lw.toFixed(2)}"/>`+hole(now.pen[0],now.pen[1],Math.max(boreDia()/2,1.2));
         s+=`<text x="${(now.pen[0]+LW*0.7).toFixed(1)}" y="${(-now.pen[1]-LW*0.55).toFixed(1)}" font-size="${(gfs*0.9).toFixed(1)}" font-weight="700" fill="#bf3a2b" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(gfs*0.18).toFixed(2)}">✒ PEN</text>`; } } }
   // shaft-mounted converters — drawn as the full assembly (guide rails + moving part + crank)
   // the X-Y carriage: each block's slotted arm, and the pen pin where the two slots cross
@@ -5156,7 +5167,7 @@ function exportComplex(){
         parts.push(`<path d="${pathFrom(d,rx,ry)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); });
       parts.push(txt(rx,ry,`spacer ring · ${fmt(B.strip)} strip`,SCORE,2.8));
       x=rx+B.ringOD/2+gap; rowH=Math.max(rowH,B.ringOD+gap*2); } }
-  if(c.pen&&(c.pen.welds&&c.pen.welds.length||c.pen.joints.length)){ const H=cxPenHolder();
+  if(c.pen&&cxHasPen()&&(c.pen.welds&&c.pen.welds.length||c.pen.joints.length)){ const H=cxPenHolder();
     let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9; H.outline.forEach(p=>{mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);});
     const ox2=x-mnx+2, oy2=gap-mny;
     const d=H.outline.map((p,j)=>(j?'L':'M')+(p[0]+ox2).toFixed(1)+' '+(p[1]+oy2).toFixed(1)).join(' ')+' Z';
@@ -5342,10 +5353,10 @@ function renderComplexUI(){
   const sbl=document.getElementById('cxStackBelowBtn'); if(sbl)sbl.textContent=`＋ stack below #${selG.id}`;
   const sc=document.getElementById('cxCountVal'); if(sc)sc.textContent=`${c.gears.length} gears · ${c.layers} layers`;
   const sw=document.getElementById('cxScaleWarn'); const curScale=S.cx.scale||1; const scaleLbl=({'0.5':'½','0.6667':'⅔','0.75':'¾','1':'1','1.3333':'1⅓','1.5':'1½','2':'2'})[String(curScale)]||('×'+(+curScale.toFixed(2)));
-  document.querySelectorAll('#mvComplex [data-cxscale]').forEach(b=>b.setAttribute('aria-pressed',Math.abs(+b.dataset.cxscale-curScale)<0.01?'true':'false'));
+  document.querySelectorAll('#scaleField [data-cxscale]').forEach(b=>b.setAttribute('aria-pressed',Math.abs(+b.dataset.cxscale-curScale)<0.01?'true':'false'));
   if(sw){ const tiny=cxTinyGears(c); if(tiny.length){ sw.textContent=`⚠ #${tiny.map(g=>g.id).join(', #')} too small for ${fmt(boreDia())} bore`; sw.style.color='#bf3a2b'; } else if(c.m<1.4){ sw.textContent=`⚠ module ${c.m}mm — teeth too fine to cut`; sw.style.color='#bf3a2b'; } else { sw.textContent=`×${scaleLbl} of original · module ${c.m}mm`; sw.style.color=''; } }
   const pen=document.getElementById('cxPen');
-  if(pen){ if(!c.pen){ pen.innerHTML=`<div class="lab"><label>Drawing pen (pintograph)</label></div><div class="hint">Two gears at a rich ratio, two arms meeting at a joint, and a pen carried on a coupler branch — with the paper on a slow turntable it weaves a dense rosette.</div><div class="hint" style="margin-top:6px">Want a working start point? Use <b>Example machines</b> at the top of this workbench.</div><button class="btn ghost" id="cxAddPenBtn" style="margin-top:8px">＋ blank pen</button><div class="hint" style="margin-top:6px">The example replaces the current gears &amp; pen — a great starting point to vary.</div>`; }
+  if(pen){ if(!c.pen){ pen.innerHTML=`<div class="lab"><label>Drawing pen (pintograph)</label></div><div class="hint">Two gears at a rich ratio, two arms meeting at a joint, and a pen carried on a coupler branch — with the paper on a slow turntable it weaves a dense rosette.</div><div class="hint" style="margin-top:6px">Want a working start point? Use <b>Example machines</b> at the top of this workbench.</div><button class="btn ghost" id="cxAddPenBtn" style="margin-top:8px">＋ blank pen</button> <button class="btn ghost" id="cxAddArmsBtn" style="margin-top:8px">＋ arms only (no pen)</button><div class="hint" style="margin-top:6px">The example replaces the current gears &amp; pen — a great starting point to vary.</div>`; }
     else { const P=c.pen, tr=cxPenTrace(c), cl=cxCloses(c), gopts=id=>c.gears.map(g=>`<option value="${g.id}"${g.id===id?' selected':''}>#${g.id} (${g.N}T)</option>`).join('');
       const nodeOpts=(upto,sel)=>{ const sk=cxRefKey(sel);
         // a pivot entry carries its position, so match on that too — otherwise picking one
@@ -5421,13 +5432,13 @@ function renderComplexUI(){
             <div class="cstage-top" style="margin-top:4px"><span class="clab">length</span><span class="cstep"><button data-cxwl="len" data-i="${wi}" data-d="-5">−</button><input type="number" value="${w.len}" class="cxWnum" data-f="len" data-i="${wi}" min="8" max="600" step="5"><button data-cxwl="len" data-i="${wi}" data-d="5">＋</button></span><span class="clab">mm out</span></div>
             <div class="cstage-top" style="margin-top:4px"><span class="clab">angle</span><span class="cstep"><button data-cxwl="ang" data-i="${wi}" data-d="-15">−</button><input type="number" value="${w.ang==null?90:w.ang}" class="cxWnum" data-f="ang" data-i="${wi}" min="-180" max="180" step="15"><button data-cxwl="ang" data-i="${wi}" data-d="15">＋</button></span><span class="clab">° from the arm it sits on</span></div>
           </div></div>`; }).join('');
-      const penOpts=(sel)=>{ const sk=cxRefKey(sel); const opt=(v,l)=>`<option value="${v}"${v===sk?' selected':''}>${l}</option>`; let o=P.pins.map((_,i)=>opt('p'+i,'pin '+(i+1))).join('');
+      const penOpts=(sel)=>{ const sk=cxRefKey(sel)||'none'; /* penRef null = deliberate no-pen */ const opt=(v,l)=>`<option value="${v}"${v===sk?' selected':''}>${l}</option>`; let o=P.pins.map((_,i)=>opt('p'+i,'pin '+(i+1))).join('');
         P.joints.forEach((_,k)=>o+=opt('j'+k,'the end of arms '+(k+1)+'A + '+(k+1)+'B (join '+(k+1)+')')
           +opt('t:j'+k+':a','a point along arm '+(k+1)+'A')
           +opt('t:j'+k+':b','a point along arm '+(k+1)+'B'));
         W.forEach((_,m)=>o+=opt('w'+m,'the tip of branch W'+(m+1))+opt('t:w'+m,'a point along branch W'+(m+1)));
         o+=opt('none','— no pen, just the linkage —'); return o; };
-      const penBlock=`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label><button class="btn ghost" id="patOpen" style="padding:3px 10px;font-size:11px">🖼 Export pattern</button></div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="hint">The pen sticks to this arm as you build the rest. Set the <b>pencil / pen hole</b> size &amp; shape down in <b>Bearings, bolts &amp; dowels</b>.</div>`;
+      const penBlock=`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label>${cxHasPen()?`<button class="btn ghost" id="patOpen" style="padding:3px 10px;font-size:11px">🖼 Export pattern</button>`:''}</div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="hint">${cxHasPen()?'The pen sticks to this arm as you build the rest. Set the <b>pencil / pen hole</b> size &amp; shape down in <b>Bearings, bolts &amp; dowels</b>.':'No pen — the arms and branches still move, still get cut, but nothing draws and no pen collar, paper or backing board is generated. Pick any arm above to put a pen back on.'}</div>`;
       const custom=P.paper&&P.paper.mode==='custom';
       const paperCtl=`<div class="lab" style="margin-top:10px"><label>Paper</label></div><div class="cstage-top" style="margin-bottom:8px"><span class="clab">attach to</span><select class="selin" id="cxPaperGear" style="width:auto">${'<option value="fixed"'+((P.paper&&P.paper.gear!=null)?'':' selected')+'>fixed / moving bed</option>'+c.gears.map(g=>`<option value="g${g.id}"${(P.paper&&P.paper.gear===g.id)?' selected':''}>turntable on #${g.id}</option>`).join('')}</select></div><div class="seg" id="cxPaperSeg"><button data-pm="fit" aria-pressed="${custom?'false':'true'}">Fit to drawing</button><button data-pm="custom" aria-pressed="${custom?'true':'false'}">Custom</button></div>`+(custom?`<div class="cstage-top" style="margin-top:8px"><span class="clab">size</span><select class="selin" id="cxPaperPreset" style="width:auto"><option value="">preset…</option><option value="297x210">A4 · 297×210</option><option value="210x148">A5 · 210×148</option><option value="420x297">A3 · 420×297</option><option value="200x200">square 200</option><option value="300x300">square 300</option></select></div><div class="cstage-top" style="margin-top:6px"><span class="clab">W×H</span><span class="cstep"><button data-cxpaper="w" data-d="-10">−</button><input type="number" value="${P.paper.w}" id="cxPaperW" min="20" step="10"><button data-cxpaper="w" data-d="10">＋</button></span><span class="cstep"><button data-cxpaper="h" data-d="-10">−</button><input type="number" value="${P.paper.h}" id="cxPaperH" min="20" step="10"><button data-cxpaper="h" data-d="10">＋</button></span></div><button class="btn" id="cxFitPaper" style="margin-top:8px">⤢ fit drawing to this paper</button><div class="hint" style="margin-top:4px">Sizes the pins &amp; arms so the pattern fills the sheet.</div>`:'');
       const PB=(P.paper&&P.paper.board)||{on:false,shape:'square'};
@@ -5441,9 +5452,9 @@ function renderComplexUI(){
        +(BB?`<div class="hint" style="margin-top:6px">Board <b>${BB.shape==='circle'?'⌀'+fmt(BB.dia):fmt(BB.w)+' × '+fmt(BB.h)}</b> — ${Math.round(BB.pct*100)}% bigger than the drawing. It stands off gear #${BB.gear!=null?BB.gear:'—'} on a <b>${fmt(BB.strip)} wide spacer ring</b> (⌀${fmt(BB.ringOD)}, just inside the gear), screwed at ${BB.screws.length} points.</div>`:'')
         +(tooBig?`<div class="hint" style="margin-top:4px;color:#bf3a2b">⚠ Bigger than your ${sd[0]}×${sd[1]}mm sheet — use a larger sheet or smaller paper.</div>`:'')
        :'');
-      pen.innerHTML=`<div class="lab"><label>Drawing pen (linkage)</label><span class="val">${!tr.reachable?'⚠ arms short':(cl.closes?'closed ✓':'open — weaves')}</span></div>
-      <div class="hint" style="margin-top:4px${!tr.reachable?';color:#bf3a2b':''}">${!tr.reachable?'⚠ The arms can\'t reach through a full turn — lengthen them or move the pins closer.':(cl.closes?`✔ <b>Closed figure</b> — repeats exactly after ${cl.period} turn${cl.period>1?'s':''}, so it retraces the same lines.`:(cl.period?`<b>Open figure</b> — only repeats after ${cl.period.toLocaleString()} turns, so it slowly precesses and <b>weaves denser the longer it runs</b>. Set the run length and stop where it looks best.`:`<b>Open figure</b> — never exactly repeats, so it slowly precesses and <b>weaves denser the longer it runs</b>. Set the run length and stop where it looks best.`))}</div>
-      ${tr.reachable?`<div class="cstage-top" style="margin-top:6px"><span class="clab">run for</span><span class="cstep"><button data-cxrun="-10">−</button><input type="number" value="${P.runTurns||cl.period||140}" id="cxRunTurns" min="2" max="4000" step="10"><button data-cxrun="10">＋</button></span><span class="clab">turns</span>${P.runTurns?'<button data-cxrun="auto" style="margin-left:4px">auto</button>':'<span class="clab" style="color:#9a7220">auto</span>'}</div><div class="hint">${P.runTurns?`Drawing a fixed <b>${P.runTurns} turns</b> (⟳ auto = ${cl.closes?'one full closed figure':'a default run'}). `:''}More turns → denser weave. This is how you "stop the machine" on an open figure to freeze an evolving design.</div>`:''}`;
+      pen.innerHTML=`<div class="lab"><label>${cxHasPen()?'Drawing pen (linkage)':'Arms & linkage — no pen'}</label><span class="val">${!tr.reachable?'⚠ arms short':(cxHasPen()?(cl.closes?'closed ✓':'open — weaves'):'moves, doesn\'t draw')}</span></div>
+      <div class="hint" style="margin-top:4px${!tr.reachable?';color:#bf3a2b':''}">${!tr.reachable?'⚠ The arms can\'t reach through a full turn — lengthen them or move the pins closer.':!cxHasPen()?'The linkage runs with nothing at its tip — kinetic sculpture, a pointer, or somewhere to mount your own tool. Choose an arm under <b>✒ Pen</b> below to give it a pen again.':(cl.closes?`✔ <b>Closed figure</b> — repeats exactly after ${cl.period} turn${cl.period>1?'s':''}, so it retraces the same lines.`:(cl.period?`<b>Open figure</b> — only repeats after ${cl.period.toLocaleString()} turns, so it slowly precesses and <b>weaves denser the longer it runs</b>. Set the run length and stop where it looks best.`:`<b>Open figure</b> — never exactly repeats, so it slowly precesses and <b>weaves denser the longer it runs</b>. Set the run length and stop where it looks best.`))}</div>
+      ${tr.reachable&&cxHasPen()?`<div class="cstage-top" style="margin-top:6px"><span class="clab">run for</span><span class="cstep"><button data-cxrun="-10">−</button><input type="number" value="${P.runTurns||cl.period||140}" id="cxRunTurns" min="2" max="4000" step="10"><button data-cxrun="10">＋</button></span><span class="clab">turns</span>${P.runTurns?'<button data-cxrun="auto" style="margin-left:4px">auto</button>':'<span class="clab" style="color:#9a7220">auto</span>'}</div><div class="hint">${P.runTurns?`Drawing a fixed <b>${P.runTurns} turns</b> (⟳ auto = ${cl.closes?'one full closed figure':'a default run'}). `:''}More turns → denser weave. This is how you "stop the machine" on an open figure to freeze an evolving design.</div>`:''}`;
       pen.innerHTML+=`
       ${(()=>{ const carr=cxPenIsCarriage(), ok=carr?cxCarriageOK(c):null, sp=ok?cxCarriageSpans(c):null;
         const sel=`<div class="cstage-top"><span class="clab">pen carried by</span><select class="selin" id="cxPenMode" style="width:auto;flex:1"><option value="linkage"${carr?'':' selected'}>linkage arms</option><option value="carriage"${carr?' selected':''}>X-Y carriage</option></select></div>`;
@@ -5487,7 +5498,7 @@ function renderComplexUI(){
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">${joinRows}</div>
       <div class="lab" style="margin-top:6px"><label>Branches (one arm off another)</label></div>${W.length?`<div style="display:flex;flex-direction:column;gap:8px">${weldRows}</div>`:'<div class="hint">A branch is a single arm fixed part-way along another arm — hang the pen on its tip, or attach more to it.</div>'}<div class="cstage-top" style="margin:8px 0"><button class="btn ghost" id="cxAddArmBtn">＋ arm (branch)</button>${W.length?'<button class="btn ghost" id="cxRmArmBtn">− arm</button>':''}</div>
       ${penBlock}
-      ${paperCtl}${boardCtl}<div class="cstage-top" style="margin-top:10px"><button class="btn ghost" id="cxRmPenBtn">✕ remove pen</button></div>
+      ${cxHasPen()?paperCtl+boardCtl:''}<div class="cstage-top" style="margin-top:10px"><button class="btn ghost" id="cxRmPenBtn">✕ remove ${cxHasPen()?'pen &amp; arms':'arms'}</button></div>
       <div class="hint" style="margin-top:6px">A <b>joint</b> hinges two arms together (a moving pivot). A <b>branch</b> is one arm fixed part-way along another — set where it taps with <b>at %</b>, plus its length and angle. Any arm or the <b>pen</b> can attach to a pin, a joint, a branch tip, or a point part-way along another arm (↳). The pen stays glued where you put it while you build the rest.</div>`; }
   }
   const conv=document.getElementById('cxConv');
@@ -6102,7 +6113,8 @@ function cxNestedSheets(opts){ opts=opts||{};
   let pieces; try{ pieces=cutPiecesFromScene(); }catch(e){ pieces=[]; }
   if(!pieces.length)return {sheets:[], count:0, sw, sh};
   const {place,sheets}=nestPieces(pieces,sw,sh,gap), out=[];
-  const oversize=place.filter(pl=>pl.over||pl.p.w>sw+0.5||pl.p.h>sh+0.5).map(pl=>({w:pl.p.w,h:pl.p.h,label:pl.p.label||'part'}));
+  const cantFit=pl=>Math.min(pl.p.w,pl.p.h)>Math.min(sw,sh)+0.5||Math.max(pl.p.w,pl.p.h)>Math.max(sw,sh)+0.5; /* rotation-aware: the nester may place a tall piece sideways */
+  const oversize=place.filter(pl=>pl.over||cantFit(pl)).map(pl=>({w:pl.p.w,h:pl.p.h,label:pl.p.label||'part'}));
   for(let k=0;k<sheets;k++){ let body='';
     if(opts.outline)body+=`<rect x="0" y="0" width="${sw}" height="${sh}" fill="none" stroke="#bf3a2b" stroke-width="0.3"/>`;
     if(opts.marker)body+=`<g stroke="#2c5f8a" stroke-width="0.4" fill="none"><line x1="-6" y1="0" x2="6" y2="0"/><line x1="0" y1="-6" x2="0" y2="6"/><circle cx="0" cy="0" r="2"/></g>`;
@@ -6262,7 +6274,8 @@ function renderPrep(){ const host=document.getElementById('prepBody'); if(!host)
       + `</div>`; }
   Bx+=`</div>`;
 
-  host.innerHTML=A+Bx;
+  const hw=document.getElementById('prepHwBody');
+  if(hw){ host.innerHTML=A; hw.innerHTML=Bx; } else { host.innerHTML=A+Bx; }
   const note=document.getElementById('prepBoardNote');
   if(note)note.innerHTML=`Shaft holes in the baseplate are cut at <b>⌀${(+boardBoltHole()).toFixed(1)}${unit}</b>${cxBrgMode()==='none'?` (or ⌀${(+cxDowelHole()).toFixed(1)}${unit} where a dowel is the shaft)`:''}. Overall plate size is set in <b>01 Set up the scale</b>. Below: split a big plate into sheet-sized tiles with alignment joints.`;
 }
@@ -6303,7 +6316,7 @@ function cxUndoStepDo(){ if(!cxHist.length)return false;
   const prev=cxHist.pop(); cxRedoStack.push(cxLastSnap); return cxHistApply(prev); }
 function cxRedoStepDo(){ if(!cxRedoStack.length)return false;
   const nxt=cxRedoStack.pop(); cxHist.push(cxLastSnap); return cxHistApply(nxt); }
-var cxUndo=null;
+var cxUndo=null, cxExampleNote='';
 function cxSnapshot(){ try{ return JSON.stringify({cx:S.cx, movement:S.movement, spokes:S.spokes}); }catch(_){ return null; } }
 function cxRestore(js){ try{ const d=JSON.parse(js); S.cx=d.cx; S.movement=d.movement; S.spokes=d.spokes; return true; }catch(_){ return false; } }
 function cxUndoBtn(){ const b=document.getElementById('exUndo'); if(b){ b.disabled=!cxUndo; b.style.opacity=cxUndo?'1':'0.45'; } }
@@ -6418,6 +6431,11 @@ function cxLoadExample5(){
     joints:[{a:'p0',la:150,b:'p1',lb:150,branch:-1}],
     welds:[], penRef:'j0', runTurns:40,
     paper:{mode:'fit',w:200,h:200,gear:null,conv:null,board:{on:true,shape:'circle'}} };
+  /* This machine's board (≈373×465, cut sideways) and long pen slides (≈478) need a
+     600×400 sheet. Set it here so the example never opens straight into the oversize warning. */
+  { const sz=document.getElementById('sheetSize');
+    if(sz&&sz.value!=='600x400'){ sz.value='600x400'; try{cxSyncSplitMax();}catch(_){}
+      cxExampleNote='<b>Note:</b> this machine has a large board and long pen slides, so the laser sheet size was set to <b>600 × 400</b> for you. On smaller stock, split the back board into tiles in <b>Prepare for cutting</b>.'; } }
   S.movement='complex'; }
 /* An arm chain in the manner of Robert Balke's Zeichenmaschinen. Three wheels turning at
    unrelated ratios carry two pins; a first pair of arms meets at a joint, and a second pair hangs
@@ -6551,7 +6569,8 @@ function cxLoadExampleSafe(which){ cxUndo=cxSnapshot();
   if(which===9)cxLoadExample9(); else if(which===8)cxLoadExample8(); else if(which===7)cxLoadExample7(); else if(which===6)cxLoadExample6(); else if(which===5)cxLoadExample5(); else if(which===4)cxLoadExample4(); else if(which===3)cxLoadExample3(); else if(which===2)cxLoadExample2(); else cxLoadExample();
   S.movement='complex';
   const note=document.getElementById('exNote');
-  if(note)note.innerHTML='<b>Loaded.</b> Edit it like any machine — add gears, move pins, change the pen. <b>Undo load</b> puts back what you had before.';
+  if(note){ note.innerHTML='<b>Loaded.</b> Edit it like any machine — add gears, move pins, change the pen. <b>Undo load</b> puts back what you had before.'
+    +(cxExampleNote?' '+cxExampleNote:''); cxExampleNote=''; }
   cxUndoBtn(); }
 /* the single spokes control follows the movement, so it sits with the gears in the workbench */
 function placeSpokes(){ const f=document.getElementById('spokeField');
@@ -6689,7 +6708,8 @@ function renderCutSheet(){
   const outOn=S.nestOutline!==false, mkOn=!!S.nestMarker, lbOn=!!S.engraveLabels;
   let dlrow=''; for(let k=0;k<sheets;k++)dlrow+=`<button class="btn ghost" data-dlsheet="${k}" style="padding:6px 10px;font-size:12px">⬇ Sheet ${k+1}</button>`;
   if(sheets>1)dlrow+=`<button class="btn ghost" data-dlsheet="all" style="padding:6px 10px;font-size:12px">⬇ All ${sheets}</button>`;
-  const ovList=place.filter(pl=>pl.over||pl.p.w>sw+0.5||pl.p.h>sh+0.5);
+  const ovFit=pl=>Math.min(pl.p.w,pl.p.h)>Math.min(sw,sh)+0.5||Math.max(pl.p.w,pl.p.h)>Math.max(sw,sh)+0.5; /* rotation-aware */
+  const ovList=place.filter(pl=>pl.over||ovFit(pl));
   const ovBoard=ovList.some(pl=>/^board/.test(pl.p.label||''));
   const ovNames=ovList.map(pl=>(pl.p.label?'<b>'+pl.p.label+'</b> ':'')+pl.p.w.toFixed(0)+'\u00d7'+pl.p.h.toFixed(0)+'mm').join(', ');
   const ovAdvice=ovBoard
@@ -6709,12 +6729,19 @@ function renderCutSheet(){
   view.querySelectorAll('[data-cutzoom]').forEach(b=>b.addEventListener('click',()=>{ const v=b.dataset.cutzoom; S.cutZoom=(v==='fit')?1:Math.max(0.5,Math.min(6,(S.cutZoom||1)*(+v))); renderCutSheet(); }));
   view.querySelectorAll('[data-dlsheet]').forEach(b=>b.addEventListener('click',()=>{ const ns=cxNestedSheets({outline:S.nestOutline!==false,marker:!!S.nestMarker,labels:!!S.engraveLabels}), which=b.dataset.dlsheet;
     if(ns.oversize&&ns.oversize.length){ const w=document.getElementById('cutOverWarn');
-      if(w&&!w.dataset.ack){ w.dataset.ack='1'; w.innerHTML+=`<div style="margin-top:6px"><b>Tap the download again</b> to save it anyway (oversize pieces will be clipped).</div>`; return; } }
+      if(w&&!w.dataset.ack){ w.dataset.ack='1';
+        const div=document.createElement('div'); div.style.marginTop='8px';
+        const fb=document.createElement('button'); fb.className='btn'; fb.style.cssText='padding:6px 12px;font-size:12px;background:#bf3a2b;border-color:#8f1e10';
+        fb.textContent='\u2b07 Download anyway (oversize pieces will be clipped)';
+        fb.addEventListener('click',()=>{ const ns2=cxNestedSheets({outline:S.nestOutline!==false,marker:!!S.nestMarker,labels:!!S.engraveLabels});
+          if(which==='all')ns2.sheets.forEach(sh=>dlSVG(sh.name,sh.svg)); else { const sh=ns2.sheets[+which]; if(sh)dlSVG(sh.name,sh.svg); } });
+        div.appendChild(fb); w.appendChild(div); return; } }
     if(which==='all')ns.sheets.forEach(sh=>dlSVG(sh.name,sh.svg)); else { const sh=ns.sheets[+which]; if(sh)dlSVG(sh.name,sh.svg); } }));
 }
 function cutSheetOpen(){ const p=document.getElementById('cutSheetPanel'); return p&&!p.classList.contains('hide'); }
 
-(function(){ const host=document.getElementById('prepBody'); if(!host)return;
+(function(){ const hostEls=[document.getElementById('prepBody'),document.getElementById('prepHwBody')].filter(Boolean); if(!hostEls.length)return;
+  const host={addEventListener:(t,f)=>hostEls.forEach(h=>h.addEventListener(t,f))};
   const setv=(o,k,v,min,max)=>{ const n=+v; if(!isFinite(n))return; o[k]=Math.max(min,Math.min(max,Math.round(n*100)/100)); };
   host.addEventListener('input',e=>{ const t=e.target, id=t.id;
     if(id==='kerf'){ S.kerf=Math.max(0,Math.min(0.6,+t.value||0)); everything(); return; }
@@ -6761,7 +6788,7 @@ function cutSheetOpen(){ const p=document.getElementById('cutSheetPanel'); retur
     const p=document.getElementById('patPen'), b=document.getElementById('patBg');
     if(p&&b){ const t=p.value; p.value=b.value; b.value=t; cxPatternPreview(); } });
 })();
-function everything(){updateReadout();if(S.view==='3d'&&GL&&GL.ok)rebuild3D();else drawPreview();try{renderMaterials();}catch(_){} if(cutSheetOpen())renderCutSheet();}
+function everything(){try{scheduleAutosave();}catch(_){} updateReadout();if(S.view==='3d'&&GL&&GL.ok)rebuild3D();else drawPreview();try{renderMaterials();}catch(_){} if(cutSheetOpen())renderCutSheet();}
 
 /* gear list rendering */
 function setTeeth(i,val){S.gears[i]=Math.max(8,Math.min(120,Math.round(val)||8));}
@@ -6871,12 +6898,11 @@ function refreshBaseInputs(){
 }
 
 document.getElementById('viewSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.view=b.dataset.v;applyView();});
-(function(){const el=document.getElementById('sizeSeg'); if(el)el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.psize=b.dataset.z;applySize();});})();
 document.getElementById('unitSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const nu=b.dataset.u;if(nu===S.unit)return;
   [...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));
   if(nu==='in'){S.size=16;document.getElementById('sizeRange').value=16;S.thick=+(S.thick/MM_PER_IN).toFixed(3);S.kerf=+(S.kerf/MM_PER_IN).toFixed(3);}
   else{S.size=6;document.getElementById('sizeRange').value=6;S.thick=+(S.thick*MM_PER_IN).toFixed(1);S.kerf=+(S.kerf*MM_PER_IN).toFixed(2);}
-  S.unit=nu;{const th=document.getElementById('thick');if(th)th.value=S.thick;}refreshBolts();try{renderPrep();}catch(_){}syncSizeUI();everything();});
+  S.unit=nu;S.thick=clampThick(S.thick);{const th=document.getElementById('thick');if(th)th.value=S.thick;}refreshBolts();try{renderPrep();}catch(_){}syncSizeUI();everything();});
 document.getElementById('sizeRange').addEventListener('input',e=>{S.size=+e.target.value;document.getElementById('sizeVal').textContent=S.unit==='mm'?S.size+' mm':S.size+' DP';everything();});
 document.getElementById('bend').addEventListener('input',e=>{S.bend=+e.target.value;document.getElementById('bendVal').textContent=S.bend+'°';everything();});
 document.getElementById('paSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.pa=+b.dataset.pa;everything();});
@@ -7000,14 +7026,14 @@ document.getElementById('cxBearing').addEventListener('click',e=>{const b=e.targ
   if(b.dataset.cxbl){S.cx.backlash=Math.max(0,Math.min(0.3,Math.round((cxBacklash()+(+b.dataset.cxbl))*100)/100));renderComplexUI();try{syncBacklashUI();}catch(_){} everything();return;}
   if(b.dataset.cxpshape!=null){S.cx.penSides=+b.dataset.cxpshape;renderComplexUI();everything();return;}
   if(b.dataset.cxpen){S.cx.penDia=Math.max(2,Math.min(30,Math.round(((S.cx.penDia||10)+(+b.dataset.cxpen))*10)/10));renderComplexUI();everything();return;}
-  if(b.dataset.cxbrg){ B.od=Math.max(6,Math.min(80,B.od+(+b.dataset.cxbrg))); B.hole=B.od; B.custom=true; renderComplexUI();try{syncBearingUI();}catch(_){} everything(); }
-  else if(b.dataset.cxbh){ B.hole=Math.max(4,Math.min(80,Math.round((B.hole+(+b.dataset.cxbh))*100)/100)); renderComplexUI();try{syncBearingUI();}catch(_){} everything(); }
+  if(b.dataset.cxbrg){ B.od=Math.max(6,Math.min(80,B.od+(+b.dataset.cxbrg))); B.hole=B.od; B.custom=true; renderComplexUI();everything(); }
+  else if(b.dataset.cxbh){ B.hole=Math.max(4,Math.min(80,Math.round((B.hole+(+b.dataset.cxbh))*100)/100)); renderComplexUI();everything(); }
   else if(b.dataset.cxdh){ S.cx.dowelHole=Math.max(2,Math.min(30,Math.round((cxDowelHole()+(+b.dataset.cxdh))*100)/100)); renderComplexUI();everything(); }});
 document.getElementById('cxBearing').addEventListener('change',e=>{const t=e.target,B=S.cx.bearing;
-  if(t.id==='cxBrgMode'){ B.mode=t.value; if(B.mode!=='none'&&!B.od)B.od=8; if(B.hole==null)B.hole=B.od; renderComplexUI();try{syncBearingUI();}catch(_){} everything(); }
-  else if(t.id==='cxBrgSel'){ if(t.value==='custom'){B.custom=true;} else {B.od=+t.value;B.hole=B.od;B.custom=false;} renderComplexUI();try{syncBearingUI();}catch(_){} everything(); }
+  if(t.id==='cxBrgMode'){ B.mode=t.value; if(B.mode!=='none'&&!B.od)B.od=8; if(B.hole==null)B.hole=B.od; renderComplexUI();everything(); }
+  else if(t.id==='cxBrgSel'){ if(t.value==='custom'){B.custom=true;} else {B.od=+t.value;B.hole=B.od;B.custom=false;} renderComplexUI();everything(); }
   else if(t.id==='cxBrgOD'){ B.od=Math.max(6,Math.min(80,Math.round(+t.value)||B.od)); B.hole=B.od; B.custom=true; renderComplexUI();everything(); }
-  else if(t.id==='cxBrgHole'){ B.hole=Math.max(4,Math.min(80,(+t.value)||B.hole)); renderComplexUI();try{syncBearingUI();}catch(_){} everything(); }
+  else if(t.id==='cxBrgHole'){ B.hole=Math.max(4,Math.min(80,(+t.value)||B.hole)); renderComplexUI();everything(); }
   else if(t.id==='cxDowelHole'){ S.cx.dowelHole=Math.max(2,Math.min(30,(+t.value)||cxDowelHole())); renderComplexUI();everything(); }
   else if(t.id==='cxPenDia'){ S.cx.penDia=Math.max(2,Math.min(30,(+t.value)||S.cx.penDia||10)); renderComplexUI();everything(); }
   else if(t.id==='cxBacklash'){ const v=+t.value; S.cx.backlash=Math.max(0,Math.min(0.3,isNaN(v)?cxBacklash():v)); renderComplexUI();try{syncBacklashUI();}catch(_){} everything(); }});
@@ -7029,10 +7055,17 @@ document.getElementById('cxConv').addEventListener('change',e=>{const t=e.target
 document.getElementById('cxMeshBtn').addEventListener('click',()=>{cxAddMesh();renderComplexUI();everything();});
 document.getElementById('cxStackBtn').addEventListener('click',()=>{cxAddCompound(false);renderComplexUI();everything();});
 document.getElementById('cxStackBelowBtn').addEventListener('click',()=>{cxAddCompound(true);renderComplexUI();everything();});
-document.getElementById('mvComplex').addEventListener('click',e=>{const b=e.target.closest('[data-cxscale]');if(!b)return;const target=+b.dataset.cxscale,cur=S.cx.scale||1;if(Math.abs(target-cur)<1e-4)return;cxScaleMechanism(target/cur);S.cx.scale=target;renderComplexUI();everything();});
+document.getElementById('scaleField').addEventListener('click',e=>{const b=e.target.closest('[data-cxscale]');if(!b)return;const target=+b.dataset.cxscale,cur=S.cx.scale||1;if(Math.abs(target-cur)<1e-4)return;cxScaleMechanism(target/cur);S.cx.scale=target;renderComplexUI();everything();});
 (function(){ const mp=document.getElementById('manualPanel'), mb=document.getElementById('manualBtn');
+  let pdfChecked=false;
+  const checkPdf=()=>{ if(pdfChecked)return; pdfChecked=true;
+    const a=document.getElementById('manualPdf'); if(!a)return;
+    /* Only meaningful over http(s); when opened as a local file, leave the button alone. */
+    if(location.protocol!=='http:'&&location.protocol!=='https:')return;
+    if(typeof fetch!=='function')return;
+    fetch(a.getAttribute('href'),{method:'HEAD'}).then(r=>{ if(!r.ok)a.style.display='none'; }).catch(()=>{ a.style.display='none'; }); };
   if(mb)mb.addEventListener('click',()=>{ const opening=mp.classList.contains('hide'); mp.classList.toggle('hide');
-    if(opening)mp.scrollIntoView({behavior:'smooth',block:'start'}); });
+    if(opening){ checkPdf(); mp.scrollIntoView({behavior:'smooth',block:'start'}); } });
   const mc=document.getElementById('manualClose'); if(mc)mc.addEventListener('click',()=>mp.classList.add('hide'));
   const pr=document.getElementById('manualPrint'); if(pr)pr.addEventListener('click',()=>{ mp.classList.remove('hide'); setTimeout(()=>window.print(),60); });
 })();
@@ -7092,6 +7125,7 @@ document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.c
   if(b.dataset.cxpen){S.cx.penDia=Math.max(2,Math.min(30,Math.round(((S.cx.penDia||10)+(+b.dataset.cxpen))*10)/10));renderComplexUI();everything();return;}
   if(b.dataset.cxph){S.cx.penHole=Math.max(2,Math.min(30,Math.round(((S.cx.penHole!=null?S.cx.penHole:(S.cx.penDia||10))+(+b.dataset.cxph))*10)/10));renderComplexUI();everything();return;}
   if(b.id==='cxAddPenBtn'){cxAddPen();renderComplexUI();everything();return;}
+  if(b.id==='cxAddArmsBtn'){cxAddPen();if(S.cx.pen)S.cx.pen.penRef=null;renderComplexUI();everything();return;}
   if(b.id==='cxLoadExBtn'){cxLoadExample();renderComplexUI();everything();return;}
   if(b.id==='cxRmPenBtn'){cxRemovePen();renderComplexUI();everything();return;}
   if(b.id==='cxAddArmBtn'){cxAddArm();renderComplexUI();everything();return;}
@@ -7171,17 +7205,13 @@ document.getElementById('chainList').addEventListener('click',e=>{const b=e.targ
   else if(b.dataset.down!=null){const i=+b.dataset.down;if(i<S.chain.length-1){const t=S.chain[i+1];S.chain[i+1]=S.chain[i];S.chain[i]=t;}}
   renderChainUI();everything();});
 document.getElementById('spokeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.spokes=+b.dataset.s;everything();});
-document.getElementById('thick').addEventListener('input',e=>{S.thick=+e.target.value;document.getElementById('thickVal').textContent=S.unit==='mm'?S.thick+' mm':(+S.thick).toFixed(3)+' in';everything();});
+function clampThick(v){ const lo=S.unit==='mm'?1:0.04, hi=S.unit==='mm'?25:1; const n=+v; return isFinite(n)?Math.max(lo,Math.min(hi,n)):S.thick; }
+document.getElementById('thick').addEventListener('input',e=>{S.thick=clampThick(e.target.value);document.getElementById('thickVal').textContent=S.unit==='mm'?S.thick+' mm':(+S.thick).toFixed(3)+' in';everything();});
+document.getElementById('thick').addEventListener('change',e=>{e.target.value=S.thick=clampThick(e.target.value);document.getElementById('thickVal').textContent=S.unit==='mm'?S.thick+' mm':(+S.thick).toFixed(3)+' in';everything();});
 /* replaced by delegated prep handlers */ void 0;
 /* replaced by delegated prep handlers */ void 0;
 /* replaced by delegated prep handlers */ void 0;
 /* replaced by delegated prep handlers */ void 0;
-function syncBearingUI(){ const B=S.cx.bearing||{mode:'none',od:8,hole:7.9}, on=cxBrgMode()!=='none';
-  const sel=document.getElementById('brgModeG'), inp=document.getElementById('brgHoleG'), val=document.getElementById('brgHoleGVal'), h=document.getElementById('brgHintG');
-  if(sel&&document.activeElement!==sel)sel.value=cxBrgMode();
-  if(inp){ inp.disabled=!on; inp.style.opacity=on?'1':'0.45'; if(document.activeElement!==inp)inp.value=(+cxBearingHole()).toFixed(1); }
-  if(val)val.textContent=on?(+cxBearingHole()).toFixed(1)+' mm':'not used';
-  if(h)h.innerHTML=on?`Gears get a \u2300${(+cxBearingHole()).toFixed(1)}mm bearing seat; baseplates and levers keep ${S.bolt} bolt-clearance holes. Set the hole a touch under the bearing's outside \u2300 for a press fit \u2014 the Complex Workbench panel has the full presets, dowel and pen-hole settings.`:`No bearings \u2014 every gear gets a ${S.bolt} bolt-clearance bore and spins on the bolt. Switch to <b>In gears</b> to cut bearing seats instead.`; }
 function syncBacklashUI(){ const b=cxBacklash(), el=document.getElementById('blVal'), inp=document.getElementById('backlash'), h=document.getElementById('blHint');
   if(inp&&document.activeElement!==inp)inp.value=b.toFixed(2);
   if(el)el.textContent=b.toFixed(2)+' \u00d7 module';
@@ -7204,10 +7234,11 @@ document.getElementById('dlBtn').addEventListener('click',()=>{const svg=buildEx
 document.getElementById('cdBtn').addEventListener('click',async e=>{let txt;if(S.movement==='composer'){const ch=computeChain();txt=`${ch.stages.map(s=>CT[s.type].nm).join(' → ')} · ${composerSummary(ch)}`;}else if(S.movement==='fourbar'){const v=fbVals(),d=dowelSpec(),g=grashof();txt=`four-bar frame ${fmt(v.f)}, crank ${fmt(v.r)}, coupler ${fmt(v.c)}, rocker ${fmt(v.k)} · ${g.type} · dowel ${fmt(d.D)}mm (run hole ${fmt(d.runCut)}⌀, press hole ${fmt(d.pressCut)}⌀)`;}else if(S.movement==='planetary'){const v=plVals();txt=`sun ${v.Ns}T + ${v.P}×planet ${v.Np}T + ring ${v.Nr}T, module ${fmt(v.m)}, reduction ${((v.Ns+v.Nr)/v.Ns).toFixed(3)}× same direction`;}else if(S.movement==='internal'){const v=igVals();txt=`ring ${v.Nr}T + pinion ${v.Np}T, module ${fmt(v.m)}, centre distance ${fmt(v.cd)}, reduction ${(v.Nr/v.Np).toFixed(3)}× same direction`;}else if(S.movement==='scotch'){txt=`stroke ${fmt(2*S.scotchR)} (r ${fmt(S.scotchR)}), exact sine motion`;}else if(S.movement==='ratchet'){txt=`${S.ratN} teeth, step ${(360/S.ratN).toFixed(1)}°, +${S.ratAdv}/stroke, wheel ⌀${fmt(2*S.ratR)}`;}else if(S.movement==='rack'){txt=`module ${fmt(S.rpM)}, pinion N${S.rpN} (pitch ⌀${fmt(S.rpM*S.rpN)}), travel/turn ${fmt(Math.PI*S.rpM*S.rpN)}, rack ${S.rackT}T`;}else if(S.movement==='cam'){txt=`base ⌀${fmt(2*S.camRb)}, lift ${fmt(S.camLift)}, ${CAM_LAWS[S.camLaw]}, rise ${S.camRise}° fall ${S.camFall}°`;}else if(S.movement==='crank'){const tr=crankTravel();txt=`stroke ${fmt(2*S.crankR)}, travel ${fmt(tr.lo)}→${fmt(tr.hi)}, rod ${fmt(S.rodL)}`;}else{txt=computeTrain().cds.map(c=>fmt(c)).join(', ');}
   try{await navigator.clipboard.writeText(txt);e.target.textContent='⧉ copied';setTimeout(()=>e.target.textContent=(S.movement==='gearing')?'⧉ Copy centre distances':'⧉ Copy key sizes',1400);}catch(_){}});
 document.getElementById('csBtn').addEventListener('click',e=>{const panel=document.getElementById('cutSheetPanel'),willShow=panel.classList.contains('hide');panel.classList.toggle('hide');e.currentTarget.setAttribute('aria-expanded',willShow?'true':'false');e.currentTarget.textContent=willShow?'▾ Hide cut sheet':'▸ Show cut sheet';if(willShow)renderCutSheet();});
-function saveProject(){ try{ const data={app:'clever-contraptions',v:1,ts:Date.now(),state:S};
+function saveProject(){ try{ const data={app:'clever-contraptions',v:1,ts:Date.now(),sheet:(document.getElementById('sheetSize')||{}).value,state:S};
   const blob=new Blob([JSON.stringify(data)],{type:'application/json'}), url=URL.createObjectURL(blob), a=document.createElement('a');
   a.href=url; a.download=`clever-contraptions_${S.movement}_project.json`; a.click(); URL.revokeObjectURL(url);
   const m=document.getElementById('projMsg'); if(m)m.textContent='saved ✓'; setTimeout(()=>{const e=document.getElementById('projMsg');if(e)e.textContent='';},1600);
+  markSaved();
 }catch(_){} }
 function applyLoadedState(){
   const bolt=document.getElementById('bolt'); if(bolt){refreshBolts(); if(S.bolt!==undefined)bolt.value=S.bolt;}
@@ -7231,7 +7262,9 @@ document.getElementById('loadProjBtn').addEventListener('click',()=>document.get
   const l2=document.getElementById('loadProjBtn2'); if(l2)l2.addEventListener('click',()=>document.getElementById('loadProjFile').click()); }
 document.getElementById('loadProjFile').addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return;
   const r=new FileReader(); r.onload=()=>{ try{ const d=JSON.parse(r.result), st=(d&&d.state)?d.state:d;
-    if(!st||typeof st!=='object')throw 0; for(const k in st)S[k]=st[k]; applyLoadedState();
+    if(!st||typeof st!=='object')throw 0; for(const k in st)S[k]=st[k];
+    if(d&&d.sheet){ const sz=document.getElementById('sheetSize'); if(sz&&[...sz.options].some(o=>o.value===d.sheet)){ sz.value=d.sheet; try{cxSyncSplitMax();}catch(_){} } }
+    applyLoadedState(); markSaved();
   }catch(_){ const pm=document.getElementById('projMsg'); if(pm)pm.textContent='could not read that file'; } };
   r.readAsText(f); e.target.value=''; });
 document.getElementById('sheetSize').addEventListener('change',()=>{
@@ -7288,6 +7321,7 @@ function setMovement(m){ if(!cxDoorAllows(m))m=CX_DOOR.home;
   document.getElementById('mvFourbar').classList.toggle('hide',m!=='fourbar');
   document.getElementById('mvComposer').classList.toggle('hide',m!=='composer');
   document.getElementById('mvComplex').classList.toggle('hide',m!=='complex');
+  { const sf=document.getElementById('scaleField'); if(sf)sf.classList.toggle('hide',m!=='complex'); }
   const fig=document.getElementById('figTag'), flow=document.getElementById('motionFlow');
   if(m==='composer'){fig.textContent='Composer Workbench';flow.textContent='chain → one crank';renderChainUI();}
   else if(m==='complex'){fig.textContent='Complex Workbench';flow.textContent='multi-layer gear stack';renderComplexUI();}
@@ -7371,13 +7405,82 @@ function applyDoor(){
   if(!cxDoorAllows(S.movement)||D.allow.length===1)setMovement(D.home);
   return D; }
 /* mobile: shrink / grow the pinned preview so controls get the screen */
-document.getElementById('shrinkBtn').addEventListener('click',()=>{document.querySelector('.hero').classList.toggle('compact');if(GL&&GL.ok)GL.draw();});
+document.getElementById('shrinkBtn').addEventListener('click',()=>{const on=document.querySelector('.hero').classList.toggle('compact');lsSet('ccc-hero-compact',on?'1':'0');if(GL&&GL.ok)GL.draw();});
 
 (function(){const cm=document.querySelector('.ccmain'),hero=document.querySelector('.hero'),csp=document.getElementById('cutSheetPanel');
   if(cm&&hero){const col=document.createElement('div');col.className='leftcol';cm.insertBefore(col,hero);col.appendChild(hero);if(csp)col.appendChild(csp);}})();
 renderGearList();refreshBolts();syncSizeUI();try{renderPrep();placeSpokes();cxUndoBtn();}catch(_){}
 try{applyDoor();}catch(e){console.error('door routing failed',e);}
 updateReadout();applySize();applyView();
+
+/* ---- session autosave, restore, dirty dot, keyboard, shrink memory (added Aug 2026) ---- */
+const AUTOSAVE_KEY='ccc-autosave-v1';
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }
+/* Read any previous session BEFORE this session starts overwriting the slot. */
+const prevSession=(function(){ try{ const raw=lsGet(AUTOSAVE_KEY); if(!raw)return null;
+  const d=JSON.parse(raw); return (d&&d.state&&typeof d.state==='object')?d:null; }catch(_){ return null; } })();
+let cccDirty=false, autosaveT=null, cccBooted=false;
+setTimeout(()=>{ cccBooted=true; },1200);   /* init renders shouldn't count as edits */
+function markDirty(){ if(!cccBooted)return; cccDirty=true; syncDirtyDot(); }
+function markSaved(){ cccDirty=false; syncDirtyDot(); }
+function syncDirtyDot(){ const b1=document.getElementById('saveProjBtn'), b2=document.getElementById('saveProjBtn2');
+  if(b1)b1.textContent=cccDirty?'\u21e9 Save project \u25cf':'\u21e9 Save project';
+  if(b2)b2.textContent=cccDirty?'\u21e9 Save \u25cf':'\u21e9 Save'; }
+function scheduleAutosave(){ if(!cccBooted)return; markDirty(); if(autosaveT)clearTimeout(autosaveT);
+  autosaveT=setTimeout(()=>{ autosaveT=null;
+    try{ lsSet(AUTOSAVE_KEY, JSON.stringify({v:1,ts:Date.now(),sheet:(document.getElementById('sheetSize')||{}).value,state:S})); }catch(_){}
+  },800); }
+/* Restore strip: only when a previous session exists. */
+(function(){ if(!prevSession)return;
+  const bar=document.createElement('div');
+  bar.id='restoreBar';
+  bar.style.cssText='position:fixed;left:14px;bottom:14px;z-index:300;background:var(--paper-3);border:1.5px solid var(--ink);border-radius:10px;padding:10px 12px;display:flex;gap:9px;align-items:center;box-shadow:0 8px 22px -10px rgba(35,32,26,.55);font-family:"Space Mono",monospace;font-size:12px;max-width:min(92vw,420px)';
+  const when=(function(){ const mins=Math.round((Date.now()-(prevSession.ts||Date.now()))/60000);
+    if(mins<2)return 'a moment ago'; if(mins<60)return mins+' min ago';
+    const h=Math.round(mins/60); if(h<48)return h+'h ago'; return Math.round(h/24)+' days ago'; })();
+  bar.innerHTML='<span>\u21bb Pick up where you left off? <b>'+((prevSession.state&&prevSession.state.movement)||'machine')+'</b> \u00b7 '+when+'</span>';
+  const yes=document.createElement('button'); yes.className='btn'; yes.style.cssText='padding:5px 12px;font-size:12px'; yes.textContent='Restore';
+  const no=document.createElement('button'); no.className='btn ghost'; no.style.cssText='padding:5px 10px;font-size:12px'; no.textContent='\u2715';
+  no.setAttribute('aria-label','dismiss');
+  bar.appendChild(yes); bar.appendChild(no); document.body.appendChild(bar);
+  const kill=()=>{ if(bar.parentNode)bar.parentNode.removeChild(bar); };
+  yes.addEventListener('click',()=>{ try{ const st=prevSession.state; for(const k in st)S[k]=st[k];
+    if(prevSession.sheet){ const sz=document.getElementById('sheetSize'); if(sz&&[...sz.options].some(o=>o.value===prevSession.sheet)){ sz.value=prevSession.sheet; try{cxSyncSplitMax();}catch(_){} } }
+    applyLoadedState(); markSaved(); }catch(_){} kill(); });
+  no.addEventListener('click',kill);
+  /* Fade it away by itself if ignored, so it never nags. */
+  setTimeout(()=>{ if(bar.parentNode){ bar.style.transition='opacity .6s'; bar.style.opacity='0'; setTimeout(kill,700); } },30000);
+})();
+/* Keyboard: Esc closes overlays; Ctrl/Cmd+Z / Shift+Z (or Y) drives the Complex Workbench history. */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const ov=document.getElementById('patOverlay');
+    if(ov&&!ov.classList.contains('hide')){ ov.classList.add('hide'); return; }
+    const mn=document.getElementById('manualPanel');
+    if(mn&&!mn.classList.contains('hide')){ mn.classList.add('hide'); return; }
+    const mt=document.getElementById('meshTestPanel');
+    if(mt&&!mt.classList.contains('hide')){ mt.classList.add('hide'); return; }
+    return; }
+  const tag=(e.target&&e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='select'||tag==='textarea'||(e.target&&e.target.isContentEditable))return;
+  const mod=e.ctrlKey||e.metaKey;
+  if(mod&&(e.key==='z'||e.key==='Z')&&S.movement==='complex'){
+    e.preventDefault();
+    if(e.shiftKey){ try{cxRedoStepDo();}catch(_){} } else { try{cxUndoStepDo();}catch(_){} }
+    try{renderComplexUI();everything();}catch(_){} return; }
+  if(mod&&(e.key==='y'||e.key==='Y')&&S.movement==='complex'){ e.preventDefault(); try{cxRedoStepDo();renderComplexUI();everything();}catch(_){} }
+});
+/* Panel 01 folds away once the scale is set. */
+(function(){ const h=document.getElementById('panel01Head'), b=document.getElementById('panel01Body'), ch=document.getElementById('panel01Chev');
+  if(!h||!b)return;
+  const set=open=>{ b.classList.toggle('hide',!open); if(ch)ch.textContent=open?'\u25be':'\u25b8'; h.setAttribute('aria-expanded',open?'true':'false'); lsSet('ccc-p01-open',open?'1':'0'); };
+  h.addEventListener('click',()=>set(b.classList.contains('hide')));
+  if(lsGet('ccc-p01-open')==='0')set(false);
+})();
+/* Remember the mobile preview shrink state. */
+(function(){ try{ if(lsGet('ccc-hero-compact')==='1'){ const h=document.querySelector('.hero'); if(h)h.classList.add('compact'); } }catch(_){} })();
+
 </script>
 </body>
 </html>
