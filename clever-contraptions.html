@@ -4823,17 +4823,27 @@ function sceneFromComplex(){
     const yLink=(yCarr!=null)?yCarr:(-(c.layers)*LG-t*0.5), barW=cxLinkW(), OFF=99999;
     const aMaxS=cxArmMax();
     c.pen.joints.forEach((j,ji)=>{ [[j.a,j.la,'a'],[j.b,j.lb,'b']].forEach(rl=>{ const ref=rl[0], L=rl[1], side=rl[2];
-      const locs=(c.pen.welds||[]).map((wd,wi)=>({wd,wi})).filter(o=>o.wd.base&&o.wd.base.on===('j'+ji)&&o.wd.base.side===side);
-      cxArmSplice(L,aMaxS,28).forEach(pc=>{ const loops=[flipY(rodLoop(pc.len,barW))], hr=Math.max(cxRodBore()/2,1);
-        if(pc.pivS)loops.push(flipY(circleLoop(hr,18)));
-        if(pc.pivE)loops.push(flipY(circleLoop(hr,18).map(p=>[p[0]+pc.len,p[1]])));
+      /* the physical member runs from its overhang tip to its joint — cxArmSpan's lo (≤0) says
+         how far the wood carries on past the base pin, and every t-anchor maps over that WHOLE
+         length, exactly as the 2D schematic draws it */
+      const lo=cxArmSpan(ji,side)[0], extMM=(-lo)*L, Lfull=L+extMM;
+      const hr=Math.max(cxRodBore()/2,1), dwr=Math.max(cxDowelHole()/2,0.8);
+      const drills=[{d:extMM,r:hr},{d:Lfull,r:hr}];                     /* base pin · joint tip */
+      try{ cxArmPivots(ji,side).forEach(tv=>drills.push({d:tv*Lfull,r:hr})); }catch(_){}
+      (c.pen.welds||[]).forEach(wd=>{ if(wd.base&&wd.base.on===('j'+ji)&&(wd.base.side||'a')===side)drills.push({d:(cxRefT(wd.base)/100)*Lfull,r:dwr}); });
+      c.pen.joints.forEach(j2=>[j2.a,j2.b].forEach(rf=>{ if(rf&&rf.on===('j'+ji)&&(rf.side||'a')===side&&rf.t!=null)drills.push({d:rf.t*Lfull,r:hr}); }));
+      if(c.pen.penRef&&c.pen.penRef.on===('j'+ji)&&(c.pen.penRef.side||'a')===side&&c.pen.penRef.t!=null)drills.push({d:c.pen.penRef.t*Lfull,r:hr});
+      const seen=[]; const uniq=drills.filter(o=>{ if(seen.some(x=>Math.abs(x-o.d)<1.5))return false; seen.push(o.d); return true; });
+      cxArmSplice(Lfull,aMaxS,28).forEach(pc=>{
+        const ovS=(pc.idx===0)?barW*0.85:0, ovE=(pc.idx===pc.n-1)?barW*0.85:0;   /* wood past the holes */
+        const loops=[flipY(rodLoop(pc.len+ovS+ovE,barW).map(p=>[p[0]-ovS,p[1]]))];
+        uniq.forEach(o=>{ const local=o.d-(pc.start||0); if(local>-ovS+o.r*0.5&&local<pc.len+ovE-o.r*0.5)loops.push(flipY(circleLoop(o.r,18).map(p=>[p[0]+local,p[1]]))); });
         pc.aligns.forEach(d=>loops.push(flipY(circleLoop(Math.max(cxBore()/2,1.2),12).map(p=>[p[0]+d,p[1]]))));
-        locs.forEach(o=>{ const local=(cxRefT(o.wd.base)/100)*L-(pc.start||0); if(local>hr&&local<pc.len-hr)loops.push(flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12).map(p=>[p[0]+local,p[1]]))); });
-        parts.push({tris:plateMesh(loops,0,0,t*0.55,yLink-(pc.idx||0)*0.4),col:'#8a6a3c',label:cxHasPen()?'pen arm':'linkage arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*pc.start-ox,z:A[1]+Math.sin(ang)*pc.start-oy,rot:ang}; }}); }); }); });
+        parts.push({tris:plateMesh(loops,0,0,t*0.55,yLink-(pc.idx||0)*0.4),col:'#8a6a3c',label:cxHasPen()?'pen arm':'linkage arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*(pc.start-extMM)-ox,z:A[1]+Math.sin(ang)*(pc.start-extMM)-oy,rot:ang}; }}); }); }); });
     c.pen.joints.forEach((j,ji)=>{ const isLast=ji===c.pen.joints.length-1;
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.6,2.2),14))],0,0,t*1.2,yLink-t*0.3),col:'#5a4632',hw:1,pose:s=>{ const st=cxPenAt(c,s), J=st?st.jointPos[ji]:null; if(!J)return {x:OFF,z:OFF,rot:0}; return {x:J[0]-ox,z:J[1]-oy,rot:0}; }}); });
-    (c.pen.welds||[]).forEach((w,wi)=>{ const L0=w.len||100, bw2=barW*0.9;
-      const bl=[flipY(rodLoop(L0,bw2)), flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12)), flipY(circleLoop(Math.max(cxRodBore()/2,1),16).map(p=>[p[0]+L0,p[1]]))];
+    (c.pen.welds||[]).forEach((w,wi)=>{ const L0=w.len||100, bw2=barW*0.9, ov2=bw2*0.85;
+      const bl=[flipY(rodLoop(L0+2*ov2,bw2).map(p=>[p[0]-ov2,p[1]])), flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12)), flipY(circleLoop(Math.max(cxRodBore()/2,1),16).map(p=>[p[0]+L0,p[1]]))];
       parts.push({tris:plateMesh(bl,0,0,t*0.5,yLink-0.6),col:'#a3763a',label:cxHasPen()?'pen mount arm':'branch arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const base=cxRefPos(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds), d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(!base||d==null)return {x:OFF,z:OFF,rot:0}; return {x:base[0]-ox,z:base[1]-oy,rot:d+(w.ang==null?90:w.ang)*Math.PI/180}; }});
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.4),14))],0,0,t*1.3,yLink-t*0.4),col:'#c79a63',hw:1,pose:s=>{ const st=cxPenAt(c,s), T=st?st.weldPos[wi]:null; if(!T)return {x:OFF,z:OFF,rot:0}; return {x:T[0]-ox,z:T[1]-oy,rot:0}; }}); });
     if(cxHasPen())parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',hw:1,pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }});
@@ -5795,6 +5805,7 @@ function m4mul(a,b){const o=new Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r+
 function m4T(x,y,z){return [1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1];}
 function m4RotY(t){const c=Math.cos(t),s=Math.sin(t);return [c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1];}
 
+function mod1(x){return x-Math.floor(x);}
 /* ---- WebGL renderer (shared) ---- */
 function makeGL(cv){
   let gl=null;try{gl=cv.getContext('webgl',{antialias:true,alpha:true})||cv.getContext('experimental-webgl',{antialias:true,alpha:true});}catch(e){}
@@ -5802,12 +5813,24 @@ function makeGL(cv){
   const mk=(t,src)=>{const h=gl.createShader(t);gl.shaderSource(h,src);gl.compileShader(h);if(!gl.getShaderParameter(h,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(h));return h;};
   const prog=(vs,fs)=>{const p=gl.createProgram();gl.attachShader(p,mk(gl.VERTEX_SHADER,vs));gl.attachShader(p,mk(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;};
   const pMesh=prog(
-   `attribute vec3 aPos;attribute vec3 aNrm;uniform mat4 uP,uV,uM;varying vec3 vN,vW;
-    void main(){vN=mat3(uM)*aNrm;vec4 wp=uM*vec4(aPos,1.0);vW=wp.xyz;gl_Position=uP*uV*wp;}`,
-   `precision mediump float;varying vec3 vN,vW;uniform vec3 uCol,uEye;uniform float uTop,uBot,uAlpha;
+   `attribute vec3 aPos;attribute vec3 aNrm;uniform mat4 uP,uV,uM;varying vec3 vN,vW,vO,vNo;
+    void main(){vN=mat3(uM)*aNrm;vNo=aNrm;vO=aPos;vec4 wp=uM*vec4(aPos,1.0);vW=wp.xyz;gl_Position=uP*uV*wp;}`,
+   `precision mediump float;varying vec3 vN,vW,vO,vNo;uniform vec3 uCol,uEye;uniform float uTop,uBot,uAlpha,uSeed;
     void main(){vec3 n=normalize(vN),V=normalize(uEye-vW);if(!gl_FrontFacing)n=-n;
       vec3 L1=normalize(vec3(0.5,-0.6,0.85)),L2=normalize(vec3(-0.55,0.45,0.3));
       vec3 base=pow(uCol,vec3(2.2));float hemi=0.5+0.5*n.z;
+      /* wood grain, anchored to the part so it turns with the gear: wavy bands along one
+         direction on the faces, thin ply laminations on the cut edges */
+      float ca=cos(uSeed),sa=sin(uSeed);
+      vec2 gp=vec2(vO.x*ca-vO.y*sa, vO.x*sa+vO.y*ca)+vec2(uSeed*13.7,uSeed*7.3);
+      float wob=sin(gp.y*0.11+uSeed)*2.2+sin(gp.y*0.041+uSeed*1.7)*4.5;
+      float band=sin((gp.x+wob)*0.62);
+      float grain=0.965+0.055*band+0.022*sin((gp.x+wob*1.5)*3.1+gp.y*0.5);
+      float fleck=fract(sin(dot(floor(gp*1.7),vec2(127.1,311.7)))*43758.55);
+      grain*=0.985+0.03*fleck;
+      float edge=1.0-abs(vNo.z);
+      float ply=0.96+0.08*smoothstep(0.35,0.65,fract(vO.z*0.42+0.25));
+      base*=mix(grain,ply,smoothstep(0.4,0.8,edge));
       vec3 amb=mix(vec3(0.5,0.42,0.34),vec3(1.05,1.0,0.9),hemi)*0.36;
       float d1=max(dot(n,L1),0.0),d2=max(dot(n,L2),0.0);
       float ao=mix(0.6,1.0,clamp((vW.z-uBot)/max(uTop-uBot,1.0),0.0,1.0));
@@ -5822,7 +5845,7 @@ function makeGL(cv){
    `precision mediump float;varying vec2 vXY;void main(){float d=length(vXY);float a=(1.0-smoothstep(0.5,1.0,d))*0.30;gl_FragColor=vec4(0.0,0.0,0.0,a);}`);
   gl.enable(gl.DEPTH_TEST);
   const loc=(p,names)=>{const o={};names.forEach(n=>o[n]=n[0]==='a'?gl.getAttribLocation(p,n):gl.getUniformLocation(p,n));return o;};
-  const lMesh=loc(pMesh,['aPos','aNrm','uP','uV','uM','uCol','uEye','uTop','uBot','uAlpha']);
+  const lMesh=loc(pMesh,['aPos','aNrm','uP','uV','uM','uCol','uEye','uTop','uBot','uAlpha','uSeed']);
   const lLine=loc(pLine,['aPos','uP','uV','uM','uCol']);
   const lShadow=loc(pShadow,['aPos','uP','uV','uC','uR']);
   let parts=[],shadowBuf=gl.createBuffer(),shadowR=1,zTop=1,zBot=0,reach=200,floorZ=-100;
@@ -5875,7 +5898,7 @@ function makeGL(cv){
     gl.useProgram(pMesh);gl.uniformMatrix4fv(lMesh.uP,false,P);gl.uniformMatrix4fv(lMesh.uV,false,V);
     gl.uniform3f(lMesh.uEye,eye[0],eye[1],eye[2]);gl.uniform1f(lMesh.uTop,zTop);gl.uniform1f(lMesh.uBot,zBot);
     const drawMesh=(p,i)=>{gl.uniformMatrix4fv(lMesh.uM,false,new Float32Array(models[i]));gl.uniform3f(lMesh.uCol,p.col[0],p.col[1],p.col[2]);
-      gl.uniform1f(lMesh.uAlpha,p.alpha==null?1:p.alpha);
+      gl.uniform1f(lMesh.uAlpha,p.alpha==null?1:p.alpha);gl.uniform1f(lMesh.uSeed,mod1(i*0.61803)*6.283);
       gl.bindBuffer(gl.ARRAY_BUFFER,p.pos);gl.enableVertexAttribArray(lMesh.aPos);gl.vertexAttribPointer(lMesh.aPos,3,gl.FLOAT,false,0,0);
       gl.bindBuffer(gl.ARRAY_BUFFER,p.nrm);gl.enableVertexAttribArray(lMesh.aNrm);gl.vertexAttribPointer(lMesh.aNrm,3,gl.FLOAT,false,0,0);
       gl.drawArrays(gl.TRIANGLES,0,p.nV);};
