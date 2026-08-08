@@ -4248,7 +4248,9 @@ function cxBrgMode(){ const B=S.cx.bearing; return (B&&B.mode)||'none'; }
 // nominal sizes are for the shopping list; the *hole to cut* is a separate, tunable value
 // because a "8mm" bearing or "6mm" dowel is rarely exactly that, and press-fits need tuning.
 function cxBearingHole(){ const B=S.cx.bearing; return (B&&B.hole!=null)?B.hole:((B&&B.od)||8); }
-function cxDowelHole(){ return (S.cx.dowelHole!=null)?S.cx.dowelHole:(S.dowelD||6); }
+function cxUseDowels(){ return !S.use || S.use.dowels!==false; }
+function cxDowelHole(){ if(!cxUseDowels())return boardBoltHole();   /* dowels off: bolts everywhere a dowel would go */
+  return (S.cx.dowelHole!=null)?S.cx.dowelHole:(S.dowelD||6); }
 function cxGearBore(){ const M=cxBrgMode(); return (M==='gears'||M==='gearsRods')?cxBearingHole():boreDia(); }
 function cxRodBore(){ return (cxBrgMode()==='gearsRods')?cxBearingHole():boreDia(); }
 function sheetDims(){ const el=document.getElementById('sheetSize'); const v=(el&&el.value)||'400x300';
@@ -4348,11 +4350,11 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
   if(cv.cam){ cut.push([`cam disc`,cv.cam,`${t}mm`],[`cam follower`,cv.cam,`${t}mm`],[`cam guide rail`,cv.cam*2,`bridges over the gear · post-hole each end · ${t}mm`]); }
   if(cv.scotch){ cut.push([`scotch crank arm`,cv.scotch,`${t}mm`],[`slotted yoke`,cv.scotch,`${t}mm`],[`scotch guide rail`,cv.scotch*2,`bridges over the gear · post-hole each end · ${t}mm`]); }
   const nPP=cxPaperPosts(c).length;
-  if(nPP)buy.push([`paper standoff post`,nPP,`⌀${fmt(Math.max(cxDowelHole(),6))} dowel — holds the sheet off the board, clear of the machine`]);
+  if(nPP)buy.push([`paper standoff post`,nPP,cxUseDowels()?`⌀${fmt(Math.max(cxDowelHole(),6))} dowel — holds the sheet off the board, clear of the machine`:`${S.bolt} bolt + nuts — holds the sheet off the board, clear of the machine`]);
   const nCap=(cv.crank||0)+(cv.scotch||0); if(nCap)cut.push([`pin cap`,nCap,`⌀${fmt(boreDia()+7)} washer · bore ${fmt(boreDia())} · retains the yoke/slider on the pin · ${t}mm`]);
-  const nPins=(cv.crank||0)+(cv.scotch||0); if(nPins)buy.push([`crank pin`,nPins,`⌀${fmt(boreDia())} dowel — press-fit in the crank arm, rides the ${cv.scotch&&!cv.crank?'yoke slot':'rod / yoke slot'}`]);
+  const nPins=(cv.crank||0)+(cv.scotch||0); if(nPins)buy.push([`crank pin`,nPins,`⌀${fmt(boreDia())} ${cxUseDowels()?'dowel':'bolt (+ nut)'} — ${cxUseDowels()?'press-fit in':'through'} the crank arm, rides the ${cv.scotch&&!cv.crank?'yoke slot':'rod / yoke slot'}`]);
   const convs=S.cx.converters.filter(v=>c.byId[v.gear]); if(convs.length){ const plen={}; convs.forEach(v=>{ const g=c.byId[v.gear], L=Math.round((t+3)+g.layer*LG+t*2.4); plen[L]=(plen[L]||0)+4; });
-    buy.push([`standoff post`,convs.length*4,`⌀${fmt(boreDia())} dowel — hold each guide bridge off the board — lengths ${Object.entries(plen).sort((a,b)=>a[0]-b[0]).map(([L,n])=>`${L}mm×${n}`).join(', ')}`]); }
+    buy.push([`standoff post`,convs.length*4,`⌀${fmt(boreDia())} ${cxUseDowels()?'dowel':'bolt + nuts'} — hold each guide bridge off the board — lengths ${Object.entries(plen).sort((a,b)=>a[0]-b[0]).map(([L,n])=>`${L}mm×${n}`).join(', ')}`]); }
   const eds=S.cx.edges.filter(e=>c.byId[e.gear]);
   if(eds.length){ cut.push([`rack`,eds.length,`${eds.map(e=>fmt(e.len)).join(', ')} long · ${t}mm`]);
     let segs=0, posts=0, rods=0;
@@ -4361,7 +4363,7 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
     if(segs){ cut.push([`rack guide rail`,segs,`the bar runs between them · ${t}mm`]);
       cut.push([`rack guide cap`,segs,`traps the bar in its track · ${t}mm`]); }
     if(rods)cut.push([`rack rod`,rods,`${eds.filter(e=>e.link==='rod').map(e=>fmt(e.rodL||0)).join(', ')} between pins · ${t}mm`]);
-    if(posts)buy.push([`dowel ⌀${fmt(cxDowelHole())} — rack guide posts`,posts,`stand the track off the board`]); }
+    if(posts)buy.push([cxUseDowels()?`dowel ⌀${fmt(cxDowelHole())} — rack guide posts`:`${S.bolt} bolt — rack guide posts`,posts,`stand the track off the board`]); }
   const sp=cxSpacers(c); if(sp.totalRings)cut.push([`spacer ring`,sp.totalRings,`⌀${fmt(boreDia()+8)} · bore ${fmt(boreDia())} · ${t}mm`]);
   const bpl=cxBoardPlan(c), bw=bpl.bw, bh=bpl.bh, P=S.cx.split||{mode:'off'}, tiles=cxShapeTiles(bpl,[],P);
   const shTxt=(bpl.mode==='rect')?'':`${cxBoardShapeLabel()} outline (offset ${bpl.off>0?'+':''}${fmt(bpl.off)}mm) · `;
@@ -4374,16 +4376,23 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
     if((S.cx.converters||[]).some(v=>v.gear===g.id&&v.type!=='scotch'))shafts[k].conv=true; });
   const nsh=Object.keys(shafts).length, slens={};
   Object.values(shafts).forEach(sh=>{ const L=Math.round(2*t+sh.maxL*LG+12+(sh.conv?t*5.5:0)); slens[L]=(slens[L]||0)+1; });
-  const M=cxBrgMode(), gBrg=(M==='gears'||M==='gearsRods'), rBrg=(M==='gearsRods'), dH=fmt(cxDowelHole());
-  buy.push([gBrg?`shaft bolt`:`shaft / axle`,nsh,gBrg?`${S.bolt} bolt through the gear bearing into the back board — lengths ${Object.entries(slens).sort((a,b)=>a[0]-b[0]).map(([L,n])=>`${L}mm×${n}`).join(', ')} (+ nut each)`:`⌀${fmt(S.dowelD)} dowel (board hole cut ⌀${dH}) — lengths ${Object.entries(slens).sort((a,b)=>a[0]-b[0]).map(([L,n])=>`${L}mm×${n}`).join(', ')}`]);
+  const M=cxBrgMode(), gBrg=(M==='gears'||M==='gearsRods'), rBrg=(M==='gearsRods'), dH=fmt(cxDowelHole()), useDw=cxUseDowels();
+  const shLens=Object.entries(slens).sort((a,b)=>a[0]-b[0]).map(([L,n])=>`${L}mm×${n}`).join(', ');
+  buy.push([(gBrg||!useDw)?`shaft bolt`:`shaft / axle`,nsh,
+    gBrg?`${S.bolt} bolt through the gear bearing into the back board — lengths ${shLens} (+ nut each)`
+    :!useDw?`${S.bolt} bolt through the back board (snug ⌀${dH} hole) — gear spins on the shank — lengths ${shLens} (+ nut each)`
+    :`⌀${fmt(S.dowelD)} dowel (board hole cut ⌀${dH}) — lengths ${shLens}`]);
   if(c.pen){ const nPin=c.pen.pins.length, nJt=c.pen.joints.length;
-    buy.push([rBrg?`pivot bolt`:`pivot pin`,nPin+nJt,rBrg?`${S.bolt} bolt through the rod bearing — ${nPin} press into the gear pin-holes (arm rotates on it), ${nJt} at each joint (+ nut/lock)`:`⌀${fmt(S.dowelD)} dowel — ${nPin} press into the gear pin-holes (arm rotates on it), ${nJt} at each joint`]); }
+    buy.push([(rBrg||!useDw)?`pivot bolt`:`pivot pin`,nPin+nJt,
+      rBrg?`${S.bolt} bolt through the rod bearing — ${nPin} press into the gear pin-holes (arm rotates on it), ${nJt} at each joint (+ nut/lock)`
+      :!useDw?`${S.bolt} bolt — ${nPin} through the gear pin-holes, ${nJt} at each joint (+ nut/lock each, arm rotates on the shank)`
+      :`⌀${fmt(S.dowelD)} dowel — ${nPin} press into the gear pin-holes (arm rotates on it), ${nJt} at each joint`]); }
   const nBrg=cxBrgCount(c); if(nBrg)buy.push([`bearing`,nBrg,`⌀${S.cx.bearing.od}mm outer, ${S.bolt}-size bore — press-fit ${rBrg?'into every gear & rod pivot':'into every gear'} · holes cut ⌀${fmt(cxBearingHole())}`]);
   return {cut,buy}; }
 function cxBOMText(){ const b=cxBOM(), c=computeComplex(), t=S.thick;
   const bpl0=cxBoardPlan(c), bw=Math.round(bpl0.pw), bh=Math.round(bpl0.ph);
-  const M=cxBrgMode(), brgLine=M==='none'?'no bearings (plain bolt / dowel pivots)':`⌀${S.cx.bearing.od}mm ${M==='gearsRods'?'in gears + rod pivots':'in gears'} · holes cut ⌀${fmt(cxBearingHole())}`;
-  const head=`PROJECT MATERIALS — The Clever Contraptions Corner\n\n  Back board / sheet : ${bw}×${bh}mm · ${cxBoardShapeLabel()} outline · ${t}mm stock\n  Bolt / shaft       : ${S.bolt} (⌀${fmt(boreDia())} clearance holes)\n  Bearings           : ${brgLine}\n  Dowels             : ⌀${fmt(S.dowelD)} nominal · press-fit holes cut ⌀${fmt(cxDowelHole())}\n  Kerf allowance     : ${S.kerf}mm (beam width — holes cut ${S.kerf}mm undersize to compensate)\n  Gear mesh clearance: ${cxBacklashMM(c.m).toFixed(2)}mm backlash (${cxBacklash().toFixed(2)} x module ${c.m}mm)\n`;
+  const M=cxBrgMode(), brgLine=M==='none'?(cxUseDowels()?'no bearings (plain bolt / dowel pivots)':'no bearings (plain bolt pivots)'):`⌀${S.cx.bearing.od}mm ${M==='gearsRods'?'in gears + rod pivots':'in gears'} · holes cut ⌀${fmt(cxBearingHole())}`;
+  const head=`PROJECT MATERIALS — The Clever Contraptions Corner\n\n  Back board / sheet : ${bw}×${bh}mm · ${cxBoardShapeLabel()} outline · ${t}mm stock\n  Bolt / shaft       : ${S.bolt} (⌀${fmt(boreDia())} clearance holes)\n  Bearings           : ${brgLine}\n  Dowels             : ${cxUseDowels()?`⌀${fmt(S.dowelD)} nominal · press-fit holes cut ⌀${fmt(cxDowelHole())}`:`none — ${S.bolt} bolts used everywhere a dowel would go`}\n  Kerf allowance     : ${S.kerf}mm (beam width — holes cut ${S.kerf}mm undersize to compensate)\n  Gear mesh clearance: ${cxBacklashMM(c.m).toFixed(2)}mm backlash (${cxBacklash().toFixed(2)} x module ${c.m}mm)\n`;
   return head+'\nLASER-CUT (wood, '+t+'mm):\n'+b.cut.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n')+'\n\nBUY SEPARATELY:\n'+b.buy.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n'); }
 function cxArmMax(){ const P=S.cx.split; return (P&&P.mode!=='off')?Math.max(P.maxW||600,P.maxH||400):1e9; }
 function cxArmSplice(al,armMax,ov){ ov=ov||28; if(!(armMax>0)||al<=armMax)return [{start:0,len:al,pivS:true,pivE:true,aligns:[],idx:0,n:1}];
@@ -6365,6 +6374,7 @@ function renderPrep(){ const host=document.getElementById('prepBody'); if(!host)
       + prow('Hole in the baseplate','Should grip so the shaft cannot wander — a tighter fit.',num('prepHoleBoard',(+boardBoltHole()).toFixed(1),0.1,1,20),unit)
       + `</div>`; }
 
+  if(!U.dowels)Bx+=`<div class="pnote">Dowels off — every shaft, pin, post and mount that would use a dowel is sized for a snug ${S.bolt} bolt instead (holes cut ⌀${fmt(boardBoltHole())}).</div>`;
   if(U.dowels){ Bx+=`<div class="psub"><div class="psub-h">Dowels — pins &amp; standoff posts</div>`
       + prow('Dowel ⌀','The rod you bought.',num('prepDowelD',S.dowelD,0.5,2,20),unit)
       + prow('Hole to cut','A touch under the dowel so it presses in.',num('prepDowelHole',(+cxDowelHole()).toFixed(1),0.1,2,30),unit)
