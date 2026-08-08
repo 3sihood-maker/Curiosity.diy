@@ -1062,12 +1062,24 @@
         <div id="spokeSlotGlobal">
           <div class="field" id="spokeField">
           <div class="lab"><label>Gear spokes / lightening</label></div>
-          <div class="seg" id="spokeSeg">
-            <button data-s="0" aria-pressed="true">Solid</button>
+          <div class="seg" id="spokeStyleSeg">
+            <button data-st="solid" aria-pressed="true">Solid</button>
+            <button data-st="spokes" aria-pressed="false">Spokes</button>
+            <button data-st="curved" aria-pressed="false">Curved</button>
+            <button data-st="slots" aria-pressed="false">Slots</button>
+            <button data-st="holes" aria-pressed="false">Holes</button>
+            <button data-st="lens" aria-pressed="false">Lens</button>
+          </div>
+          <div class="seg" id="spokeSeg" style="margin-top:6px">
             <button data-s="3" aria-pressed="false">3</button>
             <button data-s="4" aria-pressed="false">4</button>
             <button data-s="5" aria-pressed="false">5</button>
+            <button data-s="6" aria-pressed="false">6</button>
+            <button data-s="8" aria-pressed="false">8</button>
           </div>
+          <div class="lab" style="margin-top:8px"><label>Spoke thickness</label><span class="val" id="spokeWVal">8 mm</span></div>
+          <input type="range" id="spokeWRange" min="4" max="20" step="0.5" value="8">
+          <div class="hint" id="spokeHint">Cut-out style, count, then how chunky the solid material between windows is. The hub and rim stay solid, gears under 14 teeth (or too small) stay solid automatically, and on gears carrying a pin the pattern rotates so a solid spoke passes under it. If the thickness you ask for leaves no room for windows, that gear stays solid rather than cutting slivers.</div>
         </div>
         </div>
         <div class="field summarybox">
@@ -1520,7 +1532,7 @@ const S={ unit:'mm', size:6, gears:[18,30], bend:0, pa:20, thick:6, kerf:0.15,
     {id:2,N:12,kind:'compound',parent:1},
     {id:3,N:40,kind:'mesh',parent:2,dir:250}
   ]},
-  bolt:'M6', fit:'clr', spokes:0, base:true, margin:12, baseMode:'auto', baseW:0, baseH:0,
+  bolt:'M6', fit:'clr', spokes:0, spokeStyle:'lens', spokeW:8, base:true, margin:12, baseMode:'auto', baseW:0, baseH:0,
   view:'3d', psize:'m', playing:true, dir:1, movement:'gearing' };
 const MAXG=7, MING=2;
 
@@ -1547,8 +1559,86 @@ function gearOutline(N,module,paDeg,kerfHalf,samples){const {pts,rp,ra,rf,rb}=to
   return {poly:kerfHalf?offsetPolygon(poly,kerfHalf):poly,rp,ra,rf,rb};}
 function circleLoop(r,seg){seg=seg||48;const p=[];for(let i=0;i<seg;i++){const a=2*Math.PI*i/seg;p.push([r*Math.cos(a),r*Math.sin(a)]);}return p;}
 function spokeHoles(rOuter,count,hubR){const holes=[],rimIn=rOuter*0.80,hub=hubR,rMid=(rimIn+hub)/2,wob=(rimIn-hub)*0.34;
-  for(let i=0;i<count;i++){const a=2*Math.PI*i/count+Math.PI/count,spread=(Math.PI/count)*0.78,pts=[];
+  const spread=Math.min((Math.PI/count)*0.78, Math.PI/count-(Math.max(4,S.spokeW||8))/(2*rMid));
+  if(spread<0.06)return [];
+  for(let i=0;i<count;i++){const a=2*Math.PI*i/count+Math.PI/count,pts=[];
     for(let j=0;j<=24;j++){const t=j/24,ang=a-spread+2*spread*t,rr=rMid+wob*Math.sin(Math.PI*t);pts.push([rr*Math.cos(ang),rr*Math.sin(ang)]);}holes.push(pts);}return holes;}
+/* ---- spoke styles (Aug 2026) ------------------------------------------------------------
+   One dispatcher, five looks. Every style keeps: a solid hub (bore OR bearing seat + web),
+   a solid rim band under the teeth (20% of tip radius), and a minimum annulus of
+   SPOKE_MIN_ANN — smaller gears stay solid automatically. All windows are single closed
+   loops, so kerf offsetting, 3D meshing and nesting treat them exactly like the old lens
+   windows. Pins: spoke patterns are phase-rotated so a solid spoke passes under the pin;
+   the holes style drops just the clashing circle; anything else drops the clashing window. */
+var SPOKE_MIN_ANN=8;
+function ptInLoop(P,x,y){ let inside=false;
+  for(let i=0,j=P.length-1;i<P.length;j=i++){ const xi=P[i][0],yi=P[i][1],xj=P[j][0],yj=P[j][1];
+    if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside; }
+  return inside; }
+function spokeSectorWindows(hub,rimIn,count,swirl,ph,minSpokeW){
+  const r0=hub+1.2, r1=rimIn-1.2, half=Math.PI/count, out=[];
+  const spokeW=Math.max(4, S.spokeW||8, minSpokeW||0);
+  const inset=r=>(spokeW/2)/r;
+  /* thick spokes converge near the hub — start the window's inner edge further out,
+     where it is at least ~5mm wide, instead of pinching to a sliver or going solid */
+  const rNeed=(5+spokeW)/(2*half);
+  const R0=Math.max(r0,rNeed);
+  if(R0>r1-4)return [];                           /* genuinely no radial room: stay solid */
+  const sw=r=>swirl*(r-r0)/(r1-r0);
+  for(let i=0;i<count;i++){ const c=2*Math.PI*i/count+half+ph, pts=[], M=9;
+    for(let j=0;j<=M;j++){ const r=R0+(r1-R0)*j/M, a=c-(half-inset(r))+sw(r); pts.push([r*Math.cos(a),r*Math.sin(a)]); }
+    for(let j=0;j<=M;j++){ const a=c-(half-inset(r1))+sw(r1)+(2*(half-inset(r1)))*j/M; pts.push([r1*Math.cos(a),r1*Math.sin(a)]); }
+    for(let j=0;j<=M;j++){ const r=r1-(r1-R0)*j/M, a=c+(half-inset(r))+sw(r); pts.push([r*Math.cos(a),r*Math.sin(a)]); }
+    for(let j=0;j<=M;j++){ const a=c+(half-inset(R0))+sw(R0)-(2*(half-inset(R0)))*j/M; pts.push([R0*Math.cos(a),R0*Math.sin(a)]); }
+    out.push(pts); }
+  return out; }
+function spokeArcSlots(hub,rimIn,count,ph){
+  const mid=(hub+rimIn)/2, h=Math.min((rimIn-hub)*0.30,7);
+  const span=Math.min((2*Math.PI/count)*0.72, 2*Math.PI/count-(Math.max(4,S.spokeW||8))/mid);
+  if(span<0.14)return [];
+  const out=[];
+  for(let i=0;i<count;i++){ const c=2*Math.PI*i/count+ph, a0=c-span/2, a1=c+span/2, pts=[], M=14;
+    for(let j=0;j<=M;j++){ const a=a0+(a1-a0)*j/M; pts.push([(mid+h)*Math.cos(a),(mid+h)*Math.sin(a)]); }
+    for(let j=1;j<7;j++){ const t=Math.PI/2-Math.PI*j/7, lx=h*Math.sin(t), ly=h*Math.cos(t);
+      pts.push([(mid+lx)*Math.cos(a1)-ly*Math.sin(a1)*0+ly*(-Math.sin(a1)), (mid+lx)*Math.sin(a1)+ly*Math.cos(a1)]); }
+    for(let j=0;j<=M;j++){ const a=a1-(a1-a0)*j/M; pts.push([(mid-h)*Math.cos(a),(mid-h)*Math.sin(a)]); }
+    for(let j=1;j<7;j++){ const t=-Math.PI/2+Math.PI*j/7, lx=h*Math.sin(t), ly=-h*Math.cos(t);
+      pts.push([(mid+lx)*Math.cos(a0)+ly*(-Math.sin(a0)), (mid+lx)*Math.sin(a0)+ly*Math.cos(a0)]); }
+    out.push(pts); }
+  return out; }
+function spokeHoleRing(hub,rimIn,count){
+  const mid=(hub+rimIn)/2, W=rimIn-hub;
+  const d=Math.min(W-5, 2*mid*Math.sin(Math.PI/count)-Math.max(4,S.spokeW||8));
+  if(d<4)return [];
+  const out=[]; for(let i=0;i<count;i++){ const a=2*Math.PI*i/count;
+    out.push(circleLoop(d/2,28).map(p=>[p[0]+mid*Math.cos(a),p[1]+mid*Math.sin(a)])); }
+  return out; }
+function spokeClash(L,px,py,thresh){
+  if(ptInLoop(L,px,py))return true;
+  return L.some(q=>Math.hypot(q[0]-px,q[1]-py)<thresh); }
+function spokeCutouts(rOuter,count,hub,pins,N){
+  const style=S.spokeStyle||'lens';
+  if(style==='solid'||!count)return [];
+  if(N!=null&&N<14)return [];                     /* under 14 teeth: always solid */
+  const rimIn=rOuter*0.80;
+  if(rimIn-hub<SPOKE_MIN_ANN)return [];           /* small gears stay solid */
+  const thresh=(typeof cxBaseHole==='function'?cxBaseHole():6)/2+2.5;
+  if(style==='holes'){ let H=spokeHoleRing(hub,rimIn,count);
+    if(pins&&pins.length)H=H.filter(L=>!pins.some(pn=>spokeClash(L,pn.r,0,thresh)));
+    return H; }
+  const gen=(ph,wide)=> style==='spokes'?spokeSectorWindows(hub,rimIn,count,0,ph,wide)
+             : style==='curved'?spokeSectorWindows(hub,rimIn,count,0.7,ph,wide)
+             : style==='slots' ?spokeArcSlots(hub,rimIn,count,ph)
+             : spokeHoles(rOuter,count,hub).map(L=>ph?L.map(p=>rot2(p[0],p[1],ph)):L);
+  if(!pins||!pins.length)return gen(0);
+  const clear=H=>!pins.some(pn=>H.some(L=>spokeClash(L,pn.r,0,thresh)));
+  const step=(2*Math.PI/count)/12;
+  /* spoke styles: widen the spokes to shelter the pin, then rotate one under it —
+     the pattern stays symmetric and every window survives */
+  if(style==='spokes'||style==='curved'){ const wide=2*thresh+1.5;
+    for(let j=0;j<12;j++){ const H=gen(j*step,wide); if(clear(H))return H; } }
+  for(let j=0;j<12;j++){ const H=gen(j*step); if(clear(H))return H; }
+  return gen(0).filter(L=>!pins.some(pn=>spokeClash(L,pn.r,0,thresh))); }
 function roundRectLoop(w,h,r,seg){seg=seg||6;r=Math.min(r,Math.min(w,h)/2);const p=[];const hw=w/2,hh=h/2;
   const corners=[[hw-r,hh-r,0],[-hw+r,hh-r,Math.PI/2],[-hw+r,-hh+r,Math.PI],[hw-r,-hh+r,3*Math.PI/2]];
   for(const [cx,cy,a0] of corners){for(let i=0;i<=seg;i++){const a=a0+Math.PI/2*i/seg;p.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);}}return p;}
@@ -1569,7 +1659,10 @@ function module_mm(){return S.unit==='mm'?S.size:(MM_PER_IN/S.size);}
 
 function gcd(a,b){return b?gcd(b,a%b):a;}
 function fmt(mm){return S.unit==='mm'?mm.toFixed(1)+' mm':(mm/MM_PER_IN).toFixed(3)+' in';}
-function hubR(){return Math.max(boreDia()*1.1,module_mm()*1.6);}
+function hubR(){ let r=Math.max(boreDia()*1.1,module_mm()*1.6);
+  /* a bearing seat can be far wider than the bolt bore — the solid hub must clear it */
+  try{ if(typeof cxBrgMode==='function'&&cxBrgMode()!=='none')r=Math.max(r,(+cxBearingHole()||0)/2+3); }catch(_){}
+  return r; }
 
 /* ---- the train layout + verified meshing phase ----
    returns per gear {N,cx,cy,ra,rp,phase,rate}, plus cds[], bbox, collisions */
@@ -1609,7 +1702,7 @@ function gearLoops3D(N,m,pa,blOff){
   const off=(blOff==null)?cxBacklashOffset(m):blOff;
   const g=gearOutline(N,m,pa,off?-off:0,14);
   const loops=[flipY(g.poly), flipY(circleLoop(Math.max(cxGearBore()/2,0.6),40))];
-  if(S.spokes) spokeHoles(g.ra,S.spokes,hubR()).forEach(h=>loops.push(flipY(h)));
+  if(S.spokes) spokeCutouts(g.ra,S.spokes,hubR(),null,N).forEach(h=>loops.push(flipY(h)));
   return loops;
 }
 function sceneFromTrain(){
@@ -1930,7 +2023,7 @@ function rackProfile(){ const {m,pa,p,teeth,Lr}=rpVals(), a=m, d=1.25*m, back=2*
   top.push([Lr/2,-d]); const yB=-d-back;
   return top.concat([[Lr/2,yB],[-Lr/2,yB]]); }
 function pinionExportLoops(){ const g=gearOutline(S.rpN,S.rpM,S.rpPa,-cxBacklashOffset(S.rpM),14); const loops=[g.poly, circleLoop(Math.max(cxGearBore()/2,0.6),40)];
-  if(S.spokes) spokeHoles(g.ra,S.spokes,hubR()).forEach(h=>loops.push(h)); return {loops,g}; }
+  if(S.spokes) spokeCutouts(g.ra,S.spokes,hubR(),null,S.rpN).forEach(h=>loops.push(h)); return {loops,g}; }
 function rpLayout(){ const v=rpVals(), ra=v.rp+v.m, railH=6, rackBot=-(1.25*v.m+2*v.m);
   const sMax=Math.max(v.Lr/2-1.5*v.p, v.p), railCy=rackBot-2-railH/2, guideLen=2*ra+2*v.p;
   return {...v, ra, sMax, amp:sMax/v.rp, railH, railCy, guideLen, rackBot}; }
@@ -2042,7 +2135,7 @@ function ratchetWheelLoop(){ const N=S.ratN,R=S.ratR,rf=R-ratToothDepth(),p=[];
   for(let k=0;k<N;k++){ const a=2*Math.PI*k/N; p.push([rf*Math.cos(a),rf*Math.sin(a)],[R*Math.cos(a),R*Math.sin(a)]); }
   return p; }
 function ratchetLoops3D(){ const loops=[flipY(ratchetWheelLoop()), flipY(circleLoop(Math.max(boreDia()/2,0.6),40))];
-  if(S.spokes) spokeHoles(S.ratR*0.82,S.spokes,hubR()).forEach(h=>loops.push(flipY(h))); return loops; }
+  if(S.spokes) spokeCutouts(S.ratR*0.82,S.spokes,hubR()).forEach(h=>loops.push(flipY(h))); return loops; }
 function pawlLoops(Larm,w){ return [rodLoop(Larm,w,14), circleLoop(Math.max(boreDia()/2,0.6),32)]; }
 function ratLayout(){ const N=S.ratN,R=S.ratR,adv=S.ratAdv,beta=2*Math.PI/N, w=Math.max(boreDia()+8,R*0.16);
   const Pd=[(R+0.6*R)*Math.cos(0.9),(R+0.6*R)*Math.sin(0.9)], noseD=[R*Math.cos(0.35),R*Math.sin(0.35)];
@@ -2130,7 +2223,7 @@ function exportRatchet(){
     x+=w+gap; rowH=Math.max(rowH,h+gap*2+4);
   };
   const wheel=[ratchetWheelLoop(), circleLoop(Math.max(boreDia()/2,0.6),40)];
-  if(S.spokes) spokeHoles(S.ratR*0.82,S.spokes,hubR()).forEach(h=>wheel.push(h));
+  if(S.spokes) spokeCutouts(S.ratR*0.82,S.spokes,hubR()).forEach(h=>wheel.push(h));
   place(wheel,`ratchet · ${S.ratN} teeth`);
   place(pawlLoops(L.Ld,L.w),'driving pawl');
   place(pawlLoops(L.Lh,L.w),'detent pawl');
@@ -2380,7 +2473,7 @@ function exportInternal(){
   };
   place([circleLoop(v.Ro,140), internalBore()],`ring · ${v.Nr}T internal`, true);
   const g=gearOutline(S.igNp,S.igM,S.igPa,-cxBacklashOffset(S.igM),14), pinLoops=[g.poly, circleLoop(Math.max(cxGearBore()/2,0.6),40)];
-  if(S.spokes) spokeHoles(g.ra,S.spokes,hubR()).forEach(h=>pinLoops.push(h));
+  if(S.spokes) spokeCutouts(g.ra,S.spokes,hubR(),null,S.igNp).forEach(h=>pinLoops.push(h));
   place(pinLoops,`pinion · ${v.Np}T`);
   let totalW=x, totalH=rowH;
   if(S.base){ const bd=baseDims(), bx=gap, by=rowH+gap, pcx=bx+bd.w/2, pcy=by+bd.h/2;
@@ -2524,7 +2617,7 @@ function exportPlanetary(){
   };
   place([circleLoop(v.Ro,140), ringBore(v.Nr,v.m,v.pa)],`ring · ${v.Nr}T (fixed)`,true);
   const sg=gearOutline(v.Ns,v.m,v.pa,-cxBacklashOffset(v.m),14), sun=[sg.poly, circleLoop(Math.max(cxGearBore()/2,0.6),40)];
-  if(S.spokes) spokeHoles(sg.ra,S.spokes,hubR()).forEach(h=>sun.push(h));
+  if(S.spokes) spokeCutouts(sg.ra,S.spokes,hubR(),null,v.Ns).forEach(h=>sun.push(h));
   place(sun,`sun · ${v.Ns}T`);
   const pgL=gearOutline(v.Np,v.m,v.pa,-cxBacklashOffset(v.m),14), planet=[pgL.poly, circleLoop(Math.max(cxGearBore()/2,0.6),40)];
   place(planet,`planet · ${v.Np}T ×${v.P}`);
@@ -4163,14 +4256,9 @@ function sheetDims(){ const el=document.getElementById('sheetSize'); const v=(el
 function cxSyncSplitMax(){ const P=S.cx&&S.cx.split; if(!P)return;
   if(!P.custom){ const d=sheetDims(); P.maxW=d[0]; P.maxH=d[1]; } }
 function cxGearSpokes(g,c){ if(!S.spokes)return [];
-  const ra=c.m*(g.N+2)/2, hub=hubR(), rimIn=ra*0.80;
-  if(rimIn-hub<6)return [];                      // too small to lighten safely
+  const ra=c.m*(g.N+2)/2, hub=hubR();
   const pins=(c.pen?c.pen.pins.filter(pn=>pn.g===g.id):[]);
-  const keep=[], hole=cxBaseHole();
-  spokeHoles(ra,S.spokes,hub).forEach(L=>{
-    const clash=pins.some(pn=>L.some(q=>Math.hypot(q[0]-pn.r,q[1])<hole/2+2.5));
-    if(!clash)keep.push(L); });
-  return keep; }
+  return spokeCutouts(ra,S.spokes,hub,pins,g.N); }
 // Paper backing board: a stiff sheet, bigger than the drawing, that the paper pins onto.
 // It stands off the gear on a 20mm-wide spacer ring, screwed through with small screws.
 // If a circular backing board is fitted, the paper visual becomes a circle to match.
@@ -4946,11 +5034,13 @@ function drawComplexPreview(){
   const order=[...c.gears].sort((a,b)=>a.layer-b.layer);
   order.forEach(g=>{ const go=gearOutline(g.N,c.m,20,-cxBacklashOffset(c.m),12), rot=cxTheta(g,th);
     const spk=cxGearSpokes(g,c);
-    let d='M'; go.poly.forEach((p,i)=>{ const X=g.x+p[0]*Math.cos(rot)-p[1]*Math.sin(rot), Y=-(g.y+p[0]*Math.sin(rot)+p[1]*Math.cos(rot)); d+=(i?'L':'')+X.toFixed(1)+' '+Y.toFixed(1)+' '; }); d+='Z';
+    const XY=p=>{ const X=g.x+p[0]*Math.cos(rot)-p[1]*Math.sin(rot), Y=-(g.y+p[0]*Math.sin(rot)+p[1]*Math.cos(rot)); return X.toFixed(1)+' '+Y.toFixed(1)+' '; };
+    /* one even-odd path: the gear body with its spoke windows as true holes, so the board
+       and lower gears show through the cut-outs instead of being painted over */
+    let d='M'; go.poly.forEach((p,i)=>{ d+=(i?'L':'')+XY(p); }); d+='Z ';
+    spk.forEach(L=>{ d+='M'; L.forEach((p,i)=>{ d+=(i?'L':'')+XY(p); }); d+='Z '; });
     const col=cxLayerCol(g.layer), isSel=g.id===S.cx.sel;
-    s+=`<path d="${d}" fill="${col}" fill-opacity="${g.layer===0?0.92:0.62}" stroke="${isSel?'#bf3a2b':'#23201a'}" stroke-width="${isSel?lw*2:lw}"/>`;
-    spk.forEach(L=>{ let sd='M'; L.forEach((p,i)=>{ const X=g.x+p[0]*Math.cos(rot)-p[1]*Math.sin(rot), Y=-(g.y+p[0]*Math.sin(rot)+p[1]*Math.cos(rot)); sd+=(i?'L':'')+X.toFixed(1)+' '+Y.toFixed(1)+' '; }); sd+='Z';
-      s+=`<path d="${sd}" fill="var(--paper-2)" fill-opacity="0.95" stroke="#23201a" stroke-width="${(lw*0.8).toFixed(2)}"/>`; });
+    s+=`<path d="${d}" fill="${col}" fill-opacity="${g.layer===0?0.92:0.62}" fill-rule="evenodd" stroke="${isSel?'#bf3a2b':'#23201a'}" stroke-width="${isSel?lw*2:lw}"/>`;
     if(g.kind==='driver')s+=`<circle cx="${g.x.toFixed(1)}" cy="${(-g.y).toFixed(1)}" r="${(g.rp*0.4).toFixed(1)}" fill="none" stroke="#bf3a2b" stroke-width="${(lw*1.4).toFixed(2)}"/>`; });
   // labels on top, uniform size, offset by layer so stacked gears don't collide
   c.gears.forEach(g=>{ const gf=Math.max(4.5,Math.min(gfs,g.ra*0.5)), dy=(g.layer-(c.layers-1)/2)*gf*1.2;
@@ -5829,7 +5919,7 @@ function gearingPreview(){
     const g=gearOutline(q.N,m,S.pa,-cxBacklashOffset(m),14);
     const pts=g.poly.map(p=>{const r=rot2(p[0],p[1],th);return [q.cx+r[0], -(q.cy+r[1])];});
     pts.forEach(p=>{minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1]);});
-    const holes=S.spokes?spokeHoles(g.ra,S.spokes,hubR()).map(h=>h.map(p=>{const r=rot2(p[0],p[1],th);return [q.cx+r[0],-(q.cy+r[1])];})):[];
+    const holes=S.spokes?spokeCutouts(g.ra,S.spokes,hubR(),null,q.N).map(h=>h.map(p=>{const r=rot2(p[0],p[1],th);return [q.cx+r[0],-(q.cy+r[1])];})):[];
     const col=(i===0||i===G.length-1)?'#d3ab7433':'#c79a6333';
     parts.push(`<path d="${pathFrom(pts)}" fill="${col}" stroke="#23201a" stroke-width="LW"/>
       ${holes.map(h=>`<path d="${pathFrom(h)}" fill="#e9e2d0" stroke="#23201a" stroke-width="LW08"/>`).join('')}
@@ -5894,7 +5984,7 @@ function exportGearing(){
   G.forEach((q,i)=>{const g=gearOutline(q.N,m,S.pa,kh-cxBacklashOffset(m),14);const cx=x+g.ra, cyy=g.ra+gap;
     parts.push(`<path d="${pathFrom(g.poly,cx,cyy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     parts.push(`<path d="${svgCircle(boreR,cx,cyy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-    if(S.spokes) spokeHoles(g.ra,S.spokes,hubR()).forEach(h=>parts.push(`<path d="${pathFrom(h,cx,cyy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
+    if(S.spokes) spokeCutouts(g.ra,S.spokes,hubR(),null,q.N).forEach(h=>parts.push(`<path d="${pathFrom(h,cx,cyy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
     const role=i===0?'DRV':(i===G.length-1?'OUT':'IDL'+i);
     parts.push(txt(cx,cyy,`${role}·${q.N}T`,SCORE,m*0.85));
     x=cx+g.ra+gap; rowH=Math.max(rowH,2*g.ra+gap*2);});
@@ -6317,8 +6407,8 @@ function cxUndoStepDo(){ if(!cxHist.length)return false;
 function cxRedoStepDo(){ if(!cxRedoStack.length)return false;
   const nxt=cxRedoStack.pop(); cxHist.push(cxLastSnap); return cxHistApply(nxt); }
 var cxUndo=null, cxExampleNote='';
-function cxSnapshot(){ try{ return JSON.stringify({cx:S.cx, movement:S.movement, spokes:S.spokes}); }catch(_){ return null; } }
-function cxRestore(js){ try{ const d=JSON.parse(js); S.cx=d.cx; S.movement=d.movement; S.spokes=d.spokes; return true; }catch(_){ return false; } }
+function cxSnapshot(){ try{ return JSON.stringify({cx:S.cx, movement:S.movement, spokes:S.spokes, spokeStyle:S.spokeStyle, spokeW:S.spokeW}); }catch(_){ return null; } }
+function cxRestore(js){ try{ const d=JSON.parse(js); S.cx=d.cx; S.movement=d.movement; S.spokes=d.spokes; if(d.spokeStyle!==undefined)S.spokeStyle=d.spokeStyle; if(d.spokeW!==undefined)S.spokeW=d.spokeW; try{syncSpokeUI();}catch(_){} return true; }catch(_){ return false; } }
 function cxUndoBtn(){ const b=document.getElementById('exUndo'); if(b){ b.disabled=!cxUndo; b.style.opacity=cxUndo?'1':'0.45'; } }
 function cxLoadExample2(){
   S.cx={ nextId:19, sel:18, m:2.25, scale:0.75, linkW:20,
@@ -7204,7 +7294,21 @@ document.getElementById('chainList').addEventListener('click',e=>{const b=e.targ
   else if(b.dataset.up!=null){const i=+b.dataset.up;if(i>0){const t=S.chain[i-1];S.chain[i-1]=S.chain[i];S.chain[i]=t;}}
   else if(b.dataset.down!=null){const i=+b.dataset.down;if(i<S.chain.length-1){const t=S.chain[i+1];S.chain[i+1]=S.chain[i];S.chain[i]=t;}}
   renderChainUI();everything();});
-document.getElementById('spokeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed',x===b));S.spokes=+b.dataset.s;everything();});
+function syncSpokeUI(){ const st=S.spokeStyle||'lens', solid=(st==='solid'||!S.spokes);
+  const ss=document.getElementById('spokeStyleSeg'); if(ss)[...ss.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.st===(solid?'solid':st)?'true':'false'));
+  const cs=document.getElementById('spokeSeg'); if(cs){ [...cs.children].forEach(x=>{x.setAttribute('aria-pressed',(+x.dataset.s===S.spokes&&!solid)?'true':'false');x.style.opacity=solid?'0.55':'1';}); }
+  const sr=document.getElementById('spokeWRange'), sv=document.getElementById('spokeWVal');
+  if(sr){ if(document.activeElement!==sr)sr.value=S.spokeW||8; sr.style.opacity=solid?'0.55':'1'; }
+  if(sv)sv.textContent=(S.spokeW||8)+' mm'; }
+document.getElementById('spokeWRange').addEventListener('input',e=>{S.spokeW=Math.max(4,Math.min(20,+e.target.value||8));const v=document.getElementById('spokeWVal');if(v)v.textContent=S.spokeW+' mm';everything();});
+document.getElementById('spokeStyleSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  S.spokeStyle=b.dataset.st;
+  if(S.spokeStyle!=='solid'&&!S.spokes)S.spokes=4;
+  syncSpokeUI();everything();});
+document.getElementById('spokeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  S.spokes=+b.dataset.s;
+  if(S.spokeStyle==='solid')S.spokeStyle='lens';
+  syncSpokeUI();everything();});
 function clampThick(v){ const lo=S.unit==='mm'?1:0.04, hi=S.unit==='mm'?25:1; const n=+v; return isFinite(n)?Math.max(lo,Math.min(hi,n)):S.thick; }
 document.getElementById('thick').addEventListener('input',e=>{S.thick=clampThick(e.target.value);document.getElementById('thickVal').textContent=S.unit==='mm'?S.thick+' mm':(+S.thick).toFixed(3)+' in';everything();});
 document.getElementById('thick').addEventListener('change',e=>{e.target.value=S.thick=clampThick(e.target.value);document.getElementById('thickVal').textContent=S.unit==='mm'?S.thick+' mm':(+S.thick).toFixed(3)+' in';everything();});
@@ -7246,7 +7350,7 @@ function applyLoadedState(){
   const baseChk=document.getElementById('baseChk'); if(baseChk)baseChk.checked=!!S.base;
   document.querySelectorAll('.controls input').forEach(inp=>{ if(!inp.id||inp.type==='checkbox'||inp.type==='file')return; if(S[inp.id]!==undefined&&document.activeElement!==inp)inp.value=S[inp.id]; });
   const seg=(id,attr,val)=>{const e=document.getElementById(id); if(!e)return; [...e.children].forEach(b=>{ if(b.dataset&&b.dataset[attr]!==undefined)b.setAttribute('aria-pressed',String(b.dataset[attr])===String(val)); });};
-  seg('viewSeg','v',S.view); seg('camLawSeg','law',S.camLaw); seg('spokeSeg','s',S.spokes); seg('cmpLayoutSeg','l',S.cmpLayout); seg('cmpCoupleSeg','c',S.cmpCouple);
+  seg('viewSeg','v',S.view); seg('camLawSeg','law',S.camLaw); try{syncSpokeUI();}catch(_){} seg('cmpLayoutSeg','l',S.cmpLayout); seg('cmpCoupleSeg','c',S.cmpCouple);
   [syncSizeUI,syncFourbarVals,syncPlanetaryVals,syncInternalVals,syncScotchVals,syncRatchetVals,syncRackVals,syncCrankVals,syncCamVals,refreshBaseInputs].forEach(f=>{try{f&&f();}catch(_){}});
   try{renderGearList();}catch(_){}
   const tv=document.getElementById('thickVal'); if(tv)tv.textContent=S.unit==='mm'?S.thick+' mm':(+S.thick).toFixed(3)+' in';
