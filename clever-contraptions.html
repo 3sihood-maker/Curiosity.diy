@@ -628,13 +628,20 @@
           <div class="lab"><label>Laser sheet size</label></div>
           <select id="sheetSize" class="selin">
               <option value="300x200">300 × 200 mm</option>
-              <option value="300x300">300 × 300 mm</option>
-              <option value="400x300" selected>400 × 300 mm</option>
+              <option value="300x300" selected>300 × 300 mm</option>
+              <option value="400x300">400 × 300 mm</option>
               <option value="600x300">600 × 300 mm</option>
               <option value="600x400">600 × 400 mm</option>
               <option value="297x210">A4 (297 × 210)</option>
               <option value="420x297">A3 (420 × 297)</option>
+              <option value="custom">Custom…</option>
             </select>
+          <div id="sheetCustom" class="hide" style="margin-top:8px">
+            <div class="row2">
+              <div><div class="lab"><label>Sheet width</label><span class="val">mm</span></div><input type="number" id="sheetW" min="80" max="1600" step="5" value="350"></div>
+              <div><div class="lab"><label>Sheet height</label><span class="val">mm</span></div><input type="number" id="sheetH" min="80" max="1600" step="5" value="350"></div>
+            </div>
+          </div>
           <div class="hint">The stock you cut from. Parts are nested onto sheets this size — if a piece is too big you will be warned in Cut sheets.</div>
         </div>
         <div class="cxmajor">Baseplate</div>
@@ -1017,6 +1024,7 @@
           <div class="cxmajor">Supports &amp; feet<small>motor drive · hidden feet under the board</small></div>
           <div id="cxMotorUI"></div>
           <div id="cxFeetUI" style="margin-top:12px;border-top:1px dotted rgba(35,32,26,0.3);padding-top:10px"></div>
+          <div id="cxExtrasUI" style="margin-top:12px;border-top:1px dotted rgba(35,32,26,0.3);padding-top:10px"></div>
 </div>
         <div id="mvComposer" class="hide">
         <div class="field">
@@ -1167,6 +1175,7 @@
       <div class="panel-b">
 <div class="export">
           <button class="btn" id="dlBtn">⬇ Reference sheet (annotated)</button>
+          <button class="btn ghost" id="testSheetBtn">🧪 Test everything sheet</button>
           <button class="btn ghost" id="cdBtn">⧉ Copy centre distances</button>
           <button class="btn ghost" id="csBtn" aria-expanded="false">▸ Cut sheets to laser</button>
           <button class="btn ghost" id="saveProjBtn">⇩ Save project</button>
@@ -4372,7 +4381,12 @@ function cxFeetSlots(c){ const F=cxFeet(), t=S.thick, out=[];
       const cx0=u.x+dx*a+nx*b, cy0=u.y+dy*a+ny*b, poly=[];
       [[-9,-t/2],[9,-t/2],[9,t/2],[-9,t/2]].forEach(q=>poly.push([cx0+dx*q[0]+nx*q[1], cy0+dy*q[0]+ny*q[1]]));
       out.push({cx:cx0,cy:cy0,poly}); } };
-  if(F.on){ const plan=cxFeetPlan(c);
+  if(F.on&&F.style==='skirt'){ const sp=cxSkirtPlan(c);
+    if(sp.ok){ const bpl=cxBoardPlan(c);
+      sp.walls.forEach(w0=>{ w0.tabs.forEach(tp=>{ const x=(w0.axis==='x')?bpl.ox+tp:w0.cx, y=(w0.axis==='x')?w0.cy:bpl.oy+tp;
+        const poly=(w0.axis==='x')?[[x-9,y-t/2],[x+9,y-t/2],[x+9,y+t/2],[x-9,y+t/2]]:[[x-t/2,y-9],[x+t/2,y-9],[x+t/2,y+9],[x-t/2,y+9]];
+        out.push({cx:x,cy:y,poly}); }); }); } }
+  else if(F.on){ const plan=cxFeetPlan(c);
     if(plan.ok)plan.units.forEach(u=>{ addUnit(u,plan.fl,F.gap||40,14);
       if(cxWall()){ const la=cxKeyLocalAng(u), K=cxKeySpec(), wa=u.ang+la;
         const mx=u.x+Math.cos(wa)*K.slotL, my=u.y+Math.sin(wa)*K.slotL;   /* pencil marks the SCREW spot: the slot end */
@@ -4388,6 +4402,52 @@ function keyholeLoop(headD,shankD,slotL,ang){ const r1=headD/2, r2=Math.min(shan
   const N=26; for(let i=0;i<=N;i++){ const a=ang+a0+(2*Math.PI-2*a0)*i/N; pts.push([r1*Math.cos(a),r1*Math.sin(a)]); }
   const ex=slotL*Math.cos(ang), ey=slotL*Math.sin(ang);
   for(let i=0;i<=8;i++){ const a=ang-Math.PI/2+Math.PI*i/8; pts.push([ex+r2*Math.cos(a),ey+r2*Math.sin(a)]); }
+  return pts; }
+/* Extra dowel-build spacers, cut as loose parts — not shown in the 3D machine.
+   Loose washers spin on the dowel; tight caps press on to finish a shaft; the big
+   under-gear washer steadies a large gear against the board. */
+function cxExtras(){ return S.cx.extras||(S.cx.extras={loose:0,tight:0,big:0,bigD:36}); }
+function cxExtrasPieces(){ const E=cxExtras(), t=S.thick, D=S.dowelD||6, out=[];
+  const ring=(od,bore)=>[circleLoop(od/2,36),circleLoop(bore/2,24)];
+  for(let i=0;i<Math.min(40,E.loose||0);i++)out.push({loops:ring(Math.max(D*3,16),D+0.4),label:'dowel washer (loose)'});
+  for(let i=0;i<Math.min(40,E.tight||0);i++)out.push({loops:ring(Math.max(D*3,16),Math.max(2,D-0.15)),label:'dowel cap (tight)'});
+  for(let i=0;i<Math.min(20,E.big||0);i++)out.push({loops:ring(Math.max(E.bigD||36,D*3+6),D+0.4),label:'under-gear washer'});
+  return out; }
+/* -------- rectangular edge skirt: four strips box-jointed at the corners, tabbed up
+   into slots near the board edges. Tab positions slide along each wall to dodge shaft
+   nuts, and the strips are cut with their tabs wherever the slots landed. -------- */
+function cxKeepOuts(c){ const ko=[], seen={}, F=cxFeet();
+  c.gears.forEach(g=>{ const k=cxShaftKeyOf(g); if(seen[k])return; seen[k]=1;
+    ko.push({x:g.x,y:g.y,r:boltNom()*1.2+8+((k===cxMotorShaftKey(c))?Math.max(0,(F.motorKeep||45)-boltNom()*1.2-8):0)}); });
+  try{ cxPostWorld(c).forEach(pp=>ko.push({x:pp.x,y:pp.y,r:9})); }catch(_){}
+  { const cu=cxCradleUnit(c); if(cu){ const cdx=Math.cos(cu.ang),cdy=Math.sin(cu.ang), rr=cu.gap/2+S.thick+12;
+      for(const a of [-cu.fl/2,0,cu.fl/2])ko.push({x:cu.x+cdx*a,y:cu.y+cdy*a,r:rr}); } }
+  return ko; }
+function cxSkirtPlan(c){ const F=cxFeet(), bpl=cxBoardPlan(c), t=S.thick;
+  if(bpl.poly)return {ok:false,msg:'\u26a0 the skirt needs a rectangular board \u2014 use hidden fins on shaped boards'};
+  const ins=10, sw=bpl.bw-2*ins, sh=bpl.bh-2*ins, ko=cxKeepOuts(c);
+  const clear=(x,y)=>!ko.some(o=>Math.hypot(x-o.x,y-o.y)<o.r+11);
+  const walls=[ {axis:'x', cy:bpl.oy-(sh/2-t/2), len:sw}, {axis:'x', cy:bpl.oy+(sh/2-t/2), len:sw},
+                {axis:'y', cx:bpl.ox-(sw/2-t/2), len:sh}, {axis:'y', cx:bpl.ox+(sw/2-t/2), len:sh} ];
+  for(const w of walls){ w.tabs=[];
+    for(const e of [-1,1]){ let hit=null;
+      for(const d of [32,52,76,102,132]){ const p=e*(w.len/2-d);
+        const x=(w.axis==='x')?bpl.ox+p:w.cx, y=(w.axis==='x')?w.cy:bpl.oy+p;
+        if(clear(x,y)){ hit=p; break; } }
+      if(hit==null)return {ok:false,msg:'\u26a0 skirt tab can\u2019t dodge the shaft nuts on one wall \u2014 grow the board margin a little'};
+      w.tabs.push(hit); } }
+  return {ok:true,walls,sw,sh,ins}; }
+function cxSkirtStripLoop(len,H,t,typeA,tabs){ const pts=[], seg=H/3;
+  const bx=typeA?len/2:len/2-t;                       /* bottom span: A full, B inset */
+  pts.push([-bx,0],[bx,0]);
+  if(typeA)pts.push([len/2,0],[len/2,seg],[len/2-t,seg],[len/2-t,2*seg],[len/2,2*seg],[len/2,H]);
+  else pts.push([len/2-t,seg],[len/2,seg],[len/2,2*seg],[len/2-t,2*seg],[len/2-t,H]);
+  const xr=typeA?len/2:len/2-t, xl=-xr;
+  const srt=[...tabs].sort((a,b)=>b-a);
+  let cur=xr; srt.forEach(tp=>{ pts.push([tp+9,H],[tp+9,H+t],[tp-9,H+t],[tp-9,H]); });
+  pts.push([xl,H]);
+  if(typeA)pts.push([-len/2,H],[-len/2,2*seg],[-len/2+t,2*seg],[-len/2+t,seg],[-len/2,seg],[-len/2,0]);
+  else pts.push([-(len/2-t),2*seg],[-len/2,2*seg],[-len/2,seg],[-(len/2-t),seg],[-(len/2-t),0]);
   return pts; }
 function cxWall(){ const F=cxFeet(); return !!F.wall; }
 function cxKeySpec(){ const F=cxFeet(); return {headD:F.keyHead||9, shankD:F.keyShank||4.5, slotL:F.keySlot||12}; }
@@ -4426,6 +4486,7 @@ function cxDowelHole(){ if(!cxUseDowels())return boardBoltHole();   /* dowels of
 function cxGearBore(){ const M=cxBrgMode(); return (M==='gears'||M==='gearsRods')?cxBearingHole():boreDia(); }
 function cxRodBore(){ return (cxBrgMode()==='gearsRods')?cxBearingHole():boreDia(); }
 function sheetDims(){ const el=document.getElementById('sheetSize'); const v=(el&&el.value)||'400x300';
+  if(v==='custom')return [Math.max(80,S.sheetW||350), Math.max(80,S.sheetH||350)];
   const d=v.split('x').map(Number); return [d[0]||400, d[1]||300]; }
 function cxSyncSplitMax(){ const P=S.cx&&S.cx.split; if(!P)return;
   if(!P.custom){ const d=sheetDims(); P.maxW=d[0]; P.maxH=d[1]; } }
@@ -4508,8 +4569,8 @@ function cxBaseHole(){ return (cxBrgMode()!=='none')?boardBoltHole():cxDowelHole
 function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], buy=[];
   const gc={}; c.gears.forEach(g=>{gc[g.N]=(gc[g.N]||0)+1;});
   Object.keys(gc).map(Number).sort((a,b)=>a-b).forEach(N=>cut.push([`gear ${N}T`,gc[N],`⌀${fmt(m*(N+2))} · ${t}mm`]));
-  if(c.pen&&c.pen.joints.length){ const lens=[]; c.pen.joints.forEach(j=>{lens.push(j.la,j.lb);}); const aMax=cxArmMax(); let pcs=0; lens.forEach(l=>pcs+=cxArmSplice(l,aMax,28).length); cut.push([`linkage arm`,pcs,`${lens.map(l=>fmt(l)).join(', ')} long · ${cxLinkW()}mm wide · ${t}mm${pcs>lens.length?' · long ones spliced to fit bed (overlap-glue + pins)':''}`]); }
-  if(c.pen&&c.pen.welds&&c.pen.welds.length)cut.push([`branch arm`,c.pen.welds.length,`${c.pen.welds.map(w=>fmt(w.len||100)).join(', ')} long · GLUE rigidly onto host arm (fixed, not a pivot) — locating pin at the glue end, pen fits the tip hole · ${t}mm`]);
+  if(c.pen&&c.pen.joints.length){ const lens=[]; c.pen.joints.forEach(j=>{lens.push(j.la,j.lb);}); const aMax=cxArmMax(); let pcs=0; lens.forEach(l=>pcs+=cxArmSplice(l,aMax,28).length); cut.push([`linkage arm`,pcs*(S.cx.armDouble?2:1),`${lens.map(l=>fmt(l)).join(', ')} long · ${cxLinkW()}mm wide · ${t}mm${S.cx.armDouble?' · ×2 — glue pairs face-to-face for '+(2*t)+'mm arms':''}${pcs>lens.length?' · long ones spliced to fit bed (overlap-glue + pins)':''}`]); }
+  if(c.pen&&c.pen.welds&&c.pen.welds.length)cut.push([`branch arm`,c.pen.welds.length*(S.cx.armDouble?2:1),`${c.pen.welds.map(w=>fmt(w.len||100)).join(', ')} long${S.cx.armDouble?' · ×2 for double thickness':''} · GLUE rigidly onto host arm (fixed, not a pivot) — locating pin at the glue end, pen fits the tip hole · ${t}mm`]);
   { const B=cxPaperBoard(c);
     if(B){ cut.push([`paper backing board`,1,`${B.shape==='circle'?'⌀'+fmt(B.dia):fmt(B.w)+' × '+fmt(B.h)} — the paper pins to this · ${t}mm`]);
       cut.push([`paper spacer ring`,1,`⌀${fmt(B.ringOD)} outside, ${fmt(B.strip)} wide strip — lifts the board off gear #${B.gear!=null?B.gear:'—'} · ${t}mm`]);
@@ -4537,11 +4598,18 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
     if(rods)cut.push([`rack rod`,rods,`${eds.filter(e=>e.link==='rod').map(e=>fmt(e.rodL||0)).join(', ')} between pins · ${t}mm`]);
     if(posts)buy.push([cxUseDowels()?`dowel ⌀${fmt(cxDowelHole())} — rack guide posts`:`${S.bolt} bolt — rack guide posts`,posts,`stand the track off the board`]); }
   const sp=cxSpacers(c); if(sp.totalRings)cut.push([`spacer ring`,sp.totalRings,`⌀${fmt(boreDia()+8)} · bore ${fmt(boreDia())} · ${t}mm`]);
-  if(cxFeet().on){ const fp=cxFeetPlan(c);
+  if(cxFeet().on&&cxFeet().style==='skirt'){ const sp=cxSkirtPlan(c);
+    if(sp.ok){ cut.push([`skirt side (long)`,2,`${fmt(sp.sw)}×${fmt(cxFeetH())} · box-jointed corners, tabs into the board · ${t}mm`]);
+      cut.push([`skirt side (short)`,2,`${fmt(sp.sh)}×${fmt(cxFeetH())} · box-jointed corners, tabs into the board · ${t}mm`]); } }
+  else if(cxFeet().on){ const fp=cxFeetPlan(c);
     if(fp.ok){ const F=cxFeet();
       cut.push([`foot fin`,fp.units.length*2,`${fmt(fp.fl)}×${fmt(Math.max(18,cxFeetH()-t))} · tabs up into the board, down into the base · ${t}mm`]);
       cut.push([`foot base`,fp.units.length,`${fmt(fp.fl)}×${fmt((F.gap||40)+2*t+14)} flat plate — ${cxWall()?'keyhole for a wall screw · hex pencil hole in the board marks the spot':'sits on the table or flat against a wall'} · ${t}mm`]);
       if(cxWall())buy.push([`wall screw`,fp.units.length,`head under ⌀${fmt(cxKeySpec().headD)}, shank ⌀${fmt(cxKeySpec().shankD)} — hang the base-plate keyholes on them`]); } }
+  { const E=cxExtras(), D=S.dowelD||6;
+    if(E.loose)cut.push([`dowel washer (loose)`,E.loose,`⌀${fmt(Math.max(D*3,16))} · bore ${fmt(D+0.4)} — spins freely on the ⌀${fmt(D)} dowel · ${t}mm`]);
+    if(E.tight)cut.push([`dowel cap (tight)`,E.tight,`⌀${fmt(Math.max(D*3,16))} · bore ${fmt(Math.max(2,D-0.15))} — presses on to top off a shaft · ${t}mm`]);
+    if(E.big)cut.push([`under-gear washer`,E.big,`⌀${fmt(Math.max(E.bigD||36,D*3+6))} · bore ${fmt(D+0.4)} — steadies a big gear against the board · ${t}mm`]); }
   { const cu=cxCradleUnit(c);
     if(cu){ cut.push([`motor cradle fin`,2,`${fmt(cu.fl)}×${fmt(Math.max(18,cxCradle().drop-t))} · straddles the motor body · ${t}mm`]);
       cut.push([`motor cradle base`,1,`${fmt(cu.fl)}×${fmt(cu.gap+2*t+14)} · zip-tie slots hold the motor down · ${t}mm`]);
@@ -5012,12 +5080,16 @@ function sceneFromComplex(){
     parts.push({tris:plateMesh(loops,0,0,t,(t+3)),col:WOOD_BASE,spin:null,label:lbl}); });
   /* feet pieces ride the cut sheets and BOM as flat parts; the 3D view shows their board
      slots but not the standing fins (the pose model has no way to stand a plate upright) */
-  if(cxFeet().on){ const fp=cxFeetPlan(c);
+  if(cxFeet().on&&cxFeet().style==='skirt'){ const sp=cxSkirtPlan(c), H=cxFeetH();
+    if(sp.ok){ sp.walls.forEach((w0,wi)=>{ const L=[flipY(cxSkirtStripLoop(w0.len,H,t,w0.axis==='x',w0.tabs))];
+      parts.push({tris:[],cutLoops:L,col:'#8a6a3c',cutOnly:1,label:'skirt side '+(w0.axis==='x'?'A':'B')+(wi%2+1)}); }); } }
+  else if(cxFeet().on){ const fp=cxFeetPlan(c);
     if(fp.ok){ const fin=[flipY(cxFinLoop(fp.fl))];
       fp.units.forEach((u,ui)=>{ parts.push({tris:[],cutLoops:fin,col:'#8a6a3c',cutOnly:1,label:'foot fin'});
         parts.push({tris:[],cutLoops:fin,col:'#8a6a3c',cutOnly:1,label:'foot fin'});
         const base=cxBaseLoops(cxWall()?cxKeyLocalAng(u):null,fp.fl).map(L=>flipY(L));
         parts.push({tris:[],cutLoops:base,col:'#8a6a3c',cutOnly:1,label:'foot base'+(cxWall()?' (keyhole)':'')}); }); } }
+  cxExtrasPieces().forEach(p=>parts.push({tris:[],cutLoops:p.loops.map(L=>flipY(L)),col:'#8a6a3c',cutOnly:1,label:p.label}));
   { const cu=cxCradleUnit(c);
     if(cu){ const cf=[flipY(cxCradleFinLoop())], cb=cxCradleBaseLoops().map(L=>flipY(L));
       parts.push({tris:[],cutLoops:cf,col:'#8a6a3c',cutOnly:1,label:'motor cradle fin'});
@@ -5051,12 +5123,16 @@ function sceneFromComplex(){
         const loops=[flipY(rodLoop(pc.len+ovS+ovE,barW).map(p=>[p[0]-ovS,p[1]]))];
         uniq.forEach(o=>{ const local=o.d-(pc.start||0); if(local>-ovS+o.r*0.5&&local<pc.len+ovE-o.r*0.5)loops.push(flipY(circleLoop(o.r,18).map(p=>[p[0]+local,p[1]]))); });
         pc.aligns.forEach(d=>loops.push(flipY(circleLoop(Math.max(cxBore()/2,1.2),12).map(p=>[p[0]+d,p[1]]))));
-        parts.push({tris:plateMesh(loops,0,0,t*0.55,yLink-(pc.idx||0)*0.4),col:'#8a6a3c',label:cxHasPen()?'pen arm':'linkage arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*(pc.start-extMM)-ox,z:A[1]+Math.sin(ang)*(pc.start-extMM)-oy,rot:ang}; }}); }); }); });
+        const armMesh=plateMesh(loops,0,0,t*0.55,yLink-(pc.idx||0)*0.4);
+        parts.push({tris:armMesh,col:'#8a6a3c',label:cxHasPen()?'pen arm':'linkage arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*(pc.start-extMM)-ox,z:A[1]+Math.sin(ang)*(pc.start-extMM)-oy,rot:ang}; }});
+        if(S.cx.armDouble)parts.push({tris:armMesh,col:'#8a6a3c',cutOnly:1,label:(cxHasPen()?'pen arm':'linkage arm')+' (2nd ply)'}); }); }); });
     c.pen.joints.forEach((j,ji)=>{ const isLast=ji===c.pen.joints.length-1;
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.6,2.2),14))],0,0,t*1.2,yLink-t*0.3),col:'#5a4632',hw:1,pose:s=>{ const st=cxPenAt(c,s), J=st?st.jointPos[ji]:null; if(!J)return {x:OFF,z:OFF,rot:0}; return {x:J[0]-ox,z:J[1]-oy,rot:0}; }}); });
     (c.pen.welds||[]).forEach((w,wi)=>{ const L0=w.len||100, bw2=barW*0.9, ov2=bw2*0.85;
       const bl=[flipY(rodLoop(L0+2*ov2,bw2).map(p=>[p[0]-ov2,p[1]])), flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12)), flipY(circleLoop(Math.max(cxRodBore()/2,1),16).map(p=>[p[0]+L0,p[1]]))];
-      parts.push({tris:plateMesh(bl,0,0,t*0.5,yLink-0.6),col:'#a3763a',label:cxHasPen()?'pen mount arm':'branch arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const base=cxRefPos(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds), d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(!base||d==null)return {x:OFF,z:OFF,rot:0}; return {x:base[0]-ox,z:base[1]-oy,rot:d+(w.ang==null?90:w.ang)*Math.PI/180}; }});
+      const brMesh=plateMesh(bl,0,0,t*0.5,yLink-0.6);
+      if(S.cx.armDouble)parts.push({tris:brMesh,col:'#a3763a',cutOnly:1,label:(cxHasPen()?'pen mount arm':'branch arm')+' (2nd ply)'});
+      parts.push({tris:brMesh,col:'#a3763a',label:cxHasPen()?'pen mount arm':'branch arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const base=cxRefPos(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds), d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(!base||d==null)return {x:OFF,z:OFF,rot:0}; return {x:base[0]-ox,z:base[1]-oy,rot:d+(w.ang==null?90:w.ang)*Math.PI/180}; }});
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.4),14))],0,0,t*1.3,yLink-t*0.4),col:'#c79a63',hw:1,pose:s=>{ const st=cxPenAt(c,s), T=st?st.weldPos[wi]:null; if(!T)return {x:OFF,z:OFF,rot:0}; return {x:T[0]-ox,z:T[1]-oy,rot:0}; }}); });
     if(cxHasPen())parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',hw:1,pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }});
     { const B=cxPaperBoard(c);
@@ -5256,7 +5332,14 @@ function drawComplexBackPreview(){
   cxMotorScrews(c).forEach(sc=>{ s+='<circle cx="'+MX([sc.x])+'" cy="'+MY([0,sc.y])+'" r="'+(sc.d/2).toFixed(1)+'" fill="var(--paper)" stroke="#23201a" stroke-width="'+(lw*0.8)+'"/>'; });
   try{ cxPostWorld(c).forEach(pp=>{ s+='<circle cx="'+MX([pp.x])+'" cy="'+MY([0,pp.y])+'" r="'+(cxDowelHole()/2).toFixed(1)+'" fill="var(--paper)" stroke="#23201a" stroke-width="'+(lw*0.8)+'"/>'; }); }catch(_){}
   /* feet units */
-  if(cxFeet().on){ const fp=cxFeetPlan(c), F=cxFeet(), t=S.thick, fl=fp.fl||F.fl||90, gap=F.gap||40, W=gap+2*t+14;
+  if(cxFeet().on&&cxFeet().style==='skirt'){ const sp=cxSkirtPlan(c);
+    if(sp.ok){ const t2=S.thick;
+      const rrect=(w2,h2)=>{ const q=[[-w2/2,-h2/2],[w2/2,-h2/2],[w2/2,h2/2],[-w2/2,h2/2]].map(p=>[p[0]+ox,p[1]+oy]);
+        s+='<path d="M'+q.map(p=>MX(p)+' '+MY(p)).join('L')+'Z" fill="none" stroke="#8a6a3c" stroke-width="'+(t2*0.9)+'" opacity="0.85"/>'; };
+      rrect(sp.sw-t2,sp.sh-t2);
+      s+='<text x="0" y="'+MY([0,oy-(sp.sh/2-t2/2)])+'" font-size="'+fs+'" text-anchor="middle" fill="#3d2f1f" font-family="Space Mono,monospace">edge skirt</text>'; }
+    else s+='<text x="0" y="'+(-bh/2-6).toFixed(1)+'" font-size="'+fs+'" text-anchor="middle" fill="#bf3a2b" font-family="Space Mono,monospace">'+sp.msg+'</text>'; }
+  else if(cxFeet().on){ const fp=cxFeetPlan(c), F=cxFeet(), t=S.thick, fl=fp.fl||F.fl||90, gap=F.gap||40, W=gap+2*t+14;
     if(fp.ok)fp.units.forEach((u,ui)=>{ const dx=Math.cos(u.ang),dy=Math.sin(u.ang),nx=-dy,ny=dx;
       const rect=(cx0,cy0,LL,WW,fill,op)=>{ const pts=[[-LL/2,-WW/2],[LL/2,-WW/2],[LL/2,WW/2],[-LL/2,WW/2]]
           .map(q=>[cx0+dx*q[0]+nx*q[1], cy0+dy*q[0]+ny*q[1]]);
@@ -5712,11 +5795,23 @@ function renderMotorUI(c){ const host=document.getElementById('cxMotorUI'); if(!
     <div class="hint">The bore is cut in the driven gear${stacked.length>1?'s':''} to press onto the motor shaft — no bolt on that shaft, and the board gets a clearance hole for the shaft to pass through. Sizes are kerf-compensated like every other hole.</div>
     ${clash.map(w=>`<div class="hint" style="color:#bf3a2b">⚠ ${w}</div>`).join('')}`
    :`<div class="hint">Off — every shaft is a bolt${cxUseDowels()?' or dowel':''} as normal. Turn on to bore one shaft's gears for a motor shaft (D-flat, double-D or round) and open a clearance hole in the board.</div>`); }
+function renderExtrasUI(c){ const host=document.getElementById('cxExtrasUI'); if(!host)return;
+  const E=cxExtras(), D=S.dowelD||6, num=(id,v,st,mn,mx)=>`<input type="number" class="pnum" id="${id}" value="${v}" step="${st}" min="${mn}" max="${mx}" style="width:58px">`;
+  host.innerHTML=`<div class="lab"><label>Extra spacers &amp; washers</label><span class="val">dowel builds</span></div>
+    <div class="cstage-top" style="margin-top:6px"><span class="clab">loose washers</span>${num('cxExLoose',E.loose||0,1,0,40)}
+      <span class="clab">tight caps</span>${num('cxExTight',E.tight||0,1,0,40)}
+      <span class="clab">under-gear</span>${num('cxExBig',E.big||0,1,0,20)}
+      ${E.big?`<span class="clab">⌀</span>${num('cxExBigD',E.bigD||36,1,20,80)}`:''}</div>
+    <div class="hint">Cut as loose parts on the sheets — they don't appear in the 3D machine. Loose washers (bore ⌀${fmt(D+0.4)}) spin on the ⌀${fmt(D)} dowel as spacers; tight caps (bore ⌀${fmt(Math.max(2,D-0.15))}) press on to finish a shaft end; the under-gear washer is a wide one to steady a big gear against the board.</div>`; }
 function renderFeetUI(c){ const host=document.getElementById('cxFeetUI'); if(!host)return;
   const F=cxFeet(), num=(id,v,st,mn,mx)=>`<input type="number" class="pnum" id="${id}" value="${v}" step="${st}" min="${mn}" max="${mx}" style="width:64px">`;
   const plan=F.on?cxFeetPlan(c):null;
   host.innerHTML=`<div class="cstage-top"><label class="pchk" data-on="${F.on?1:0}"><input type="checkbox" id="cxFeetOn" ${F.on?'checked':''}>hidden feet under the board</label></div>`
-   +(F.on?`<div class="cstage-top" style="margin-top:6px"><span class="clab">units</span><select class="selin" id="cxFeetUnits" style="width:auto">
+   +(F.on?`<div class="cstage-top" style="margin-top:6px"><span class="clab">style</span><select class="selin" id="cxFeetStyle" style="width:auto">
+      <option value="fins"${F.style!=='skirt'?' selected':''}>hidden fins</option>
+      <option value="skirt"${F.style==='skirt'?' selected':''}>edge skirt (rect boards)</option></select></div>
+    ${F.style==='skirt'?`<div class="hint">${(function(){try{const sp=cxSkirtPlan(c);return sp.ok?'skirt fits \u2713 \u2014 four strips box-jointed at the corners, tabbed into slots just inside the board edge. Keyholes aren\u2019t on the skirt yet \u2014 use hidden fins for wall hanging.':'<span style="color:#bf3a2b">'+sp.msg+'</span>';}catch(_){return '';}})()}</div>`
+    :`<div class="cstage-top" style="margin-top:6px"><span class="clab">units</span><select class="selin" id="cxFeetUnits" style="width:auto">
       <option value="2"${(F.units||2)===2?' selected':''}>2 (4 fins)</option>
       <option value="3"${F.units===3?' selected':''}>3 (6 fins)</option></select>
       <span class="clab">height</span>${num('cxFeetH',cxFeetH(),1,25,120)}
@@ -5727,12 +5822,13 @@ function renderFeetUI(c){ const host=document.getElementById('cxFeetUI'); if(!ho
     ${F.wall?`<div class="hint">Each base plate gets a keyhole, slot pointing up. Small <b>hexagonal</b> holes are cut in the board directly over each keyhole's resting spot — hold the machine to the wall, pencil through the hexes, and the marks are exactly where the screws go. Hex, so you never mistake them for shaft holes.</div>`:''}
     <div class="cstage-top" style="margin-top:6px"><span class="clab">rotate placement</span><input type="range" id="cxFeetRot" min="0" max="120" step="3" value="${F.rot||0}" style="width:130px">
       ${cxMotor().on?`<span class="clab">motor keep-out ⌀</span>${num('cxFeetKeep',(F.motorKeep||45)*2,5,40,220)}<span class="clab">motor drop</span>${num('cxFeetDrop',F.motorDrop||50,1,0,150)}`:''}</div>
-    <div class="hint" style="${plan&&plan.ok?'':'color:#bf3a2b'}">${plan?plan.msg:''} — each unit is two fins with tabs up through slots in the board, cross-lapped to a tie. Height clears ${cxMotor().on?'the motor body and ':''}the bolt tails automatically; override it if you like. Glue the tabs, or leave them friction-fit.</div>`
+    <div class="hint" style="${plan&&plan.ok?'':'color:#bf3a2b'}">${plan?plan.msg:''} — each unit is two fins with tabs up through slots in the board, ending in a flat base plate. Height clears ${cxMotor().on?'the motor body and ':''}the bolt tails automatically; override it if you like. Glue the tabs, or leave them friction-fit.</div>`}`
    :`<div class="hint">Off — the board lies flat. Turn on to cut hidden H-shaped feet that tab into the underside, sized to clear the ${cxMotor().on?'motor and ':''}bolt tails.</div>`); }
 function renderComplexUI(){
   const host=document.getElementById('cxList'); if(!host)return; const c=computeComplex();
   try{renderMotorUI(c);}catch(_){}
   try{renderFeetUI(c);}catch(_){}
+  try{renderExtrasUI(c);}catch(_){}
   const KIND={driver:'crank',mesh:'mesh',compound:'stack',rackgear:'rack gear'};
   const CONVN={crank:'crank',scotch:'scotch yoke',cam:'cam'};
   host.innerHTML=cxDriveOrder(c).map(node=>{ const g=node.g, isSel=g.id===S.cx.sel;
@@ -5859,12 +5955,15 @@ function renderComplexUI(){
           +opt('t:j'+k+':b','a point along arm '+(k+1)+'B'));
         W.forEach((_,m)=>o+=opt('w'+m,'the tip of branch W'+(m+1))+opt('t:w'+m,'a point along branch W'+(m+1)));
         o+=opt('none','— no pen, just the linkage —'); return o; };
-      const penBlock=`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label>${cxHasPen()?`<button class="btn ghost" id="patOpen" style="padding:3px 10px;font-size:11px">🖼 Export pattern</button>`:''}</div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="hint">${cxHasPen()?'The pen sticks to this arm as you build the rest. Set the <b>pencil / pen hole</b> size &amp; shape down in <b>Bearings, bolts &amp; dowels</b>.':'No pen — the arms and branches still move, still get cut, but nothing draws and no pen collar, paper or backing board is generated. Pick any arm above to put a pen back on.'}</div>`;
+      const armCtl=`<div class="cstage-top" style="margin-top:8px"><span class="clab">arm width</span><input type="number" class="pnum" id="cxArmWIn" value="${cxLinkW()}" step="0.5" min="8" max="30" style="width:60px"><span class="punit">mm</span>
+        <label class="pchk" data-on="${S.cx.armDouble?1:0}" style="margin-left:10px"><input type="checkbox" id="cxArmDouble" ${S.cx.armDouble?'checked':''}>cut arms ×2 (double thickness)</label></div>
+        <div class="hint">Wider arms stiffen thin ply${S.cx.armDouble?'; the second set is identical — glue the pairs face-to-face for a '+(2*S.thick)+'mm arm':''}. Width also applies to con-rods and branch arms so the linkage stays consistent.</div>`;
+      const penBlock=armCtl+`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label>${cxHasPen()?`<button class="btn ghost" id="patOpen" style="padding:3px 10px;font-size:11px">🖼 Export pattern</button>`:''}</div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="hint">${cxHasPen()?'The pen sticks to this arm as you build the rest. Set the <b>pencil / pen hole</b> size &amp; shape down in <b>Bearings, bolts &amp; dowels</b>.':'No pen — the arms and branches still move, still get cut, but nothing draws and no pen collar, paper or backing board is generated. Pick any arm above to put a pen back on.'}</div>`;
       const custom=P.paper&&P.paper.mode==='custom';
       const paperCtl=`<div class="lab" style="margin-top:10px"><label>Paper</label></div><div class="cstage-top" style="margin-bottom:8px"><span class="clab">attach to</span><select class="selin" id="cxPaperGear" style="width:auto">${'<option value="fixed"'+((P.paper&&P.paper.gear!=null)?'':' selected')+'>fixed / moving bed</option>'+c.gears.map(g=>`<option value="g${g.id}"${(P.paper&&P.paper.gear===g.id)?' selected':''}>turntable on #${g.id}</option>`).join('')}</select></div><div class="seg" id="cxPaperSeg"><button data-pm="fit" aria-pressed="${custom?'false':'true'}">Fit to drawing</button><button data-pm="custom" aria-pressed="${custom?'true':'false'}">Custom</button></div>`+(custom?`<div class="cstage-top" style="margin-top:8px"><span class="clab">size</span><select class="selin" id="cxPaperPreset" style="width:auto"><option value="">preset…</option><option value="297x210">A4 · 297×210</option><option value="210x148">A5 · 210×148</option><option value="420x297">A3 · 420×297</option><option value="200x200">square 200</option><option value="300x300">square 300</option></select></div><div class="cstage-top" style="margin-top:6px"><span class="clab">W×H</span><span class="cstep"><button data-cxpaper="w" data-d="-10">−</button><input type="number" value="${P.paper.w}" id="cxPaperW" min="20" step="10"><button data-cxpaper="w" data-d="10">＋</button></span><span class="cstep"><button data-cxpaper="h" data-d="-10">−</button><input type="number" value="${P.paper.h}" id="cxPaperH" min="20" step="10"><button data-cxpaper="h" data-d="10">＋</button></span></div><button class="btn" id="cxFitPaper" style="margin-top:8px">⤢ fit drawing to this paper</button><div class="hint" style="margin-top:4px">Sizes the pins &amp; arms so the pattern fills the sheet.</div>`:'');
       const PB=(P.paper&&P.paper.board)||{on:false,shape:'square'};
       const BB=cxPaperBoard(c);
-      const sheetEl=document.getElementById('sheetSize'), sd=((sheetEl&&sheetEl.value)||'400x300').split('x').map(Number);
+      const sd=sheetDims();
       const bSize=BB?(BB.shape==='circle'?[BB.dia,BB.dia]:[BB.w,BB.h]):null;
       const tooBig=bSize?(Math.max(...bSize)>Math.max(sd[0],sd[1])||Math.min(...bSize)>Math.min(sd[0],sd[1])):false;
       const boardCtl=`<div class="cstage-top" style="margin-top:10px"><label class="pchk" style="flex:1" data-on="${PB.on?1:0}"><input type="checkbox" id="cxPaperBoardOn" ${PB.on?'checked':''}>Cut a paper backing board</label></div>`
@@ -6551,7 +6650,7 @@ function nestPiecesRect(pieces,sheetW,sheetH,gap){
 function loopArea(L){ let a=0; for(let i=0;i<L.length;i++){const [x1,y1]=L[i],[x2,y2]=L[(i+1)%L.length];a+=x1*y2-x2*y1;} return a/2; }
 // Build one kerf-compensated cut SVG per nested sheet. opts:{outline, marker}
 function cxNestedSheets(opts){ opts=opts||{};
-  const szEl=document.getElementById('sheetSize'), sz=((szEl&&szEl.value)||'400x300').split('x').map(Number), sw=sz[0], sh=sz[1], gap=6, kh=S.kerf/2;
+  const sz=sheetDims(), sw=sz[0], sh=sz[1], gap=6, kh=S.kerf/2;
   let pieces; try{ pieces=cutPiecesFromScene(); }catch(e){ pieces=[]; }
   if(!pieces.length)return {sheets:[], count:0, sw, sh};
   const {place,sheets}=nestPieces(pieces,sw,sh,gap), out=[];
@@ -6571,6 +6670,59 @@ function cxNestedSheets(opts){ opts=opts||{};
     out.push({name:`sheet_${k+1}_of_${sheets}_${sw}x${sh}mm`, svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-mo} ${-mo} ${sw+2*mo} ${sh+2*mo}" width="${sw}mm" height="${sh}mm">${body}</svg>`}); }
   return {sheets:out, count:sheets, sw, sh, oversize};
 }
+/* ---- Test Everything Sheet -------------------------------------------------------------
+   One small rectangle carrying a sample of every hole and joint the current settings will
+   cut — labelled — plus a tab tester and a meshing gear pair with a centre-distance bar.
+   Cut and check THIS before committing a full machine's worth of ply. Everything is built
+   from the live settings and kerf-compensated exactly like the real sheets. ------------- */
+function buildTestSheet(){
+  const t=S.thick, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#1b6c5a', SW=0.35, m=(S.cx&&S.cx.m)||3;
+  const parts=[], txt=(x,y,str,size)=>parts.push(`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${size||3.4}" fill="none" stroke="${SCORE}" stroke-width="0.18" font-family="monospace">${str}</text>`);
+  const hole=(x,y,r,label)=>{ parts.push(`<path d="${svgCircle(Math.max(r-kh,0.3),x,y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); txt(x+14,y+1.4,label); };
+  const holeLoop=(x,y,L,label)=>{ const d2=offsetPolygon(L,-kh); parts.push(`<path d="${pathFrom(d2,x,y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); txt(x+14,y+1.4,label); };
+  const rows=[];
+  rows.push({r:boardBoltHole()/2, lbl:`${S.bolt} snug \u2300${fmt(boardBoltHole())} \u00b7 board / press`});
+  rows.push({r:gearBoltHole()/2, lbl:`${S.bolt} clearance \u2300${fmt(gearBoltHole())} \u00b7 gear spins`});
+  if(cxUseDowels()){ rows.push({r:(S.cx.dowelHole!=null?S.cx.dowelHole:S.dowelD)/2, lbl:`dowel press \u2300${fmt(S.cx.dowelHole!=null?S.cx.dowelHole:S.dowelD)}`});
+    rows.push({r:((S.dowelD||6)+0.4)/2, lbl:`dowel loose \u2300${fmt((S.dowelD||6)+0.4)} \u00b7 washer bore`}); }
+  if(cxBrgMode&&cxBrgMode()!=='none')rows.push({r:cxBearingHole()/2, lbl:`bearing seat \u2300${fmt(cxBearingHole())} \u00b7 press bearing in`});
+  rows.push({r:Math.max(cxBaseHole()/2,1), lbl:`pin hole \u2300${fmt(cxBaseHole())}`});
+  if(S.cx&&S.cx.penDia)rows.push({r:S.cx.penDia/2, lbl:`pen \u2300${fmt(S.cx.penDia)}`});
+  const M=(typeof cxMotor==='function')?cxMotor():{};
+  if(M.on){ rows.push({loop:motorBoreLoop(), rr:(M.shaftD||6)/2, lbl:`motor ${M.bore==='round'?'round':M.bore==='ddflat'?'double-D':'D-flat'} \u2300${fmt(M.shaftD||6)} \u00b7 press on shaft`});
+    if(M.faceN>0)rows.push({r:(M.faceScrewD||3.2)/2, lbl:`face screw \u2300${fmt(M.faceScrewD||3.2)}`}); }
+  if(typeof cxWall==='function'&&cxWall())rows.push({loop:hexLoop(4,0), rr:4, lbl:`hex pencil marker \u00b7 not a shaft!`});
+  rows.push({slot:1, lbl:`fin tab slot 18\u00d7${t} \u00b7 try the tab \u2192`});
+  /* plate */
+  const rowH=17, plW=118, plH=rows.length*rowH+16, px=6, py=6;
+  parts.push(`<path d="${pathFrom(offsetPolygon(roundRectLoop(plW,plH,4,6),kh),px+plW/2,py+plH/2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+  txt(px+6,py+9,`TEST SHEET \u00b7 ${t}mm ply \u00b7 kerf ${S.kerf} \u00b7 module ${m}`,3.8);
+  rows.forEach((rw,i)=>{ const x=px+16, y=py+18+i*rowH+rowH/2;
+    if(rw.slot){ const L=[[-9,-t/2],[9,-t/2],[9,t/2],[-9,t/2]]; holeLoop(x,y,L,rw.lbl); }
+    else if(rw.loop)holeLoop(x,y,rw.loop,rw.lbl);
+    else hole(x,y,rw.r,rw.lbl); });
+  /* tab tester */
+  const tabX=px+plW+10, tabY=py+8;
+  const tab=[[-20,0],[-9,0],[-9,-t],[9,-t],[9,0],[20,0],[20,16],[-20,16]];
+  parts.push(`<path d="${pathFrom(offsetPolygon(tab,kh),tabX+22,tabY+6)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+  txt(tabX+6,tabY+18,'tab tester',3);
+  /* meshing pair + centre-distance bar */
+  const N1=12,N2=15, cd=(N1+N2)/2*m;
+  const g1=gearOutline(N1,m,S.pa||20,kh-cxBacklashOffset(m),14), g2=gearOutline(N2,m,S.pa||20,kh-cxBacklashOffset(m),14);
+  const gy=py+plH+g1.ra+14, g1x=px+g1.ra+4, g2x=g1x+g1.ra+g2.ra+10;
+  const gearAt=(g,x,N)=>{ parts.push(`<path d="${pathFrom(g.poly,x,gy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+    if(M.on&&M.gear!=null){ const mb=offsetPolygon(motorBoreLoop(),-kh); parts.push(`<path d="${pathFrom(mb,x,gy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); }
+    else parts.push(`<path d="${svgCircle(Math.max(cxGearBore()/2-kh,0.3),x,gy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+    txt(x-6,gy-g.ra-2,N+'T',3); };
+  gearAt(g1,g1x,N1); gearAt(g2,g2x,N2);
+  const barY=gy+Math.max(g1.ra,g2.ra)+12, barW2=Math.max(cxLinkW(),12);
+  parts.push(`<path d="${pathFrom(offsetPolygon(rodLoop(cd,barW2),kh),px+14,barY)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+  [0,cd].forEach(q=>parts.push(`<path d="${svgCircle(Math.max(boardBoltHole()/2-kh,0.3),px+14+q,barY)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
+  txt(px+18,barY-barW2/2-2,`mesh bar \u00b7 centres ${fmt(cd)} \u00b7 bolt the gears on, feel the mesh`,3);
+  const W=Math.max(px+plW+58, g2x+g2.ra+8), H=barY+barW2/2+8;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}">`+
+    `<text x="${px}" y="${H-2}" font-size="2.8" fill="${SCORE}" font-family="monospace">red = cut \u00b7 green = engrave \u00b7 everything sized from your current settings</text>`+
+    parts.join('')+`</svg>`; }
 function dlSVG(name,svg){ const blob=new Blob([svg],{type:'image/svg+xml'}), url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=name+'.svg'; a.click(); URL.revokeObjectURL(url); }
 // ---- Gear Mesh Tester: a small cut+engrave test board of gear pairs at several clearances ----
 function meshTestClearances(n,center){ n=Math.max(1,Math.min(5,n|0)); center=(center==null)?0.08:center; const start=center-Math.floor(n/2)*0.02, arr=[]; for(let i=0;i<n;i++)arr.push(Math.max(0,Math.round((start+i*0.02)*100)/100)); return [...new Set(arr)]; }
@@ -6642,9 +6794,9 @@ function renderMeshTest(){ const o=currentMeshTest(), r=meshTesterSVG(o);
   }
   const vv=document.getElementById('mtValues'); if(vv)vv.innerHTML=`Cuts <b>${o.clearances.length}</b> pair${o.clearances.length>1?'s':''}: <b>${o.clearances.map(c=>c.toFixed(2)).join(' · ')}</b> ×module — board ~${r.W}×${r.H}mm · gear bore <b>⌀${((o.bore==='bearing')?cxBearingHole():(o.bore==='bolt'?boreDia():cxGearBore())).toFixed(1)}mm</b>.`; }
 function renderMaterials(){ const el=document.getElementById('matSummary'); if(!el)return;
-  const szEl=document.getElementById('sheetSize'), sz=((szEl&&szEl.value)||'400x300');
+  const d0=sheetDims();
   let pieces=0, sheets=0;
-  try{ const pcs=cutPiecesFromScene(), d=sz.split('x').map(Number); pieces=pcs.length; sheets=nestPieces(pcs,d[0],d[1],6).sheets; }catch(_){}
+  try{ const pcs=cutPiecesFromScene(); pieces=pcs.length; sheets=nestPieces(pcs,d0[0],d0[1],6).sheets; }catch(_){}
   const M=cxBrgMode(), rows=[
     ['sheet material', `${S.thick}mm stock \u00b7 ${sz.replace('x',' \u00d7 ')} mm sheets \u00b7 <b>${sheets||'\u2014'}</b> sheet${sheets===1?'':'s'}`],
     ['pieces to cut', `<b>${pieces||'\u2014'}</b> parts`],
@@ -7129,7 +7281,7 @@ function cxPatternBtnLabel(){ const b=document.getElementById('patSave'); if(!b)
 
 function renderCutSheet(){
   const view=document.getElementById('cutSheetView'); if(!view)return;
-  const sz=(document.getElementById('sheetSize').value||'400x300').split('x').map(Number), sw=sz[0], sh=sz[1], gap=6, CUT='#bf3a2b';
+  const sz=sheetDims(), sw=sz[0], sh=sz[1], gap=6, CUT='#bf3a2b';
   let pieces; try{ pieces=cutPiecesFromScene(); }catch(e){ pieces=[]; }
   if(!pieces.length){ view.innerHTML='<div class="hint">'+(S.movement==='complex'?'The Complex Workbench cut sheet will appear once that bench is built.':'No cut pieces to nest yet.')+'</div>'; return; }
   const {place,sheets}=nestPieces(pieces,sw,sh,gap), SG=16, totalH=sheets*sh+(sheets-1)*SG;
@@ -7451,11 +7603,16 @@ document.getElementById('cxEdge').addEventListener('change',e=>{const t=e.target
   renderComplexUI();everything();});
 document.addEventListener('change',e=>{ const t=e.target; if(!t||!t.id)return;
   if(t.id==='cxFeetOn'){ cxFeet().on=t.checked; renderComplexUI(); everything(); return; }
+  if(t.id==='cxFeetStyle'){ cxFeet().style=t.value; renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetUnits'){ cxFeet().units=+t.value||2; renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetH'){ const v=+t.value; cxFeet().h=isFinite(v)&&v>0?Math.max(25,Math.min(120,v)):null; renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetFL'){ cxFeet().fl=Math.max(50,Math.min(200,+t.value||90)); renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetGap'){ cxFeet().gap=Math.max(24,Math.min(90,+t.value||40)); renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetRot'){ cxFeet().rot=+t.value||0; renderComplexUI(); everything(); return; }
+  if(t.id==='cxExLoose'){ cxExtras().loose=Math.max(0,Math.min(40,+t.value||0)); everything(); return; }
+  if(t.id==='cxExTight'){ cxExtras().tight=Math.max(0,Math.min(40,+t.value||0)); everything(); return; }
+  if(t.id==='cxExBig'){ cxExtras().big=Math.max(0,Math.min(20,+t.value||0)); renderComplexUI(); everything(); return; }
+  if(t.id==='cxExBigD'){ cxExtras().bigD=Math.max(20,Math.min(80,+t.value||36)); everything(); return; }
   if(t.id==='cxFeetWall'){ cxFeet().wall=t.checked; renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetKeyHead'){ cxFeet().keyHead=Math.max(5,Math.min(16,+t.value||9)); renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetKeyShank'){ cxFeet().keyShank=Math.max(2,Math.min(8,+t.value||4.5)); renderComplexUI(); everything(); return; }
@@ -7470,6 +7627,8 @@ document.addEventListener('change',e=>{ const t=e.target; if(!t||!t.id)return;
   if(t.id==='cxMotorFaceD'){ cxMotor().faceScrewD=Math.max(2,Math.min(6,+t.value||3.2)); everything(); return; }
   if(t.id==='cxMotorFacePX'){ cxMotor().pitchX=Math.max(6,Math.min(60,+t.value||18)); everything(); return; }
   if(t.id==='cxMotorFacePY'){ cxMotor().pitchY=Math.max(6,Math.min(60,+t.value||17)); everything(); return; }
+  if(t.id==='cxArmWIn'){ S.cx.linkW=Math.max(8,Math.min(30,+t.value||12)); renderComplexUI(); everything(); return; }
+  if(t.id==='cxArmDouble'){ S.cx.armDouble=t.checked; renderComplexUI(); everything(); return; }
   if(t.id==='cxMotorCradle'){ cxMotor().cradle=t.checked; renderComplexUI(); everything(); return; }
   if(t.id==='cxMotorBodyW'){ cxMotor().bodyW=Math.max(15,Math.min(60,+t.value||28)); renderComplexUI(); everything(); return; }
   if(t.id==='cxMotorBodyL'){ cxMotor().bodyL=Math.max(25,Math.min(140,+t.value||62)); renderComplexUI(); everything(); return; }
@@ -7716,11 +7875,12 @@ document.getElementById('playBtn').addEventListener('click',e=>{S.playing=!S.pla
 function updateDirBtn(){ const b=document.getElementById('dirBtn'); if(!b)return; b.textContent=(S.dir<0)?'⟲ reverse':'⟳ forward'; b.setAttribute('aria-pressed','true'); }
 document.getElementById('dirBtn').addEventListener('click',()=>{S.dir*=-1;if(GL&&GL.ok)GL.setDir(S.dir);updateDirBtn();});
 updateDirBtn();
+document.getElementById('testSheetBtn').addEventListener('click',()=>{ try{ dlSVG('test-everything-sheet',buildTestSheet()); }catch(e){ console.error(e); } });
 document.getElementById('dlBtn').addEventListener('click',()=>{const svg=buildExportSVG();const blob=new Blob([svg],{type:'image/svg+xml'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=(S.movement==='composer'?`contraption_chain_${S.chain.map(s=>s.type.slice(0,3)).join('-')}`:S.movement==='fourbar'?`contraption_linkage_${Math.round(S.fbFrame)}_${Math.round(S.fbCrank)}_${Math.round(S.fbCoupler)}_${Math.round(S.fbRocker)}`:S.movement==='planetary'?`contraption_planetary_${S.plNs}_${S.plNp}_${S.plP}p`:S.movement==='internal'?`contraption_internalgear_${S.igNr}_${S.igNp}T`:S.movement==='scotch'?`contraption_scotchyoke_r${Math.round(S.scotchR)}`:S.movement==='ratchet'?`contraption_ratchet_${S.ratN}T`:S.movement==='rack'?`contraption_rackpinion_N${S.rpN}_${S.rackT}T`:S.movement==='cam'?`contraption_cam_${S.camLaw}_lift${Math.round(S.camLift)}`:S.movement==='crank'?`contraption_crank_r${Math.round(S.crankR)}_L${Math.round(S.rodL)}`:`contraption_train_${S.gears.join('-')}`)+'.svg';a.click();URL.revokeObjectURL(url);});
 document.getElementById('cdBtn').addEventListener('click',async e=>{let txt;if(S.movement==='composer'){const ch=computeChain();txt=`${ch.stages.map(s=>CT[s.type].nm).join(' → ')} · ${composerSummary(ch)}`;}else if(S.movement==='fourbar'){const v=fbVals(),d=dowelSpec(),g=grashof();txt=`four-bar frame ${fmt(v.f)}, crank ${fmt(v.r)}, coupler ${fmt(v.c)}, rocker ${fmt(v.k)} · ${g.type} · dowel ${fmt(d.D)}mm (run hole ${fmt(d.runCut)}⌀, press hole ${fmt(d.pressCut)}⌀)`;}else if(S.movement==='planetary'){const v=plVals();txt=`sun ${v.Ns}T + ${v.P}×planet ${v.Np}T + ring ${v.Nr}T, module ${fmt(v.m)}, reduction ${((v.Ns+v.Nr)/v.Ns).toFixed(3)}× same direction`;}else if(S.movement==='internal'){const v=igVals();txt=`ring ${v.Nr}T + pinion ${v.Np}T, module ${fmt(v.m)}, centre distance ${fmt(v.cd)}, reduction ${(v.Nr/v.Np).toFixed(3)}× same direction`;}else if(S.movement==='scotch'){txt=`stroke ${fmt(2*S.scotchR)} (r ${fmt(S.scotchR)}), exact sine motion`;}else if(S.movement==='ratchet'){txt=`${S.ratN} teeth, step ${(360/S.ratN).toFixed(1)}°, +${S.ratAdv}/stroke, wheel ⌀${fmt(2*S.ratR)}`;}else if(S.movement==='rack'){txt=`module ${fmt(S.rpM)}, pinion N${S.rpN} (pitch ⌀${fmt(S.rpM*S.rpN)}), travel/turn ${fmt(Math.PI*S.rpM*S.rpN)}, rack ${S.rackT}T`;}else if(S.movement==='cam'){txt=`base ⌀${fmt(2*S.camRb)}, lift ${fmt(S.camLift)}, ${CAM_LAWS[S.camLaw]}, rise ${S.camRise}° fall ${S.camFall}°`;}else if(S.movement==='crank'){const tr=crankTravel();txt=`stroke ${fmt(2*S.crankR)}, travel ${fmt(tr.lo)}→${fmt(tr.hi)}, rod ${fmt(S.rodL)}`;}else{txt=computeTrain().cds.map(c=>fmt(c)).join(', ');}
   try{await navigator.clipboard.writeText(txt);e.target.textContent='⧉ copied';setTimeout(()=>e.target.textContent=(S.movement==='gearing')?'⧉ Copy centre distances':'⧉ Copy key sizes',1400);}catch(_){}});
 document.getElementById('csBtn').addEventListener('click',e=>{const panel=document.getElementById('cutSheetPanel'),willShow=panel.classList.contains('hide');panel.classList.toggle('hide');e.currentTarget.setAttribute('aria-expanded',willShow?'true':'false');e.currentTarget.textContent=willShow?'▾ Hide cut sheet':'▸ Show cut sheet';if(willShow)renderCutSheet();});
-function saveProject(){ try{ const data={app:'clever-contraptions',v:1,ts:Date.now(),sheet:(document.getElementById('sheetSize')||{}).value,state:S};
+function saveProject(){ try{ const data={app:'clever-contraptions',v:1,ts:Date.now(),sheet:(document.getElementById('sheetSize')||{}).value,sheetW:S.sheetW,sheetH:S.sheetH,state:S};
   const blob=new Blob([JSON.stringify(data)],{type:'application/json'}), url=URL.createObjectURL(blob), a=document.createElement('a');
   a.href=url; a.download=`clever-contraptions_${S.movement}_project.json`; a.click(); URL.revokeObjectURL(url);
   const m=document.getElementById('projMsg'); if(m)m.textContent='saved ✓'; setTimeout(()=>{const e=document.getElementById('projMsg');if(e)e.textContent='';},1600);
@@ -7749,11 +7909,17 @@ document.getElementById('loadProjBtn').addEventListener('click',()=>document.get
 document.getElementById('loadProjFile').addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return;
   const r=new FileReader(); r.onload=()=>{ try{ const d=JSON.parse(r.result), st=(d&&d.state)?d.state:d;
     if(!st||typeof st!=='object')throw 0; for(const k in st)S[k]=st[k];
-    if(d&&d.sheet){ const sz=document.getElementById('sheetSize'); if(sz&&[...sz.options].some(o=>o.value===d.sheet)){ sz.value=d.sheet; try{cxSyncSplitMax();}catch(_){} } }
+    if(d&&d.sheet){ const sz=document.getElementById('sheetSize'); if(sz&&[...sz.options].some(o=>o.value===d.sheet)){ sz.value=d.sheet; if(d.sheetW)S.sheetW=d.sheetW; if(d.sheetH)S.sheetH=d.sheetH; try{syncSheetCustom();}catch(_){} try{cxSyncSplitMax();}catch(_){} } }
     applyLoadedState(); markSaved();
   }catch(_){ const pm=document.getElementById('projMsg'); if(pm)pm.textContent='could not read that file'; } };
   r.readAsText(f); e.target.value=''; });
-document.getElementById('sheetSize').addEventListener('change',()=>{
+function syncSheetCustom(){ const el=document.getElementById('sheetSize'), cu=document.getElementById('sheetCustom');
+  if(cu)cu.classList.toggle('hide',!(el&&el.value==='custom'));
+  const w=document.getElementById('sheetW'), h=document.getElementById('sheetH');
+  if(w&&document.activeElement!==w)w.value=S.sheetW||350; if(h&&document.activeElement!==h)h.value=S.sheetH||350; }
+document.getElementById('sheetW').addEventListener('input',e=>{S.sheetW=Math.max(80,Math.min(1600,+e.target.value||350));try{cxSyncSplitMax();}catch(_){} everything(); if(cutSheetOpen())renderCutSheet();});
+document.getElementById('sheetH').addEventListener('input',e=>{S.sheetH=Math.max(80,Math.min(1600,+e.target.value||350));try{cxSyncSplitMax();}catch(_){} everything(); if(cutSheetOpen())renderCutSheet();});
+document.getElementById('sheetSize').addEventListener('change',()=>{ syncSheetCustom();
   cxSyncSplitMax();                                  // tile size follows the sheet unless overridden
   try{renderComplexUI();}catch(_){}                  // refresh the "match laser sheet" label and hints
   try{renderPrep();}catch(_){}
@@ -7915,7 +8081,7 @@ function syncDirtyDot(){ const b1=document.getElementById('saveProjBtn'), b2=doc
   if(b2)b2.textContent=cccDirty?'\u21e9 Save \u25cf':'\u21e9 Save'; }
 function scheduleAutosave(){ if(!cccBooted)return; markDirty(); if(autosaveT)clearTimeout(autosaveT);
   autosaveT=setTimeout(()=>{ autosaveT=null;
-    try{ lsSet(AUTOSAVE_KEY, JSON.stringify({v:1,ts:Date.now(),sheet:(document.getElementById('sheetSize')||{}).value,state:S})); }catch(_){}
+    try{ lsSet(AUTOSAVE_KEY, JSON.stringify({v:1,ts:Date.now(),sheet:(document.getElementById('sheetSize')||{}).value,sheetW:S.sheetW,sheetH:S.sheetH,state:S})); }catch(_){}
   },800); }
 /* Restore strip: only when a previous session exists. */
 (function(){ if(!prevSession)return;
@@ -7932,7 +8098,7 @@ function scheduleAutosave(){ if(!cccBooted)return; markDirty(); if(autosaveT)cle
   bar.appendChild(yes); bar.appendChild(no); document.body.appendChild(bar);
   const kill=()=>{ if(bar.parentNode)bar.parentNode.removeChild(bar); };
   yes.addEventListener('click',()=>{ try{ const st=prevSession.state; for(const k in st)S[k]=st[k];
-    if(prevSession.sheet){ const sz=document.getElementById('sheetSize'); if(sz&&[...sz.options].some(o=>o.value===prevSession.sheet)){ sz.value=prevSession.sheet; try{cxSyncSplitMax();}catch(_){} } }
+    if(prevSession.sheet){ const sz=document.getElementById('sheetSize'); if(sz&&[...sz.options].some(o=>o.value===prevSession.sheet)){ sz.value=prevSession.sheet; if(prevSession.sheetW)S.sheetW=prevSession.sheetW; if(prevSession.sheetH)S.sheetH=prevSession.sheetH; try{syncSheetCustom();}catch(_){} try{cxSyncSplitMax();}catch(_){} } }
     applyLoadedState(); markSaved(); }catch(_){} kill(); });
   no.addEventListener('click',kill);
   /* Fade it away by itself if ignored, so it never nags. */
