@@ -3493,8 +3493,15 @@ function cxPenAt(c,ang){ const P=c.pen; if(!P)return null;
   // does not draw. Anything downstream that wants a pen checks for one.
   const pinPos=P.pins.map(pn=>cxPinAt(c,pn,ang));
   if(pinPos.some(p=>!p))return null; const jointPos=[], welds=P.welds||[];
-  for(const j of P.joints){ const A=cxRefPos(j.a,pinPos,jointPos,P.joints,null,welds), B=cxRefPos(j.b,pinPos,jointPos,P.joints,null,welds); jointPos.push((A&&B)?circIntersect(A,j.la,B,j.lb,j.branch||1):null); }
-  const weldPos=[]; welds.forEach(w=>weldPos.push(cxWeldTip(w,pinPos,jointPos,weldPos,P.joints,welds))); P._wl=weldPos;
+  const weldPos=welds.map(_=>null);
+  /* resolve branch tips as soon as their host exists, so a LATER joint can pivot on a
+     branch tip — the missing link for full pantographs */
+  const fillWelds=()=>{ welds.forEach((w2,wi)=>{ if(weldPos[wi])return;
+    try{ const p=cxWeldTip(w2,pinPos,jointPos,weldPos,P.joints,welds); if(p)weldPos[wi]=p; }catch(_){}}); };
+  for(const j of P.joints){ fillWelds();
+    const A=cxRefPos(j.a,pinPos,jointPos,P.joints,weldPos,welds), B=cxRefPos(j.b,pinPos,jointPos,P.joints,weldPos,welds);
+    jointPos.push((A&&B)?circIntersect(A,j.la,B,j.lb,j.branch||1):null); }
+  fillWelds(); P._wl=weldPos;
   const ref=(P.penRef!=null)?P.penRef:('j'+(P.joints.length-1));
   let pen=cxRefPos(ref,pinPos,jointPos,P.joints,weldPos,welds); if(!pen)pen=jointPos[jointPos.length-1];
   if(pen){ const off=cxCoupleOffset(c,ang,'pen'); pen=[pen[0]+off[0],pen[1]+off[1]]; }
@@ -5891,6 +5898,7 @@ function renderComplexUI(){
           ['a','b'].forEach(sd=>{ cxArmPivots(k,sd).forEach((t,n)=>
               o+=opt('t:j'+k+':'+sd+':'+t,'pivot '+(n+1)+' on arm '+(k+1)+sd.toUpperCase()+' ('+Math.round(100*t)+'%)'));
             o+=opt('t:j'+k+':'+sd,'a point along arm '+(k+1)+sd.toUpperCase()); }); }
+        (P.welds||[]).forEach((w2,wi)=>{ o+=opt('w'+wi,'tip of branch W'+(wi+1)); });
         return o; };
       const tSlider=(ref,kind,i)=> (ref&&ref.on)?`<span class="clab">at</span><span class="cstep"><button data-cxt="${kind}"${i!=null?` data-i="${i}"`:''} data-d="-5">−</button><input type="number" value="${cxRefT(ref)}" class="cxTnum" data-t="${kind}"${i!=null?` data-i="${i}"`:''} min="0" max="100" step="5"><button data-cxt="${kind}"${i!=null?` data-i="${i}"`:''} data-d="5">＋</button></span><span class="clab">%</span>`:'';
       const hostOpts=pn=>{ const cv=cxPinIsConv(pn);
