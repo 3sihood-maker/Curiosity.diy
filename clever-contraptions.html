@@ -708,6 +708,7 @@
             <button class="btn" id="exLoad7">7 · Simple Six Arm Machine</button>
             <button class="btn" id="exLoad8">8 · Six Arm Machine style</button>
             <button class="btn" id="exLoad9">9 · Rack &amp; gear machine</button>
+            <button class="btn" id="exLoad10">10 · Cycloid machine</button>
             <button class="btn ghost" id="exUndo" disabled>↩ Undo load</button>
           </div>
           <div class="hint" id="exNote" style="margin-top:7px"><b>01</b> a six-lobed pintograph — four gears, two pins, a coupler arm and a pen. <b>02</b> a woven ring — ten gears on two layers with compound stacks, driving a long arm over a circular paper board. <b>09</b> a rack machine — a crank pushes a rack, the rack rocks a 26T pinion back and forth, and the pen is pulled by that rocking wheel and a turning one at once. All open in the Complex Workbench, where you can change anything.</div>
@@ -3624,7 +3625,7 @@ function cxSetArmPivot(i,side,n,v){ const L=cxArmPivots(i,side);
 function cxMakeRef(key,oldT){ if(key&&key.indexOf('t:')===0){ const p=key.split(':');
     const at=p[3]!=null?parseFloat(p[3]):null;
     return {on:p[1],side:p[2],t:(at!=null?at:(oldT==null?0.5:oldT))}; } return key; }
-function cxRefLabel(ref){ if(typeof ref==='string'){ if(ref[0]==='p')return 'pin '+(+ref.slice(1)+1); if(ref[0]==='j')return 'joint '+(+ref.slice(1)+1); }
+function cxRefLabel(ref){ if(typeof ref==='string'){ if(ref[0]==='p')return 'pin '+(+ref.slice(1)+1); if(ref[0]==='j')return 'joint '+(+ref.slice(1)+1); if(ref[0]==='w')return 'branch W'+(+ref.slice(1)+1)+' tip'; }
   if(ref&&ref.on)return `arm→J${+ref.on.slice(1)+1}(${ref.side}) @${cxRefT(ref)}%`; return '—'; }
 function cxFitToPaper(){ const P=S.cx.pen; if(!P||!P.pins||!P.joints)return; P.paper.mode='custom';
   const W=P.paper.w||200, H=P.paper.h||200;
@@ -5882,6 +5883,10 @@ function renderComplexUI(){
   const pen=document.getElementById('cxPen');
   if(pen){ if(!c.pen){ pen.innerHTML=`<div class="lab"><label>Drawing pen (pintograph)</label></div><div class="hint">Two gears at a rich ratio, two arms meeting at a joint, and a pen carried on a coupler branch — with the paper on a slow turntable it weaves a dense rosette.</div><div class="hint" style="margin-top:6px">Want a working start point? Use <b>Example machines</b> at the top of this workbench.</div><button class="btn ghost" id="cxAddPenBtn" style="margin-top:8px">＋ blank pen</button> <button class="btn ghost" id="cxAddArmsBtn" style="margin-top:8px">＋ arms only (no pen)</button><div class="hint" style="margin-top:6px">The example replaces the current gears &amp; pen — a great starting point to vary.</div>`; }
     else { const P=c.pen, tr=cxPenTrace(c), cl=cxCloses(c), gopts=id=>c.gears.map(g=>`<option value="${g.id}"${g.id===id?' selected':''}>#${g.id} (${g.N}T)</option>`).join('');
+      const jFail=P.joints.map(()=>0); { let tot=0;
+        for(let q=0;q<48;q++){ const st2=cxPenAt(c,q*0.35); if(!st2)continue; tot++;
+          P.joints.forEach((_,ji2)=>{ if(!st2.jointPos[ji2])jFail[ji2]++; }); }
+        P.joints.forEach((_,ji2)=>jFail[ji2]=tot?jFail[ji2]/tot:0); }
       const nodeOpts=(upto,sel)=>{ const sk=cxRefKey(sel);
         // a pivot entry carries its position, so match on that too — otherwise picking one
         // silently reverts to the plain "a point along…" entry and looks as if it failed
@@ -5923,6 +5928,7 @@ function renderComplexUI(){
           <div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:11px;color:${side==='a'?'#9a7220':'#4f7a63'}">arm ${ji+1}${side.toUpperCase()}</b>
             <span class="clab">${mid?'starts partway along another arm':'starts at'}</span></div>
           <div class="cstage-top" style="margin-top:4px"><select class="selin ${cls}" data-i="${ji}" style="width:auto;flex:1">${nodeOpts(ji,ref)}</select></div>
+          ${(side==='a'&&jFail[ji]>0.15)?`<div class="hint" style="color:#bf3a2b">⚠ arms ${ji+1}A+${ji+1}B can't reach each other for ${Math.round(jFail[ji]*100)}% of the motion — lengthen one arm (together they must span the gap between their anchors at its widest)</div>`:''}
           ${mid?`<div class="cstage-top" style="margin-top:4px"><span class="clab">at</span><span class="cstep"><button data-cxt="${lk}" data-i="${ji}" data-d="-5">−</button><input type="number" value="${cxRefT(ref)}" class="cxTnum" data-t="${lk}" data-i="${ji}" min="0" max="100" step="5"><button data-cxt="${lk}" data-i="${ji}" data-d="5">＋</button></span><span class="clab">% along that arm's whole length</span></div>`:''}
           <div class="cstage-top" style="margin-top:4px"><span class="clab">length</span><span class="cstep"><button data-cxjl="${lf}" data-i="${ji}" data-d="-5">−</button><input type="number" value="${len}" class="${side==='a'?'cxJla':'cxJlb'}" data-i="${ji}" min="10" max="900" step="5"><button data-cxjl="${lf}" data-i="${ji}" data-d="5">＋</button></span><span class="clab">mm from there to the joint${cxArmAt(ji,side)>0.02?` — the stick itself is ${fmt(len/(1-cxArmAt(ji,side)))} long`:''}</span></div>
           ${(()=>{ const L=cxArmPivots(ji,side);
@@ -7168,8 +7174,35 @@ function cxLoadExample9(){
     penRef:'w0', _armsV:2,
     paper:{mode:'fit',w:200,h:200,gear:7,conv:null} };
   S.movement='complex'; }
+function cxLoadExample10(){
+  /* Si's cycloid machine — the first example built on the pantograph stage. Two pins, on the
+     32T driver and the 23T beside it, pull a pair of crossed arms; both arms carry straight
+     tip branches past their joint, and a SECOND pair of arms pivots on those two branch tips,
+     with the pen at the far joint. That double stage folds the crank motion back on itself,
+     which is what draws cycloid-style loops rather than a plain rosette. The paper turns
+     slowly on a 51T reached through a 17T/18T compound drop to layer 1. */
+  S.cx.m=3; S.cx.linkW=12.5; S.cx.dowelHole=6;
+  S.cx.board={shape:'rect',off:8};
+  S.cx.split={mode:'off',maxW:300,maxH:300,overlap:10};
+  S.cx.bearing={mode:'none',od:8,hole:8};
+  S.cx.nextId=5; S.cx.sel=4;
+  S.cx.gears=[{id:0,N:32,kind:'driver',layer:0},
+              {id:1,N:23,kind:'mesh',parent:0,dir:0,layer:0},
+              {id:2,N:17,kind:'compound',parent:1,layer:1},
+              {id:3,N:18,kind:'mesh',parent:2,dir:250,layer:1},
+              {id:4,N:51,kind:'mesh',parent:3,dir:270,layer:1}];
+  S.cx.converters=[]; S.cx.edges=[];
+  S.cx.pen={
+    pins:[{g:0,r:8},{g:1,r:13}],
+    joints:[{a:'p0',la:73,b:'p1',lb:73,branch:-1,aPiv:[],bPiv:[],aExt:-0.052631578947368425},
+            {a:'w0',la:86,b:'w1',lb:86,branch:1,aPiv:[],bPiv:[],aExt:0}],
+    welds:[{base:{on:'j0',side:'a',t:1},len:72,ang:0},
+           {base:{on:'j0',side:'b',t:1},len:72,ang:0}],
+    penRef:'j1', _armsV:2, runTurns:0,
+    paper:{mode:'fit',w:200,h:200,gear:4,conv:null,board:{shape:'circle',on:true,margin:0.2}} };
+  S.movement='complex'; }
 function cxLoadExampleSafe(which){ cxUndo=cxSnapshot();
-  if(which===9)cxLoadExample9(); else if(which===8)cxLoadExample8(); else if(which===7)cxLoadExample7(); else if(which===6)cxLoadExample6(); else if(which===5)cxLoadExample5(); else if(which===4)cxLoadExample4(); else if(which===3)cxLoadExample3(); else if(which===2)cxLoadExample2(); else cxLoadExample();
+  if(which===10)cxLoadExample10(); else if(which===9)cxLoadExample9(); else if(which===8)cxLoadExample8(); else if(which===7)cxLoadExample7(); else if(which===6)cxLoadExample6(); else if(which===5)cxLoadExample5(); else if(which===4)cxLoadExample4(); else if(which===3)cxLoadExample3(); else if(which===2)cxLoadExample2(); else cxLoadExample();
   S.movement='complex';
   const note=document.getElementById('exNote');
   if(note){ note.innerHTML='<b>Loaded.</b> Edit it like any machine — add gears, move pins, change the pen. <b>Undo load</b> puts back what you had before.'
@@ -7724,7 +7757,7 @@ document.getElementById('scaleField').addEventListener('click',e=>{const b=e.tar
   if(exR)exR.addEventListener('click',()=>{ const open=exS.classList.toggle('hide')===false;
     exR.textContent=open?'\u25be Hide machine examples':'\u25b8 Show machine examples';
     exR.setAttribute('aria-expanded',open?'true':'false'); });
-  [['exLoad1',1],['exLoad2',2],['exLoad3',3],['exLoad4',4],['exLoad5',5],['exLoad6',6],['exLoad7',7],['exLoad8',8],['exLoad9',9]].forEach(([id,n])=>{ const el=document.getElementById(id); if(!el)return;
+  [['exLoad1',1],['exLoad2',2],['exLoad3',3],['exLoad4',4],['exLoad5',5],['exLoad6',6],['exLoad7',7],['exLoad8',8],['exLoad9',9],['exLoad10',10]].forEach(([id,n])=>{ const el=document.getElementById(id); if(!el)return;
     el.addEventListener('click',()=>{ setMovement('complex'); cxLoadExampleSafe(n); renderComplexUI(); renderPrep(); everything();
       const w=document.getElementById('mvComplex'); if(w)w.scrollIntoView({behavior:'smooth',block:'start'}); }); });
   const exLegacy=null; if(exLegacy)exLegacy.addEventListener('click',()=>{ setMovement('complex'); cxLoadExampleSafe(); renderComplexUI(); renderPrep(); everything();
