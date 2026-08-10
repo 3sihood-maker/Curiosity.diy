@@ -4338,12 +4338,16 @@ function cxFeetPlanAt(c,fl){ const F=cxFeet();
   const inside=(x,y)=>insidePt(x,y)&&insidePt(x+7,y)&&insidePt(x-7,y)&&insidePt(x,y+7)&&insidePt(x,y-7);
   const ko=[]; const seen={};
   c.gears.forEach(g=>{ const k=cxShaftKeyOf(g); if(seen[k])return; seen[k]=1;
-    ko.push({x:g.x,y:g.y,r:boltNom()*1.2+8+((k===cxMotorShaftKey(c))?Math.max(0,(F.motorKeep||45)-boltNom()*1.2-8):0)}); });
+    ko.push({x:g.x,y:g.y,r:boltNom()*1.2+8+((k===cxMotorShaftKey(c))?Math.max(0,Math.min(F.motorKeep||27,34)-boltNom()*1.2-8):0)}); });
   try{ cxPostWorld(c).forEach(pp=>ko.push({x:pp.x,y:pp.y,r:9})); }catch(_){}
   { const cu=cxCradleUnit(c);                                  /* feet must dodge the cradle */
     if(cu){ const cdx=Math.cos(cu.ang),cdy=Math.sin(cu.ang), rr=cu.gap/2+S.thick+12;
       for(const a of [-cu.fl/2,0,cu.fl/2])ko.push({x:cu.x+cdx*a,y:cu.y+cdy*a,r:rr}); } }
-  const clear=(x,y)=>!ko.some(o=>Math.hypot(x-o.x,y-o.y)<o.r);
+  const cap=cxMotorBodyCap(c);
+  const inCap=(x,y)=>{ if(!cap)return false; const vx=cap.x2-cap.x1,vy=cap.y2-cap.y1,L2=vx*vx+vy*vy||1;
+    let t2=((x-cap.x1)*vx+(y-cap.y1)*vy)/L2; t2=Math.max(0,Math.min(1,t2));
+    return Math.hypot(x-(cap.x1+vx*t2),y-(cap.y1+vy*t2))<cap.r; };
+  const clear=(x,y)=>!inCap(x,y)&&!ko.some(o=>Math.hypot(x-o.x,y-o.y)<o.r);
   const discs=c.gears.map(g=>({x:g.x,y:g.y,r:(c.m*(g.N+2)/2)-3}));
   const underGear=(x,y)=>discs.some(g=>Math.hypot(x-g.x,y-g.y)<=g.r);
   const slotOff=fl/2-14;
@@ -4436,7 +4440,7 @@ function cxExtrasPieces(){ const E=cxExtras(), t=S.thick, D=S.dowelD||6, out=[];
    nuts, and the strips are cut with their tabs wherever the slots landed. -------- */
 function cxKeepOuts(c){ const ko=[], seen={}, F=cxFeet();
   c.gears.forEach(g=>{ const k=cxShaftKeyOf(g); if(seen[k])return; seen[k]=1;
-    ko.push({x:g.x,y:g.y,r:boltNom()*1.2+8+((k===cxMotorShaftKey(c))?Math.max(0,(F.motorKeep||45)-boltNom()*1.2-8):0)}); });
+    ko.push({x:g.x,y:g.y,r:boltNom()*1.2+8+((k===cxMotorShaftKey(c))?Math.max(0,Math.min(F.motorKeep||27,34)-boltNom()*1.2-8):0)}); });
   try{ cxPostWorld(c).forEach(pp=>ko.push({x:pp.x,y:pp.y,r:9})); }catch(_){}
   { const cu=cxCradleUnit(c); if(cu){ const cdx=Math.cos(cu.ang),cdy=Math.sin(cu.ang), rr=cu.gap/2+S.thick+12;
       for(const a of [-cu.fl/2,0,cu.fl/2])ko.push({x:cu.x+cdx*a,y:cu.y+cdy*a,r:rr}); } }
@@ -4484,6 +4488,10 @@ function cxKeyLocalAng(u){ const cands=[0,Math.PI/2,Math.PI,-Math.PI/2]; let bes
   for(const a of cands){ const wx=Math.cos(u.ang+a), wy=Math.sin(u.ang+a); if(wy>bd){bd=wy;best=a;} }
   return best; }
 /* -------- motor cradle: a [ channel the screwless motor lies in, strapped with zip ties ---- */
+function cxMotorBodyCap(c){ const M=cxMotor(); if(!M.on||M.gear==null)return null;
+  const g=c.byId[M.gear]; if(!g)return null; const a=cxMotorAng();
+  const off=8, L=(M.bodyL||62)+26, r=((M.bodyW||28)/2)+9;
+  return {x1:g.x+Math.cos(a)*off, y1:g.y+Math.sin(a)*off, x2:g.x+Math.cos(a)*(off+L), y2:g.y+Math.sin(a)*(off+L), r:r}; }
 function cxCradle(){ const M=cxMotor(); return {on:!!M.cradle, bodyW:M.bodyW||28, bodyL:M.bodyL||62, off:M.bodyOff||30, drop:(cxFeet().motorDrop||50)}; }
 function cxCradleUnit(c){ const M=cxMotor(), C=cxCradle(); if(!M.on||M.gear==null||!C.on)return null;
   const g=c.byId[M.gear]; if(!g)return null; const a=cxMotorAng();
@@ -5811,7 +5819,8 @@ function renderMotorUI(c){ const host=document.getElementById('cxMotorUI'); if(!
       <span class="clab">rotate motor</span>${num('cxMotorRot',M.rot||0,15,0,345)}°</div>
     ${M.faceN>0?`<div class="hint">Screw clearance holes are cut in the board around the shaft — the motor face bolts straight to the underside. <b>Measure your motor's hole pattern</b> and set the pitches; the defaults are only a guess.</div>`:''}
     <div class="cstage-top" style="margin-top:6px"><label class="pchk" data-on="${M.cradle?1:0}"><input type="checkbox" id="cxMotorCradle" ${M.cradle?'checked':''}>cradle for a screwless motor</label>
-      ${M.cradle?`<span class="clab">body ⌀/W</span>${num('cxMotorBodyW',M.bodyW||28,1,15,60)}<span class="clab">body length</span>${num('cxMotorBodyL',M.bodyL||62,1,25,140)}<span class="clab">offset along</span>${num('cxMotorBodyOff',M.bodyOff||30,1,0,120)}`:''}</div>
+      <span class="clab">body ⌀/W</span>${num('cxMotorBodyW',M.bodyW||28,1,15,60)}<span class="clab">body length</span>${num('cxMotorBodyL',M.bodyL||62,1,25,140)}${M.cradle?`<span class="clab">offset along</span>${num('cxMotorBodyOff',M.bodyOff||30,1,0,120)}`:''}</div>
+    <div class="hint">Body W and length sweep a no-go strip from the shaft along <b>rotate motor</b> — feet and their base plates stay out of it, so they can sit beside the hanging body instead of a whole blocked circle.</div>
     ${M.cradle?`<div class="hint">Two fins straddle the motor body with a base plate under it — zip-tie slots strap the motor down. It tabs into the board like the feet; use <b>rotate motor</b> to point the body where there's room, and set <b>motor drop</b> (in the feet controls) to the body's hang depth.</div>`:''}
     ${stacked.length>1?`<div class="hint">Shaft carries a stack — <b>${stacked.map(g=>'#'+g.id).join(', ')}</b> all get the motor bore and turn together.</div>`:''}
     <div class="hint">The bore is cut in the driven gear${stacked.length>1?'s':''} to press onto the motor shaft — no bolt on that shaft, and the board gets a clearance hole for the shaft to pass through. Sizes are kerf-compensated like every other hole.</div>
@@ -5844,8 +5853,8 @@ function renderFeetUI(c){ const host=document.getElementById('cxFeetUI'); if(!ho
       ${F.wall?`<span class="clab">screw head ⌀</span>${num('cxFeetKeyHead',F.keyHead||9,0.5,5,16)}<span class="clab">shank ⌀</span>${num('cxFeetKeyShank',F.keyShank||4.5,0.5,2,8)}`:''}</div>
     ${F.wall?`<div class="hint">Each base plate gets a keyhole, slot pointing up. Small <b>hexagonal</b> holes are cut in the board directly over each keyhole's resting spot — hold the machine to the wall, pencil through the hexes, and the marks are exactly where the screws go. Hex, so you never mistake them for shaft holes.</div>`:''}
     <div class="cstage-top" style="margin-top:6px"><span class="clab">rotate placement</span><input type="range" id="cxFeetRot" min="0" max="120" step="3" value="${F.rot||0}" style="width:130px">
-      ${cxMotor().on?`<span class="clab">motor keep-out ⌀</span>${num('cxFeetKeep',(F.motorKeep||45)*2,5,40,220)}<span class="clab">motor drop</span>${num('cxFeetDrop',F.motorDrop||50,1,0,150)}`:''}</div>
-    <div class="hint" style="${plan&&plan.ok?'':'color:#bf3a2b'}">${plan?plan.msg:''} — each unit is two fins with tabs up through slots in the board, ending in a flat base plate. Height clears ${cxMotor().on?'the motor body and ':''}the bolt tails automatically; override it if you like. Glue the tabs, or leave them friction-fit.</div>`}`
+      ${cxMotor().on?`<span class="clab">gearbox keep-out ⌀</span>${num('cxFeetKeep',(F.motorKeep||27)*2,5,30,68)}<span class="clab">motor hang ↓</span>${num('cxFeetDrop',F.motorDrop||50,1,0,150)}`:''}</div>
+    <div class="hint" style="${plan&&plan.ok?'':'color:#bf3a2b'}">${plan?plan.msg:''} — each unit is two fins with tabs up through slots in the board, ending in a flat base plate. <b>Fin length</b> is the strip's long side, <b>height</b> its drop below the board, and every tab is 18mm wide × ply-thick. <b>Gearbox keep-out</b> is a small no-go circle at the motor shaft; the body strip (set in Motor drive) blocks where the motor hangs; <b>motor hang</b> is how far the body reaches below the board. Height clears ${cxMotor().on?'the motor body and ':''}the bolt tails automatically; override it if you like. Glue the tabs, or leave them friction-fit.</div>`}`
    :`<div class="hint">Off — the board lies flat. Turn on to cut hidden H-shaped feet that tab into the underside, sized to clear the ${cxMotor().on?'motor and ':''}bolt tails.</div>`); }
 function renderComplexUI(){
   const host=document.getElementById('cxList'); if(!host)return; const c=computeComplex();
