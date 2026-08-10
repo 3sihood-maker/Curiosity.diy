@@ -4324,12 +4324,17 @@ function cxFeetPlan(c){ const F=cxFeet(); if(!F.on)return {ok:false,units:[],fl:
   if(_feetPlanCache.key===key)return _feetPlanCache.plan;
   const plan=cxFeetPlanBuild(c); _feetPlanCache.key=key; _feetPlanCache.plan=plan; return plan; }
 function cxFeetPlanBuild(c){ const F=cxFeet();
-  const flAsk=F.fl||90, tries=[flAsk,Math.round(flAsk*0.8),Math.round(flAsk*0.65),Math.round(flAsk*0.55)].filter((v,i,a)=>v>=50&&a.indexOf(v)===i);
+  const flAsk=F.fl||90, tries=[flAsk,Math.round(flAsk*0.8),Math.round(flAsk*0.65),Math.round(flAsk*0.55)].filter((v,i,a)=>v>=34&&a.indexOf(v)===i);
+  const asked=Math.max(2,Math.min(3,F.units||2));
   for(const fl of tries){ const p=cxFeetPlanAt(c,fl);
-    if(p.ok){ if(fl<flAsk)p.msg='placed \u2713 \u00b7 '+p.units.length+' units \u2014 fins shortened to '+fl+'mm to stay hidden';
+    if(p.ok){ if(fl<flAsk)p.msg='placed \u2713 \u00b7 '+p.units.length+' units \u2014 feet shortened to '+fl+'mm to stay hidden';
       return p; } }
-  return {ok:false,units:[],fl:flAsk,msg:'\u26a0 no hidden spot for '+Math.max(2,Math.min(3,F.units||2))+' feet under the gears \u2014 shrink the gap, reduce units, or nudge rotate'}; }
-function cxFeetPlanAt(c,fl){ const F=cxFeet();
+  /* better SOME feet than none: place as many as genuinely hide, and say so */
+  for(const k2 of [2,1]){ if(k2>=asked)continue;
+    for(const fl of tries){ const p=cxFeetPlanAt(c,fl,k2);
+      if(p.ok){ p.msg='\u26a0 only '+k2+' of '+asked+' feet fit hidden'+(fl<flAsk?' (shortened to '+fl+'mm)':'')+' \u2014 cut these and place the rest by eye, or shrink the gap / nudge rotate'; return p; } } }
+  return {ok:false,units:[],fl:flAsk,msg:'\u26a0 no hidden spot for even one foot under the gears \u2014 shrink the gap or foot length, or nudge rotate'}; }
+function cxFeetPlanAt(c,fl,kOverride){ const F=cxFeet();
   const bpl=cxBoardPlan(c), t=S.thick, gap=F.gap||40;
   const toL=(x,y)=>[(x-bpl.ox)+bpl.bw/2,(bpl.oy-y)+bpl.bh/2];
   const insidePt=(x,y)=>{ const [lx,ly]=toL(x,y);
@@ -4365,7 +4370,7 @@ function cxFeetPlanAt(c,fl){ const F=cxFeet();
     const W2=gap+2*S.thick+14;
     for(const a of FS)for(const b of [-W2/2,0,W2/2])if(!insidePt(ux+dx*a+nx*b, uy+dy*a+ny*b))return false;
     return true; };
-  const k=Math.max(2,Math.min(3,F.units||2)), hw=bpl.bw/2, hh=bpl.bh/2;
+  const k=kOverride||Math.max(2,Math.min(3,F.units||2)), hw=bpl.bw/2, hh=bpl.bh/2;
   /* grid-scan the whole board for spots where a unit fits (4 orientations each, biased by
      the rotate slider), then greedily pick the k most spread-out — far more robust on
      blob outlines with waists and a big motor keep-out than radial spokes ever were */
@@ -4375,6 +4380,8 @@ function cxFeetPlanAt(c,fl){ const F=cxFeet();
       if(!underGear(gx,gy))continue;                     /* only bother where a gear covers */
       for(const a of [0,Math.PI/6,Math.PI/3,Math.PI/2,2*Math.PI/3,5*Math.PI/6]){ const th=a+rot0;
         if(unitOK(gx,gy,th)){ cand.push({x:gx,y:gy,ang:th}); break; } } } }
+  if(k===1&&cand.length){ cand.sort((a,b)=>b.y-a.y);
+    return {ok:true,units:[cand[0]],fl,nAlt:Math.min(6,cand.length),alt:0,msg:''}; }
   if(cand.length>=k){
     const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
     /* rank pairs by spread PLUS height — feet near the TOP carry a hanging machine, and the
@@ -5839,22 +5846,22 @@ function renderFeetUI(c){ const host=document.getElementById('cxFeetUI'); if(!ho
   const plan=F.on?cxFeetPlan(c):null;
   host.innerHTML=`<div class="cstage-top"><label class="pchk" data-on="${F.on?1:0}"><input type="checkbox" id="cxFeetOn" ${F.on?'checked':''}>hidden feet under the board</label></div>`
    +(F.on?`<div class="cstage-top" style="margin-top:6px"><span class="clab">style</span><select class="selin" id="cxFeetStyle" style="width:auto">
-      <option value="fins"${F.style!=='skirt'?' selected':''}>hidden fins</option>
+      <option value="fins"${F.style!=='skirt'?' selected':''}>hidden feet (fin pairs)</option>
       <option value="skirt"${F.style==='skirt'?' selected':''}>edge skirt (rect boards)</option></select></div>
     ${F.style==='skirt'?`<div class="hint">${(function(){try{const sp=cxSkirtPlan(c);return sp.ok?'skirt fits \u2713 \u2014 four strips box-jointed at the corners, tabbed into slots just inside the board edge. Keyholes aren\u2019t on the skirt yet \u2014 use hidden fins for wall hanging.':'<span style="color:#bf3a2b">'+sp.msg+'</span>';}catch(_){return '';}})()}</div>`
     :`<div class="cstage-top" style="margin-top:6px"><span class="clab">units</span><select class="selin" id="cxFeetUnits" style="width:auto">
       <option value="2"${(F.units||2)===2?' selected':''}>2 (4 fins)</option>
       <option value="3"${F.units===3?' selected':''}>3 (6 fins)</option></select>
       <span class="clab">height</span>${num('cxFeetH',cxFeetH(),1,25,120)}
-      <span class="clab">fin length</span>${num('cxFeetFL',F.fl||90,5,50,200)}
-      <span class="clab">fin gap</span>${num('cxFeetGap',F.gap||40,2,24,90)}
+      <span class="clab">foot length</span>${num('cxFeetFL',F.fl||90,5,50,200)}
+      <span class="clab">foot gap</span>${num('cxFeetGap',F.gap||40,2,24,90)}
       <span class="clab">spot</span><span class="cstep"><button id="cxFeetAltL">◀</button><button id="cxFeetAltR">▶</button></span></div>
     <div class="cstage-top" style="margin-top:6px"><label class="pchk" data-on="${F.wall?1:0}"><input type="checkbox" id="cxFeetWall" ${F.wall?'checked':''}>wall hanging (keyholes)</label>
       ${F.wall?`<span class="clab">screw head ⌀</span>${num('cxFeetKeyHead',F.keyHead||9,0.5,5,16)}<span class="clab">shank ⌀</span>${num('cxFeetKeyShank',F.keyShank||4.5,0.5,2,8)}`:''}</div>
     ${F.wall?`<div class="hint">Each base plate gets a keyhole, slot pointing up. Small <b>hexagonal</b> holes are cut in the board directly over each keyhole's resting spot — hold the machine to the wall, pencil through the hexes, and the marks are exactly where the screws go. Hex, so you never mistake them for shaft holes.</div>`:''}
     <div class="cstage-top" style="margin-top:6px"><span class="clab">rotate placement</span><input type="range" id="cxFeetRot" min="0" max="120" step="3" value="${F.rot||0}" style="width:130px">
       ${cxMotor().on?`<span class="clab">gearbox keep-out ⌀</span>${num('cxFeetKeep',(F.motorKeep||27)*2,5,30,68)}<span class="clab">motor hang ↓</span>${num('cxFeetDrop',F.motorDrop||50,1,0,150)}`:''}</div>
-    <div class="hint" style="${plan&&plan.ok?'':'color:#bf3a2b'}">${plan?plan.msg:''} — each unit is two fins with tabs up through slots in the board, ending in a flat base plate. <b>Fin length</b> is the strip's long side, <b>height</b> its drop below the board, and every tab is 18mm wide × ply-thick. <b>Gearbox keep-out</b> is a small no-go circle at the motor shaft; the body strip (set in Motor drive) blocks where the motor hangs; <b>motor hang</b> is how far the body reaches below the board. Height clears ${cxMotor().on?'the motor body and ':''}the bolt tails automatically; override it if you like. Glue the tabs, or leave them friction-fit.</div>`}`
+    <div class="hint" style="${plan&&plan.ok?'':'color:#bf3a2b'}">${plan?plan.msg:''} — each unit is two fins with tabs up through slots in the board, ending in a flat base plate. <b>Foot length</b> is each fin strip's long side, <b>height</b> its drop below the board, and every tab is 18mm wide × ply-thick. <b>Gearbox keep-out</b> is a small no-go circle at the motor shaft; the body strip (set in Motor drive) blocks where the motor hangs; <b>motor hang</b> is how far the body reaches below the board. Height clears ${cxMotor().on?'the motor body and ':''}the bolt tails automatically; override it if you like. Glue the tabs, or leave them friction-fit.</div>`}`
    :`<div class="hint">Off — the board lies flat. Turn on to cut hidden H-shaped feet that tab into the underside, sized to clear the ${cxMotor().on?'motor and ':''}bolt tails.</div>`); }
 function renderComplexUI(){
   const host=document.getElementById('cxList'); if(!host)return; const c=computeComplex();
