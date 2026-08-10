@@ -4312,7 +4312,8 @@ function cxMotorClash(c){ const M=cxMotor(); if(!M.on||M.gear==null)return [];
     if((S.cx.converters||[]).some(v=>v.gear===g.id))out.push('gear #'+g.id+' drives a converter — its guide bridge sits over the gear, in the shaft\u2019s way'); });
   return out; }
 function cxFeet(){ return S.cx.feet||(S.cx.feet={on:false,units:2,h:null,fl:90,gap:40,rot:0,motorKeep:45,motorDrop:50}); }
-function cxFeetH(){ const F=cxFeet(); if(F.h!=null)return Math.max(25,F.h);
+function cxFeetH(){ const F=cxFeet(); const hang=cxMotor().on?(F.motorDrop||50)+3:0;
+  if(F.h!=null)return Math.max(25,F.h,hang);   /* the motor must never poke past the feet */
   const bolt=boltNom()*0.8+12, motor=(cxMotor().on?(F.motorDrop||50):0);
   return Math.max(25,Math.ceil(Math.max(bolt,motor))+4); }
 /* Hidden H-feet: each unit is two parallel fins (tabs up through slots in the board)
@@ -4324,7 +4325,7 @@ function cxFeetPlan(c){ const F=cxFeet(); if(!F.on)return {ok:false,units:[],fl:
   if(_feetPlanCache.key===key)return _feetPlanCache.plan;
   const plan=cxFeetPlanBuild(c); _feetPlanCache.key=key; _feetPlanCache.plan=plan; return plan; }
 function cxFeetPlanBuild(c){ const F=cxFeet();
-  const flAsk=F.fl||90, tries=[flAsk,Math.round(flAsk*0.8),Math.round(flAsk*0.65),Math.round(flAsk*0.55)].filter((v,i,a)=>v>=34&&a.indexOf(v)===i);
+  const flAsk=F.fl||90, tries=[flAsk,Math.round(flAsk*0.8),Math.round(flAsk*0.65),Math.round(flAsk*0.55)].filter((v,i,a)=>v>=30&&a.indexOf(v)===i);
   const asked=Math.max(2,Math.min(3,F.units||2));
   for(const fl of tries){ const p=cxFeetPlanAt(c,fl);
     if(p.ok){ if(fl<flAsk)p.msg='placed \u2713 \u00b7 '+p.units.length+' units \u2014 feet shortened to '+fl+'mm to stay hidden';
@@ -5368,6 +5369,11 @@ function drawComplexBackPreview(){
     if(k===mk)s+='<text x="'+MX([g.x])+'" y="'+(+MY([0,g.y])-r-3).toFixed(1)+'" font-size="'+fs+'" text-anchor="middle" fill="#7a5a1c" font-family="Space Mono,monospace">\u2699 motor</text>'; });
   cxMotorScrews(c).forEach(sc=>{ s+='<circle cx="'+MX([sc.x])+'" cy="'+MY([0,sc.y])+'" r="'+(sc.d/2).toFixed(1)+'" fill="var(--paper)" stroke="#23201a" stroke-width="'+(lw*0.8)+'"/>'; });
   try{ cxPostWorld(c).forEach(pp=>{ s+='<circle cx="'+MX([pp.x])+'" cy="'+MY([0,pp.y])+'" r="'+(cxDowelHole()/2).toFixed(1)+'" fill="var(--paper)" stroke="#23201a" stroke-width="'+(lw*0.8)+'"/>'; }); }catch(_){}
+  { const cap=cxMotorBodyCap(c);
+    if(cap){ s+='<line x1="'+MX([cap.x1])+'" y1="'+MY([0,cap.y1])+'" x2="'+MX([cap.x2])+'" y2="'+MY([0,cap.y2])+'" stroke="#2c2318" stroke-width="'+(cap.r*2).toFixed(1)+'" stroke-linecap="round" opacity="0.22"/>';
+      const M2=cxMotor(), g2=c.byId[M2.gear];
+      if(g2)s+='<circle cx="'+MX([g2.x])+'" cy="'+MY([0,g2.y])+'" r="'+Math.min(cxFeet().motorKeep||27,34).toFixed(1)+'" fill="#2c2318" opacity="0.22"/>';
+      s+='<text x="'+MX([(cap.x1+cap.x2)/2])+'" y="'+MY([0,(cap.y1+cap.y2)/2])+'" font-size="'+fs+'" text-anchor="middle" fill="#f2ead8" font-family="Space Mono,monospace">motor body</text>'; } }
   /* feet units */
   if(cxFeet().on&&cxFeet().style==='skirt'){ const sp=cxSkirtPlan(c);
     if(sp.ok){ const t2=S.thick;
@@ -5826,7 +5832,7 @@ function renderMotorUI(c){ const host=document.getElementById('cxMotorUI'); if(!
       <span class="clab">rotate motor</span>${num('cxMotorRot',M.rot||0,15,0,345)}°</div>
     ${M.faceN>0?`<div class="hint">Screw clearance holes are cut in the board around the shaft — the motor face bolts straight to the underside. <b>Measure your motor's hole pattern</b> and set the pitches; the defaults are only a guess.</div>`:''}
     <div class="cstage-top" style="margin-top:6px"><label class="pchk" data-on="${M.cradle?1:0}"><input type="checkbox" id="cxMotorCradle" ${M.cradle?'checked':''}>cradle for a screwless motor</label>
-      <span class="clab">body ⌀/W</span>${num('cxMotorBodyW',M.bodyW||28,1,15,60)}<span class="clab">body length</span>${num('cxMotorBodyL',M.bodyL||62,1,25,140)}${M.cradle?`<span class="clab">offset along</span>${num('cxMotorBodyOff',M.bodyOff||30,1,0,120)}`:''}</div>
+      <span class="clab">body ⌀/W</span>${num('cxMotorBodyW',M.bodyW||28,1,15,60)}<span class="clab">body length</span>${num('cxMotorBodyL',M.bodyL||62,1,25,140)}<span class="clab">hang ↓</span>${num('cxFeetDrop',cxFeet().motorDrop||50,1,0,150)}${M.cradle?`<span class="clab">offset along</span>${num('cxMotorBodyOff',M.bodyOff||30,1,0,120)}`:''}</div>
     <div class="hint">Body W and length sweep a no-go strip from the shaft along <b>rotate motor</b> — feet and their base plates stay out of it, so they can sit beside the hanging body instead of a whole blocked circle.</div>
     ${M.cradle?`<div class="hint">Two fins straddle the motor body with a base plate under it — zip-tie slots strap the motor down. It tabs into the board like the feet; use <b>rotate motor</b> to point the body where there's room, and set <b>motor drop</b> (in the feet controls) to the body's hang depth.</div>`:''}
     ${stacked.length>1?`<div class="hint">Shaft carries a stack — <b>${stacked.map(g=>'#'+g.id).join(', ')}</b> all get the motor bore and turn together.</div>`:''}
@@ -5853,14 +5859,14 @@ function renderFeetUI(c){ const host=document.getElementById('cxFeetUI'); if(!ho
       <option value="2"${(F.units||2)===2?' selected':''}>2 (4 fins)</option>
       <option value="3"${F.units===3?' selected':''}>3 (6 fins)</option></select>
       <span class="clab">height</span>${num('cxFeetH',cxFeetH(),1,25,120)}
-      <span class="clab">foot length</span>${num('cxFeetFL',F.fl||90,5,50,200)}
+      <span class="clab">foot length</span>${num('cxFeetFL',F.fl||90,5,30,200)}
       <span class="clab">foot gap</span>${num('cxFeetGap',F.gap||40,2,24,90)}
       <span class="clab">spot</span><span class="cstep"><button id="cxFeetAltL">◀</button><button id="cxFeetAltR">▶</button></span></div>
     <div class="cstage-top" style="margin-top:6px"><label class="pchk" data-on="${F.wall?1:0}"><input type="checkbox" id="cxFeetWall" ${F.wall?'checked':''}>wall hanging (keyholes)</label>
       ${F.wall?`<span class="clab">screw head ⌀</span>${num('cxFeetKeyHead',F.keyHead||9,0.5,5,16)}<span class="clab">shank ⌀</span>${num('cxFeetKeyShank',F.keyShank||4.5,0.5,2,8)}`:''}</div>
     ${F.wall?`<div class="hint">Each base plate gets a keyhole, slot pointing up. Small <b>hexagonal</b> holes are cut in the board directly over each keyhole's resting spot — hold the machine to the wall, pencil through the hexes, and the marks are exactly where the screws go. Hex, so you never mistake them for shaft holes.</div>`:''}
     <div class="cstage-top" style="margin-top:6px"><span class="clab">rotate placement</span><input type="range" id="cxFeetRot" min="0" max="120" step="3" value="${F.rot||0}" style="width:130px">
-      ${cxMotor().on?`<span class="clab">gearbox keep-out ⌀</span>${num('cxFeetKeep',(F.motorKeep||27)*2,5,30,68)}<span class="clab">motor hang ↓</span>${num('cxFeetDrop',F.motorDrop||50,1,0,150)}`:''}</div>
+      ${cxMotor().on?`<span class="clab">gearbox keep-out ⌀</span>${num('cxFeetKeep',(F.motorKeep||27)*2,5,30,68)}`:''}</div>
     <div class="hint" style="${plan&&plan.ok?'':'color:#bf3a2b'}">${plan?plan.msg:''} — each unit is two fins with tabs up through slots in the board, ending in a flat base plate. <b>Foot length</b> is each fin strip's long side, <b>height</b> its drop below the board, and every tab is 18mm wide × ply-thick. <b>Gearbox keep-out</b> is a small no-go circle at the motor shaft; the body strip (set in Motor drive) blocks where the motor hangs; <b>motor hang</b> is how far the body reaches below the board. Height clears ${cxMotor().on?'the motor body and ':''}the bolt tails automatically; override it if you like. Glue the tabs, or leave them friction-fit.</div>`}`
    :`<div class="hint">Off — the board lies flat. Turn on to cut hidden H-shaped feet that tab into the underside, sized to clear the ${cxMotor().on?'motor and ':''}bolt tails.</div>`); }
 function renderComplexUI(){
@@ -7689,7 +7695,7 @@ document.addEventListener('change',e=>{ const t=e.target; if(!t||!t.id)return;
   if(t.id==='cxFeetStyle'){ cxFeet().style=t.value; renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetUnits'){ cxFeet().units=+t.value||2; renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetH'){ const v=+t.value; cxFeet().h=isFinite(v)&&v>0?Math.max(25,Math.min(120,v)):null; renderComplexUI(); everything(); return; }
-  if(t.id==='cxFeetFL'){ cxFeet().fl=Math.max(50,Math.min(200,+t.value||90)); renderComplexUI(); everything(); return; }
+  if(t.id==='cxFeetFL'){ cxFeet().fl=Math.max(30,Math.min(200,+t.value||90)); renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetGap'){ cxFeet().gap=Math.max(24,Math.min(90,+t.value||40)); renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetRot'){ cxFeet().rot=+t.value||0; renderComplexUI(); everything(); return; }
   if(t.id==='cxExLoose'){ cxExtras().loose=Math.max(0,Math.min(40,+t.value||0)); everything(); return; }
