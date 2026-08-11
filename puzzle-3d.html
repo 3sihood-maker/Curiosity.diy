@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Curious 3D Puzzle Maker · curiosity.diy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#ece2cf; --card:#fbf7ee; --card2:#f5eede;
+  --ink:#2a2216; --ink-soft:#7a6c53; --ink-faint:#a99b80;
+  --rust:#c15a34; --rust-deep:#9c3f1e; --tan:#d8c39a;
+  --line:#dccdb0; --olive:#6f7448;
+  --shadow:0 1px 0 #fff8, 0 10px 30px -12px rgba(60,40,20,.35);
+  --font-head:'Fraunces',Georgia,'Times New Roman',serif;
+  --font-body:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 80% -10%, #f3ead7 0%, transparent 60%),var(--paper);
+  color:var(--ink);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased;padding:0 0 60px}
+header.site{padding:30px 18px 10px;max-width:1220px;margin:0 auto}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand .dot{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--rust-deep);background:#fff6;border:1px solid var(--tan);padding:4px 9px;border-radius:20px}
+.homelink{color:inherit;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:1px}
+.homelink:hover{color:var(--rust-deep)}
+h1{font-family:var(--font-head);font-weight:900;font-size:clamp(2rem,5vw,3.1rem);margin:.15em 0 .05em;letter-spacing:-.01em;font-optical-sizing:auto}
+.tagline{font-family:var(--font-head);font-style:italic;font-weight:400;color:var(--ink-soft);font-size:clamp(1rem,2.2vw,1.25rem);margin:0 0 4px}
+.sub{color:var(--ink-soft);max-width:64ch;font-size:.95rem}
+.layout{max-width:1220px;margin:14px auto 0;padding:0 18px;display:flex;gap:20px;align-items:flex-start}
+.typebar{max-width:1220px;margin:16px auto 0;padding:0 18px}
+.typebar .chips{max-width:520px}
+.typebar .chip{padding:13px 6px;font-size:.9rem}
+.panel{flex:0 0 386px;background:var(--card);border:1px solid var(--tan);border-radius:14px;box-shadow:var(--shadow);padding:18px}
+.stage{flex:1;background:repeating-linear-gradient(45deg,#0000 0 11px,#00000006 11px 12px),var(--card2);
+  border:1px solid var(--tan);border-radius:12px;padding:14px;min-height:360px;display:flex;flex-direction:column;position:relative}
+.meta{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono);font-size:.78rem;color:var(--ink-soft);margin-bottom:10px;flex-wrap:wrap;gap:6px}
+.meta b{color:var(--rust-deep);font-weight:600}
+.svgbox{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;position:relative}
+.svgbox svg{max-width:100%;height:auto;filter:drop-shadow(0 8px 18px rgba(60,40,20,.18))}
+.svgbox.hidden{display:none}
+#gl{flex:1;width:100%;min-height:360px;max-height:72vh;border-radius:8px;display:block;touch-action:none;cursor:grab;background:radial-gradient(130% 130% at 50% 12%, #f4f7fa 0%, #e5ecf2 62%, #d6dfe8 100%)}
+#gl.hidden{display:none}
+#gl:active{cursor:grabbing}
+.viewseg{position:absolute;top:12px;right:12px;display:flex;border:1px solid var(--tan);border-radius:8px;overflow:hidden;z-index:6;box-shadow:0 2px 6px rgba(60,40,20,.15)}
+.viewseg button{border:0;background:#fff;color:var(--ink-soft);font-family:var(--font-mono);font-size:.72rem;font-weight:600;padding:6px 11px;cursor:pointer}
+.viewseg button.on{background:var(--ink);color:#fbf7ee}
+.spin{position:absolute;bottom:10px;left:12px;font-family:var(--font-mono);font-size:.68rem;color:var(--ink-faint);z-index:6;pointer-events:none}
+.warn{margin-top:10px;font-family:var(--font-mono);font-size:.74rem;color:#fff;background:var(--rust);padding:7px 12px;border-radius:9px}
+.warn.hidden{display:none}
+h2{font-family:var(--font-head);font-weight:600;font-size:1.15rem;margin:0 0 4px}
+.hint{color:var(--ink-soft);font-size:.85rem;margin:0 0 14px}
+.group{padding:14px 0;border-top:1px dashed var(--line)}
+.group:first-of-type{border-top:none;padding-top:2px}
+.group.hidden{display:none}
+.glabel{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--rust-deep);margin:0 0 10px}
+.row{display:flex;align-items:center;gap:10px;margin:9px 0}
+.row label{flex:0 0 96px;font-size:.86rem;color:var(--ink)}
+.row input[type=range]{flex:1;accent-color:var(--rust)}
+.row .val{flex:0 0 58px;text-align:right;font-family:var(--font-mono);font-size:.8rem;color:var(--ink-soft)}
+.twocol{display:flex;gap:10px}
+.field{flex:1}
+.field label{display:block;font-size:.8rem;color:var(--ink-soft);margin-bottom:4px}
+.field input{width:100%;font-family:var(--font-mono);font-size:.9rem;padding:8px 10px;border:1px solid var(--tan);border-radius:8px;background:#fff;color:var(--ink)}
+.row input[type=number]{font-family:var(--font-mono);font-size:.9rem;padding:7px 9px;border:1px solid var(--tan);border-radius:8px;background:#fff;color:var(--ink)}
+.chips{display:flex;gap:8px}
+.chip{flex:1;text-align:center;border:1px solid var(--tan);background:#fff;color:var(--ink-soft);font-family:var(--font-mono);
+  font-size:.8rem;padding:10px 6px;border-radius:20px;cursor:pointer}
+.chip.on{background:var(--ink);color:#fbf7ee;font-weight:600;border-color:var(--ink)}
+.btns{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px}
+.btn{flex:1;min-width:96px;border:1px solid var(--tan);background:#fff;color:var(--rust-deep);font-family:var(--font-mono);
+  font-size:.8rem;font-weight:600;padding:11px 8px;border-radius:10px;cursor:pointer;text-align:center}
+.btn:hover{background:var(--card2)}
+.btn.primary{background:var(--rust);color:#fff;border-color:var(--rust)}
+.btn.primary:hover{background:var(--rust-deep)}
+.selectrow{display:flex;align-items:center;gap:10px;margin:10px 0 2px}
+.selectrow select{flex:1;font-family:var(--font-mono);font-size:.84rem;padding:8px 10px;border:1px solid var(--tan);border-radius:8px;background:#fff;color:var(--ink)}
+.note{font-size:.78rem;color:var(--ink-soft);margin-top:12px;line-height:1.45}
+footer{max-width:1220px;margin:22px auto 0;padding:0 18px;color:var(--ink-faint);font-family:var(--font-mono);
+  font-size:.72rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+@media(max-width:860px){.layout{flex-direction:column}.panel{flex:1 1 auto;width:100%}
+  #stage{order:-1;position:sticky;top:0;z-index:30}}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="brand"><span class="dot"><a href="https://curiosity.diy" class="homelink">curiosity.diy</a> · 3D printing bench</span></div>
+  <h1>The Curious 3D Puzzle Maker</h1>
+  <p class="tagline">Jigsaws you can print.</p>
+  <p class="sub">Tell it your printer bed and how thick you want the pieces, and it lays out a full set of interlocking puzzle pieces — spaced apart, ready to slice — with a built-in fit clearance so they click together straight off the plate. Exports STL, OBJ and SVG.</p>
+</header>
+
+<div class="typebar">
+  <div class="chips" id="shape">
+    <div class="chip on" data-v="grid">Grid jigsaw</div>
+    <div class="chip" data-v="mono">Aperiodic monotile</div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="stage" id="stage">
+    <div class="meta"><span id="meta_l"></span><span id="meta_r"></span></div>
+    <div class="viewseg" id="viewseg"><button data-v="3d" class="on">3D</button><button data-v="flat">Layout</button></div>
+    <canvas id="gl"></canvas>
+    <div class="svgbox hidden" id="svgbox"></div>
+    <div class="spin" id="spin">drag to rotate · scroll to zoom</div>
+    <div class="warn hidden" id="warn"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Design</h2>
+    <p class="hint">Each piece is a separate solid, spaced for printing. Neighbours share an edge, so the puzzle fits together.</p>
+
+    <div class="group">
+      <p class="glabel">Printer bed</p>
+      <div class="twocol">
+        <div class="field"><label>Width (mm)</label><input type="number" id="bedw" value="220" min="40" max="1000"></div>
+        <div class="field"><label>Depth (mm)</label><input type="number" id="bedd" value="220" min="40" max="1000"></div>
+      </div>
+    </div>
+
+    <div class="group" id="gridonly">
+      <p class="glabel">Pieces</p>
+      <div class="row"><label>Piece size</label><input type="range" id="piece" min="14" max="80" value="32"><span class="val" id="piece_v">32 mm</span></div>
+      <div class="row"><label>Columns</label><input type="range" id="cols" min="2" max="12" value="4"><span class="val" id="cols_v">4</span></div>
+      <div class="row"><label>Rows</label><input type="range" id="rows" min="2" max="12" value="4"><span class="val" id="rows_v">4</span></div>
+    </div>
+
+    <div class="group hidden" id="monoonly">
+      <p class="glabel">Spectre tiles</p>
+      <div class="chips" id="edges" style="margin-bottom:12px">
+        <div class="chip on" data-v="straight">Straight</div>
+        <div class="chip" data-v="curved">Curved</div>
+      </div>
+      <div class="row"><label>Tile size</label><input type="range" id="tsize" min="18" max="80" value="38"><span class="val" id="tsize_v">38 mm</span></div>
+      <div class="row"><label>How many</label><input type="range" id="tcount" min="4" max="80" value="24"><span class="val" id="tcount_v">24</span></div>
+      <p class="hint" style="margin:8px 0 0">One shape — the chiral aperiodic monotile. <b>Straight</b> is the Tile(1,1) spectre; <b>Curved</b> is the true Spectre, whose S-curved edges make it tile with rotations only — never its mirror image.</p>
+    </div>
+
+    <div class="group">
+      <p class="glabel">Solid</p>
+      <div class="row"><label>Thickness</label><input type="range" id="thick" min="1" max="12" value="4" step="0.5"><span class="val" id="thick_v">4 mm</span></div>
+      <div class="row"><label>Fit clearance</label><input type="range" id="clr" min="0" max="60" value="25"><span class="val" id="clr_v">0.25 mm</span></div>
+    </div>
+
+    <div class="group" id="tabshape">
+      <p class="glabel">Tab shape</p>
+      <div class="row"><label>Tab round</label><input type="range" id="round" min="0" max="40" value="20"><span class="val" id="round_v">0.20</span></div>
+      <div class="row"><label>Tab size</label><input type="range" id="tab" min="55" max="90" value="80"><span class="val" id="tab_v">0.80</span></div>
+      <div class="row"><label>Wobble</label><input type="range" id="wob" min="0" max="100" value="25"><span class="val" id="wob_v">0.25</span></div>
+    </div>
+
+    <div class="group">
+      <p class="glabel">Layout</p>
+      <div class="row"><label>Gap</label><input type="range" id="gap" min="1" max="12" value="3" step="0.5"><span class="val" id="gap_v">3 mm</span></div>
+      <div class="row"><label>Seed</label><input type="number" id="seed" value="7" min="0" style="flex:1"></div>
+    </div>
+
+    <div class="group">
+      <p class="glabel">Export</p>
+      <div class="selectrow"><label style="flex:0 0 auto;font-size:.84rem;color:var(--ink-soft)">Print</label><select id="platesel"></select></div>
+      <div class="btns">
+        <button class="btn primary" id="dl_stl">Download STL</button>
+        <button class="btn" id="dl_obj">Download OBJ</button>
+        <button class="btn" id="dl_svg">Download SVG</button>
+      </div>
+      <div class="btns" style="margin-top:9px"><button class="btn" id="rnd">↻ Randomise</button></div>
+      <p class="note">STL &amp; OBJ are the 3D solids (each piece its own object); SVG is the flat top-view. The <b>fit clearance</b> is baked in — start at 0.25&nbsp;mm and nudge up if pieces are tight, down if loose.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span><a href="https://curiosity.diy" class="homelink">curiosity.diy</a> · the curious 3d puzzle maker</span>
+  <span id="foot_ver">v1.2 · build: press t06 — if this line is missing you're viewing a cached copy</span>
+</footer>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+const SPECTRE=[[-0.09609,-0.49447],[0.00957,-0.31146],[0.22089,-0.31146],[0.22089,-0.10014],[0.40391,0.00553],[0.29824,0.18854],[0.08692,0.18854],[0.08692,0.39986],[-0.09609,0.50553],[-0.20176,0.32251],[-0.09609,0.1395],[-0.27911,0.03384],[-0.27911,-0.17749],[-0.27911,-0.38881]];
+
+function tabSegments(A,B,s,k,neck,jitPos,round){
+  round=round||0;
+  const dx=B[0]-A[0],dy=B[1]-A[1],L=Math.hypot(dx,dy);
+  const ux=dx/L,uy=dy/L, nx=-uy,ny=ux;
+  const P=(af,pf)=>[A[0]+ux*af*L+nx*pf*L*s, A[1]+uy*af*L+ny*pf*L*s];
+  const m=0.5+jitPos;
+  const headR=k*(0.150+0.015*round);
+  const neckFrac=Math.max(0.16,Math.min(0.9,(0.77-0.31*round)*neck));
+  let neckW=headR*neckFrac;
+  const nl=k*(0.055+0.005*round);
+  const d=Math.sqrt(Math.max(1e-6, headR*headR-neckW*neckW));
+  const hc=nl+d, sw=neckW+k*0.09;
+  const aL=Math.atan2(-d,-neckW), aR=Math.atan2(-d,neckW);
+  let sweep=aL-aR; sweep=((sweep%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+  const nseg=Math.max(3,Math.ceil(sweep/(Math.PI/2))), da=-sweep/nseg, kap=(4/3)*Math.tan(da/4);
+  const arc=[]; let ang=aL;
+  for(let i=0;i<nseg;i++){const b=ang+da;
+    arc.push({type:'C',c1:P(m+headR*(Math.cos(ang)-kap*Math.sin(ang)),hc+headR*(Math.sin(ang)+kap*Math.cos(ang))),
+      c2:P(m+headR*(Math.cos(b)+kap*Math.sin(b)),hc+headR*(Math.sin(b)-kap*Math.cos(b))),p:P(m+headR*Math.cos(b),hc+headR*Math.sin(b))});ang=b;}
+  const t1=nl*0.6, t2=(sw-neckW)*0.6;   // concave armpit: leaves baseline horizontally, meets neck vertically
+  return [{type:'L',p:P(m-sw,0)},{type:'C',c1:P(m-sw+t2,0),c2:P(m-neckW,nl-t1),p:P(m-neckW,nl)},
+    ...arc,{type:'C',c1:P(m+neckW,nl-t1),c2:P(m+sw-t2,0),p:P(m+sw,0)},{type:'L',p:B}];
+}
+function cubic(p0,c1,c2,p3,t){const u=1-t;return[u*u*u*p0[0]+3*u*u*t*c1[0]+3*u*t*t*c2[0]+t*t*t*p3[0],u*u*u*p0[1]+3*u*u*t*c1[1]+3*u*t*t*c2[1]+t*t*t*p3[1]];}
+function sampleEdge(A,B,s,o,per){
+  const pts=[A.slice()];
+  if(s===0){pts.push(B.slice());return pts;}
+  const segs=tabSegments(A,B,s,o.k,o.neck,o.jit,o.round);
+  let cur=A;
+  for(const sg of segs){if(sg.type==='L'){pts.push(sg.p.slice());cur=sg.p;}else{for(let t=1;t<=per;t++)pts.push(cubic(cur,sg.c1,sg.c2,sg.p,t/per));cur=sg.p;}}
+  return pts;
+}
+function buildPieces(o){
+  const rnd=mulberry32((o.seed|0)+1);
+  const cols=o.cols,rows=o.rows,cw=o.piece,ch=o.piece,per=o.per||14, NECK=1.2;
+  const HP=[],VP=[];
+  for(let i=0;i<=rows;i++){HP.push([]);for(let j=0;j<cols;j++){
+    const A=[j*cw,i*ch],B=[(j+1)*cw,i*ch],border=(i===0||i===rows),s=border?0:(rnd()>0.5?1:-1);
+    const eo={k:o.k*(1+(rnd()-0.5)*0.10*o.jitK),neck:NECK,jit:(rnd()-0.5)*o.jit,round:o.round};
+    HP[i].push(sampleEdge(A,B,s,eo,per));}}
+  for(let i=0;i<rows;i++){VP.push([]);for(let j=0;j<=cols;j++){
+    const A=[j*cw,i*ch],B=[j*cw,(i+1)*ch],border=(j===0||j===cols),s=border?0:(rnd()>0.5?1:-1);
+    const eo={k:o.k*(1+(rnd()-0.5)*0.10*o.jitK),neck:NECK,jit:(rnd()-0.5)*o.jit,round:o.round};
+    VP[i].push(sampleEdge(A,B,s,eo,per));}}
+  const rev=p=>p.slice().reverse();
+  const pieces=[];
+  for(let i=0;i<rows;i++)for(let j=0;j<cols;j++){
+    const loop=[],add=(arr,drop)=>{(drop?arr.slice(1):arr).forEach(p=>loop.push(p.slice()));};
+    add(HP[i][j],false); add(VP[i][j+1],true); add(rev(HP[i+1][j]),true); add(rev(VP[i][j]),true);
+    if(loop.length>1&&Math.hypot(loop[loop.length-1][0]-loop[0][0],loop[loop.length-1][1]-loop[0][1])<1e-6)loop.pop();
+    pieces.push({loop});
+  }
+  return pieces;
+}
+function curveSpectre(poly,amp,per){   // point-symmetric S-curve per edge => strictly chiral, still tiles
+  const out=[],n=poly.length;
+  for(let i=0;i<n;i++){const A=poly[i],B=poly[(i+1)%n];const dx=B[0]-A[0],dy=B[1]-A[1],L=Math.hypot(dx,dy)||1e-9;
+    const px=-dy/L,py=dx/L,a=amp*L;
+    const c1=[A[0]+dx/3+px*a,A[1]+dy/3+py*a], c2=[A[0]+2*dx/3-px*a,A[1]+2*dy/3-py*a];
+    for(let t=0;t<per;t++)out.push(cubic(A,c1,c2,B,t/per));}
+  return out;
+}
+function spectreTiles(size,count,curved,seed){
+  const rnd=mulberry32((seed|0)+7);
+  const s=SPECTRE.map(p=>[p[0]*size,p[1]*size]);
+  const shape=curved?curveSpectre(s,0.14,12):s;
+  const out=[];
+  for(let i=0;i<count;i++){const a=rnd()*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a);
+    out.push({loop:shape.map(p=>[p[0]*ca-p[1]*sa, p[0]*sa+p[1]*ca])});}
+  return out;
+}
+function earClip(poly){
+  const n=poly.length;if(n<3)return[];
+  let area=0;for(let i=0;i<n;i++){const j=(i+1)%n;area+=poly[i][0]*poly[j][1]-poly[j][0]*poly[i][1];}
+  let idx=[...Array(n).keys()];if(area<0)idx.reverse();
+  const cross=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+  const inTri=(p,a,b,c)=>{const d1=cross(a,b,p),d2=cross(b,c,p),d3=cross(c,a,p);const neg=d1<0||d2<0||d3<0,pos=d1>0||d2>0||d3>0;return!(neg&&pos);};
+  const tris=[];let guard=0;
+  while(idx.length>3&&guard++<20000){let clipped=false;
+    for(let k=0;k<idx.length;k++){const i0=idx[(k-1+idx.length)%idx.length],i1=idx[k],i2=idx[(k+1)%idx.length];
+      const a=poly[i0],b=poly[i1],c=poly[i2];if(cross(a,b,c)<=1e-9)continue;
+      let ok=true;for(const mm of idx){if(mm===i0||mm===i1||mm===i2)continue;if(inTri(poly[mm],a,b,c)){ok=false;break;}}
+      if(ok){tris.push([i0,i1,i2]);idx.splice(k,1);clipped=true;break;}}
+    if(!clipped)break;}
+  if(idx.length===3)tris.push([idx[0],idx[1],idx[2]]);
+  return tris;
+}
+function extrude(loop,T,dx,dy){
+  let area=0;const n=loop.length;for(let i=0;i<n;i++){const j=(i+1)%n;area+=loop[i][0]*loop[j][1]-loop[j][0]*loop[i][1];}
+  let ring=loop.map(p=>[p[0]+dx,p[1]+dy]);if(area<0)ring=ring.reverse();
+  const N=ring.length,verts=[],tris=[];
+  for(const p of ring)verts.push([p[0],p[1],0]);
+  for(const p of ring)verts.push([p[0],p[1],T]);
+  const tt=earClip(ring);
+  for(const [a,b,c] of tt){tris.push([a+N,b+N,c+N]);tris.push([a,c,b]);}
+  for(let i=0;i<N;i++){const j=(i+1)%N;tris.push([i,j,j+N]);tris.push([i,j+N,i+N]);}
+  return {verts,tris};
+}
+function meshBad(m){const ec=new Map();for(const[a,b,c]of m.tris)for(const[u,v]of[[a,b],[b,c],[c,a]]){const k=Math.min(u,v)+'_'+Math.max(u,v);ec.set(k,(ec.get(k)||0)+1);}let bad=0;for(const[,v]of ec)if(v!==2)bad++;return bad;}
+function erode(loop,d){
+  const n=loop.length;if(n<3||d<=0)return loop.slice();
+  let area=0;for(let i=0;i<n;i++){const j=(i+1)%n;area+=loop[i][0]*loop[j][1]-loop[j][0]*loop[i][1];}
+  const ring=area<0?loop.slice().reverse():loop.slice(),N=ring.length,en=[];
+  for(let i=0;i<N;i++){const a=ring[i],b=ring[(i+1)%N];const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1e-9;en.push([-dy/L,dx/L]);}
+  const out=[];for(let i=0;i<N;i++){const p=en[(i-1+N)%N],q=en[i];let bx=p[0]+q[0],by=p[1]+q[1];const bl=Math.hypot(bx,by);
+    if(bl<1e-6){out.push(ring[i].slice());continue;}bx/=bl;by/=bl;out.push([ring[i][0]+bx*d,ring[i][1]+by*d]);}
+  if(area<0)out.reverse();return out;
+}
+function erodeSafe(loop,d){ if(d<=0)return loop.slice();
+  let dd=d;for(let k=0;k<4;k++){const e=erode(loop,dd);if(meshBad(extrude(e,1,0,0))===0)return e;dd*=0.5;}
+  return loop.slice();
+}
+function bbox(loop){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const p of loop){x0=Math.min(x0,p[0]);y0=Math.min(y0,p[1]);x1=Math.max(x1,p[0]);y1=Math.max(y1,p[1]);}return{x0,y0,x1,y1,w:x1-x0,h:y1-y0};}
+function packPlates(pieces,bedW,bedD,gap){
+  const items=pieces.map(pc=>{const b=bbox(pc.loop);return{pc,b,w:b.w,h:b.h};});
+  items.sort((a,b)=>b.h-a.h);
+  const plates=[];let plate=null;const newPlate=()=>{plate={placed:[]};plates.push(plate);};
+  newPlate();let curX=gap,curY=gap,rowH=0;const tooBig=[];
+  for(const it of items){
+    if(it.w>bedW-2*gap||it.h>bedD-2*gap){tooBig.push(it);continue;}
+    if(curX+it.w+gap>bedW){curY+=rowH+gap;curX=gap;rowH=0;}
+    if(curY+it.h+gap>bedD){newPlate();curX=gap;curY=gap;rowH=0;}
+    plate.placed.push({pc:it.pc,dx:curX-it.b.x0,dy:curY-it.b.y0,b:it.b});
+    curX+=it.w+gap;rowH=Math.max(rowH,it.h);
+  }
+  return {plates,tooBig};
+}
+function buildModel(o){
+  let raw = (o.shape==='mono') ? spectreTiles(o.tsize,o.tcount,o.curved,o.seed) : buildPieces(o);
+  const clr=o.clr;
+  const pieces = raw.map(pc=>({loop: erodeSafe(pc.loop, clr/2)}));
+  const {plates,tooBig}=packPlates(pieces,o.bedW,o.bedD,o.gap);
+  return {plates,tooBig,bedW:o.bedW,bedD:o.bedD,gap:o.gap,thick:o.thick,pieces:pieces.length};
+}
+function exportPlaced(model,which){
+  const {plates}=model,gap=model.gap;
+  if(which==='all'){const out=[];plates.forEach((pl,k)=>{const ox=k*(model.bedW+gap*4);pl.placed.forEach(p=>out.push({pc:p.pc,dx:p.dx+ox,dy:p.dy}));});return out;}
+  return plates[which].placed.map(p=>({pc:p.pc,dx:p.dx,dy:p.dy}));
+}
+function triNormal(a,b,c){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+  let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const L=Math.hypot(nx,ny,nz)||1;return[nx/L,ny/L,nz/L];}
+function toBinarySTL(placed,T){
+  let tot=0;const meshes=placed.map(pl=>{const m=extrude(pl.pc.loop,T,pl.dx,pl.dy);tot+=m.tris.length;return m;});
+  const buf=new ArrayBuffer(84+tot*50),dv=new DataView(buf);dv.setUint32(80,tot,true);let off=84;
+  for(const m of meshes)for(const [a,b,c] of m.tris){const va=m.verts[a],vb=m.verts[b],vc=m.verts[c],nr=triNormal(va,vb,vc);
+    dv.setFloat32(off,nr[0],true);dv.setFloat32(off+4,nr[1],true);dv.setFloat32(off+8,nr[2],true);off+=12;
+    for(const v of [va,vb,vc]){dv.setFloat32(off,v[0],true);dv.setFloat32(off+4,v[1],true);dv.setFloat32(off+8,v[2],true);off+=12;}
+    dv.setUint16(off,0,true);off+=2;}
+  return buf;
+}
+function toOBJ(placed,T){let s='# The Curious 3D Puzzle Maker · curiosity.diy\n',off=0;
+  placed.forEach((pl,idx)=>{const m=extrude(pl.pc.loop,T,pl.dx,pl.dy);s+='o piece_'+(idx+1)+'\n';
+    for(const v of m.verts)s+='v '+v[0].toFixed(3)+' '+v[1].toFixed(3)+' '+v[2].toFixed(3)+'\n';
+    for(const t of m.tris)s+='f '+(t[0]+1+off)+' '+(t[1]+1+off)+' '+(t[2]+1+off)+'\n';
+    off+=m.verts.length;});
+  return s;
+}
+function loopPath(loop,dx,dy){let d='M '+(loop[0][0]+dx).toFixed(2)+' '+(loop[0][1]+dy).toFixed(2);
+  for(let i=1;i<loop.length;i++)d+=' L '+(loop[i][0]+dx).toFixed(2)+' '+(loop[i][1]+dy).toFixed(2);return d+' Z';}
+function toSVG(model,which){
+  const {plates}=model,gap=model.gap,list=(which==='all')?plates.map((_,k)=>k):[which];
+  const plateH=model.bedD,totalH=list.length*plateH+(list.length-1)*gap*4,W=model.bedW;let body='',oy=0;
+  for(const k of list){body+='<rect x="0" y="'+oy.toFixed(2)+'" width="'+W+'" height="'+plateH+'" fill="none" stroke="#d8c39a" stroke-width="0.4"/>';
+    for(const p of plates[k].placed) body+='<path d="'+loopPath(p.pc.loop,p.dx,p.dy+oy)+'" fill="#fbf7ee" stroke="#c15a34" stroke-width="0.3"/>';
+    oy+=plateH+gap*4;}
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'mm" height="'+totalH+'mm" viewBox="0 0 '+W+' '+totalH+'">'+body+'</svg>';
+}
+function previewSVG(model){
+  const {plates,gap}=model,W=model.bedW,plateH=model.bedD;
+  const totalH=plates.length*plateH+(plates.length-1)*gap*4;let body='',oy=0;
+  plates.forEach((pl,k)=>{
+    body+='<rect x="-2" y="'+(oy-2).toFixed(1)+'" width="'+(W+4)+'" height="'+(plateH+4)+'" rx="3" fill="#00000008" stroke="#d8c39a" stroke-width="0.6"/>';
+    body+='<text x="1.5" y="'+(oy+5).toFixed(1)+'" font-family="monospace" font-size="4.4" fill="#a99b80">bed '+(k+1)+'</text>';
+    pl.placed.forEach((p,idx)=>{const col=['#cfe6f5','#bcdcf0','#a9d2ec','#c4e2f4','#b3d9ef','#d6ebf8'][idx%6];
+      body+='<path d="'+loopPath(p.pc.loop,p.dx,p.dy+oy)+'" fill="'+col+'" stroke="#1c6a99" stroke-width="0.35" stroke-linejoin="round"/>';});
+    oy+=plateH+gap*4;});
+  const pad=6;return '<svg xmlns="http://www.w3.org/2000/svg" width="'+(W+2*pad)+'mm" height="'+(totalH+2*pad)+'mm" viewBox="'+(-pad)+' '+(-pad)+' '+(W+2*pad)+' '+(totalH+2*pad)+'" style="max-height:70vh">'+body+'</svg>';
+}
+
+// ============ 3D WebGL preview (no dependencies) ============
+const V={sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
+  dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],norm:a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l];}};
+function mPersp(fov,a,n,f){const t=1/Math.tan(fov/2);return new Float32Array([t/a,0,0,0, 0,t,0,0, 0,0,(f+n)/(n-f),-1, 0,0,2*f*n/(n-f),0]);}
+function mLook(e,c,u){const z=V.norm(V.sub(e,c)),x=V.norm(V.cross(u,z)),y=V.cross(z,x);
+  return new Float32Array([x[0],y[0],z[0],0, x[1],y[1],z[1],0, x[2],y[2],z[2],0, -V.dot(x,e),-V.dot(y,e),-V.dot(z,e),1]);}
+function mMul(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;}
+let GL=null,glProg=null,glBuf={pos:null,nor:null},geoCount=0,geoRadius=60;
+let orbit={yaw:0.6,pitch:0.6,dist:300};
+function buildGeo(model,which){
+  const placed=exportPlaced(model,which),T=model.thick;
+  const meshes=placed.map(p=>extrude(p.pc.loop,T,p.dx,p.dy));
+  let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9;
+  for(const m of meshes)for(const v of m.verts){if(v[0]<mnx)mnx=v[0];if(v[1]<mny)mny=v[1];if(v[0]>mxx)mxx=v[0];if(v[1]>mxy)mxy=v[1];}
+  const cx=(mnx+mxx)/2,cy=(mny+mxy)/2,cz=T/2,pos=[],nor=[];
+  for(const m of meshes)for(const [a,b,c] of m.tris){const va=m.verts[a],vb=m.verts[b],vc=m.verts[c],nn=triNormal(va,vb,vc);
+    for(const v of [va,vb,vc]){pos.push(v[0]-cx, v[2]-cz, -(v[1]-cy));nor.push(nn[0], nn[2], -nn[1]);}}
+  geoRadius=Math.max(Math.hypot((mxx-mnx)/2,(mxy-mny)/2),T)+5;
+  return {pos:new Float32Array(pos),nor:new Float32Array(nor),count:pos.length/3};
+}
+function initGL(){
+  const cv=$('gl');let gl;try{gl=cv.getContext('webgl')||cv.getContext('experimental-webgl');}catch(e){return null;}
+  if(!gl)return null;
+  const vs='attribute vec3 aPos;attribute vec3 aNor;uniform mat4 uMVP;varying vec3 vN;void main(){vN=aNor;gl_Position=uMVP*vec4(aPos,1.0);}';
+  const fs='precision mediump float;varying vec3 vN;uniform vec3 uL;uniform vec3 uC;void main(){vec3 N=normalize(vN);float d=max(dot(N,normalize(uL)),0.0);vec3 col=uC*(0.42+0.72*d)+vec3(0.06)*pow(d,5.0);gl_FragColor=vec4(col,1.0);}';
+  const mk=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){console.warn(gl.getShaderInfoLog(s));return null;}return s;};
+  const a=mk(gl.VERTEX_SHADER,vs),b=mk(gl.FRAGMENT_SHADER,fs);if(!a||!b)return null;
+  const p=gl.createProgram();gl.attachShader(p,a);gl.attachShader(p,b);gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS)){console.warn(gl.getProgramInfoLog(p));return null;}
+  glProg={p,aPos:gl.getAttribLocation(p,'aPos'),aNor:gl.getAttribLocation(p,'aNor'),
+    uMVP:gl.getUniformLocation(p,'uMVP'),uL:gl.getUniformLocation(p,'uL'),uC:gl.getUniformLocation(p,'uC')};
+  glBuf.pos=gl.createBuffer();glBuf.nor=gl.createBuffer();
+  gl.enable(gl.DEPTH_TEST);GL=gl;return gl;
+}
+function uploadGeo(geo){if(!GL)return;geoCount=geo.count;
+  GL.bindBuffer(GL.ARRAY_BUFFER,glBuf.pos);GL.bufferData(GL.ARRAY_BUFFER,geo.pos,GL.STATIC_DRAW);
+  GL.bindBuffer(GL.ARRAY_BUFFER,glBuf.nor);GL.bufferData(GL.ARRAY_BUFFER,geo.nor,GL.STATIC_DRAW);}
+function fitView(){orbit.dist=geoRadius*2.7;}
+function drawGL(){if(!GL||!geoCount)return;const gl=GL,cv=$('gl');
+  const dpr=Math.min(window.devicePixelRatio||1,2),w=cv.clientWidth||600,h=cv.clientHeight||400;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+  gl.viewport(0,0,cv.width,cv.height);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  const cp=Math.max(-1.45,Math.min(1.45,orbit.pitch));
+  const eye=[orbit.dist*Math.cos(cp)*Math.sin(orbit.yaw),orbit.dist*Math.sin(cp),orbit.dist*Math.cos(cp)*Math.cos(orbit.yaw)];
+  const proj=mPersp(0.85,cv.width/cv.height,1,orbit.dist*4+800),view=mLook(eye,[0,0,0],[0,1,0]),mvp=mMul(proj,view);
+  gl.useProgram(glProg.p);gl.uniformMatrix4fv(glProg.uMVP,false,mvp);
+  gl.uniform3fv(glProg.uL,V.norm([eye[0]*0.5+40,eye[1]*0.5+80,eye[2]*0.5+60]));gl.uniform3fv(glProg.uC,[0.13,0.58,0.82]);
+  gl.bindBuffer(gl.ARRAY_BUFFER,glBuf.pos);gl.enableVertexAttribArray(glProg.aPos);gl.vertexAttribPointer(glProg.aPos,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,glBuf.nor);gl.enableVertexAttribArray(glProg.aNor);gl.vertexAttribPointer(glProg.aNor,3,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.TRIANGLES,0,geoCount);}
+function setupOrbit(){const cv=$('gl');const pointers=new Map();let dragging=false,lastX=0,lastY=0,pinchD=0;
+  cv.addEventListener('pointerdown',e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});try{cv.setPointerCapture(e.pointerId);}catch(_){}
+    if(pointers.size===1){dragging=true;lastX=e.clientX;lastY=e.clientY;}});
+  cv.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pointers.size>=2){const pts=[...pointers.values()],d=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+      if(pinchD)orbit.dist=Math.max(geoRadius*1.3,Math.min(geoRadius*9,orbit.dist*pinchD/d));pinchD=d;drawGL();return;}
+    if(dragging){const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;orbit.yaw+=dx*0.01;orbit.pitch+=dy*0.01;drawGL();}});
+  const up=e=>{pointers.delete(e.pointerId);pinchD=0;if(pointers.size<1)dragging=false;};
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);cv.addEventListener('pointerleave',up);
+  cv.addEventListener('wheel',e=>{e.preventDefault();orbit.dist*=(1+Math.sign(e.deltaY)*0.12);orbit.dist=Math.max(geoRadius*1.3,Math.min(geoRadius*9,orbit.dist));drawGL();},{passive:false});
+  window.addEventListener('resize',()=>{if(viewMode==='3d')drawGL();});}
+
+let model=null, shapeMode='grid', monoCurve='straight', viewMode='3d', fitted=false;
+function readOpts(){
+  return {bedW:+$('bedw').value,bedD:+$('bedd').value,shape:shapeMode,
+    piece:+$('piece').value,cols:+$('cols').value,rows:+$('rows').value,
+    tsize:+$('tsize').value,tcount:+$('tcount').value,curved:monoCurve==='curved',
+    thick:+$('thick').value,clr:+$('clr').value/100,
+    round:+$('round').value/100,k:+$('tab').value/100,jit:+$('wob').value/100,jitK:0.25,
+    gap:+$('gap').value,seed:+$('seed').value,per:14};
+}
+function render(){
+  const o=readOpts();
+  model=buildModel(o);
+  $('svgbox').innerHTML=previewSVG(model);
+  let sizeTxt;
+  if(o.shape==='mono') sizeTxt=o.tsize+' mm tiles';
+  else sizeTxt='assembles to '+(o.cols*o.piece)+' × '+(o.rows*o.piece)+' mm';
+  $('meta_l').innerHTML='<b>'+model.pieces+'</b> pieces · '+o.thick+' mm thick · '+sizeTxt;
+  $('meta_r').innerHTML='<b>'+model.plates.length+'</b> bed'+(model.plates.length>1?'-loads':'-load')+' @ '+o.bedW+'×'+o.bedD;
+  let w='';
+  if(model.tooBig.length) w='⚠ '+model.tooBig.length+' piece'+(model.tooBig.length>1?'s are':' is')+' bigger than the bed — reduce the size.';
+  else if(model.plates.length>1) w='This set needs '+model.plates.length+' separate prints. Use the Print selector to grab one bed at a time.';
+  $('warn').textContent=w;$('warn').classList.toggle('hidden',!w);
+  const sel=$('platesel'),prev=sel.value;let opts='';
+  for(let k=0;k<model.plates.length;k++)opts+='<option value="'+k+'">Bed '+(k+1)+' ('+model.plates[k].placed.length+' pcs)</option>';
+  if(model.plates.length>1)opts+='<option value="all">All beds (tiled)</option>';
+  sel.innerHTML=opts;
+  if([...sel.options].some(op=>op.value===prev))sel.value=prev;
+  if(GL){ const which=model.plates.length>1?'all':0; uploadGeo(buildGeo(model,which));
+    if(!fitted){fitView();fitted=true;} else orbit.dist=Math.max(geoRadius*1.3,Math.min(geoRadius*9,orbit.dist)); }
+  updateView();
+}
+function updateView(){
+  const is3d=viewMode==='3d'&&GL;
+  $('gl').classList.toggle('hidden',!is3d);
+  $('svgbox').classList.toggle('hidden',is3d);
+  $('spin').style.display=is3d?'':'none';
+  if(is3d) requestAnimationFrame(drawGL);
+}
+function download(name,blob){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+function selWhich(){const v=$('platesel').value;return v==='all'?'all':(+v||0);}
+$('dl_stl').addEventListener('click',()=>{if(!model)return;download('puzzle3d.stl',new Blob([toBinarySTL(exportPlaced(model,selWhich()),model.thick)],{type:'model/stl'}));});
+$('dl_obj').addEventListener('click',()=>{if(!model)return;download('puzzle3d.obj',new Blob([toOBJ(exportPlaced(model,selWhich()),model.thick)],{type:'text/plain'}));});
+$('dl_svg').addEventListener('click',()=>{if(!model)return;download('puzzle3d.svg',new Blob([toSVG(model,selWhich())],{type:'image/svg+xml'}));});
+
+function bindVal(id,vid,fmt){const el=$(id),o=$(vid);const upd=()=>{o.textContent=fmt?fmt(+el.value):el.value;render();};el.addEventListener('input',upd);}
+bindVal('piece','piece_v',v=>v+' mm');
+bindVal('cols','cols_v');
+bindVal('rows','rows_v');
+bindVal('tsize','tsize_v',v=>v+' mm');
+bindVal('tcount','tcount_v');
+bindVal('thick','thick_v',v=>v+' mm');
+bindVal('clr','clr_v',v=>(v/100).toFixed(2)+' mm');
+bindVal('round','round_v',v=>(v/100).toFixed(2));
+bindVal('tab','tab_v',v=>(v/100).toFixed(2));
+bindVal('wob','wob_v',v=>(v/100).toFixed(2));
+bindVal('gap','gap_v',v=>v+' mm');
+['bedw','bedd','seed'].forEach(id=>$(id).addEventListener('input',render));
+$('rnd').addEventListener('click',()=>{$('seed').value=Math.floor(Math.random()*99999);render();});
+$('edges').querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  $('edges').querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');monoCurve=c.dataset.v;render();}));
+$('shape').querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  $('shape').querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');shapeMode=c.dataset.v;
+  $('gridonly').classList.toggle('hidden',shapeMode!=='grid');
+  $('monoonly').classList.toggle('hidden',shapeMode!=='mono');
+  $('tabshape').classList.toggle('hidden',shapeMode!=='grid');
+  render();}));
+$('viewseg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+  $('viewseg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');viewMode=b.dataset.v;updateView();}));
+if(!initGL()){viewMode='flat';const vs=$('viewseg');if(vs)vs.style.display='none';$('spin').style.display='none';$('svgbox').classList.remove('hidden');$('gl').classList.add('hidden');}
+else setupOrbit();
+render();
+</script>
+</body>
+</html>
