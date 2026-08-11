@@ -6752,7 +6752,7 @@ function buildTestSheet(mode){
   rows.push({r:Math.max(cxBaseHole()/2,1), lbl:`pin hole \u2300${fmt(cxBaseHole())}`});
   if(S.cx&&S.cx.penDia)rows.push({r:S.cx.penDia/2, lbl:`pen \u2300${fmt(S.cx.penDia)}`});
   const M=(typeof cxMotor==='function')?cxMotor():{};
-  if(M.on&&!(M.faceN>0))rows.push({loop:motorBoreLoop(), rr:(M.shaftD||6)/2, lbl:`motor ${M.bore==='round'?'round':M.bore==='ddflat'?'double-D':'D-flat'} \u2300${fmt(M.shaftD||6)} \u00b7 press on shaft`});
+  if(M.on)rows.push({loop:motorBoreLoop(), rr:(M.shaftD||6)/2, lbl:`gear ${M.bore==='round'?'round':M.bore==='ddflat'?'double-D':'D-flat'} bore \u2300${fmt(M.shaftD||6)} \u00b7 press on shaft`});
   if(typeof cxWall==='function'&&cxWall())rows.push({loop:hexLoop(4,0), rr:4, lbl:`hex pencil marker \u00b7 not a shaft!`});
   rows.push({slot:1, lbl:`fin tab slot 18\u00d7${t} \u00b7 try the tab \u2192`});
   /* plate */
@@ -6763,26 +6763,27 @@ function buildTestSheet(mode){
     scr.forEach(o=>{ mnx=Math.min(mnx,o.x-o.d/2-2); mxx=Math.max(mxx,o.x+o.d/2+2); mny=Math.min(mny,o.y-o.d/2-2); mxy=Math.max(mxy,o.y+o.d/2+2); });
     cw=mxx-mnx; chT=-mny; chB=mxy; }
   const colW=Math.max(48, cw+12);
-  const plW=88+colW;
+  const plW=72+colW;
   const tabTop=(M.on&&M.faceN>0)?(py+8+chT+chB+16):(py+18);
-  const plH=Math.max(rows.length*rowH+16, tabTop-py+30, 58);
+  const plH=Math.max(rows.length*rowH+16, tabTop-py+Math.max(16,Math.round(cxFeetH()))+t+16, 58);
   parts.push(`<path d="${pathFrom(offsetPolygon(roundRectLoop(plW,plH,4,6),kh),px+plW/2,py+plH/2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
   txt(px+6,py+9,`TEST SHEET \u00b7 ${t}mm ply \u00b7 kerf ${S.kerf} \u00b7 module ${m}`,3.8);
   rows.forEach((rw,i)=>{ const x=px+16, y=py+18+i*rowH+rowH/2;
     if(rw.slot){ const L=[[-9,-t/2],[9,-t/2],[9,t/2],[-9,t/2]]; holeLoop(x,y,L,rw.lbl); }
     else if(rw.loop)holeLoop(x,y,rw.loop,rw.lbl);
     else hole(x,y,rw.r,rw.lbl); });
-  if(M.on&&M.faceN>0){ const mcx=px+88+colW/2, mcy=py+8+chT;
-    parts.push(`<path d="${pathFrom(offsetPolygon(motorBoreLoop(),-kh),mcx,mcy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+  if(M.on&&M.faceN>0){ const mcx=px+72+colW/2, mcy=py+8+chT;
+    parts.push(`<path d="${svgCircle(Math.max(cxMotorBoardHole()/2-kh,0.5),mcx,mcy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     cxMotorScrewLocal().forEach(o=>parts.push(`<path d="${svgCircle(Math.max(o.d/2-kh,0.5),mcx+o.x,mcy+o.y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
     txt2(mcx-22,mcy+chB+6,'motor mount \u00b7 offer it up'); }
   const Wg=px+plW+2, Hg=py+plH+2;   /* crosses frame the plate — identical in SVG and JPG */
   [[3,3],[Wg,3],[3,Hg]].forEach(q=>{ parts.push(`<path d="M ${(q[0]-3).toFixed(1)} ${q[1]} L ${(q[0]+3).toFixed(1)} ${q[1]} M ${q[0]} ${(q[1]-3).toFixed(1)} L ${q[0]} ${(q[1]+3).toFixed(1)}" fill="none" stroke="${SCORE}" stroke-width="0.3"/>`); });
   /* tab tester — nested INSIDE the plate, clear of the label column, pops out when cut */
-  const tabX=px+88+colW/2, tabY=tabTop+8;
-  const tab=[[-20,0],[-9,0],[-9,-t],[9,-t],[9,0],[20,0],[20,16],[-20,16]];
+  const tabX=px+72+colW/2, tabY=tabTop+8;
+  const H2=Math.max(16,Math.round(cxFeetH()));
+  const tab=[[-20,0],[-9,0],[-9,-t],[9,-t],[9,0],[20,0],[20,H2],[-20,H2]];
   parts.push(`<path d="${pathFrom(offsetPolygon(tab,kh),tabX,tabY)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-  txt(tabX-14,tabY+24,'tab tester',3);
+  txt2(tabX-22,tabY+H2+6,'tab tester \u00b7 depth = foot height '+Math.round(cxFeetH())+'mm');
   /* meshing pair + centre-distance bar */
   const N1=12,N2=15, cd=(N1+N2)/2*m;
   const g1=gearOutline(N1,m,S.pa||20,kh-cxBacklashOffset(m),14), g2=gearOutline(N2,m,S.pa||20,kh-cxBacklashOffset(m),14);
