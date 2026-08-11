@@ -6739,8 +6739,9 @@ function buildTestSheet(mode){
   const eng=(mode==='engrave');
   const t=S.thick, kh=S.kerf/2, CUT=eng?'none':'#bf3a2b', SCORE=eng?'#000':'#1b6c5a', SW=0.35, m=(S.cx&&S.cx.m)||3;
   const parts=[], txt=(x,y,str,size)=>parts.push(`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${size||3.4}" fill="none" stroke="${SCORE}" stroke-width="0.18" font-family="monospace">${str}</text>`);
-  const hole=(x,y,r,label)=>{ parts.push(`<path d="${svgCircle(Math.max(r-kh,0.3),x,y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); txt(x+14,y+1.4,label); };
-  const holeLoop=(x,y,L,label)=>{ const d2=offsetPolygon(L,-kh); parts.push(`<path d="${pathFrom(d2,x,y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); txt(x+14,y+1.4,label); };
+  const txt2=(x,y,label)=>{ if(label.length>24&&label.indexOf(' \u00b7 ')>0){ const i2=label.lastIndexOf(' \u00b7 '); txt(x,y-0.8,label.slice(0,i2),3.1); txt(x,y+3.4,label.slice(i2+3),3.1); } else txt(x,y+1.4,label,3.2); };
+  const hole=(x,y,r,label)=>{ parts.push(`<path d="${svgCircle(Math.max(r-kh,0.3),x,y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); txt2(x+14,y,label); };
+  const holeLoop=(x,y,L,label)=>{ const d2=offsetPolygon(L,-kh); parts.push(`<path d="${pathFrom(d2,x,y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); txt2(x+14,y,label); };
   const rows=[];
   rows.push({r:boardBoltHole()/2, lbl:`${S.bolt} snug \u2300${fmt(boardBoltHole())} \u00b7 board / press`});
   rows.push({r:gearBoltHole()/2, lbl:`${S.bolt} clearance \u2300${fmt(gearBoltHole())} \u00b7 gear spins`});
@@ -6754,21 +6755,30 @@ function buildTestSheet(mode){
   if(typeof cxWall==='function'&&cxWall())rows.push({loop:hexLoop(4,0), rr:4, lbl:`hex pencil marker \u00b7 not a shaft!`});
   rows.push({slot:1, lbl:`fin tab slot 18\u00d7${t} \u00b7 try the tab \u2192`});
   /* plate */
-  const rowH=17, plW=156, plH=Math.max(rows.length*rowH+16,(M.on&&M.faceN>0)?104:58), px=6, py=6;
+  const rowH=17, px=6, py=6;
+  let cw=0, chT=0, chB=0;                    /* cluster extents from the REAL pattern */
+  if(M.on&&M.faceN>0){ const scr=cxMotorScrewLocal(), br=(M.shaftD||6)/2+2;
+    let mnx=-br,mxx=br,mny=-br,mxy=br;
+    scr.forEach(o=>{ mnx=Math.min(mnx,o.x-o.d/2-2); mxx=Math.max(mxx,o.x+o.d/2+2); mny=Math.min(mny,o.y-o.d/2-2); mxy=Math.max(mxy,o.y+o.d/2+2); });
+    cw=mxx-mnx; chT=-mny; chB=mxy; }
+  const colW=Math.max(48, cw+12);
+  const plW=100+colW;
+  const tabTop=(M.on&&M.faceN>0)?(py+8+chT+chB+16):(py+18);
+  const plH=Math.max(rows.length*rowH+16, tabTop-py+30, 58);
   parts.push(`<path d="${pathFrom(offsetPolygon(roundRectLoop(plW,plH,4,6),kh),px+plW/2,py+plH/2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
   txt(px+6,py+9,`TEST SHEET \u00b7 ${t}mm ply \u00b7 kerf ${S.kerf} \u00b7 module ${m}`,3.8);
   rows.forEach((rw,i)=>{ const x=px+16, y=py+18+i*rowH+rowH/2;
     if(rw.slot){ const L=[[-9,-t/2],[9,-t/2],[9,t/2],[-9,t/2]]; holeLoop(x,y,L,rw.lbl); }
     else if(rw.loop)holeLoop(x,y,rw.loop,rw.lbl);
     else hole(x,y,rw.r,rw.lbl); });
-  if(M.on&&M.faceN>0){ const mcx=px+plW-30, mcy=py+26;
+  if(M.on&&M.faceN>0){ const mcx=px+100+colW/2, mcy=py+8+chT;
     parts.push(`<path d="${pathFrom(offsetPolygon(motorBoreLoop(),-kh),mcx,mcy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     cxMotorScrewLocal().forEach(o=>parts.push(`<path d="${svgCircle(Math.max(o.d/2-kh,0.5),mcx+o.x,mcy+o.y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
     txt(mcx-24,mcy+30,'motor mount \u00b7 offer the motor up',3); }
   const Wg=px+plW+2, Hg=py+plH+2;   /* crosses frame the plate — identical in SVG and JPG */
   [[3,3],[Wg,3],[3,Hg]].forEach(q=>{ parts.push(`<path d="M ${(q[0]-3).toFixed(1)} ${q[1]} L ${(q[0]+3).toFixed(1)} ${q[1]} M ${q[0]} ${(q[1]-3).toFixed(1)} L ${q[0]} ${(q[1]+3).toFixed(1)}" fill="none" stroke="${SCORE}" stroke-width="0.3"/>`); });
   /* tab tester — nested INSIDE the plate, clear of the label column, pops out when cut */
-  const tabX=px+plW-30, tabY=py+Math.max(plH/2,78);
+  const tabX=px+100+colW/2, tabY=tabTop+8;
   const tab=[[-20,0],[-9,0],[-9,-t],[9,-t],[9,0],[20,0],[20,16],[-20,16]];
   parts.push(`<path d="${pathFrom(offsetPolygon(tab,kh),tabX,tabY)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
   txt(tabX-14,tabY+24,'tab tester',3);
