@@ -6743,8 +6743,9 @@ function buildTestSheet(mode){
   const hole=(x,y,r,label)=>{ parts.push(`<path d="${svgCircle(Math.max(r-kh,0.3),x,y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); txt2(x+14,y,label); };
   const holeLoop=(x,y,L,label)=>{ const d2=offsetPolygon(L,-kh); parts.push(`<path d="${pathFrom(d2,x,y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); txt2(x+14,y,label); };
   const rows=[];
-  rows.push({r:boardBoltHole()/2, lbl:`${S.bolt} snug \u2300${fmt(boardBoltHole())} \u00b7 board / press`});
-  rows.push({r:gearBoltHole()/2, lbl:`${S.bolt} clearance \u2300${fmt(gearBoltHole())} \u00b7 gear spins`});
+  const U=pUse();
+  if(U.bolts!==false){ rows.push({r:boardBoltHole()/2, lbl:`${S.bolt} snug \u2300${fmt(boardBoltHole())} \u00b7 board / press`});
+    rows.push({r:gearBoltHole()/2, lbl:`${S.bolt} clearance \u2300${fmt(gearBoltHole())} \u00b7 ${cxDowelShafts()?'arm joints':'gear spins'}`}); }
   if(cxUseDowels()){ rows.push({r:(S.cx.dowelHole!=null?S.cx.dowelHole:S.dowelD)/2, lbl:`dowel press \u2300${fmt(S.cx.dowelHole!=null?S.cx.dowelHole:S.dowelD)}`});
     rows.push({r:((S.dowelD||6)+0.4)/2, lbl:`dowel loose \u2300${fmt((S.dowelD||6)+0.4)} \u00b7 washer bore`}); }
   if(cxBrgMode&&cxBrgMode()!=='none')rows.push({r:cxBearingHole()/2, lbl:`bearing seat \u2300${fmt(cxBearingHole())} \u00b7 press bearing in`});
@@ -6762,7 +6763,7 @@ function buildTestSheet(mode){
     scr.forEach(o=>{ mnx=Math.min(mnx,o.x-o.d/2-2); mxx=Math.max(mxx,o.x+o.d/2+2); mny=Math.min(mny,o.y-o.d/2-2); mxy=Math.max(mxy,o.y+o.d/2+2); });
     cw=mxx-mnx; chT=-mny; chB=mxy; }
   const colW=Math.max(48, cw+12);
-  const plW=100+colW;
+  const plW=88+colW;
   const tabTop=(M.on&&M.faceN>0)?(py+8+chT+chB+16):(py+18);
   const plH=Math.max(rows.length*rowH+16, tabTop-py+30, 58);
   parts.push(`<path d="${pathFrom(offsetPolygon(roundRectLoop(plW,plH,4,6),kh),px+plW/2,py+plH/2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
@@ -6771,14 +6772,14 @@ function buildTestSheet(mode){
     if(rw.slot){ const L=[[-9,-t/2],[9,-t/2],[9,t/2],[-9,t/2]]; holeLoop(x,y,L,rw.lbl); }
     else if(rw.loop)holeLoop(x,y,rw.loop,rw.lbl);
     else hole(x,y,rw.r,rw.lbl); });
-  if(M.on&&M.faceN>0){ const mcx=px+100+colW/2, mcy=py+8+chT;
+  if(M.on&&M.faceN>0){ const mcx=px+88+colW/2, mcy=py+8+chT;
     parts.push(`<path d="${pathFrom(offsetPolygon(motorBoreLoop(),-kh),mcx,mcy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     cxMotorScrewLocal().forEach(o=>parts.push(`<path d="${svgCircle(Math.max(o.d/2-kh,0.5),mcx+o.x,mcy+o.y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
-    txt(mcx-24,mcy+30,'motor mount \u00b7 offer the motor up',3); }
+    txt2(mcx-22,mcy+chB+6,'motor mount \u00b7 offer it up'); }
   const Wg=px+plW+2, Hg=py+plH+2;   /* crosses frame the plate — identical in SVG and JPG */
   [[3,3],[Wg,3],[3,Hg]].forEach(q=>{ parts.push(`<path d="M ${(q[0]-3).toFixed(1)} ${q[1]} L ${(q[0]+3).toFixed(1)} ${q[1]} M ${q[0]} ${(q[1]-3).toFixed(1)} L ${q[0]} ${(q[1]+3).toFixed(1)}" fill="none" stroke="${SCORE}" stroke-width="0.3"/>`); });
   /* tab tester — nested INSIDE the plate, clear of the label column, pops out when cut */
-  const tabX=px+100+colW/2, tabY=tabTop+8;
+  const tabX=px+88+colW/2, tabY=tabTop+8;
   const tab=[[-20,0],[-9,0],[-9,-t],[9,-t],[9,0],[20,0],[20,16],[-20,16]];
   parts.push(`<path d="${pathFrom(offsetPolygon(tab,kh),tabX,tabY)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
   txt(tabX-14,tabY+24,'tab tester',3);
@@ -6792,8 +6793,9 @@ function buildTestSheet(mode){
   gearAt(g1,g1x,N1); gearAt(g2,g2x,N2);
   const barY=gy+Math.max(g1.ra,g2.ra)+12, barW2=Math.max(cxLinkW(),12);
   parts.push(`<path d="${pathFrom(offsetPolygon(rodLoop(cd,barW2),kh),px+14,barY)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-  [0,cd].forEach(q=>parts.push(`<path d="${svgCircle(Math.max(boardBoltHole()/2-kh,0.3),px+14+q,barY)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
-  txt(px+18,barY-barW2/2-2,`mesh bar \u00b7 centres ${fmt(cd)} \u00b7 bolt the gears on, feel the mesh`,3);
+  const barHole=cxDowelShafts()?(S.cx.dowelHole!=null?S.cx.dowelHole:5.8):boardBoltHole();
+  [0,cd].forEach(q=>parts.push(`<path d="${svgCircle(Math.max(barHole/2-kh,0.3),px+14+q,barY)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
+  txt(px+18,barY-barW2/2-2,`mesh bar \u00b7 centres ${fmt(cd)} \u00b7 ${cxDowelShafts()?'press dowels in, gears spin on them':'bolt the gears on'} \u00b7 feel the mesh`,3);
   const W=Math.max(px+plW+8, g2x+g2.ra+8), H=barY+barW2/2+8;
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}">`+(eng?`<rect width="${W}" height="${H}" fill="#fff"/>`:'')+
     `<text x="${px}" y="${H-2}" font-size="2.8" fill="${SCORE}" font-family="monospace">red = cut \u00b7 green = engrave \u00b7 everything sized from your current settings</text>`+
