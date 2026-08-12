@@ -4441,9 +4441,9 @@ function keyholeLoop(headD,shankD,slotL,ang){ const r1=headD/2, r2=Math.min(shan
 function cxExtras(){ return S.cx.extras||(S.cx.extras={loose:0,tight:0,big:0,bigD:36}); }
 function cxExtrasPieces(){ const E=cxExtras(), t=S.thick, D=S.dowelD||6, out=[];
   const ring=(od,bore)=>[circleLoop(od/2,36),circleLoop(bore/2,24)];
-  for(let i=0;i<Math.min(40,E.loose||0);i++)out.push({loops:ring(Math.max(D*3,16),D+0.4),label:'dowel washer (loose)'});
+  for(let i=0;i<Math.min(40,E.loose||0);i++)out.push({loops:ring(Math.max(D*3,16),cxDowelLoose()),label:'dowel washer (loose)'});
   for(let i=0;i<Math.min(40,E.tight||0);i++)out.push({loops:ring(Math.max(D*3,16),Math.max(2,D-0.15)),label:'dowel cap (tight)'});
-  for(let i=0;i<Math.min(20,E.big||0);i++)out.push({loops:ring(Math.max(E.bigD||36,D*3+6),D+0.4),label:'under-gear washer'});
+  for(let i=0;i<Math.min(20,E.big||0);i++)out.push({loops:ring(Math.max(E.bigD||36,D*3+6),cxDowelLoose()),label:'under-gear washer'});
   return out; }
 /* -------- rectangular edge skirt: four strips box-jointed at the corners, tabbed up
    into slots near the board edges. Tab positions slide along each wall to dodge shaft
@@ -4519,13 +4519,14 @@ function cxCradleBaseLoops(){ const C=cxCradle(), t=S.thick, fl=C.bodyL+16, gap=
   return out; }
 function cxDowelHole(){ if(!cxUseDowels())return boardBoltHole();   /* dowels off: bolts everywhere a dowel would go */
   return (S.cx.dowelHole!=null)?S.cx.dowelHole:(S.dowelD||6); }
+function cxDowelLoose(){ return (S.dowelLoose!=null)?S.dowelLoose:(S.dowelD||6)+0.4; }
 function cxDowelShafts(){ if(cxBrgMode()!=='none')return false;
   if(S.shaftSys==='bolt')return false; if(S.shaftSys==='dowel')return true;
   return cxUseDowels(); }
 function cxGearBore(){ const M=cxBrgMode(); if(M==='gears'||M==='gearsRods')return cxBearingHole();
-  return cxDowelShafts()?(S.dowelD||6)+0.4:boreDia(); }
+  return cxDowelShafts()?cxDowelLoose():boreDia(); }
 function cxPinBore(){ if(cxBrgMode()==='gearsRods')return cxBearingHole();
-  return cxDowelShafts()?(S.dowelD||6)+0.4:boreDia(); }
+  return cxDowelShafts()?cxDowelLoose():boreDia(); }
 function cxRodBore(){ return (cxBrgMode()==='gearsRods')?cxBearingHole():boreDia(); }
 function sheetDims(){ const el=document.getElementById('sheetSize'); const v=(el&&el.value)||'400x300';
   if(v==='custom')return [Math.max(80,S.sheetW||350), Math.max(80,S.sheetH||350)];
@@ -4649,9 +4650,9 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
       cut.push([`foot base`,fp.units.length,`${fmt(fp.fl)}×${fmt((F.gap||40)+2*t+14)} flat plate — ${cxWall()?'keyhole for a wall screw · hex pencil hole in the board marks the spot':'sits on the table or flat against a wall'} · ${t}mm`]);
       if(cxWall())buy.push([`wall screw`,fp.units.length,`head under ⌀${fmt(cxKeySpec().headD)}, shank ⌀${fmt(cxKeySpec().shankD)} — hang the base-plate keyholes on them`]); } }
   { const E=cxExtras(), D=S.dowelD||6;
-    if(E.loose)cut.push([`dowel washer (loose)`,E.loose,`⌀${fmt(Math.max(D*3,16))} · bore ${fmt(D+0.4)} — spins freely on the ⌀${fmt(D)} dowel · ${t}mm`]);
+    if(E.loose)cut.push([`dowel washer (loose)`,E.loose,`⌀${fmt(Math.max(D*3,16))} · bore ${fmt(cxDowelLoose())} — spins freely on the ⌀${fmt(D)} dowel · ${t}mm`]);
     if(E.tight)cut.push([`dowel cap (tight)`,E.tight,`⌀${fmt(Math.max(D*3,16))} · bore ${fmt(Math.max(2,D-0.15))} — presses on to top off a shaft · ${t}mm`]);
-    if(E.big)cut.push([`under-gear washer`,E.big,`⌀${fmt(Math.max(E.bigD||36,D*3+6))} · bore ${fmt(D+0.4)} — steadies a big gear against the board · ${t}mm`]); }
+    if(E.big)cut.push([`under-gear washer`,E.big,`⌀${fmt(Math.max(E.bigD||36,D*3+6))} · bore ${fmt(cxDowelLoose())} — steadies a big gear against the board · ${t}mm`]); }
   { const cu=cxCradleUnit(c);
     if(cu){ cut.push([`motor cradle fin`,2,`${fmt(cu.fl)}×${fmt(Math.max(18,cxCradle().drop-t))} · straddles the motor body · ${t}mm`]);
       cut.push([`motor cradle base`,1,`${fmt(cu.fl)}×${fmt(cu.gap+2*t+14)} · zip-tie slots hold the motor down · ${t}mm`]);
@@ -5850,7 +5851,7 @@ function renderExtrasUI(c){ const host=document.getElementById('cxExtrasUI'); if
       <span class="clab">tight caps</span>${num('cxExTight',E.tight||0,1,0,40)}
       <span class="clab">under-gear</span>${num('cxExBig',E.big||0,1,0,20)}
       ${E.big?`<span class="clab">⌀</span>${num('cxExBigD',E.bigD||36,1,20,80)}`:''}</div>
-    <div class="hint">Cut as loose parts on the sheets — they don't appear in the 3D machine. Loose washers (bore ⌀${fmt(D+0.4)}) spin on the ⌀${fmt(D)} dowel as spacers; tight caps (bore ⌀${fmt(Math.max(2,D-0.15))}) press on to finish a shaft end; the under-gear washer is a wide one to steady a big gear against the board.</div>`; }
+    <div class="hint">Cut as loose parts on the sheets — they don't appear in the 3D machine. Loose washers (bore ⌀${fmt(cxDowelLoose())}) spin on the ⌀${fmt(D)} dowel as spacers; tight caps (bore ⌀${fmt(Math.max(2,D-0.15))}) press on to finish a shaft end; the under-gear washer is a wide one to steady a big gear against the board.</div>`; }
 function renderFeetUI(c){ const host=document.getElementById('cxFeetUI'); if(!host)return;
   const F=cxFeet(), num=(id,v,st,mn,mx)=>`<input type="number" class="pnum" id="${id}" value="${v}" step="${st}" min="${mn}" max="${mx}" style="width:64px">`;
   const plan=F.on?cxFeetPlan(c):null;
@@ -6746,7 +6747,7 @@ function buildTestSheet(mode){
   if(U.bolts!==false){ rows.push({r:boardBoltHole()/2, lbl:`${S.bolt} snug \u2300${fmt(boardBoltHole())} \u00b7 board / press`});
     rows.push({r:gearBoltHole()/2, lbl:`${S.bolt} clearance \u2300${fmt(gearBoltHole())} \u00b7 ${cxDowelShafts()?'arm joints':'gear spins'}`}); }
   if(cxUseDowels()){ rows.push({r:(S.cx.dowelHole!=null?S.cx.dowelHole:S.dowelD)/2, lbl:`dowel press \u2300${fmt(S.cx.dowelHole!=null?S.cx.dowelHole:S.dowelD)}`});
-    rows.push({r:((S.dowelD||6)+0.4)/2, lbl:`dowel loose \u2300${fmt((S.dowelD||6)+0.4)} \u00b7 washer bore`}); }
+    rows.push({r:cxDowelLoose()/2, lbl:`dowel loose \u2300${fmt(cxDowelLoose())} \u00b7 washer bore`}); }
   if(cxBrgMode&&cxBrgMode()!=='none')rows.push({r:cxBearingHole()/2, lbl:`bearing seat \u2300${fmt(cxBearingHole())} \u00b7 press bearing in`});
   rows.push({r:Math.max(cxBaseHole()/2,1), lbl:`pin hole \u2300${fmt(cxBaseHole())}`});
   if(S.cx&&S.cx.penDia)rows.push({r:S.cx.penDia/2, lbl:`pen \u2300${fmt(S.cx.penDia)}`});
@@ -6928,7 +6929,7 @@ function renderPrep(){ const host=document.getElementById('prepBody'); if(!host)
 
   if(U.bolts){ const rows=BOLTS[S.unit].map(b=>`<option value="${b.k}"${S.bolt===b.k&&S.boltCustom==null?' selected':''}>${b.k} (⌀${b.nom}${unit})</option>`).join('');
     Bx+=`<div class="psub"><div class="psub-h">Gears &amp; pins — what they run on</div>`
-     + prow('Gear shafts &amp; linkage pins','Dowels: gears bore ⌀'+fmt((S.dowelD||6)+0.4)+' loose on ⌀'+fmt(S.dowelD||6)+' dowels. Bolts: they run on the bolt size below.',
+     + prow('Gear shafts &amp; linkage pins','Dowels: gears bore ⌀'+fmt(cxDowelLoose())+' loose on ⌀'+fmt(S.dowelD||6)+' dowels. Bolts: they run on the bolt size below.',
         `<select class="selin" id="prepShaftSys" style="width:auto"><option value="dowel"${cxDowelShafts()?' selected':''}>dowels</option><option value="bolt"${!cxDowelShafts()?' selected':''}>bolts</option></select>`,'')
      + `</div><div class="psub"><div class="psub-h">Bolts — arm joints &amp; pivots</div>`
       + prow('Bolt size','Pick a standard size, or enter the exact diameter you have.',`<select class="psel" id="prepBoltSel">${rows}<option value="custom"${S.boltCustom!=null?' selected':''}>exact size…</option></select>`)
@@ -6940,7 +6941,8 @@ function renderPrep(){ const host=document.getElementById('prepBody'); if(!host)
   if(!U.dowels)Bx+=`<div class="pnote">Dowels off — every shaft, pin, post and mount that would use a dowel is sized for a snug ${S.bolt} bolt instead (holes cut ⌀${fmt(boardBoltHole())}).</div>`;
   if(U.dowels){ Bx+=`<div class="psub"><div class="psub-h">Dowels — pins &amp; standoff posts</div>`
       + prow('Dowel ⌀','The rod you bought.',num('prepDowelD',S.dowelD,0.5,2,20),unit)
-      + prow('Hole to cut','A touch under the dowel so it presses in.',num('prepDowelHole',(+cxDowelHole()).toFixed(1),0.1,2,30),unit)
+      + prow('Loose bore','Gears, arm ends &amp; washers spin on the dowel — a touch over.',num('prepDowelLoose',(+cxDowelLoose()).toFixed(1),0.1,2,20),unit)
+     + prow('Hole to cut','A touch under the dowel so it presses in.',num('prepDowelHole',(+cxDowelHole()).toFixed(1),0.1,2,30),unit)
       + `</div>`; }
 
   if(U.bearings){ const presets=[[8,'8 (693 / MR83)'],[10,'10 (MR104)'],[11,'11 (695)'],[13,'13 (696)'],[16,'16 (688)'],[19,'19 (698)'],[22,'22 (6900)'],[26,'26 (6000)']];
@@ -7469,6 +7471,7 @@ function cutSheetOpen(){ const p=document.getElementById('cutSheetPanel'); retur
     if(id==='prepPenDia'){ S.cx.penDia=Math.max(2,Math.min(30,+t.value||S.cx.penDia||10)); everything(); return; }
   });
   host.addEventListener('change',e=>{ const t=e.target, id=t.id;
+    if(t.id==='prepDowelLoose'){ const v=+t.value; S.dowelLoose=(isFinite(v)&&v>0)?v:null; renderPrep(); everything(); try{renderComplexUI();}catch(_){} return; }
     if(t.id==='prepShaftSys'){ S.shaftSys=t.value; renderPrep(); everything(); try{renderComplexUI();}catch(_){} return; }
     if(t.dataset && t.dataset.puse){ const U=pUse(), k=t.dataset.puse;
       if(k==='bearings'){ S.cx.bearing=S.cx.bearing||{od:8,hole:7.9};
