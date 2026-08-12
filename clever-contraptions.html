@@ -170,6 +170,10 @@
   .leftcol{grid-area:left;min-width:0;position:sticky;top:14px;align-self:start;display:flex;flex-direction:column;gap:14px}
   .hero{min-width:0}
   #cutSheetPanel{min-width:0}
+  body.cs-open .leftcol{position:static}
+  body.cs-open .hero{position:static}
+  body.cs-open #cutSheetView{max-height:none;overflow:visible}
+  #cutSheetView{overflow:auto;max-width:100%}
   #cutSheetView{max-height:40vh;overflow:auto}
   .controls{grid-area:controls;display:flex;flex-direction:column;gap:16px;min-width:0}
   @media (max-width:900px){
@@ -4358,15 +4362,15 @@ function cxFeetPlanAt(c,fl,kOverride){ const F=cxFeet();
   const clear=(x,y)=>!inCap(x,y)&&!ko.some(o=>Math.hypot(x-o.x,y-o.y)<o.r);
   const discs=c.gears.map(g=>({x:g.x,y:g.y,r:(c.m*(g.N+2)/2)-3}));
   const underGear=(x,y)=>discs.some(g=>Math.hypot(x-g.x,y-g.y)<=g.r);
-  const slotOff=fl/2-14;
   /* test slot CORNERS and fin END points, not just centres — a rotated slot's corner
      reaches 9.5mm from its centre, far enough to poke past a gear rim or the board edge */
   const unitOK=(ux,uy,th)=>{ const dx=Math.cos(th),dy=Math.sin(th),nx=-dy,ny=dx, pts=[];
     /* corners AND centres: gear-disc union is not convex, so a slot can have every corner
        under some gear while its middle peeks out in the waist between two of them */
-    for(const a of [-slotOff,slotOff])for(const b of [-gap/2,gap/2]){
+    const TS=cxTabSpots(fl,14), qw=TS.w/2+1;
+    for(const a of TS.offs)for(const b of [-gap/2,gap/2]){
       const cx0=ux+dx*a+nx*b, cy0=uy+dy*a+ny*b; pts.push([cx0,cy0]);
-      for(const qa of [-10,0,10])for(const qb of [-4,4])pts.push([cx0+dx*qa+nx*qb, cy0+dy*qa+ny*qb]); }
+      for(const qa of [-qw,0,qw])for(const qb of [-4,4])pts.push([cx0+dx*qa+nx*qb, cy0+dy*qa+ny*qb]); }
     const FS=[]; for(let q=0;q<=8;q++)FS.push(-fl/2+fl*q/8);
     for(const a of FS)for(const b of [-gap/2,gap/2])pts.push([ux+dx*a+nx*b, uy+dy*a+ny*b]);
     if(!pts.every(p=>inside(p[0],p[1])&&clear(p[0],p[1])&&underGear(p[0],p[1])))return false;
@@ -4408,10 +4412,10 @@ function cxFeetPlanAt(c,fl,kOverride){ const F=cxFeet();
       return {ok:true,units:sets[ai],fl,nAlt:sets.length,alt:ai,msg:'placed \u2713 \u00b7 '+k+' units \u00b7 spot '+(ai+1)+'/'+sets.length}; } }
   return {ok:false,units:[],fl,msg:''}; }
 function cxFeetSlots(c){ const F=cxFeet(), t=S.thick, out=[];
-  const addUnit=(u,fl,gap,edge)=>{ const dx=Math.cos(u.ang),dy=Math.sin(u.ang),nx=-dy,ny=dx, slotOff=fl/2-edge;
-    for(const a of [-slotOff,slotOff])for(const b of [-gap/2,gap/2]){
+  const addUnit=(u,fl,gap,edge)=>{ const dx=Math.cos(u.ang),dy=Math.sin(u.ang),nx=-dy,ny=dx, TS=cxTabSpots(fl,edge), hw2=TS.w/2;
+    for(const a of TS.offs)for(const b of [-gap/2,gap/2]){
       const cx0=u.x+dx*a+nx*b, cy0=u.y+dy*a+ny*b, poly=[];
-      [[-9,-t/2],[9,-t/2],[9,t/2],[-9,t/2]].forEach(q=>poly.push([cx0+dx*q[0]+nx*q[1], cy0+dy*q[0]+ny*q[1]]));
+      [[-hw2,-t/2],[hw2,-t/2],[hw2,t/2],[-hw2,t/2]].forEach(q=>poly.push([cx0+dx*q[0]+nx*q[1], cy0+dy*q[0]+ny*q[1]]));
       out.push({cx:cx0,cy:cy0,poly}); } };
   if(F.on&&F.style==='skirt'){ const sp=cxSkirtPlan(c);
     if(sp.ok){ const bpl=cxBoardPlan(c);
@@ -4420,8 +4424,8 @@ function cxFeetSlots(c){ const F=cxFeet(), t=S.thick, out=[];
         out.push({cx:x,cy:y,poly}); }); }); } }
   else if(F.on){ const plan=cxFeetPlan(c);
     if(plan.ok)plan.units.forEach(u=>{ addUnit(u,plan.fl,F.gap||40,14);
-      if(cxWall()){ const la=cxKeyLocalAng(u), K=cxKeySpec(), wa=u.ang+la;
-        const mx=u.x+Math.cos(wa)*K.slotL, my=u.y+Math.sin(wa)*K.slotL;   /* pencil marks the SCREW spot: the slot end */
+      if(cxWall()){ const la=cxKeyLocalAng(u,plan.fl), K=cxKeySpec(), wa=u.ang+la;
+        const mx=u.x+Math.cos(wa)*cxKeySlotL(plan.fl), my=u.y+Math.sin(wa)*cxKeySlotL(plan.fl);   /* pencil marks the SCREW spot: the slot end */
         out.push({cx:mx,cy:my,poly:hexLoop(4,wa).map(p=>[p[0]+mx,p[1]+my])}); } }); }
   const cu=cxCradleUnit(c); if(cu)addUnit(cu,cu.fl,cu.gap,12);
   return out; }
@@ -4482,19 +4486,25 @@ function cxSkirtStripLoop(len,H,t,typeA,tabs){ const pts=[], seg=H/3;
   else pts.push([-(len/2-t),2*seg],[-len/2,2*seg],[-len/2,seg],[-(len/2-t),seg],[-(len/2-t),0]);
   return pts; }
 function cxWall(){ const F=cxFeet(); return !!F.wall; }
+function cxKeySlotL(fl){ const K0={slotL:(cxFeet().keySlot||12),shank:(cxFeet().keyShank||4.5)}; return Math.max(6,Math.min(K0.slotL,(fl||90)/2-K0.shank/2-1.2)); }
 function cxKeySpec(){ const F=cxFeet(); return {headD:F.keyHead||9, shankD:F.keyShank||4.5, slotL:F.keySlot||12}; }
-function cxFinLoop(flEff){ const F=cxFeet(), t=S.thick, fl=flEff||F.fl||90, H=Math.max(18,cxFeetH()-S.thick);
-  const tx=fl/2-14;
-  return [[-fl/2,0],[-tx-9,0],[-tx-9,-t],[-tx+9,-t],[-tx+9,0],[tx-9,0],[tx-9,-t],[tx+9,-t],[tx+9,0],[fl/2,0],
-          [fl/2,H],[tx+9,H],[tx+9,H+t],[tx-9,H+t],[tx-9,H],[-tx+9,H],[-tx+9,H+t],[-tx-9,H+t],[-tx-9,H],[-fl/2,H]]; }
+function cxTabSpots(fl,edge){ if(fl>=58)return {offs:[-(fl/2-(edge||14)),(fl/2-(edge||14))],w:18};
+  return {offs:[0],w:Math.max(10,Math.min(18,fl-12))}; }
+function cxTabbedStrip(fl,H,t,edge){ const TS=cxTabSpots(fl,edge), w=TS.w, pts=[[-fl/2,0]];
+  TS.offs.slice().sort((a,b)=>a-b).forEach(o=>pts.push([o-w/2,0],[o-w/2,-t],[o+w/2,-t],[o+w/2,0]));
+  pts.push([fl/2,0],[fl/2,H]);
+  TS.offs.slice().sort((a,b)=>b-a).forEach(o=>pts.push([o+w/2,H],[o+w/2,H+t],[o-w/2,H+t],[o-w/2,H]));
+  pts.push([-fl/2,H]); return pts; }
+function cxFinLoop(flEff){ const F=cxFeet(), fl=flEff||F.fl||90;
+  return cxTabbedStrip(fl,Math.max(18,cxFeetH()-S.thick),S.thick,14); }
 function cxBaseLoops(keyAng,flEff){ const F=cxFeet(), t=S.thick, fl=flEff||F.fl||90, gap=F.gap||40;
-  const W=gap+2*t+14, tx=fl/2-14, out=[[[-fl/2,-W/2],[fl/2,-W/2],[fl/2,W/2],[-fl/2,W/2]]];
-  for(const a of [-tx,tx])for(const b of [-gap/2,gap/2])
-    out.push([[a-9,b-t/2],[a+9,b-t/2],[a+9,b+t/2],[a-9,b+t/2]]);
-  if(cxWall()&&keyAng!=null){ const K=cxKeySpec(); out.push(keyholeLoop(K.headD,K.shankD,K.slotL,keyAng)); }
+  const W=gap+2*t+14, TS=cxTabSpots(fl,14), hw2=TS.w/2, out=[[[-fl/2,-W/2],[fl/2,-W/2],[fl/2,W/2],[-fl/2,W/2]]];
+  for(const a of TS.offs)for(const b of [-gap/2,gap/2])
+    out.push([[a-hw2,b-t/2],[a+hw2,b-t/2],[a+hw2,b+t/2],[a-hw2,b+t/2]]);
+  if(cxWall()&&keyAng!=null){ const K=cxKeySpec(); out.push(keyholeLoop(K.headD,K.shankD,cxKeySlotL(fl),keyAng)); }
   return out; }
 /* keyhole slot must point world-up once the base is on the wall; convert to base-local */
-function cxKeyLocalAng(u){ const cands=[0,Math.PI/2,Math.PI,-Math.PI/2]; let best=0,bd=-2;
+function cxKeyLocalAng(u,fl){ const cands=(fl&&fl<58)?[0,Math.PI]:[0,Math.PI/2,Math.PI,-Math.PI/2]; let best=0,bd=-2;
   for(const a of cands){ const wx=Math.cos(u.ang+a), wy=Math.sin(u.ang+a); if(wy>bd){bd=wy;best=a;} }
   return best; }
 /* -------- motor cradle: a [ channel the screwless motor lies in, strapped with zip ties ---- */
@@ -4506,15 +4516,15 @@ function cxCradle(){ const M=cxMotor(); return {on:!!M.cradle, bodyW:M.bodyW||28
 function cxCradleUnit(c){ const M=cxMotor(), C=cxCradle(); if(!M.on||M.gear==null||!C.on)return null;
   const g=c.byId[M.gear]; if(!g)return null; const a=cxMotorAng();
   return {x:g.x+Math.cos(a)*C.off, y:g.y+Math.sin(a)*C.off, ang:a, fl:C.bodyL+16, gap:C.bodyW+2}; }
-function cxCradleFinLoop(){ const C=cxCradle(), t=S.thick, fl=C.bodyL+16, H=Math.max(18,C.drop-t);
-  const tx=fl/2-12;
-  return [[-fl/2,0],[-tx-9,0],[-tx-9,-t],[-tx+9,-t],[-tx+9,0],[tx-9,0],[tx-9,-t],[tx+9,-t],[tx+9,0],[fl/2,0],
-          [fl/2,H],[tx+9,H],[tx+9,H+t],[tx-9,H+t],[tx-9,H],[-tx+9,H],[-tx+9,H+t],[-tx-9,H+t],[-tx-9,H],[-fl/2,H]]; }
+function cxCradleFinLoop(){ const C=cxCradle();
+  return cxTabbedStrip(C.bodyL+16,Math.max(18,C.drop-S.thick),S.thick,12); }
 function cxCradleBaseLoops(){ const C=cxCradle(), t=S.thick, fl=C.bodyL+16, gap=C.bodyW+2;
-  const W=gap+2*t+14, tx=fl/2-12, out=[[[-fl/2,-W/2],[fl/2,-W/2],[fl/2,W/2],[-fl/2,W/2]]];
-  for(const a of [-tx,tx])for(const b of [-gap/2,gap/2])
-    out.push([[a-9,b-t/2],[a+9,b-t/2],[a+9,b+t/2],[a-9,b+t/2]]);
-  for(const a of [-(fl/2-24),fl/2-24])for(const b of [-(gap/2-5),gap/2-5])   /* zip-tie slots */
+  const W=gap+2*t+14, out=[[[-fl/2,-W/2],[fl/2,-W/2],[fl/2,W/2],[-fl/2,W/2]]];
+  const TS=cxTabSpots(fl,12), hw2=TS.w/2;
+  for(const a of TS.offs)for(const b of [-gap/2,gap/2])
+    out.push([[a-hw2,b-t/2],[a+hw2,b-t/2],[a+hw2,b+t/2],[a-hw2,b+t/2]]);
+  const za=Math.max(8,fl/2-24);
+  for(const a of [-za,za])for(const b of [-(gap/2-5),gap/2-5])   /* zip-tie slots */
     out.push([[a-1.6,b-4.5],[a+1.6,b-4.5],[a+1.6,b+4.5],[a-1.6,b+4.5]]);
   return out; }
 function cxDowelHole(){ if(!cxUseDowels())return boardBoltHole();   /* dowels off: bolts everywhere a dowel would go */
@@ -5130,7 +5140,7 @@ function sceneFromComplex(){
     if(fp.ok){ const fin=[flipY(cxFinLoop(fp.fl))];
       fp.units.forEach((u,ui)=>{ parts.push({tris:[],cutLoops:fin,col:'#8a6a3c',cutOnly:1,label:'foot fin'});
         parts.push({tris:[],cutLoops:fin,col:'#8a6a3c',cutOnly:1,label:'foot fin'});
-        const base=cxBaseLoops(cxWall()?cxKeyLocalAng(u):null,fp.fl).map(L=>flipY(L));
+        const base=cxBaseLoops(cxWall()?cxKeyLocalAng(u,fp.fl):null,fp.fl).map(L=>flipY(L));
         parts.push({tris:[],cutLoops:base,col:'#8a6a3c',cutOnly:1,label:'foot base'+(cxWall()?' (keyhole)':'')}); }); } }
   cxExtrasPieces().forEach(p=>parts.push({tris:[],cutLoops:p.loops.map(L=>flipY(L)),col:'#8a6a3c',cutOnly:1,label:p.label}));
   { const cu=cxCradleUnit(c);
@@ -5394,9 +5404,9 @@ function drawComplexBackPreview(){
         s+='<path d="M'+pts.map(q=>MX(q)+' '+MY(q)).join('L')+'Z" fill="'+fill+'" fill-opacity="'+op+'" stroke="#23201a" stroke-width="'+lw+'"/>'; };
       rect(u.x,u.y,fl,W,'#c9a56a',0.45);                                   /* base plate */
       for(const b of [-gap/2,gap/2])rect(u.x+nx*b,u.y+ny*b,fl,t,'#8a6a3c',0.95);  /* fins */
-      if(cxWall()){ const K=cxKeySpec(), wa=u.ang+cxKeyLocalAng(u);
+      if(cxWall()){ const K=cxKeySpec(), wa=u.ang+cxKeyLocalAng(u,fp.fl||fl);
         s+='<circle cx="'+MX([u.x])+'" cy="'+MY([0,u.y])+'" r="'+(K.headD/2).toFixed(1)+'" fill="var(--paper)" stroke="#23201a" stroke-width="'+lw+'"/>';
-        const ex=u.x+Math.cos(wa)*K.slotL, ey=u.y+Math.sin(wa)*K.slotL;
+        const ex=u.x+Math.cos(wa)*cxKeySlotL(fp.fl||fl), ey=u.y+Math.sin(wa)*cxKeySlotL(fp.fl||fl);
         s+='<line x1="'+MX([u.x])+'" y1="'+MY([0,u.y])+'" x2="'+MX([ex])+'" y2="'+MY([0,ey])+'" stroke="#23201a" stroke-width="'+(K.shankD).toFixed(1)+'" stroke-linecap="round" opacity="0.9"/>'; }
       s+='<text x="'+MX([u.x])+'" y="'+MY([0,u.y])+'" font-size="'+fs+'" text-anchor="middle" fill="#3d2f1f" font-family="Space Mono,monospace">foot '+(ui+1)+'</text>'; });
     else s+='<text x="0" y="'+(-bh/2-6).toFixed(1)+'" font-size="'+fs+'" text-anchor="middle" fill="#bf3a2b" font-family="Space Mono,monospace">'+fp.msg+'</text>'; }
@@ -8012,7 +8022,7 @@ document.getElementById('testJpgBtn').addEventListener('click',()=>{ try{ const 
 document.getElementById('dlBtn').addEventListener('click',()=>{const svg=buildExportSVG();const blob=new Blob([svg],{type:'image/svg+xml'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=(S.movement==='composer'?`contraption_chain_${S.chain.map(s=>s.type.slice(0,3)).join('-')}`:S.movement==='fourbar'?`contraption_linkage_${Math.round(S.fbFrame)}_${Math.round(S.fbCrank)}_${Math.round(S.fbCoupler)}_${Math.round(S.fbRocker)}`:S.movement==='planetary'?`contraption_planetary_${S.plNs}_${S.plNp}_${S.plP}p`:S.movement==='internal'?`contraption_internalgear_${S.igNr}_${S.igNp}T`:S.movement==='scotch'?`contraption_scotchyoke_r${Math.round(S.scotchR)}`:S.movement==='ratchet'?`contraption_ratchet_${S.ratN}T`:S.movement==='rack'?`contraption_rackpinion_N${S.rpN}_${S.rackT}T`:S.movement==='cam'?`contraption_cam_${S.camLaw}_lift${Math.round(S.camLift)}`:S.movement==='crank'?`contraption_crank_r${Math.round(S.crankR)}_L${Math.round(S.rodL)}`:`contraption_train_${S.gears.join('-')}`)+'.svg';a.click();URL.revokeObjectURL(url);});
 document.getElementById('cdBtn').addEventListener('click',async e=>{let txt;if(S.movement==='composer'){const ch=computeChain();txt=`${ch.stages.map(s=>CT[s.type].nm).join(' → ')} · ${composerSummary(ch)}`;}else if(S.movement==='fourbar'){const v=fbVals(),d=dowelSpec(),g=grashof();txt=`four-bar frame ${fmt(v.f)}, crank ${fmt(v.r)}, coupler ${fmt(v.c)}, rocker ${fmt(v.k)} · ${g.type} · dowel ${fmt(d.D)}mm (run hole ${fmt(d.runCut)}⌀, press hole ${fmt(d.pressCut)}⌀)`;}else if(S.movement==='planetary'){const v=plVals();txt=`sun ${v.Ns}T + ${v.P}×planet ${v.Np}T + ring ${v.Nr}T, module ${fmt(v.m)}, reduction ${((v.Ns+v.Nr)/v.Ns).toFixed(3)}× same direction`;}else if(S.movement==='internal'){const v=igVals();txt=`ring ${v.Nr}T + pinion ${v.Np}T, module ${fmt(v.m)}, centre distance ${fmt(v.cd)}, reduction ${(v.Nr/v.Np).toFixed(3)}× same direction`;}else if(S.movement==='scotch'){txt=`stroke ${fmt(2*S.scotchR)} (r ${fmt(S.scotchR)}), exact sine motion`;}else if(S.movement==='ratchet'){txt=`${S.ratN} teeth, step ${(360/S.ratN).toFixed(1)}°, +${S.ratAdv}/stroke, wheel ⌀${fmt(2*S.ratR)}`;}else if(S.movement==='rack'){txt=`module ${fmt(S.rpM)}, pinion N${S.rpN} (pitch ⌀${fmt(S.rpM*S.rpN)}), travel/turn ${fmt(Math.PI*S.rpM*S.rpN)}, rack ${S.rackT}T`;}else if(S.movement==='cam'){txt=`base ⌀${fmt(2*S.camRb)}, lift ${fmt(S.camLift)}, ${CAM_LAWS[S.camLaw]}, rise ${S.camRise}° fall ${S.camFall}°`;}else if(S.movement==='crank'){const tr=crankTravel();txt=`stroke ${fmt(2*S.crankR)}, travel ${fmt(tr.lo)}→${fmt(tr.hi)}, rod ${fmt(S.rodL)}`;}else{txt=computeTrain().cds.map(c=>fmt(c)).join(', ');}
   try{await navigator.clipboard.writeText(txt);e.target.textContent='⧉ copied';setTimeout(()=>e.target.textContent=(S.movement==='gearing')?'⧉ Copy centre distances':'⧉ Copy key sizes',1400);}catch(_){}});
-document.getElementById('csBtn').addEventListener('click',e=>{const panel=document.getElementById('cutSheetPanel'),willShow=panel.classList.contains('hide');panel.classList.toggle('hide');e.currentTarget.setAttribute('aria-expanded',willShow?'true':'false');e.currentTarget.textContent=willShow?'▾ Hide cut sheet':'▸ Show cut sheet';if(willShow)renderCutSheet();});
+document.getElementById('csBtn').addEventListener('click',e=>{const panel=document.getElementById('cutSheetPanel'),willShow=panel.classList.contains('hide');panel.classList.toggle('hide');document.body.classList.toggle('cs-open',willShow);e.currentTarget.setAttribute('aria-expanded',willShow?'true':'false');e.currentTarget.textContent=willShow?'▾ Hide cut sheet':'▸ Show cut sheet';if(willShow)renderCutSheet();});
 function saveProject(){ try{ const data={app:'clever-contraptions',v:1,ts:Date.now(),sheet:(document.getElementById('sheetSize')||{}).value,sheetW:S.sheetW,sheetH:S.sheetH,state:S};
   const blob=new Blob([JSON.stringify(data)],{type:'application/json'}), url=URL.createObjectURL(blob), a=document.createElement('a');
   a.href=url; a.download=`clever-contraptions_${S.movement}_project.json`; a.click(); URL.revokeObjectURL(url);
