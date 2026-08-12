@@ -155,8 +155,13 @@
   .modeseg button[aria-pressed="true"] b{color:#fff8ea}
   .modeseg button[aria-pressed="true"] span{color:#f4e7cc}
   .selin{width:100%;padding:7px 8px;border:1.5px solid var(--ink);border-radius:4px;background:var(--paper);font-family:"Space Mono",monospace;font-size:12.5px;color:var(--ink)}
-  .csheet{border:1.5px solid var(--ink);border-radius:4px;padding:6px;background:#efe9da;overflow:auto;max-height:64vh}
-  .csheet svg{display:block;width:100%;height:auto}
+  .csheet{border:1.5px solid var(--ink);border-radius:4px;padding:6px;background:#efe9da;overflow-x:auto;overflow-y:visible}
+  .csheet svg{display:block;height:auto}
+  .cshead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 5px;
+    font-family:'Space Mono',monospace;font-size:12px;color:var(--ink)}
+  .cshead .n{background:var(--ink);color:var(--paper);border-radius:3px;padding:1px 7px}
+  .cszoom{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px;
+    position:sticky;top:0;z-index:4;background:var(--paper-3);padding:4px 0}
   .movetabs::-webkit-scrollbar{display:none}
   .mtab{flex:0 0 auto;display:flex;flex-direction:column;gap:1px;text-align:left;padding:8px 13px;border:1.5px solid var(--ink);background:var(--paper-2);cursor:pointer;border-radius:3px;font-family:inherit;color:var(--ink);overflow:hidden}
   .mtab b{font-family:"Space Mono",monospace;font-size:12.5px;letter-spacing:.01em;overflow-wrap:break-word}
@@ -5688,7 +5693,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-19`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-20`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -7487,16 +7492,20 @@ function renderCutSheet(){
   const sz=sheetDims(), sw=sz[0], sh=sz[1], gap=6, CUT='#bf3a2b';
   let pieces; try{ pieces=cutPiecesFromScene(); }catch(e){ pieces=[]; }
   if(!pieces.length){ view.innerHTML='<div class="hint">'+(S.movement==='complex'?'The Complex Workbench cut sheet will appear once that bench is built.':'No cut pieces to nest yet.')+'</div>'; return; }
-  const {place,sheets}=nestPieces(pieces,sw,sh,gap), SG=16, totalH=sheets*sh+(sheets-1)*SG;
+  const {place,sheets}=nestPieces(pieces,sw,sh,gap);
   document.body.classList.add('cs-open');
   const zoom=S.cutZoom||1;
-  let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 ${(sw+12).toFixed(0)} ${(totalH+12).toFixed(0)}" width="${(100*zoom).toFixed(0)}%" height="auto" style="display:block">`;
-  for(let k=0;k<sheets;k++){ const oy=k*(sh+SG); s+=`<rect x="0" y="${oy.toFixed(1)}" width="${sw}" height="${sh}" fill="#f3ecdb" stroke="#6b5330" stroke-width="1"/><text x="3" y="${(oy+9).toFixed(1)}" font-size="7" fill="#6b5330" font-family="'Space Mono',monospace">sheet ${k+1} · ${sw}×${sh}</text>`; }
-  let over=0;
-  for(const pl of place){ const oy=pl.sheet*(sh+SG), cx=pl.x+pl.w/2, cy=oy+pl.y+pl.h/2; if(pl.over)over++;
-    let d=''; for(const loop of pl.p.loops){ loop.forEach((pt,i)=>{ let X=pt[0],Y=pt[1]; if(pl.rot){const t=X;X=-Y;Y=t;} d+=(i?'L':'M')+(cx+X).toFixed(1)+' '+(cy+Y).toFixed(1)+' '; }); d+='Z '; }
-    s+=`<path d="${d}" fill-rule="evenodd" fill="${pl.p.col}" fill-opacity="0.28" stroke="#8f1e10" stroke-width="0.9"/>`; }
-  s+='</svg>';
+  /* One drawing per sheet, each laid out down the page rather than inside a scrolling window —
+     with several sheets the old single tall SVG in a 62vh box showed about half of one. */
+  let over=0; const sheetSVG=[];
+  for(let k=0;k<sheets;k++){
+    let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 ${(sw+12).toFixed(0)} ${(sh+12).toFixed(0)}" style="display:block;width:${(100*zoom).toFixed(1)}%;height:auto">`;
+    s+=`<rect x="0" y="0" width="${sw}" height="${sh}" fill="#f3ecdb" stroke="#6b5330" stroke-width="1"/>`;
+    for(const pl of place){ if(pl.sheet!==k)continue;
+      const cx=pl.x+pl.w/2, cy=pl.y+pl.h/2; if(pl.over)over++;
+      let d=''; for(const loop of pl.p.loops){ loop.forEach((pt,i)=>{ let X=pt[0],Y=pt[1]; if(pl.rot){const t=X;X=-Y;Y=t;} d+=(i?'L':'M')+(cx+X).toFixed(1)+' '+(cy+Y).toFixed(1)+' '; }); d+='Z '; }
+      s+=`<path d="${d}" fill-rule="evenodd" fill="${pl.p.col}" fill-opacity="0.28" stroke="#8f1e10" stroke-width="0.9"/>`; }
+    sheetSVG.push(s+'</svg>'); }
   // real wood, not bounding boxes: largest loop minus its windows. A disc fills 79% of its box
   // and a curved board tile far less, so box area overstates what you actually get out of a sheet.
   const pieceArea=p=>{ const a=(p.loops||[]).map(l=>Math.abs(loopArea(l))).sort((x,y)=>y-x);
@@ -7520,8 +7529,8 @@ function renderCutSheet(){
     `<div style="display:flex;gap:8px;flex-wrap:wrap">${dlrow}</div>`+
     `<div class="cstage-top" style="margin-top:8px;gap:16px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestOutline" ${outOn?'checked':''}>sheet outline</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestMarker" ${mkOn?'checked':''}>0,0 marker</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestLabels" ${lbOn?'checked':''}>engrave part labels</label></div>`+
     `<div class="hint" style="margin:6px 0">${cap} · each sheet saves as its own kerf-compensated SVG. For bed registration, outline off + <b>0,0 marker</b> on.</div>`+
-    `<div style="display:flex;gap:6px;margin-bottom:6px"><button class="btn ghost" data-cutzoom="1.4" style="padding:4px 12px">＋</button><button class="btn ghost" data-cutzoom="0.71" style="padding:4px 12px">−</button><button class="btn ghost" data-cutzoom="fit" style="padding:4px 12px">⤢ fit width</button><span class="clab" style="align-self:center">${Math.round(zoom*100)}%</span></div>`+
-    `<div class="csheet" style="overflow:auto;max-height:62vh;border:1px solid #cbbf9f">${s}</div>`;
+    `<div class="cszoom"><button class="btn ghost" data-cutzoom="1.4" style="padding:4px 12px">＋</button><button class="btn ghost" data-cutzoom="0.71" style="padding:4px 12px">−</button><button class="btn ghost" data-cutzoom="fit" style="padding:4px 12px">⤢ fit width</button><span class="clab" style="align-self:center">${Math.round(zoom*100)}%</span><span class="clab" style="align-self:center;color:var(--ink-mute)">${sheets} sheet${sheets>1?'s':''}, all shown below</span></div>`+
+    sheetSVG.map((sv,k)=>`<div class="cshead"><span class="n">sheet ${k+1}</span><span>${sw}\u00d7${sh} mm</span><span style="color:var(--ink-mute)">${(n=>n+' piece'+(n>1?'s':''))(place.filter(pl=>pl.sheet===k).length)}</span><button class="btn ghost" data-dlsheet="${k}" style="padding:3px 10px;font-size:11px;margin-left:auto">\u2b07 SVG</button></div><div class="csheet">${sv}</div>`).join('');
   const oc=document.getElementById('nestOutline'); if(oc)oc.addEventListener('change',e=>{S.nestOutline=e.target.checked;});
   const mc=document.getElementById('nestMarker'); if(mc)mc.addEventListener('change',e=>{S.nestMarker=e.target.checked;});
   const lc=document.getElementById('nestLabels'); if(lc)lc.addEventListener('change',e=>{S.engraveLabels=e.target.checked; everything();});
