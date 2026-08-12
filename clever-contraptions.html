@@ -174,7 +174,7 @@
   body.cs-open .hero{position:static}
   body.cs-open #cutSheetView{max-height:none;overflow:visible}
   #cutSheetView{overflow:auto;max-width:100%}
-  #cutSheetView{max-height:40vh;overflow:auto}
+  #cutSheetView{max-height:none;overflow:visible}
   .controls{grid-area:controls;display:flex;flex-direction:column;gap:16px;min-width:0}
   @media (max-width:900px){
     .ccmain{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "controls" "cut";gap:12px;margin-top:8px}
@@ -4424,7 +4424,7 @@ function cxFeetSlots(c){ const F=cxFeet(), t=S.thick, out=[];
         out.push({cx:x,cy:y,poly}); }); }); } }
   else if(F.on){ const plan=cxFeetPlan(c);
     if(plan.ok)plan.units.forEach(u=>{ addUnit(u,plan.fl,F.gap||40,14);
-      if(cxWall()){ const la=cxKeyLocalAng(u,plan.fl), K=cxKeySpec(), wa=u.ang+la;
+      if(cxWall()&&cxKeyFits(plan.fl)){ const la=cxKeyLocalAng(u,plan.fl), K=cxKeySpec(), wa=u.ang+la;
         const mx=u.x+Math.cos(wa)*cxKeySlotL(plan.fl), my=u.y+Math.sin(wa)*cxKeySlotL(plan.fl);   /* pencil marks the SCREW spot: the slot end */
         out.push({cx:mx,cy:my,poly:hexLoop(4,wa).map(p=>[p[0]+mx,p[1]+my])}); } }); }
   const cu=cxCradleUnit(c); if(cu)addUnit(cu,cu.fl,cu.gap,12);
@@ -4486,7 +4486,11 @@ function cxSkirtStripLoop(len,H,t,typeA,tabs){ const pts=[], seg=H/3;
   else pts.push([-(len/2-t),2*seg],[-len/2,2*seg],[-len/2,seg],[-(len/2-t),seg],[-(len/2-t),0]);
   return pts; }
 function cxWall(){ const F=cxFeet(); return !!F.wall; }
-function cxKeySlotL(fl){ const K0={slotL:(cxFeet().keySlot||12),shank:(cxFeet().keyShank||4.5)}; return Math.max(6,Math.min(K0.slotL,(fl||90)/2-K0.shank/2-1.2)); }
+function cxKeySlotL(fl){ const K=cxKeySpec();
+  const floor2=K.headD/2+K.shankD/2+1.5;                       /* below this the loop bowties */
+  return Math.max(floor2, Math.min(K.slotL, (fl||90)/2-K.shankD/2-3.5)); }
+function cxKeyFits(fl){ const K=cxKeySpec(), L=cxKeySlotL(fl);
+  return (L+K.shankD/2+3.5)<=(fl||90)/2 && (K.headD/2+3.5)<=(fl||90)/2; }
 function cxKeySpec(){ const F=cxFeet(); return {headD:F.keyHead||9, shankD:F.keyShank||4.5, slotL:F.keySlot||12}; }
 function cxTabSpots(fl,edge){ if(fl>=58)return {offs:[-(fl/2-(edge||14)),(fl/2-(edge||14))],w:18};
   return {offs:[0],w:Math.max(10,Math.min(18,fl-12))}; }
@@ -4501,7 +4505,7 @@ function cxBaseLoops(keyAng,flEff){ const F=cxFeet(), t=S.thick, fl=flEff||F.fl|
   const W=gap+2*t+14, TS=cxTabSpots(fl,14), hw2=TS.w/2, out=[[[-fl/2,-W/2],[fl/2,-W/2],[fl/2,W/2],[-fl/2,W/2]]];
   for(const a of TS.offs)for(const b of [-gap/2,gap/2])
     out.push([[a-hw2,b-t/2],[a+hw2,b-t/2],[a+hw2,b+t/2],[a-hw2,b+t/2]]);
-  if(cxWall()&&keyAng!=null){ const K=cxKeySpec(); out.push(keyholeLoop(K.headD,K.shankD,cxKeySlotL(fl),keyAng)); }
+  if(cxWall()&&keyAng!=null&&cxKeyFits(fl)){ const K=cxKeySpec(); out.push(keyholeLoop(K.headD,K.shankD,cxKeySlotL(fl),keyAng)); }
   return out; }
 /* keyhole slot must point world-up once the base is on the wall; convert to base-local */
 function cxKeyLocalAng(u,fl){ const cands=(fl&&fl<58)?[0,Math.PI]:[0,Math.PI/2,Math.PI,-Math.PI/2]; let best=0,bd=-2;
@@ -4568,16 +4572,69 @@ function cxPaperBoard(c){ const P=c.pen; if(!P||!P.paper||!cxHasPen())return nul
   let maxR=0;
   if(ink&&tb){ const cx0=tb.cx!=null?tb.cx:(tb.minX+tb.maxX)/2, cy0=tb.cy!=null?tb.cy:(tb.minY+tb.maxY)/2;
     ink.forEach(q=>{ if(q)maxR=Math.max(maxR,Math.hypot(q[0]-cx0,q[1]-cy0)); }); }
-  const dia=(maxR>0?2*maxR:Math.hypot(dw,dh))*(1+pct);
+  let dia=(maxR>0?2*maxR:Math.hypot(dw,dh))*(1+pct);
+  /* A backing board has to carry the whole sheet, not just the drawing on it. With a custom
+     paper size a small figure on a big sheet used to leave the paper hanging over the edge. */
+  if(P.paper.mode==='custom'){ const pw=Math.max(P.paper.w||0,0), ph=Math.max(P.paper.h||0,0);
+    w=Math.max(w,pw); h=Math.max(h,ph); dia=Math.max(dia,Math.hypot(pw,ph)); }
   const shape=(pb.shape==='circle')?'circle':'square';
   const g=(P.paper.gear!=null)?c.byId[P.paper.gear]:null;
   const gearRa=g?(c.m*(g.N+2)/2):0;
-  const ringOD=Math.max(gearRa*2-4, 40), strip=20, ringID=Math.max(ringOD-2*strip, 12);
-  const nScrew=6, screwR=(ringOD+ringID)/4, screws=[];
-  for(let i=0;i<nScrew;i++){ const a=i*2*Math.PI/nScrew; screws.push([screwR*Math.cos(a),screwR*Math.sin(a)]); }
-  return {shape,w,h,dia,pct,marg:Math.min(dw,dh)*pct/2,ringOD,ringID,strip,screws,screwD:2.5,
+  /* The ring is a gasket between the sheet and the gear, so it has to fit inside BOTH. Sized to
+     the gear alone it overhung a smaller sheet and put its screws out past the board's edge —
+     they are now sized to the SHEET, then pulled in again to clear the gear's tooth roots. */
+  const boardR=(shape==='circle')?dia/2:Math.min(w,h)/2;
+  let capR=boardR-6;                                          // stay in from the sheet's edge
+  if(g)capR=Math.min(capR, c.m*(g.N-2.5)/2-3);                // ... and inside the tooth roots
+  capR=Math.max(capR,6);
+  const strip=Math.min(20,Math.max(5,capR*0.44));
+  const screwD=2.5, boreR=Math.max((g?cxGearBore():boreDia())/2,1.5);
+  const rMax=capR-screwD/2-1.5, rMin=Math.max(boreR+screwD+3,6);
+  let screwR=Math.max(rMin,Math.min(rMax,capR-strip/2)), screws=[], screwClash=0;
+  if(rMax>=rMin){ const pick=cxPaperScrewRing(c,g,screwR,rMin,rMax,screwD,6);
+    screws=pick.screws; screwR=pick.R; screwClash=pick.clash; }
+  const ringOD=2*Math.min(capR,Math.max(screwR+strip/2,12));
+  const ringID=2*Math.max(Math.min(screwR-strip/2,ringOD/2-5),4);
+  return {shape,w,h,dia,pct,marg:Math.min(dw,dh)*pct/2,ringOD,ringID,strip,screws,screwD,screwR,screwClash,boardR,
     cx:inkC.cx,cy:inkC.cy,
           gear:g?g.id:null,gearRa,size:shape==='circle'?dia:Math.max(w,h)}; }
+/* Registration screws. The SAME ring of holes is cut in the backing board, in the spacer ring
+   under it and in the gear that carries them, so the stack can only go together one way and the
+   sheet ends up true to the gear's centre. Where the host gear has spoke windows the ring is
+   rotated (and, failing that, thinned to 4 or 3 screws) until every hole lands on solid wood. */
+var CX_SCREW_MEMO={}, CX_SCREW_MEMO_N=0;
+function cxPaperScrewRing(c,g,R0,rMin,rMax,d,n){
+  if(!(R0>0))return {screws:[],R:R0,clash:0};
+  const key=[g?g.id:'-',g?g.N:0,(c.m||0).toFixed(3),S.spokes|0,S.spokeStyle||'lens',hubR().toFixed(2),
+    R0.toFixed(2),rMin.toFixed(2),rMax.toFixed(2),d,n,cxBaseHole().toFixed(2),cxGearBore().toFixed(2),
+    g&&c.pen?c.pen.pins.filter(pn=>pn.g===g.id).map(pn=>pn.r.toFixed(1)).join(','):''].join('|');
+  if(CX_SCREW_MEMO[key])return CX_SCREW_MEMO[key];
+  let windows=[], pins=[];
+  if(g){ try{ windows=cxGearSpokes(g,c)||[]; }catch(_){ windows=[]; }
+    pins=((c.pen&&c.pen.pins)||[]).filter(pn=>pn.g===g.id).map(pn=>[pn.r,0]); }
+  const clr=d/2+2.5, pinClr=clr+Math.max(cxBaseHole()/2,1);
+  const ok=(x,y)=>!pins.some(q=>Math.hypot(q[0]-x,q[1]-y)<pinClr)
+                && !windows.some(L=>spokeClash(L,x,y,clr));
+  const build=(k,R,ph)=>{ const out=[]; for(let i=0;i<k;i++){ const a=ph+i*2*Math.PI/k;
+    out.push([R*Math.cos(a),R*Math.sin(a)]); } return out; };
+  const save=v=>{ if(CX_SCREW_MEMO_N>400){ CX_SCREW_MEMO={}; CX_SCREW_MEMO_N=0; }
+    CX_SCREW_MEMO[key]=v; CX_SCREW_MEMO_N++; return v; };
+  /* Radii to try, best first: the preferred mid-strip circle, then outwards to the solid rim
+     band (spoke windows never reach it) and finally inwards toward the hub. */
+  const step=Math.max(1.5,(rMax-rMin)/40), radii=[R0];
+  for(let r=R0+step;r<=rMax+1e-6;r+=step)radii.push(Math.min(r,rMax));
+  for(let r=R0-step;r>=rMin-1e-6;r-=step)radii.push(Math.max(r,rMin));
+  let best=null;
+  /* Screw counts to try. A gear with 5 spoke windows can never take 6 screws clear of them,
+     but 5 land squarely on the 5 spoke arms — so the window count is always a candidate. */
+  const counts=[]; [n,S.spokes|0,4,3,5,8].forEach(k=>{ if(k>=3&&k<=8&&counts.indexOf(k)<0)counts.push(k); });
+  for(const k of counts){
+    for(const R of radii){ const P=48;
+      for(let s=0;s<P;s++){ const ring=build(k,R,s*(2*Math.PI/k)/P);
+        const bad=ring.filter(q=>!ok(q[0],q[1])).length;
+        if(!bad)return save({screws:ring,R,clash:0});
+        if(!best||bad<best.clash)best={screws:ring,R,clash:bad}; } } }
+  return save(best||{screws:build(n,R0,0),R:R0,clash:n}); }
 function cxPaperBoardLoops(B){ const out=[];
   if(B.shape==='circle')out.push(circleLoop(B.dia/2,72));
   else out.push(roundRectLoop(B.w,B.h,6));
@@ -4626,8 +4683,8 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
   if(c.pen&&c.pen.welds&&c.pen.welds.length)cut.push([`branch arm`,c.pen.welds.length*(S.cx.armDouble?2:1),`${c.pen.welds.map(w=>fmt(w.len||100)).join(', ')} long${S.cx.armDouble?' · ×2 for double thickness':''} · GLUE rigidly onto host arm (fixed, not a pivot) — locating pin at the glue end, pen fits the tip hole · ${t}mm`]);
   { const B=cxPaperBoard(c);
     if(B){ cut.push([`paper backing board`,1,`${B.shape==='circle'?'⌀'+fmt(B.dia):fmt(B.w)+' × '+fmt(B.h)} — the paper pins to this · ${t}mm`]);
-      cut.push([`paper spacer ring`,1,`⌀${fmt(B.ringOD)} outside, ${fmt(B.strip)} wide strip — lifts the board off gear #${B.gear!=null?B.gear:'—'} · ${t}mm`]);
-      buy.push([`small screws`,B.screws.length*2,`~⌀${fmt(B.screwD)} × 10mm — board to ring, ring to gear`]); } }
+      cut.push([`paper spacer ring`,1,`⌀${fmt(B.ringOD)} outside, ${fmt(B.strip)} wide strip — sized to the sheet, lifts the board off gear #${B.gear!=null?B.gear:'—'} · ${t}mm`]);
+      if(B.screws.length)buy.push([`small screws`,B.screws.length,`~⌀${fmt(B.screwD)} × ${fmt(2*t+8)}mm — one per hole, down through board + ring into ${B.gear!=null?`gear #${B.gear}`:'the board'}. All ${B.gear!=null?'three':'both'} pieces carry the same ⌀${fmt(2*B.screwR)} hole circle, so the stack only goes together one way`]); } }
   if(c.pen&&cxHasPen()&&(c.pen.joints.length||c.pen.welds&&c.pen.welds.length)){ const H=cxPenHolder();
     cut.push([`pen collar`,1,`teardrop — pen/pencil drops through the ${cxPenSides()<3?'⌀'+fmt(cxPenAF()):CX_SIDE_NAME[cxPenSides()]+' '+fmt(cxPenAF())+' (across flats)'} hole, narrow end bolts to the branch tip · ${t}mm`]);
     buy.push([`collar bolt`,1,`${S.bolt} bolt — fixes the pen collar to the arm (+ nut)`]); }
@@ -5093,9 +5150,12 @@ function cxSpacers(c){ const t=S.thick, LG=t*2, shafts={};
   return {list,totalRings,ringT:t,LG}; }
 function sceneFromComplex(){
   const c=computeComplex(), t=S.thick, LG=t*2, parts=[], ox=c.bbox.cx, oy=c.bbox.cy;
+  /* the turntable gear carries the paper stack, so it takes the same registration holes */
+  let PBrd=null; try{ PBrd=cxPaperBoard(c); }catch(_){}
   c.gears.forEach(g=>{ const yOff=-(g.layer)*LG; const gl0=gearLoops3D(g.N,c.m,20,cxBacklashOffset(c.m));
     const gloops=[gl0[0], flipY(cxGearOnMotor(g,c)?motorBoreLoop():circleLoop(Math.max(cxGearBore()/2,0.6),40))];
     cxGearSpokes(g,c).forEach(L=>gloops.push(flipY(L)));
+    if(PBrd&&PBrd.gear===g.id)PBrd.screws.forEach(sc=>gloops.push(flipY(circleLoop(PBrd.screwD/2,12).map(p=>[p[0]+sc[0],p[1]+sc[1]]))));
     if(c.pen)c.pen.pins.forEach(pn=>{ if(pn.g===g.id && pn.r>cxGearBore()/2+cxBaseHole()/2+1)gloops.push(flipY(circleLoop(Math.max(cxBaseHole()/2,1),12).map(p=>[p[0]+pn.r,p[1]]))); });
     parts.push({tris:plateMesh(gloops,0,0,t,yOff),col:cxLayerCol(g.layer),label:'#'+g.id+'·'+g.N+'T',spin:{x:g.x-ox,z:g.y-oy,phase:g.phase,rate:g.rate,theta:g.osc?(a=>cxTheta(g,a)):null}}); });
   // shafts (one dowel per unique x,y through its layer span)
@@ -5404,7 +5464,7 @@ function drawComplexBackPreview(){
         s+='<path d="M'+pts.map(q=>MX(q)+' '+MY(q)).join('L')+'Z" fill="'+fill+'" fill-opacity="'+op+'" stroke="#23201a" stroke-width="'+lw+'"/>'; };
       rect(u.x,u.y,fl,W,'#c9a56a',0.45);                                   /* base plate */
       for(const b of [-gap/2,gap/2])rect(u.x+nx*b,u.y+ny*b,fl,t,'#8a6a3c',0.95);  /* fins */
-      if(cxWall()){ const K=cxKeySpec(), wa=u.ang+cxKeyLocalAng(u,fp.fl||fl);
+      if(cxWall()&&cxKeyFits(fp.fl||fl)){ const K=cxKeySpec(), wa=u.ang+cxKeyLocalAng(u,fp.fl||fl);
         s+='<circle cx="'+MX([u.x])+'" cy="'+MY([0,u.y])+'" r="'+(K.headD/2).toFixed(1)+'" fill="var(--paper)" stroke="#23201a" stroke-width="'+lw+'"/>';
         const ex=u.x+Math.cos(wa)*cxKeySlotL(fp.fl||fl), ey=u.y+Math.sin(wa)*cxKeySlotL(fp.fl||fl);
         s+='<line x1="'+MX([u.x])+'" y1="'+MY([0,u.y])+'" x2="'+MX([ex])+'" y2="'+MY([0,ey])+'" stroke="#23201a" stroke-width="'+(K.shankD).toFixed(1)+'" stroke-linecap="round" opacity="0.9"/>'; }
@@ -5633,8 +5693,12 @@ function complexReadout(){
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
   const boreR=Math.max(boreDia()/2-kh,0.3), gBoreR=Math.max(cxGearBore()/2-kh,0.3), rBoreR=Math.max(cxRodBore()/2-kh,0.3), pinR=Math.max(cxBaseHole()/2-kh,0.3), locR=Math.max(Math.min(cxDowelHole(),4)/2-kh,0.7);
+  let PBrd=null; try{ PBrd=cxPaperBoard(c); }catch(_){}
   c.gears.forEach(g=>{ const go=gearOutline(g.N,m,20,kh-cxBacklashOffset(m),14), cx=x+go.ra, cy=go.ra+gap;
     cxGearSpokes(g,c).forEach(L=>{ const d=offsetPolygon(L,-kh); parts.push(`<path d="${pathFrom(d,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); });
+    if(PBrd&&PBrd.gear===g.id){ const sr=Math.max(PBrd.screwD/2-kh,0.3);
+      PBrd.screws.forEach(sc=>parts.push(`<path d="${svgCircle(sr,cx+sc[0],cy+sc[1])}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
+      if(PBrd.screws.length)parts.push(txt(cx,cy-PBrd.screwR-3.5,`registration screws — paper board & ring line up on these`,SCORE,2.6)); }
     parts.push(`<path d="${pathFrom(go.poly,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     if(cxGearOnMotor(g,c)){ const mb=offsetPolygon(motorBoreLoop(),-kh); parts.push(`<path d="${pathFrom(mb,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); }
     else parts.push(`<path d="${svgCircle(gBoreR,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
@@ -5671,6 +5735,7 @@ function exportComplex(){
       cxPaperRingLoops(B).forEach((L,i)=>{ const d=offsetPolygon(L,i===0?kh:-kh);
         parts.push(`<path d="${pathFrom(d,rx,ry)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); });
       parts.push(txt(rx,ry,`spacer ring · ${fmt(B.strip)} strip`,SCORE,2.8));
+      if(B.gear!=null&&B.screws.length)parts.push(txt(rx,ry+B.ringOD/2+4,`same ${B.screws.length}-hole pattern as the board & gear #${B.gear}`,SCORE,2.4));
       x=rx+B.ringOD/2+gap; rowH=Math.max(rowH,B.ringOD+gap*2); } }
   if(c.pen&&cxHasPen()&&(c.pen.welds&&c.pen.welds.length||c.pen.joints.length)){ const H=cxPenHolder();
     let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9; H.outline.forEach(p=>{mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);});
@@ -5886,6 +5951,14 @@ function renderFeetUI(c){ const host=document.getElementById('cxFeetUI'); if(!ho
     ${F.wall?`<div class="hint">Each base plate gets a keyhole, slot pointing up. Small <b>hexagonal</b> holes are cut in the board directly over each keyhole's resting spot — hold the machine to the wall, pencil through the hexes, and the marks are exactly where the screws go. Hex, so you never mistake them for shaft holes.</div>`:''}
     <div class="cstage-top" style="margin-top:6px"><span class="clab">rotate placement</span><input type="range" id="cxFeetRot" min="0" max="120" step="3" value="${F.rot||0}" style="width:130px">
       ${cxMotor().on?`<span class="clab">gearbox keep-out ⌀</span>${num('cxFeetKeep',(F.motorKeep||27)*2,5,30,68)}`:''}</div>
+    ${(function(){ if(!F.wall||!plan||!plan.ok)return '';
+      const warns=[]; if(!cxKeyFits(plan.fl))warns.push('base too short for the keyhole \u2014 lengthen the feet or shrink screw head \u2300');
+      try{ const seen={};
+        plan.units.forEach((u,ui)=>{ if(!cxKeyFits(plan.fl))return; const wa=u.ang+cxKeyLocalAng(u,plan.fl);
+          const mx=u.x+Math.cos(wa)*cxKeySlotL(plan.fl), my=u.y+Math.sin(wa)*cxKeySlotL(plan.fl);
+          c.gears.forEach(g=>{ const k=cxShaftKeyOf(g); if(seen[k])return;
+            if(Math.hypot(mx-g.x,my-g.y)<boltNom()*1.2+7){ seen[k]=1; warns.push('foot '+(ui+1)+'\u2019s pencil hex lands on gear #'+g.id+'\u2019s shaft \u2014 nudge that foot or its angle'); } }); }); }catch(_){}
+      return warns.map(w=>`<div class="hint" style="color:#bf3a2b">\u26a0 ${w}</div>`).join(''); })()}
     <div class="hint" style="${plan&&plan.ok?'':'color:#bf3a2b'}">${plan?plan.msg:''} — each unit is two fins with tabs up through slots in the board, ending in a flat base plate. <b>Foot length</b> is each fin strip's long side, <b>height</b> its drop below the board, and every tab is 18mm wide × ply-thick. <b>Gearbox keep-out</b> is a small no-go circle at the motor shaft; the body strip (set in Motor drive) blocks where the motor hangs; <b>motor hang</b> is how far the body reaches below the board. Height clears ${cxMotor().on?'the motor body and ':''}the bolt tails automatically; override it if you like. Glue the tabs, or leave them friction-fit.</div>`}`
    :`<div class="hint">Off — the board lies flat. Turn on to cut hidden H-shaped feet that tab into the underside, sized to clear the ${cxMotor().on?'motor and ':''}bolt tails.</div>`); }
 function renderComplexUI(){
@@ -6039,7 +6112,7 @@ function renderComplexUI(){
       const boardCtl=`<div class="cstage-top" style="margin-top:10px"><label class="pchk" style="flex:1" data-on="${PB.on?1:0}"><input type="checkbox" id="cxPaperBoardOn" ${PB.on?'checked':''}>Cut a paper backing board</label></div>`
        +(PB.on?`<div class="cstage-top" style="margin-top:6px"><span class="clab">shape</span><div class="seg" id="cxPaperShape"><button data-pshape="square" aria-pressed="${PB.shape!=='circle'}">Square</button><button data-pshape="circle" aria-pressed="${PB.shape==='circle'}">Circle</button></div></div>`
         +(BB?`<div class="cstage-top" style="margin-top:6px"><span class="clab">margin</span><span class="cstep"><button data-pmarg="-5">−</button><input type="number" value="${Math.round((BB.pct||0)*100)}" id="cxPaperMarg" min="0" max="25" step="5"><button data-pmarg="5">＋</button></span><span class="clab">% bigger than the drawing</span></div>`:'')
-       +(BB?`<div class="hint" style="margin-top:6px">Board <b>${BB.shape==='circle'?'⌀'+fmt(BB.dia):fmt(BB.w)+' × '+fmt(BB.h)}</b> — ${Math.round(BB.pct*100)}% bigger than the drawing. It stands off gear #${BB.gear!=null?BB.gear:'—'} on a <b>${fmt(BB.strip)} wide spacer ring</b> (⌀${fmt(BB.ringOD)}, just inside the gear), screwed at ${BB.screws.length} points.</div>`:'')
+       +(BB?`<div class="hint" style="margin-top:6px">Board <b>${BB.shape==='circle'?'⌀'+fmt(BB.dia):fmt(BB.w)+' × '+fmt(BB.h)}</b> — ${Math.round(BB.pct*100)}% bigger than the drawing, and never smaller than the sheet. It stands off ${BB.gear!=null?`gear #${BB.gear}`:'the board'} on a <b>${fmt(BB.strip)} wide spacer ring</b> (⌀${fmt(BB.ringOD)}) sized to the board, and all ${BB.gear!=null?'three pieces — board, ring and gear — carry':'both pieces carry'} the same ${BB.screws.length}-hole ⌀${fmt(2*BB.screwR)} registration circle${BB.screwClash?' · ⚠ some holes fall in a spoke window — fewer spokes would seat them all':''}.</div>`:'')
         +(tooBig?`<div class="hint" style="margin-top:4px;color:#bf3a2b">⚠ Bigger than your ${sd[0]}×${sd[1]}mm sheet — use a larger sheet or smaller paper.</div>`:'')
        :'');
       pen.innerHTML=`<div class="lab"><label>${cxHasPen()?'Drawing pen (linkage)':'Arms & linkage — no pen'}</label><span class="val">${!tr.reachable?'⚠ arms short':(cxHasPen()?(cl.closes?'closed ✓':'open — weaves'):'moves, doesn\'t draw')}</span></div>
@@ -7415,6 +7488,7 @@ function renderCutSheet(){
   let pieces; try{ pieces=cutPiecesFromScene(); }catch(e){ pieces=[]; }
   if(!pieces.length){ view.innerHTML='<div class="hint">'+(S.movement==='complex'?'The Complex Workbench cut sheet will appear once that bench is built.':'No cut pieces to nest yet.')+'</div>'; return; }
   const {place,sheets}=nestPieces(pieces,sw,sh,gap), SG=16, totalH=sheets*sh+(sheets-1)*SG;
+  document.body.classList.add('cs-open');
   const zoom=S.cutZoom||1;
   let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 ${(sw+12).toFixed(0)} ${(totalH+12).toFixed(0)}" width="${(100*zoom).toFixed(0)}%" height="auto" style="display:block">`;
   for(let k=0;k<sheets;k++){ const oy=k*(sh+SG); s+=`<rect x="0" y="${oy.toFixed(1)}" width="${sw}" height="${sh}" fill="#f3ecdb" stroke="#6b5330" stroke-width="1"/><text x="3" y="${(oy+9).toFixed(1)}" font-size="7" fill="#6b5330" font-family="'Space Mono',monospace">sheet ${k+1} · ${sw}×${sh}</text>`; }
