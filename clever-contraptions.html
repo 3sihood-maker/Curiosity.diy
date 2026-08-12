@@ -1176,8 +1176,7 @@
       <div class="panel-b">
 <div class="export">
           <button class="btn" id="dlBtn">⬇ Reference sheet (annotated)</button>
-          <button class="btn ghost" id="testSheetBtn">🧪 Test sheet SVG</button>
-          <button class="btn ghost" id="testJpgBtn">🖨 Test sheet engrave JPG</button>
+          <div style="display:flex;gap:8px;margin-top:6px"><button class="btn ghost" id="testSheetBtn" style="flex:1">🧪 Test sheet · SVG</button><button class="btn ghost" id="testJpgBtn" style="flex:1">🖨 engrave · JPG 254 dpi</button></div>
           <button class="btn ghost" id="cdBtn">⧉ Copy centre distances</button>
           <button class="btn ghost" id="csBtn" aria-expanded="false">▸ Cut sheets to laser</button>
           <button class="btn ghost" id="saveProjBtn">⇩ Save project</button>
@@ -6768,6 +6767,7 @@ function buildTestSheet(mode){
   const plH=Math.max(rows.length*rowH+16, tabTop-py+Math.max(16,Math.round(cxFeetH()))+t+16, 58);
   parts.push(`<path d="${pathFrom(offsetPolygon(roundRectLoop(plW,plH,4,6),kh),px+plW/2,py+plH/2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
   txt(px+6,py+9,`TEST SHEET \u00b7 ${t}mm ply \u00b7 kerf ${S.kerf} \u00b7 module ${m}`,3.8);
+  txt(px+plW-36,py+plH-4,'curiosity.diy',3.2);
   rows.forEach((rw,i)=>{ const x=px+16, y=py+18+i*rowH+rowH/2;
     if(rw.slot){ const L=[[-9,-t/2],[9,-t/2],[9,t/2],[-9,t/2]]; holeLoop(x,y,L,rw.lbl); }
     else if(rw.loop)holeLoop(x,y,rw.loop,rw.lbl);
@@ -6776,8 +6776,7 @@ function buildTestSheet(mode){
     parts.push(`<path d="${svgCircle(Math.max(cxMotorBoardHole()/2-kh,0.5),mcx,mcy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     cxMotorScrewLocal().forEach(o=>parts.push(`<path d="${svgCircle(Math.max(o.d/2-kh,0.5),mcx+o.x,mcy+o.y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
     txt2(mcx-22,mcy+chB+6,'motor mount \u00b7 offer it up'); }
-  const Wg=px+plW+2, Hg=py+plH+2;   /* crosses frame the plate — identical in SVG and JPG */
-  [[3,3],[Wg,3],[3,Hg]].forEach(q=>{ parts.push(`<path d="M ${(q[0]-3).toFixed(1)} ${q[1]} L ${(q[0]+3).toFixed(1)} ${q[1]} M ${q[0]} ${(q[1]-3).toFixed(1)} L ${q[0]} ${(q[1]+3).toFixed(1)}" fill="none" stroke="${SCORE}" stroke-width="0.3"/>`); });
+  parts.push(`<rect x="0" y="0" width="2" height="2" fill="${SCORE}"/>`);   /* origin square at 0,0 in BOTH files — import both at origin and they self-align */
   /* tab tester — nested INSIDE the plate, clear of the label column, pops out when cut */
   const tabX=px+72+colW/2, tabY=tabTop+8;
   const H2=Math.max(16,Math.round(cxFeetH()));
