@@ -5915,7 +5915,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-24`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-25`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -5975,6 +5975,7 @@ function exportComplex(){
       parts.push(txt(rx,ry,`spacer ring · ${fmt(B.strip)} strip`,SCORE,2.8));
       if(B.gear!=null&&B.screws.length)parts.push(txt(rx,ry+B.ringOD/2+4,`same ${B.screws.length}-hole pattern as the board & gear #${B.gear}`,SCORE,2.4));
       x=rx+B.ringOD/2+gap; rowH=Math.max(rowH,B.ringOD+gap*2); } }
+  if(Math.abs(cxCutScale()-1)>1e-6)parts.push(txt(2,4,`reference drawing — TRUE SIZE. The cut sheets are set to ${(cxCutScale()*100).toFixed(2).replace(/\.?0+$/,'')}% — cut from those, not this.`,SCORE,3.4));
   if(c.pen&&cxHasPen()&&(c.pen.welds&&c.pen.welds.length||c.pen.joints.length)){ const H=cxPenHolder();
     let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9; H.outline.forEach(p=>{mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);});
     const ox2=x-mnx+2, oy2=gap-mny;
@@ -6957,8 +6958,36 @@ function cutPiecesFromScene(){
     const cx=(mnx+mxx)/2,cz=(mnz+mxz)/2, rec=front.map(tr=>tr.map(p=>[p[0]-cx,p[1]-cz]));
     let loops=loopsFromTris(rec); if(!loops.length)loops=[[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]]];
     pieces.push({loops,w,h,col:part.col||'#c9a56a',label:part.label||null}); }
-  return pieces;
+  return cxApplyCutScale(pieces);
 }
+/* ---- cut-at-% output scale ----------------------------------------------------------------
+   For matching a machine that was already cut at the wrong size, or for deliberately building a
+   smaller copy. Wood-to-wood features scale together and stay a fit: outlines, hole POSITIONS,
+   and the tab slots that take another piece of the same ply. Anything that has to fit a bought
+   part does NOT scale, because dowels, bolts, bearings and motor shafts are all still the size
+   they were — so those holes are put back to true size around their scaled centre. -------- */
+function cxCutScale(){ const v=+S.cutScale; return (isFinite(v)&&v>=50&&v<=200)?v/100:1; }
+function cxLoopBBox(L){ let a=1e9,b=-1e9,c2=1e9,d=-1e9;
+  L.forEach(q=>{ a=Math.min(a,q[0]); b=Math.max(b,q[0]); c2=Math.min(c2,q[1]); d=Math.max(d,q[1]); });
+  return {mnx:a,mxx:b,mny:c2,mxy:d,w:b-a,h:d-c2,cx:(a+b)/2,cy:(c2+d)/2}; }
+/* A hole is hardware unless it is a tab slot taking another piece of the same ply. Size alone
+   cannot tell them apart — a 6.2 dowel hole in 6.85 ply is almost exactly slot-width — so the
+   shape decides: a slot is a long, filled-out rectangle, a hole for hardware is round-ish. */
+function cxHoleIsHardware(L,t){ const B=cxLoopBBox(L), short=Math.min(B.w,B.h), long=Math.max(B.w,B.h);
+  if(long>30)return false;                        /* big window — decorative, let it scale */
+  const fill=(B.w*B.h>1e-6)?Math.abs(loopArea(L))/(B.w*B.h):0;
+  const slot=Math.abs(short-t)<=0.8 && long>=1.8*short && fill>0.88;
+  return !slot; }                                 /* dowel, bolt, screw, shaft, pen, bearing */
+function cxApplyCutScale(pieces){ const k=cxCutScale(); if(Math.abs(k-1)<1e-6)return pieces;
+  const t=S.thick;
+  return pieces.map(p=>{ let oi=0,oa=-1;
+    p.loops.forEach((L,i)=>{ const a=Math.abs(loopArea(L)); if(a>oa){oa=a;oi=i;} });
+    const loops=p.loops.map((L,i)=>{ const S1=L.map(q=>[q[0]*k,q[1]*k]);
+      if(i===oi||!cxHoleIsHardware(L,t))return S1;
+      const B=cxLoopBBox(S1), inv=1/k;             /* true size again, about its scaled centre */
+      return S1.map(q=>[B.cx+(q[0]-B.cx)*inv, B.cy+(q[1]-B.cy)*inv]); });
+    const B=cxLoopBBox(loops[oi]);
+    return {loops,w:B.w,h:B.h,col:p.col,label:p.label}; }); }
 /* ---- nesting ---------------------------------------------------------------------------
    The old nester packed bounding boxes, so a disc reserved its whole square and a curved board
    tile reserved a rectangle that was mostly air — nothing could ever sit in the bays of another
@@ -7825,10 +7854,13 @@ function renderCutSheet(){
   const ovWarn=ovList.length?`<div id="cutOverWarn" style="background:#fbe9e6;border:1.5px solid #bf3a2b;border-radius:6px;padding:9px 11px;margin-bottom:9px;font-family:'Space Mono',monospace;font-size:12px;color:#8f1e10"><b>\u26a0 ${ovList.length} piece${ovList.length>1?'s':''} won't fit your ${sw}\u00d7${sh}mm sheet</b> \u2014 ${ovNames}. ${ovList.length>1?"They'd":"It'd"} hang off the edge and cut short. ${ovAdvice}</div>`:'';
   view.innerHTML= ovWarn+
     `<div style="display:flex;gap:8px;flex-wrap:wrap">${dlrow}</div>`+
-    `<div class="cstage-top" style="margin-top:8px;gap:16px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestOutline" ${outOn?'checked':''}>sheet outline</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestMarker" ${mkOn?'checked':''}>0,0 marker</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestLabels" ${lbOn?'checked':''}>engrave part labels</label></div>`+
+    `<div class="cstage-top" style="margin-top:8px;gap:16px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestOutline" ${outOn?'checked':''}>sheet outline</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestMarker" ${mkOn?'checked':''}>0,0 marker</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestLabels" ${lbOn?'checked':''}>engrave part labels</label><label style="display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:12px">cut at<input type="number" class="pnum" id="nestScale" value="${(cxCutScale()*100).toFixed(4).replace(/0+$/,'').replace(/\.$/,'')}" step="0.1" min="50" max="200" style="width:74px">%</label></div>`+
+    (Math.abs(cxCutScale()-1)>1e-6?`<div class="hint" style="margin:6px 0;color:#8f1e10;background:#fbe9e6;border:1.5px solid #bf3a2b;border-radius:6px;padding:8px 10px"><b>Cutting at ${(cxCutScale()*100).toFixed(2).replace(/\.?0+$/,'')}%.</b> Outlines, hole positions and tab slots shrink together so the wood still fits itself. Holes for bought parts — dowels, bolts, bearings, the motor shaft, screws — are held at true size, since a ${fmt(S.dowelD||6)}mm dowel is still ${fmt(S.dowelD||6)}mm. Set it back to 100 for a normal build.</div>`:'')+
     `<div class="hint" style="margin:6px 0">${cap} · each sheet saves as its own kerf-compensated SVG. For bed registration, outline off + <b>0,0 marker</b> on.</div>`+
     `<div class="cszoom"><button class="btn ghost" data-cutzoom="1.4" style="padding:4px 12px">＋</button><button class="btn ghost" data-cutzoom="0.71" style="padding:4px 12px">−</button><button class="btn ghost" data-cutzoom="fit" style="padding:4px 12px">⤢ fit width</button><span class="clab" style="align-self:center">${Math.round(zoom*100)}%</span><span class="clab" style="align-self:center;color:var(--ink-mute)">${sheets} sheet${sheets>1?'s':''}, all shown below</span></div>`+
     sheetSVG.map((sv,k)=>`<div class="cshead"><span class="n">sheet ${k+1}</span><span>${sw}\u00d7${sh} mm</span><span style="color:var(--ink-mute)">${(n=>n+' piece'+(n>1?'s':''))(place.filter(pl=>pl.sheet===k).length)}</span><button class="btn ghost" data-dlsheet="${k}" style="padding:3px 10px;font-size:11px;margin-left:auto">\u2b07 SVG</button></div><div class="csheet">${sv}</div>`).join('');
+  const sc=document.getElementById('nestScale'); if(sc)sc.addEventListener('change',e=>{ const v=+e.target.value;
+    S.cutScale=(isFinite(v)&&v>=50&&v<=200)?v:100; renderCutSheet(); });
   const oc=document.getElementById('nestOutline'); if(oc)oc.addEventListener('change',e=>{S.nestOutline=e.target.checked;});
   const mc=document.getElementById('nestMarker'); if(mc)mc.addEventListener('change',e=>{S.nestMarker=e.target.checked;});
   const lc=document.getElementById('nestLabels'); if(lc)lc.addEventListener('change',e=>{S.engraveLabels=e.target.checked; everything();});
