@@ -4713,7 +4713,10 @@ function cxPenHoleLoop(cx,cy,afAdj){ const n=cxPenSides();
   return pts; }
 function cxPenHolder(){ const penR=Math.max((S.cx.penDia||10)/2,2.5);
   const penHoleR=Math.max(cxPenHoleOR(),2);
-  const wall=Math.max(boreDia()*0.9,5), Rw=penHoleR+wall, Rt=Math.max(boreDia()/2+3.5,5.5), H=Rw+28;
+  /* the narrow end pins to the branch tip, so its hole is whatever the arm joints use — a
+     bolt on a bolted build, a dowel on an all-wood one */
+  const mb=cxRodBore();
+  const wall=Math.max(mb*0.9,5), Rw=penHoleR+wall, Rt=Math.max(mb/2+3.5,5.5), H=Rw+28;
   const psi=Math.asin(Math.max(-1,Math.min(1,(Rw-Rt)/H))), out=[];
   const seg=52; for(let i=0;i<=seg;i++){ const a=psi-(Math.PI+2*psi)*(i/seg); out.push([Rw*Math.cos(a),Rw*Math.sin(a)]); }
   const tseg=18; for(let i=0;i<=tseg;i++){ const a=(Math.PI-psi)-(Math.PI-2*psi)*(i/tseg); out.push([Rt*Math.cos(a),H+Rt*Math.sin(a)]); }
@@ -4725,9 +4728,9 @@ function cxBaseHole(){ return (cxBrgMode()!=='none')?boardBoltHole():cxDowelHole
 function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], buy=[];
   const gc={}; c.gears.forEach(g=>{gc[g.N]=(gc[g.N]||0)+1;});
   Object.keys(gc).map(Number).sort((a,b)=>a-b).forEach(N=>cut.push([`gear ${N}T`,gc[N],`⌀${fmt(m*(N+2))} · ${t}mm`]));
-  if(c.pen&&c.pen.joints.length){ const AL=cxArmList(c), lens=AL.map(A=>A.D.total), aMax=cxArmMax(); let pcs=0; lens.forEach(l=>pcs+=cxArmSplice(l,aMax,28).length);
-    const nMg=AL.filter(A=>A.D.wood.fwd||A.D.wood.back).length;
-    cut.push([`linkage arm`,pcs*(S.cx.armDouble?2:1),`${lens.map(l=>fmt(l)).join(', ')} long · ${cxLinkW()}mm wide · ${t}mm${S.cx.armDouble?' · ×2 — glue pairs face-to-face for '+(2*t)+'mm arms':''}${nMg?` · ${nMg} of them run straight through a branch arm — cut as ONE piece with the pivot drilled part-way along, no glue joint`:''}${pcs>lens.length?' · long ones spliced to fit bed (overlap-glue + pins)':''}`]); }
+  if(c.pen&&c.pen.joints.length){ const AL=cxArmList(c), lens=AL.map(A=>A.D.total), aMax=cxArmBedMax(); let pcs=0; lens.forEach((l,i)=>pcs+=AL[i].D.bent?1:cxArmSplice(l,aMax,28).length);
+    const nMg=AL.filter(A=>A.D.wood.fwd||A.D.wood.back).length, nBent=AL.filter(A=>A.D.bent).length;
+    cut.push([`linkage arm`,pcs*(S.cx.armDouble?2:1),`${lens.map(l=>fmt(l)).join(', ')} long · ${cxLinkW()}mm wide · ${t}mm${S.cx.armDouble?' · ×2 — glue pairs face-to-face for '+(2*t)+'mm arms':''}${nMg?` · ${nMg} of them run straight through a branch arm — cut as ONE piece with the pivot drilled part-way along, no glue joint`:''}${nBent?` · ${nBent} come out bent, with a branch arm cut in one with them — nothing to glue, the angle is already set`:''}${pcs>lens.length?' · long ones spliced to fit bed (overlap-glue + pins)':''}`]); }
   { const MGB=c.pen?cxArmMerges(c.pen).merged:{}, wl=(c.pen&&c.pen.welds||[]).map((w,wi)=>({w,wi})).filter(o=>!MGB[o.wi]);
     if(wl.length)cut.push([`branch arm`,wl.length*(S.cx.armDouble?2:1),`${wl.map(o=>fmt(o.w.len||100)).join(', ')} long${S.cx.armDouble?' · ×2 for double thickness':''} · GLUE rigidly onto host arm (fixed, not a pivot) — locating pin at the glue end, pen fits the tip hole · ${t}mm`]); }
   { const B=cxPaperBoard(c);
@@ -4736,7 +4739,9 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
       if(B.screws.length)buy.push([`small screws`,B.screws.length,`~⌀${fmt(B.screwD)} × ${fmt(2*t+8)}mm — one per hole, down through board + ring into ${B.gear!=null?`gear #${B.gear}`:'the board'}. All ${B.gear!=null?'three':'both'} pieces carry the same ⌀${fmt(2*B.screwR)} hole circle, so the stack only goes together one way`]); } }
   if(c.pen&&cxHasPen()&&(c.pen.joints.length||c.pen.welds&&c.pen.welds.length)){ const H=cxPenHolder();
     cut.push([`pen collar`,1,`teardrop — pen/pencil drops through the ${cxPenSides()<3?'⌀'+fmt(cxPenAF()):CX_SIDE_NAME[cxPenSides()]+' '+fmt(cxPenAF())+' (across flats)'} hole, narrow end bolts to the branch tip · ${t}mm`]);
-    buy.push([`collar bolt`,1,`${S.bolt} bolt — fixes the pen collar to the arm (+ nut)`]); }
+    buy.push([cxBoltsOff()?`collar pin`:`collar bolt`,1,cxBoltsOff()
+      ? `⌀${fmt(S.dowelD||6)} dowel — drops through the collar's narrow end and the tip hole of the branch arm, holding the collar flat against it`
+      : `${S.bolt} bolt — through the collar's narrow end into the branch arm's tip hole (+ nut)`]); }
   const cv={}; S.cx.converters.forEach(v=>{ if(c.byId[v.gear])cv[v.type]=(cv[v.type]||0)+1; });
   if(cv.crank){ cut.push([`crank arm`,cv.crank,`${t}mm`],[`con-rod`,cv.crank,`${cxLinkW()}mm wide · ${t}mm`],[`slider block`,cv.crank,`${t}mm`],[`crank guide rail`,cv.crank*2,`bridges over the gear · post-hole each end · ${t}mm`]); }
   if(cv.cam){ cut.push([`cam disc`,cv.cam,`${t}mm`],[`cam follower`,cv.cam,`${t}mm`],[`cam guide rail`,cv.cam*2,`bridges over the gear · post-hole each end · ${t}mm`]); }
@@ -4807,6 +4812,82 @@ function cxBOMText(){ const b=cxBOM(), c=computeComplex(), t=S.thick;
   const head=`PROJECT MATERIALS — The Clever Contraptions Corner\n\n  Back board / sheet : ${bw}×${bh}mm · ${cxBoardShapeLabel()} outline · ${t}mm stock\n  ${cxDowelShafts()?`Bolts (arm joints) : ${S.bolt} (⌀${fmt(boreDia())} clearance) · gears & pins run on ⌀${fmt(S.dowelD)} dowels (bores ⌀${fmt(cxGearBore())} loose)`:`Bolt / shaft       : ${S.bolt} (⌀${fmt(boreDia())} clearance holes)`}\n  Bearings           : ${brgLine}\n  Dowels             : ${cxUseDowels()?`⌀${fmt(S.dowelD)} nominal · press-fit holes cut ⌀${fmt(cxDowelHole())}`:`none — ${S.bolt} bolts used everywhere a dowel would go`}\n  Kerf allowance     : ${S.kerf}mm (beam width — holes cut ${S.kerf}mm undersize to compensate)\n  Gear mesh clearance: ${cxBacklashMM(c.m).toFixed(2)}mm backlash (${cxBacklash().toFixed(2)} x module ${c.m}mm)\n`;
   return head+'\nLASER-CUT (wood, '+t+'mm):\n'+b.cut.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n')+'\n\nBUY SEPARATELY:\n'+b.buy.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n'); }
 function cxArmMax(){ const P=S.cx.split; return (P&&P.mode!=='off')?Math.max(P.maxW||600,P.maxH||400):1e9; }
+/* Length to splice arms at. An arm piece carries about a bar's width of wood past its end holes
+   at each end, so splicing at the raw sheet length produced pieces that overhung the bed by
+   roughly 20mm and cut short. */
+function cxArmBedMax(){ const m=cxArmMax(); return (m>1e8)?m:Math.max(60,m-2*cxLinkW()*0.85-2); }
+/* Outline of a piece made of round-ended bars of one width meeting at any angle: every point
+   within half a width of the centreline. Traced from a distance field rather than overlapping
+   two bar loops, because even-odd fill would punch the overlap out as a hole and the corner
+   would cut away. One closed outline comes back, ready to be drilled. */
+var CX_BAR_MEMO={}, CX_BAR_N=0;
+function cxBarUnionLoop(segs,w,res){ if(!segs||!segs.length)return [];
+  const R=Math.max(w/2,0.5); res=res||Math.max(0.3,Math.min(0.6,R/8));
+  const key=w.toFixed(2)+'|'+res.toFixed(2)+'|'+segs.map(s=>s.map(v=>v.toFixed(2)).join(',')).join(';');
+  if(CX_BAR_MEMO[key])return CX_BAR_MEMO[key];
+  let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9;
+  segs.forEach(s=>{ for(const q of [[s[0],s[1]],[s[2],s[3]]]){
+    mnx=Math.min(mnx,q[0]); mxx=Math.max(mxx,q[0]); mny=Math.min(mny,q[1]); mxy=Math.max(mxy,q[1]); } });
+  const pad=R+2*res; mnx-=pad; mny-=pad; mxx+=pad; mxy+=pad;
+  const nx=Math.max(2,Math.ceil((mxx-mnx)/res)), ny=Math.max(2,Math.ceil((mxy-mny)/res));
+  if(nx*ny>900000)return [];                                  /* refuse to grind on silly sizes */
+  const dseg=(px,py,s)=>{ const ax=s[0],ay=s[1],bx=s[2],by=s[3], vx=bx-ax, vy=by-ay;
+    const L2=vx*vx+vy*vy; let t=L2>0?((px-ax)*vx+(py-ay)*vy)/L2:0; t=t<0?0:(t>1?1:t);
+    const dx=px-(ax+t*vx), dy=py-(ay+t*vy); return Math.sqrt(dx*dx+dy*dy); };
+  const F=new Float32Array((nx+1)*(ny+1));
+  for(let j=0;j<=ny;j++){ const y=mny+j*res;
+    for(let i=0;i<=nx;i++){ const x=mnx+i*res; let d=1e9;
+      for(let k=0;k<segs.length;k++){ const v=dseg(x,y,segs[k]); if(v<d)d=v; }
+      F[j*(nx+1)+i]=R-d; } }                                  /* positive inside the wood */
+  const at=(i,j)=>F[j*(nx+1)+i], px=i=>mnx+i*res, py=j=>mny+j*res;
+  const ip=(xa,ya,va,xb,yb,vb)=>{ const t=va/(va-vb); return [xa+(xb-xa)*t, ya+(yb-ya)*t]; };
+  const E={}, key2=q=>Math.round(q[0]*1000)+'_'+Math.round(q[1]*1000);
+  const add=(a,b)=>{ const ka=key2(a), kb=key2(b); if(ka===kb)return;
+    (E[ka]||(E[ka]=[])).push(b); (E[kb]||(E[kb]=[])).push(a); };
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+    const v0=at(i,j), v1=at(i+1,j), v2=at(i+1,j+1), v3=at(i,j+1);
+    const cs=(v0>0?1:0)|(v1>0?2:0)|(v2>0?4:0)|(v3>0?8:0); if(cs===0||cs===15)continue;
+    const x0=px(i), x1=px(i+1), y0=py(j), y1=py(j+1);
+    const e0=()=>ip(x0,y0,v0,x1,y0,v1), e1=()=>ip(x1,y0,v1,x1,y1,v2),
+          e2=()=>ip(x1,y1,v2,x0,y1,v3), e3=()=>ip(x0,y1,v3,x0,y0,v0);
+    switch(cs){
+      case 1: case 14: add(e3(),e0()); break;
+      case 2: case 13: add(e0(),e1()); break;
+      case 3: case 12: add(e3(),e1()); break;
+      case 4: case 11: add(e1(),e2()); break;
+      case 6: case 9:  add(e0(),e2()); break;
+      case 7: case 8:  add(e2(),e3()); break;
+      case 5: case 10: { const mid=(v0+v1+v2+v3)/4;
+        if((cs===5)===(mid>0)){ add(e3(),e0()); add(e1(),e2()); }
+        else { add(e0(),e1()); add(e2(),e3()); } break; } } }
+  /* chain the crossings into the longest closed outline */
+  let best=[]; const used={};
+  Object.keys(E).forEach(start=>{ if(used[start])return;
+    const loop=[]; let cur=start, curP=E[start][0]&&[0,0];
+    let pt=start.split('_').map(v=>+v/1000), prev=null, guard=0;
+    while(guard++<400000){ used[key2(pt)]=1; loop.push(pt);
+      const nb=E[key2(pt)]||[]; let nxt=null;
+      for(const q of nb){ const kq=key2(q); if(prev&&kq===key2(prev))continue; if(used[kq])continue; nxt=q; break; }
+      if(!nxt)break; prev=pt; pt=nxt; }
+    if(loop.length>best.length)best=loop; });
+  if(best.length<4)return [];
+  /* Thin it out — the grid gives thousands of points and a laser needs none of them. This has
+     to be a proper Douglas-Peucker over the whole chain: comparing each point only with its
+     immediate neighbours makes every arc look locally straight and flattens the round ends. */
+  const tol=Math.max(0.05,res*0.25);
+  const dp=(pts,lo,hi,keep)=>{ const a=pts[lo], b=pts[hi];
+    let worst=-1, wi=-1, ux=b[0]-a[0], uy=b[1]-a[1], L=Math.hypot(ux,uy);
+    for(let i=lo+1;i<hi;i++){ const q=pts[i];
+      const dv=L>1e-9?Math.abs((q[0]-a[0])*uy-(q[1]-a[1])*ux)/L:Math.hypot(q[0]-a[0],q[1]-a[1]);
+      if(dv>worst){ worst=dv; wi=i; } }
+    if(worst>tol&&wi>lo){ dp(pts,lo,wi,keep); keep.push(wi); dp(pts,wi,hi,keep); } };
+  const keep=[]; dp(best,0,best.length-1,keep);
+  const out=[best[0]].concat(keep.map(i=>best[i]),[best[best.length-1]]);
+  let A=0; for(let i=0;i<out.length;i++){ const q=out[i], r=out[(i+1)%out.length]; A+=q[0]*r[1]-r[0]*q[1]; }
+  if(A<0)out.reverse();
+  if(CX_BAR_N>120){ CX_BAR_MEMO={}; CX_BAR_N=0; }
+  CX_BAR_MEMO[key]=out; CX_BAR_N++;
+  return out; }
 /* A branch arm glued to the very end of its host and pointing straight on from it is not really
    a second part at all — it is a longer arm with a pivot part-way along. Cut in two it puts a
    glue joint at the busiest point in the linkage, so when a weld lines up like that the pair is
@@ -4817,12 +4898,36 @@ function cxWeldInlineDir(w){ if(!w||!w.base||!w.base.on||w.base.on[0]!=='j')retu
   if(Math.abs(t-1)<0.02&&(near(a,0)||near(a,360)))return 1;    /* straight on past the joint */
   if(Math.abs(t)<0.02&&near(a,180))return -1;                  /* straight back past the tail */
   return 0; }
+/* A branch that meets its host at an angle is still rigid — it never moves relative to it — so
+   it can come off the sheet as one bent piece with no glue joint at all. That is a real change
+   to how the machine is built though (a bent piece nests worse, and you lose the chance to set
+   the angle by eye), so unlike the inline case it is opt-in. */
+function cxBranchMergeOn(){ return !!(S.cx&&S.cx.mergeBranch); }
 function cxArmMerges(P){ P=P||S.cx.pen||{}; const map={}, merged={};
   (P.welds||[]).forEach((w,wi)=>{ const d=cxWeldInlineDir(w); if(!d)return;
     const ji=+w.base.on.slice(1); if(!((P.joints||[])[ji]))return;
     const side=(w.base.side==='b')?'b':'a', k='j'+ji+side, e=map[k]||(map[k]={});
     const slot=(d>0)?'fwd':'back'; if(e[slot])return;           /* one inline branch per end */
     e[slot]={wi,len:Math.max(1,w.len||100)}; merged[wi]=1; });
+  if(cxBranchMergeOn())(P.welds||[]).forEach((w,wi)=>{ if(merged[wi])return;
+    if(!w.base||!w.base.on||w.base.on[0]!=='j')return;
+    const ji=+w.base.on.slice(1), j=(P.joints||[])[ji]; if(!j)return;
+    const side=(w.base.side==='b')?'b':'a', k='j'+ji+side, e=map[k]||(map[k]={});
+    const len=Math.max(1,w.len||100), ang=((w.ang==null)?90:w.ang)*Math.PI/180;
+    const L=(side==='b')?j.lb:j.la, ext=(-cxArmSpan(ji,side)[0])*L;
+    const back=e.back?e.back.len:0, fwd=e.fwd?e.fwd.len:0, total=back+ext+L+fwd;
+    const at=back+((w.base.t==null)?0.5:w.base.t)*(ext+L);
+    /* A bent piece cannot be spliced the way a straight bar can, so it only earns its place if
+       the whole thing fits the sheet. Otherwise the branch stays loose and gets glued on. */
+    const bent=(e.bent||[]).concat([{at,len,ang}]);
+    let mnx=0,mxx=total,mny=0,mxy=0;
+    bent.forEach(b=>{ const tx=b.at+b.len*Math.cos(b.ang), ty=b.len*Math.sin(b.ang);
+      mnx=Math.min(mnx,tx); mxx=Math.max(mxx,tx); mny=Math.min(mny,ty); mxy=Math.max(mxy,ty); });
+    const pad=cxLinkW(), bw=(mxx-mnx)+pad, bh=(mxy-mny)+pad, SP=S.cx.split;
+    if(SP&&SP.mode!=='off'){ const MW=SP.maxW||600, MH=SP.maxH||400;
+      if(!((bw<=MW+0.01&&bh<=MH+0.01)||(bw<=MH+0.01&&bh<=MW+0.01)))return; }
+    (e.bent||(e.bent=[])).push({wi,len,t:(w.base.t==null)?0.5:w.base.t,ang});
+    merged[wi]=1; });
   return {map,merged}; }
 /* How much wood one arm really is, measured from the piece's own start: the overhang past its
    base pin, its run to the joint, and any merged branch on either end. */
@@ -4830,23 +4935,31 @@ function cxArmWood(ji,side,P){ P=P||S.cx.pen||{}; const j=(P.joints||[])[ji]; if
   const L=(side==='b')?j.lb:j.la, ext=(-cxArmSpan(ji,side)[0])*L;
   const mg=cxArmMerges(P).map['j'+ji+side]||{};
   const fwd=mg.fwd?mg.fwd.len:0, back=mg.back?mg.back.len:0;
-  return {L,ext,fwd,back,shift:back,base:back+ext,joint:back+ext+L,total:back+ext+L+fwd}; }
+  const W={L,ext,fwd,back,shift:back,base:back+ext,joint:back+ext+L,total:back+ext+L+fwd};
+  /* bent branches, placed in the arm's own frame: x runs along the arm from the piece's start */
+  W.bent=(mg.bent||[]).map(b=>{ const at=back+b.t*(ext+L);
+    return {wi:b.wi,len:b.len,ang:b.ang,at,
+      tip:[at+b.len*Math.cos(b.ang), b.len*Math.sin(b.ang)]}; });
+  return W; }
 /* Every hole in that arm, in one place, so the 3D, the nested cut sheet and the reference
    sheet cannot drift apart. Distances run from the start of the piece. */
 function cxArmDrills(c,ji,side){ const P=(c&&c.pen)||S.cx.pen||{}, W=cxArmWood(ji,side,P); if(!W)return null;
   const hr=Math.max(cxRodBore()/2,1), dwr=Math.max(cxDowelHole()/2,0.8), pinR=Math.max(cxPinBore()/2,1);
   const MG=cxArmMerges(P), sh=W.shift, Lfull=W.ext+W.L, sd=r=>((r&&r.side==='b')?'b':'a');
+  const mg0=MG.map['j'+ji+side]||{}, mg=mg0;
   const H=[{d:W.base,r:pinR,k:'base'},{d:W.joint,r:hr,k:'joint'}];
   try{ cxArmPivots(ji,side).forEach(tv=>H.push({d:sh+tv*Lfull,r:hr,k:'pivot'})); }catch(_){}
   (P.welds||[]).forEach((wd,wi)=>{ if(MG.merged[wi])return;
     if(wd.base&&wd.base.on===('j'+ji)&&sd(wd.base)===side)H.push({d:sh+(cxRefT(wd.base)/100)*Lfull,r:dwr,k:'glue W'+(wi+1)}); });
   (P.joints||[]).forEach(j2=>[j2.a,j2.b].forEach(rf=>{ if(rf&&rf.on===('j'+ji)&&sd(rf)===side&&rf.t!=null)H.push({d:sh+rf.t*Lfull,r:hr,k:'pivot'}); }));
   if(P.penRef&&P.penRef.on===('j'+ji)&&sd(P.penRef)===side&&P.penRef.t!=null)H.push({d:sh+P.penRef.t*Lfull,r:hr,k:'pen'});
-  if(W.fwd)H.push({d:W.total,r:hr,k:'tip'});
-  if(W.back)H.push({d:0,r:hr,k:'tip'});
+  /* the tip of a merged branch is where the pen collar pins on, so say so */
+  const refW=(ref,wi)=>(typeof ref==='string')?(ref==='w'+wi):!!(ref&&ref.on==='w'+wi);
+  const tipK=wi=>refW(P.penRef,wi)?'pen':'tip';
+  if(W.fwd)H.push({d:W.total,r:hr,k:tipK(mg0.fwd?mg0.fwd.wi:-1)});
+  if(W.back)H.push({d:0,r:hr,k:tipK(mg0.back?mg0.back.wi:-1)});
   /* Once a branch is merged in, its wood belongs to this arm — so anything anchored part-way
      along that branch has to be drilled here instead, or the hole goes missing altogether. */
-  const mg=MG.map['j'+ji+side]||{};
   const mapT=(wi,tv)=>{ if(mg.fwd&&mg.fwd.wi===wi)return W.joint+tv*mg.fwd.len;
     if(mg.back&&mg.back.wi===wi)return W.base-tv*mg.back.len; return null; };
   const onW=ref=>(ref&&ref.on&&ref.on[0]==='w'&&ref.t!=null)?mapT(+ref.on.slice(1),ref.t):null;
@@ -4854,8 +4967,18 @@ function cxArmDrills(c,ji,side){ const P=(c&&c.pen)||S.cx.pen||{}, W=cxArmWood(j
     if(d!=null)H.push({d,r:dwr,k:'glue W'+(wi+1)}); });
   (P.joints||[]).forEach(j2=>[j2.a,j2.b].forEach(rf=>{ const d=onW(rf); if(d!=null)H.push({d,r:hr,k:'pivot'}); }));
   { const d=onW(P.penRef); if(d!=null)H.push({d,r:hr,k:'pen'}); }
-  const seen=[]; const holes=H.filter(o=>{ if(seen.some(x=>Math.abs(x-o.d)<1.5))return false; seen.push(o.d); return true; });
-  return {total:W.total,wood:W,holes}; }
+  /* a bent branch brings its own tip hole, and anything hung part-way along it */
+  W.bent.forEach(b=>{ H.push({d:b.tip[0],x:b.tip[0],y:b.tip[1],r:hr,k:tipK(b.wi)});
+    const along=(tv)=>[b.at+tv*b.len*Math.cos(b.ang), tv*b.len*Math.sin(b.ang)];
+    (P.welds||[]).forEach((wd,wi)=>{ if(MG.merged[wi])return;
+      if(wd.base&&wd.base.on==='w'+b.wi&&wd.base.t!=null){ const q=along(wd.base.t); H.push({d:q[0],x:q[0],y:q[1],r:dwr,k:'glue W'+(wi+1)}); } });
+    (P.joints||[]).forEach(j2=>[j2.a,j2.b].forEach(rf=>{ if(rf&&rf.on==='w'+b.wi&&rf.t!=null){ const q=along(rf.t); H.push({d:q[0],x:q[0],y:q[1],r:hr,k:'pivot'}); } }));
+    if(P.penRef&&P.penRef.on==='w'+b.wi&&P.penRef.t!=null){ const q=along(P.penRef.t); H.push({d:q[0],x:q[0],y:q[1],r:hr,k:'pen'}); } });
+  H.forEach(o=>{ if(o.x==null){ o.x=o.d; o.y=0; } });
+  const seen=[]; const holes=H.filter(o=>{ if(seen.some(q=>Math.hypot(q[0]-o.x,q[1]-o.y)<1.5))return false; seen.push([o.x,o.y]); return true; });
+  /* centreline of the wood: the arm itself, plus any bent branch off it */
+  const segs=[[0,0,W.total,0]].concat(W.bent.map(b=>[b.at,0,b.tip[0],b.tip[1]]));
+  return {total:W.total,wood:W,holes,segs,bent:W.bent.length>0}; }
 function cxArmList(c){ const P=(c&&c.pen)||S.cx.pen||{}, out=[];
   (P.joints||[]).forEach((j,ji)=>['a','b'].forEach(side=>{ const D=cxArmDrills(c,ji,side); if(D)out.push({ji,side,D}); }));
   return out; }
@@ -5319,7 +5442,7 @@ function sceneFromComplex(){
        just under the pen's own tip. */
     const yCarr=cxPenIsCarriage()?cxCarriagePenY(c,t):null;
     const yLink=(yCarr!=null)?yCarr:(-(c.layers)*LG-t*0.5), barW=cxLinkW(), OFF=99999;
-    const aMaxS=cxArmMax();
+    const aMaxS=cxArmBedMax();
     c.pen.joints.forEach((j,ji)=>{ [[j.a,j.la,'a'],[j.b,j.lb,'b']].forEach(rl=>{ const ref=rl[0], side=rl[2];
       /* the physical member runs from its overhang tip to its joint — cxArmSpan's lo (≤0) says
          how far the wood carries on past the base pin, and every t-anchor maps over that WHOLE
@@ -5327,10 +5450,16 @@ function sceneFromComplex(){
          merged in, so the piece is one arm rather than two glued nose to nose. */
       const AD=cxArmDrills(c,ji,side); if(!AD)return;
       const extMM=AD.wood.base, Lfull=AD.total, uniq=AD.holes;
-      cxArmSplice(Lfull,aMaxS,28).forEach(pc=>{
+      const splice=AD.bent?[{start:0,len:Lfull,pivS:true,pivE:true,aligns:[],idx:0,n:1}]:cxArmSplice(Lfull,aMaxS,28);
+      splice.forEach(pc=>{
         const ovS=(pc.idx===0)?barW*0.85:0, ovE=(pc.idx===pc.n-1)?barW*0.85:0;   /* wood past the holes */
-        const loops=[flipY(rodLoop(pc.len+ovS+ovE,barW).map(p=>[p[0]-ovS,p[1]]))];
-        uniq.forEach(o=>{ const local=o.d-(pc.start||0); if(local>-ovS+o.r*0.5&&local<pc.len+ovE-o.r*0.5)loops.push(flipY(circleLoop(o.r,18).map(p=>[p[0]+local,p[1]]))); });
+        const outline=AD.bent
+          ? cxBarUnionLoop([[-ovS,0,Lfull+ovE,0]].concat(AD.segs.slice(1)),barW)
+          : rodLoop(pc.len+ovS+ovE,barW).map(p=>[p[0]-ovS,p[1]]);
+        const loops=[flipY(outline)];
+        uniq.forEach(o=>{ const local=o.x-(pc.start||0);
+          if(AD.bent){ loops.push(flipY(circleLoop(o.r,18).map(p=>[p[0]+o.x,p[1]+o.y]))); return; }
+          if(local>-ovS+o.r*0.5&&local<pc.len+ovE-o.r*0.5)loops.push(flipY(circleLoop(o.r,18).map(p=>[p[0]+local,p[1]]))); });
         pc.aligns.forEach(d=>loops.push(flipY(circleLoop(Math.max(cxBore()/2,1.2),12).map(p=>[p[0]+d,p[1]]))));
         const armMesh=plateMesh(loops,0,0,t*0.55,yLink-(pc.idx||0)*0.4);
         parts.push({tris:armMesh,col:'#8a6a3c',label:cxHasPen()?'pen arm':'linkage arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const A=cxNodePos(ref,st.pinPos,st.jointPos), B=st.jointPos[ji]; if(!A||!B)return {x:OFF,z:OFF,rot:0}; const ang=Math.atan2(B[1]-A[1],B[0]-A[0]); return {x:A[0]+Math.cos(ang)*(pc.start-extMM)-ox,z:A[1]+Math.sin(ang)*(pc.start-extMM)-oy,rot:ang}; }});
@@ -5365,7 +5494,7 @@ function sceneFromComplex(){
           alpha:cxPenIsCarriage()?0.45:1,
           spin:g?{x:gx,z:gz,phase:g.phase,rate:g.rate}:{x:gx,z:gz,phase:0,rate:0}}); } }
     if(cxHasPen()){ const H=cxPenHolder();
-      const collar=[flipY(H.outline), flipY(cxPenHoleLoop(0,0,cxPenAF())), flipY(circleLoop(Math.max(boreDia()/2,1),12).map(p=>[p[0]+H.mount[0],p[1]+H.mount[1]]))];
+      const collar=[flipY(H.outline), flipY(cxPenHoleLoop(0,0,cxPenAF())), flipY(circleLoop(Math.max(cxRodBore()/2,1),12).map(p=>[p[0]+H.mount[0],p[1]+H.mount[1]]))];
       parts.push({tris:plateMesh(collar,0,0,t*0.6,yLink-1.2),col:'#b98c52',label:'pen collar',pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; let rot=0; if(c.pen.welds&&c.pen.welds.length){ const w=c.pen.welds[0], d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(d!=null)rot=d-Math.PI/2; } return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot}; }}); } }
   // spacer ring stacks lifting elevated gears off the backing wood
   const spOR=Math.max(boreDia()/2+4,4), spIR=Math.max(boreDia()/2,1.5);
@@ -5786,7 +5915,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-22`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-23`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -5805,13 +5934,22 @@ function exportComplex(){
       parts.push(txt(cx+ph.r,cy-r-2.5,ph.host?`pin ${ph.pi+1}`:`pin ${ph.pi+1} clears`,SCORE,2.4)); });
     if(!!S.engraveLabels)parts.push(txt(cx,cy,`#${g.id}·${g.N}T·L${g.layer}`,SCORE,m*0.8));
     x=cx+go.ra+gap; rowH=Math.max(rowH,2*go.ra+gap*2); });
-  if(c.pen){ const w=cxLinkW()+8, aMax=cxArmMax(), MGW=cxArmMerges(c.pen).merged;
-    cxArmList(c).forEach((A,k)=>{ const al=A.D.total;
+  if(c.pen){ const w=cxLinkW()+8, aMax=cxArmBedMax(), MGW=cxArmMerges(c.pen).merged;
+    cxArmList(c).forEach((A,k)=>{ const al=A.D.total, penOnArm=A.D.holes.some(h=>h.k==='pen');
+      if(A.D.bent){ const L=cxBarUnionLoop(A.D.segs,w); let mny=0,mxy=0;
+        L.forEach(q=>{mny=Math.min(mny,q[1]);mxy=Math.max(mxy,q[1]);});
+        const cy=gap-mny;
+        parts.push(`<path d="${pathFrom(offsetPolygon(L,kh),x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+        A.D.holes.forEach(h=>{ parts.push(`<path d="${svgCircle(Math.max(h.r-kh,0.3),x+h.x,cy+h.y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+          if(h.k==='pen'||/^glue/.test(h.k))parts.push(txt(x+h.x,cy+h.y-h.r-2,h.k==='pen'?`✎ pen collar pins here`:h.k,SCORE,2.2)); });
+        parts.push(txt(x+al/2,cy,`arm ${k+1} · ${fmt(al)} · branch cut in one piece`,SCORE,3));
+        x=x+al+gap+w; rowH=Math.max(rowH,(mxy-mny)+gap*2); return; }
       cxArmSplice(al,aMax,28).forEach(pc=>{ const cy=w/2+gap;
       parts.push(`<path d="${pathFrom(rodLoop(pc.len,w),x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
       A.D.holes.forEach(h=>{ const local=h.d-(pc.start||0); if(local<-0.01||local>pc.len+0.01)return;
         parts.push(`<path d="${svgCircle(Math.max(h.r-kh,0.3),x+local,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-        if(/^glue/.test(h.k))parts.push(txt(x+local,cy+w/2-2.4,h.k,SCORE,2.2)); });
+        if(/^glue/.test(h.k))parts.push(txt(x+local,cy+w/2-2.4,h.k,SCORE,2.2));
+        if(h.k==='pen')parts.push(txt(x+local,cy-w/2+2.4,`✎ pen collar pins here`,SCORE,2.2)); });
       pc.aligns.forEach(d=>parts.push(`<path d="${svgCircle(boreR,x+d,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
       const mg=A.D.wood.fwd||A.D.wood.back;
       parts.push(txt(x+pc.len/2,cy,pc.n>1?`arm ${k+1} · pc ${pc.idx+1}/${pc.n} · splice-glue`:`arm ${k+1} · ${fmt(al)}${mg?' · branch merged in':''}`,SCORE,3));
@@ -5847,9 +5985,29 @@ function exportComplex(){
     parts.push(`<path d="${hd}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     parts.push(`<path d="${svgCircle(boreR,H.mount[0]+ox2,H.mount[1]+oy2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     parts.push(txt(ox2,oy2,`${cxPenSides()<3?'⌀':CX_SIDE_NAME[cxPenSides()]+' '}${fmt(cxPenAF())}`,SCORE,2.4));
-    parts.push(txt(H.mount[0]+ox2,H.mount[1]+oy2-H.Rt-1.5,`bolt to arm`,SCORE,2.2));
+    parts.push(txt(H.mount[0]+ox2,H.mount[1]+oy2-H.Rt-1.5,`⌀${fmt(cxRodBore())} — ${cxBoltsOff()?'dowel':'bolt'} into the arm's pen hole`,SCORE,2.2));
     parts.push(txt(ox2+(mxx-mnx)/2+3,oy2+H.H*0.45,`pen collar`,SCORE,2.6));
+    parts.push(txt(ox2,oy2+H.Rw+3.2,`pen drops through this end`,SCORE,2.2));
     x=x+(mxx-mnx)+gap+4; rowH=Math.max(rowH,(mxy-mny)+gap*2); }
+  /* Feet, cradle, washers and caps are cut too, so they belong on the reference sheet — it was
+     showing gears, arms and boards only, which made it hard to tell what a loose part was. */
+  { const more=[];
+    try{ if(cxFeet().on&&cxFeet().style==='skirt'){ const sp=cxSkirtPlan(c), Hh=cxFeetH();
+        if(sp.ok)sp.walls.forEach((w0,wi)=>more.push({loops:[cxSkirtStripLoop(w0.len,Hh,t,w0.axis==='x',w0.tabs)],lbl:`skirt side ${w0.axis==='x'?'A':'B'}${wi%2+1} · ${fmt(w0.len)}`})); }
+      else if(cxFeet().on){ const fp=cxFeetPlan(c);
+        if(fp.ok){ more.push({loops:[cxFinLoop(fp.fl)],lbl:`foot fin ×${fp.units.length*2} · two per foot, tabs into the board`});
+          fp.units.forEach((u,ui)=>more.push({loops:cxBaseLoops(cxWall()?cxKeyLocalAng(u,fp.fl):null,fp.fl),lbl:`foot base${cxWall()?' (keyhole)':''} ${ui+1}`})); } } }catch(_){}
+    try{ const cu=cxCradleUnit(c); if(cu){ more.push({loops:[cxCradleFinLoop()],lbl:'motor cradle fin ×2'});
+      more.push({loops:cxCradleBaseLoops(),lbl:'motor cradle base'}); } }catch(_){}
+    try{ const seenE={}; cxExtrasPieces().forEach(pc=>{ seenE[pc.label]=(seenE[pc.label]||0)+1; });
+      const doneE={}; cxExtrasPieces().forEach(pc=>{ if(doneE[pc.label])return; doneE[pc.label]=1;
+        more.push({loops:pc.loops,lbl:`${pc.label} ×${seenE[pc.label]}`}); }); }catch(_){}
+    more.forEach(mp=>{ let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
+      mp.loops.forEach(L=>L.forEach(q=>{mnx=Math.min(mnx,q[0]);mxx=Math.max(mxx,q[0]);mny=Math.min(mny,q[1]);mxy=Math.max(mxy,q[1]);}));
+      if(!(mxx>mnx))return; const bx=x-mnx, by=gap-mny;
+      mp.loops.forEach((L,li)=>parts.push(`<path d="${pathFrom(offsetPolygon(L,li?-kh:kh),bx,by)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
+      parts.push(txt(bx+(mnx+mxx)/2,by+mxy+3.2,mp.lbl,SCORE,2.4));
+      x=x+(mxx-mnx)+gap+6; rowH=Math.max(rowH,(mxy-mny)+gap*2+5); }); }
   { const sp=cxSpacers(c), rO=Math.max(boreDia()/2+4,4)+kh, rI=boreR;
     sp.list.forEach(sh=>{ for(let n=0;n<sh.count;n++){ const cy=rO+gap, cx=x+rO;
       parts.push(`<path d="${svgCircle(rO,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
@@ -6230,8 +6388,10 @@ function renderComplexUI(){
         W.forEach((_,m)=>o+=opt('w'+m,'the tip of branch W'+(m+1))+opt('t:w'+m,'a point along branch W'+(m+1)));
         o+=opt('none','— no pen, just the linkage —'); return o; };
       const armCtl=`<div class="cstage-top" style="margin-top:8px"><span class="clab">arm width</span><input type="number" class="pnum" id="cxArmWIn" value="${cxLinkW()}" step="0.5" min="8" max="30" style="width:60px"><span class="punit">mm</span>
-        <label class="pchk" data-on="${S.cx.armDouble?1:0}" style="margin-left:10px"><input type="checkbox" id="cxArmDouble" ${S.cx.armDouble?'checked':''}>cut arms ×2 (double thickness)</label></div>
-        <div class="hint">Wider arms stiffen thin ply${S.cx.armDouble?'; the second set is identical — glue the pairs face-to-face for a '+(2*S.thick)+'mm arm':''}. Width also applies to con-rods and branch arms so the linkage stays consistent.</div>`;
+        <label class="pchk" data-on="${S.cx.armDouble?1:0}" style="margin-left:10px"><input type="checkbox" id="cxArmDouble" ${S.cx.armDouble?'checked':''}>cut arms ×2 (double thickness)</label>
+        <label class="pchk" data-on="${cxBranchMergeOn()?1:0}" style="margin-left:10px"><input type="checkbox" id="cxMergeBranch" ${cxBranchMergeOn()?'checked':''}>cut branch arms in one with their host</label></div>
+        <div class="hint">Wider arms stiffen thin ply${S.cx.armDouble?'; the second set is identical — glue the pairs face-to-face for a '+(2*S.thick)+'mm arm':''}. Width also applies to con-rods and branch arms so the linkage stays consistent.</div>
+        <div class="hint">A branch is glued rigidly to its arm and never moves against it, so it can be cut as one bent piece instead — no glue joint, and the angle is exactly right by construction. ${cxBranchMergeOn()?'<b>On</b> — bent pieces nest less tightly, and any that would not fit the sheet stay separate.':'Off — branches are cut loose and glued on, which lets you set the angle by eye. A branch that runs straight on from the end of its arm is always merged either way, since that is just a longer arm.'}</div>`;
       const penBlock=armCtl+`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label>${cxHasPen()?`<button class="btn ghost" id="patOpen" style="padding:3px 10px;font-size:11px">🖼 Export pattern</button>`:''}</div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="hint">${cxHasPen()?'The pen sticks to this arm as you build the rest. Set the <b>pencil / pen hole</b> size &amp; shape down in <b>Bearings, bolts &amp; dowels</b>.':'No pen — the arms and branches still move, still get cut, but nothing draws and no pen collar, paper or backing board is generated. Pick any arm above to put a pen back on.'}</div>`;
       const custom=P.paper&&P.paper.mode==='custom';
       const paperCtl=`<div class="lab" style="margin-top:10px"><label>Paper</label></div><div class="cstage-top" style="margin-bottom:8px"><span class="clab">attach to</span><select class="selin" id="cxPaperGear" style="width:auto">${'<option value="fixed"'+((P.paper&&P.paper.gear!=null)?'':' selected')+'>fixed / moving bed</option>'+c.gears.map(g=>`<option value="g${g.id}"${(P.paper&&P.paper.gear===g.id)?' selected':''}>turntable on #${g.id}</option>`).join('')}</select></div><div class="seg" id="cxPaperSeg"><button data-pm="fit" aria-pressed="${custom?'false':'true'}">Fit to drawing</button><button data-pm="custom" aria-pressed="${custom?'true':'false'}">Custom</button></div>`+(custom?`<div class="cstage-top" style="margin-top:8px"><span class="clab">size</span><select class="selin" id="cxPaperPreset" style="width:auto"><option value="">preset…</option><option value="297x210">A4 · 297×210</option><option value="210x148">A5 · 210×148</option><option value="420x297">A3 · 420×297</option><option value="200x200">square 200</option><option value="300x300">square 300</option></select></div><div class="cstage-top" style="margin-top:6px"><span class="clab">W×H</span><span class="cstep"><button data-cxpaper="w" data-d="-10">−</button><input type="number" value="${P.paper.w}" id="cxPaperW" min="20" step="10"><button data-cxpaper="w" data-d="10">＋</button></span><span class="cstep"><button data-cxpaper="h" data-d="-10">−</button><input type="number" value="${P.paper.h}" id="cxPaperH" min="20" step="10"><button data-cxpaper="h" data-d="10">＋</button></span></div><button class="btn" id="cxFitPaper" style="margin-top:8px">⤢ fit drawing to this paper</button><div class="hint" style="margin-top:4px">Sizes the pins &amp; arms so the pattern fills the sheet.</div>`:'');
@@ -7980,6 +8140,7 @@ document.addEventListener('change',e=>{ const t=e.target; if(!t||!t.id)return;
   if(t.id==='cxMotorFacePY'){ cxMotor().pitchY=Math.max(6,Math.min(60,+t.value||17)); everything(); return; }
   if(t.id==='cxArmWIn'){ S.cx.linkW=Math.max(8,Math.min(30,+t.value||12)); renderComplexUI(); everything(); return; }
   if(t.id==='cxArmDouble'){ S.cx.armDouble=t.checked; renderComplexUI(); everything(); return; }
+  if(t.id==='cxMergeBranch'){ S.cx.mergeBranch=t.checked; renderComplexUI(); everything(); return; }
   if(t.id==='cxMotorCradle'){ cxMotor().cradle=t.checked; renderComplexUI(); everything(); return; }
   if(t.id==='cxMotorBodyW'){ cxMotor().bodyW=Math.max(15,Math.min(60,+t.value||28)); renderComplexUI(); everything(); return; }
   if(t.id==='cxMotorBodyL'){ cxMotor().bodyL=Math.max(25,Math.min(140,+t.value||62)); renderComplexUI(); everything(); return; }
