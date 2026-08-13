@@ -181,6 +181,19 @@
   #cutSheetView{overflow:auto;max-width:100%}
   #cutSheetView{max-height:none;overflow:visible}
   .controls{grid-area:controls;display:flex;flex-direction:column;gap:16px;min-width:0}
+  @media (min-width:901px){
+    /* With the cut sheet open, each column gets its own scrollbar. Otherwise the page scrolls
+       as one and you cannot hold a control on the right in view while watching the sheet. */
+    body.cs-open .leftcol,body.cs-open .controls{position:sticky;top:14px;align-self:start;
+      max-height:calc(100vh - 28px);overflow-y:auto;overscroll-behavior:contain;
+      scrollbar-width:thin;padding-right:8px}
+    body.cs-open .leftcol::-webkit-scrollbar,body.cs-open .controls::-webkit-scrollbar{width:9px}
+    body.cs-open .leftcol::-webkit-scrollbar-thumb,body.cs-open .controls::-webkit-scrollbar-thumb{
+      background:#cbbf9f;border-radius:5px}
+  }
+  .modia{border:1.5px solid var(--ink);border-radius:4px;background:var(--paper-2);padding:6px;
+    margin-top:8px;max-width:300px}
+  .modia svg{display:block;width:100%;height:auto}
   @media (max-width:900px){
     .ccmain{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "controls" "cut";gap:12px;margin-top:8px}
     .leftcol{display:contents}
@@ -4546,7 +4559,35 @@ function cxGearBore(){ const M=cxBrgMode(); if(M==='gears'||M==='gearsRods')retu
   return cxDowelShafts()?cxDowelLoose():boreDia(); }
 function cxPinBore(){ if(cxBrgMode()==='gearsRods')return cxBearingHole();
   return cxDowelShafts()?cxDowelLoose():boreDia(); }
-function cxRodBore(){ return (cxBrgMode()==='gearsRods')?cxBearingHole():boreDia(); }
+/* Bolts switched off means no bolt anywhere — arm joints included. They used to keep taking a
+   bolt clearance hole while the gear pins beside them took a dowel hole, so an all-wood build
+   came off the sheet with two different hole sizes in the same arm. */
+function cxBoltsOff(){ return !!(S.use&&S.use.bolts===false&&cxUseDowels()); }
+function cxRodBore(){ if(cxBrgMode()==='gearsRods')return cxBearingHole();
+  return cxBoltsOff()?cxDowelLoose():boreDia(); }
+/* A pin stands up from its gear to reach the arm above it. If that gear carries another gear
+   stacked on the same shaft, the pin has to pass through it — otherwise the pin is buried and
+   the stack cannot go together. Gears on one shaft turn as one, so a hole at the same radius
+   and angle lines up on every turn. Off by choice when the upper gear is meant to stay solid. */
+function cxPinAbove(c,pn){ if(!c||!pn||pn.g==null||!(pn.r>0))return [];
+  const g=c.byId[pn.g]; if(!g)return []; const k=cxShaftKeyOf(g);
+  return c.gears.filter(o=>o.id!==g.id&&cxShaftKeyOf(o)===k&&o.layer>g.layer); }
+function cxPinThru(pn){ return !pn||pn.thru!==false; }
+function cxPinClearHole(){ return Math.max(cxBaseHole()+0.4,cxDowelLoose()); }
+/* Every gear that needs a hole for this pin, with the size it should be cut at. */
+function cxPinHolesFor(c,g){ const out=[]; if(!c||!c.pen||!g)return out;
+  (c.pen.pins||[]).forEach((pn,pi)=>{ if(pn.g==null||!(pn.r>0))return;
+    const host=c.byId[pn.g]; if(!host)return;
+    const minR=cxGearBore()/2+cxBaseHole()/2+1;
+    if(pn.g===g.id){ if(pn.r>minR)out.push({pi,r:pn.r,d:cxBaseHole(),host:true}); return; }
+    if(!cxPinThru(pn))return;
+    if(cxPinAbove(c,pn).some(o=>o.id===g.id)&&pn.r>cxGearBore()/2+cxPinClearHole()/2+1)
+      out.push({pi,r:pn.r,d:cxPinClearHole(),host:false}); });
+  return out; }
+function cxPinBuried(c){ const out=[]; if(!c||!c.pen)return out;
+  (c.pen.pins||[]).forEach((pn,pi)=>{ if(cxPinThru(pn))return;
+    const ab=cxPinAbove(c,pn); if(ab.length)out.push({pi,above:ab.map(o=>o.id)}); });
+  return out; }
 function sheetDims(){ const el=document.getElementById('sheetSize'); const v=(el&&el.value)||'400x300';
   if(v==='custom')return [Math.max(80,S.sheetW||350), Math.max(80,S.sheetH||350)];
   const d=v.split('x').map(Number); return [d[0]||400, d[1]||300]; }
@@ -4677,15 +4718,18 @@ function cxPenHolder(){ const penR=Math.max((S.cx.penDia||10)/2,2.5);
   const seg=52; for(let i=0;i<=seg;i++){ const a=psi-(Math.PI+2*psi)*(i/seg); out.push([Rw*Math.cos(a),Rw*Math.sin(a)]); }
   const tseg=18; for(let i=0;i<=tseg;i++){ const a=(Math.PI-psi)-(Math.PI-2*psi)*(i/tseg); out.push([Rt*Math.cos(a),H+Rt*Math.sin(a)]); }
   return {penR, penHoleR, Rw, Rt, H, outline:out, mount:[0,H]}; }
-function cxLinkW(){ return Math.max(S.cx.linkW||12, boreDia()+3); }
+function cxLinkW(){ return Math.max(S.cx.linkW||12, cxRodBore()+3); }
 function cxBarSVG(A,B,w,fill){ if(!A||!B)return ''; const x1=A[0].toFixed(1),y1=(-A[1]).toFixed(1),x2=B[0].toFixed(1),y2=(-B[1]).toFixed(1);
   return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#23201a" stroke-width="${(w+1.6).toFixed(2)}" stroke-linecap="round"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${fill}" stroke-width="${w.toFixed(2)}" stroke-linecap="round"/>`; }
 function cxBaseHole(){ return (cxBrgMode()!=='none')?boardBoltHole():cxDowelHole(); }
 function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], buy=[];
   const gc={}; c.gears.forEach(g=>{gc[g.N]=(gc[g.N]||0)+1;});
   Object.keys(gc).map(Number).sort((a,b)=>a-b).forEach(N=>cut.push([`gear ${N}T`,gc[N],`⌀${fmt(m*(N+2))} · ${t}mm`]));
-  if(c.pen&&c.pen.joints.length){ const lens=[]; c.pen.joints.forEach(j=>{lens.push(j.la,j.lb);}); const aMax=cxArmMax(); let pcs=0; lens.forEach(l=>pcs+=cxArmSplice(l,aMax,28).length); cut.push([`linkage arm`,pcs*(S.cx.armDouble?2:1),`${lens.map(l=>fmt(l)).join(', ')} long · ${cxLinkW()}mm wide · ${t}mm${S.cx.armDouble?' · ×2 — glue pairs face-to-face for '+(2*t)+'mm arms':''}${pcs>lens.length?' · long ones spliced to fit bed (overlap-glue + pins)':''}`]); }
-  if(c.pen&&c.pen.welds&&c.pen.welds.length)cut.push([`branch arm`,c.pen.welds.length*(S.cx.armDouble?2:1),`${c.pen.welds.map(w=>fmt(w.len||100)).join(', ')} long${S.cx.armDouble?' · ×2 for double thickness':''} · GLUE rigidly onto host arm (fixed, not a pivot) — locating pin at the glue end, pen fits the tip hole · ${t}mm`]);
+  if(c.pen&&c.pen.joints.length){ const AL=cxArmList(c), lens=AL.map(A=>A.D.total), aMax=cxArmMax(); let pcs=0; lens.forEach(l=>pcs+=cxArmSplice(l,aMax,28).length);
+    const nMg=AL.filter(A=>A.D.wood.fwd||A.D.wood.back).length;
+    cut.push([`linkage arm`,pcs*(S.cx.armDouble?2:1),`${lens.map(l=>fmt(l)).join(', ')} long · ${cxLinkW()}mm wide · ${t}mm${S.cx.armDouble?' · ×2 — glue pairs face-to-face for '+(2*t)+'mm arms':''}${nMg?` · ${nMg} of them run straight through a branch arm — cut as ONE piece with the pivot drilled part-way along, no glue joint`:''}${pcs>lens.length?' · long ones spliced to fit bed (overlap-glue + pins)':''}`]); }
+  { const MGB=c.pen?cxArmMerges(c.pen).merged:{}, wl=(c.pen&&c.pen.welds||[]).map((w,wi)=>({w,wi})).filter(o=>!MGB[o.wi]);
+    if(wl.length)cut.push([`branch arm`,wl.length*(S.cx.armDouble?2:1),`${wl.map(o=>fmt(o.w.len||100)).join(', ')} long${S.cx.armDouble?' · ×2 for double thickness':''} · GLUE rigidly onto host arm (fixed, not a pivot) — locating pin at the glue end, pen fits the tip hole · ${t}mm`]); }
   { const B=cxPaperBoard(c);
     if(B){ cut.push([`paper backing board`,1,`${B.shape==='circle'?'⌀'+fmt(B.dia):fmt(B.w)+' × '+fmt(B.h)} — the paper pins to this · ${t}mm`]);
       cut.push([`paper spacer ring`,1,`⌀${fmt(B.ringOD)} outside, ${fmt(B.strip)} wide strip — sized to the sheet, lifts the board off gear #${B.gear!=null?B.gear:'—'} · ${t}mm`]);
@@ -4763,6 +4807,58 @@ function cxBOMText(){ const b=cxBOM(), c=computeComplex(), t=S.thick;
   const head=`PROJECT MATERIALS — The Clever Contraptions Corner\n\n  Back board / sheet : ${bw}×${bh}mm · ${cxBoardShapeLabel()} outline · ${t}mm stock\n  ${cxDowelShafts()?`Bolts (arm joints) : ${S.bolt} (⌀${fmt(boreDia())} clearance) · gears & pins run on ⌀${fmt(S.dowelD)} dowels (bores ⌀${fmt(cxGearBore())} loose)`:`Bolt / shaft       : ${S.bolt} (⌀${fmt(boreDia())} clearance holes)`}\n  Bearings           : ${brgLine}\n  Dowels             : ${cxUseDowels()?`⌀${fmt(S.dowelD)} nominal · press-fit holes cut ⌀${fmt(cxDowelHole())}`:`none — ${S.bolt} bolts used everywhere a dowel would go`}\n  Kerf allowance     : ${S.kerf}mm (beam width — holes cut ${S.kerf}mm undersize to compensate)\n  Gear mesh clearance: ${cxBacklashMM(c.m).toFixed(2)}mm backlash (${cxBacklash().toFixed(2)} x module ${c.m}mm)\n`;
   return head+'\nLASER-CUT (wood, '+t+'mm):\n'+b.cut.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n')+'\n\nBUY SEPARATELY:\n'+b.buy.map(r=>`  ${r[1]}× ${r[0]} — ${r[2]}`).join('\n'); }
 function cxArmMax(){ const P=S.cx.split; return (P&&P.mode!=='off')?Math.max(P.maxW||600,P.maxH||400):1e9; }
+/* A branch arm glued to the very end of its host and pointing straight on from it is not really
+   a second part at all — it is a longer arm with a pivot part-way along. Cut in two it puts a
+   glue joint at the busiest point in the linkage, so when a weld lines up like that the pair is
+   merged and comes off the sheet as one piece with the pivot drilled through it. */
+function cxWeldInlineDir(w){ if(!w||!w.base||!w.base.on||w.base.on[0]!=='j')return 0;
+  const t=(w.base.t==null)?0.5:w.base.t, a=(((w.ang==null?90:w.ang)%360)+360)%360;
+  const near=(v,x)=>Math.abs(v-x)<3;
+  if(Math.abs(t-1)<0.02&&(near(a,0)||near(a,360)))return 1;    /* straight on past the joint */
+  if(Math.abs(t)<0.02&&near(a,180))return -1;                  /* straight back past the tail */
+  return 0; }
+function cxArmMerges(P){ P=P||S.cx.pen||{}; const map={}, merged={};
+  (P.welds||[]).forEach((w,wi)=>{ const d=cxWeldInlineDir(w); if(!d)return;
+    const ji=+w.base.on.slice(1); if(!((P.joints||[])[ji]))return;
+    const side=(w.base.side==='b')?'b':'a', k='j'+ji+side, e=map[k]||(map[k]={});
+    const slot=(d>0)?'fwd':'back'; if(e[slot])return;           /* one inline branch per end */
+    e[slot]={wi,len:Math.max(1,w.len||100)}; merged[wi]=1; });
+  return {map,merged}; }
+/* How much wood one arm really is, measured from the piece's own start: the overhang past its
+   base pin, its run to the joint, and any merged branch on either end. */
+function cxArmWood(ji,side,P){ P=P||S.cx.pen||{}; const j=(P.joints||[])[ji]; if(!j)return null;
+  const L=(side==='b')?j.lb:j.la, ext=(-cxArmSpan(ji,side)[0])*L;
+  const mg=cxArmMerges(P).map['j'+ji+side]||{};
+  const fwd=mg.fwd?mg.fwd.len:0, back=mg.back?mg.back.len:0;
+  return {L,ext,fwd,back,shift:back,base:back+ext,joint:back+ext+L,total:back+ext+L+fwd}; }
+/* Every hole in that arm, in one place, so the 3D, the nested cut sheet and the reference
+   sheet cannot drift apart. Distances run from the start of the piece. */
+function cxArmDrills(c,ji,side){ const P=(c&&c.pen)||S.cx.pen||{}, W=cxArmWood(ji,side,P); if(!W)return null;
+  const hr=Math.max(cxRodBore()/2,1), dwr=Math.max(cxDowelHole()/2,0.8), pinR=Math.max(cxPinBore()/2,1);
+  const MG=cxArmMerges(P), sh=W.shift, Lfull=W.ext+W.L, sd=r=>((r&&r.side==='b')?'b':'a');
+  const H=[{d:W.base,r:pinR,k:'base'},{d:W.joint,r:hr,k:'joint'}];
+  try{ cxArmPivots(ji,side).forEach(tv=>H.push({d:sh+tv*Lfull,r:hr,k:'pivot'})); }catch(_){}
+  (P.welds||[]).forEach((wd,wi)=>{ if(MG.merged[wi])return;
+    if(wd.base&&wd.base.on===('j'+ji)&&sd(wd.base)===side)H.push({d:sh+(cxRefT(wd.base)/100)*Lfull,r:dwr,k:'glue W'+(wi+1)}); });
+  (P.joints||[]).forEach(j2=>[j2.a,j2.b].forEach(rf=>{ if(rf&&rf.on===('j'+ji)&&sd(rf)===side&&rf.t!=null)H.push({d:sh+rf.t*Lfull,r:hr,k:'pivot'}); }));
+  if(P.penRef&&P.penRef.on===('j'+ji)&&sd(P.penRef)===side&&P.penRef.t!=null)H.push({d:sh+P.penRef.t*Lfull,r:hr,k:'pen'});
+  if(W.fwd)H.push({d:W.total,r:hr,k:'tip'});
+  if(W.back)H.push({d:0,r:hr,k:'tip'});
+  /* Once a branch is merged in, its wood belongs to this arm — so anything anchored part-way
+     along that branch has to be drilled here instead, or the hole goes missing altogether. */
+  const mg=MG.map['j'+ji+side]||{};
+  const mapT=(wi,tv)=>{ if(mg.fwd&&mg.fwd.wi===wi)return W.joint+tv*mg.fwd.len;
+    if(mg.back&&mg.back.wi===wi)return W.base-tv*mg.back.len; return null; };
+  const onW=ref=>(ref&&ref.on&&ref.on[0]==='w'&&ref.t!=null)?mapT(+ref.on.slice(1),ref.t):null;
+  (P.welds||[]).forEach((wd,wi)=>{ if(MG.merged[wi])return; const d=onW(wd.base);
+    if(d!=null)H.push({d,r:dwr,k:'glue W'+(wi+1)}); });
+  (P.joints||[]).forEach(j2=>[j2.a,j2.b].forEach(rf=>{ const d=onW(rf); if(d!=null)H.push({d,r:hr,k:'pivot'}); }));
+  { const d=onW(P.penRef); if(d!=null)H.push({d,r:hr,k:'pen'}); }
+  const seen=[]; const holes=H.filter(o=>{ if(seen.some(x=>Math.abs(x-o.d)<1.5))return false; seen.push(o.d); return true; });
+  return {total:W.total,wood:W,holes}; }
+function cxArmList(c){ const P=(c&&c.pen)||S.cx.pen||{}, out=[];
+  (P.joints||[]).forEach((j,ji)=>['a','b'].forEach(side=>{ const D=cxArmDrills(c,ji,side); if(D)out.push({ji,side,D}); }));
+  return out; }
 function cxArmSplice(al,armMax,ov){ ov=ov||28; if(!(armMax>0)||al<=armMax)return [{start:0,len:al,pivS:true,pivE:true,aligns:[],idx:0,n:1}];
   const n=Math.max(2,Math.ceil((al-ov)/(armMax-ov))), segLen=(al+(n-1)*ov)/n, step=segLen-ov, out=[];
   for(let i=0;i<n;i++){ const aligns=[]; if(i>0)aligns.push(ov*0.3,ov*0.7); if(i<n-1)aligns.push(step+ov*0.3,step+ov*0.7);
@@ -5161,7 +5257,7 @@ function sceneFromComplex(){
     const gloops=[gl0[0], flipY(cxGearOnMotor(g,c)?motorBoreLoop():circleLoop(Math.max(cxGearBore()/2,0.6),40))];
     cxGearSpokes(g,c).forEach(L=>gloops.push(flipY(L)));
     if(PBrd&&PBrd.gear===g.id)PBrd.screws.forEach(sc=>gloops.push(flipY(circleLoop(PBrd.screwD/2,12).map(p=>[p[0]+sc[0],p[1]+sc[1]]))));
-    if(c.pen)c.pen.pins.forEach(pn=>{ if(pn.g===g.id && pn.r>cxGearBore()/2+cxBaseHole()/2+1)gloops.push(flipY(circleLoop(Math.max(cxBaseHole()/2,1),12).map(p=>[p[0]+pn.r,p[1]]))); });
+    cxPinHolesFor(c,g).forEach(ph=>gloops.push(flipY(circleLoop(Math.max(ph.d/2,1),12).map(p=>[p[0]+ph.r,p[1]]))));
     parts.push({tris:plateMesh(gloops,0,0,t,yOff),col:cxLayerCol(g.layer),label:'#'+g.id+'·'+g.N+'T',spin:{x:g.x-ox,z:g.y-oy,phase:g.phase,rate:g.rate,theta:g.osc?(a=>cxTheta(g,a)):null}}); });
   // shafts (one dowel per unique x,y through its layer span)
   const shafts={}; c.gears.forEach(g=>{ const k=(Math.round(g.x*10))+'_'+(Math.round(g.y*10)); (shafts[k]||(shafts[k]={x:g.x,y:g.y,min:g.layer,max:g.layer})); shafts[k].min=Math.min(shafts[k].min,g.layer); shafts[k].max=Math.max(shafts[k].max,g.layer); });
@@ -5224,18 +5320,13 @@ function sceneFromComplex(){
     const yCarr=cxPenIsCarriage()?cxCarriagePenY(c,t):null;
     const yLink=(yCarr!=null)?yCarr:(-(c.layers)*LG-t*0.5), barW=cxLinkW(), OFF=99999;
     const aMaxS=cxArmMax();
-    c.pen.joints.forEach((j,ji)=>{ [[j.a,j.la,'a'],[j.b,j.lb,'b']].forEach(rl=>{ const ref=rl[0], L=rl[1], side=rl[2];
+    c.pen.joints.forEach((j,ji)=>{ [[j.a,j.la,'a'],[j.b,j.lb,'b']].forEach(rl=>{ const ref=rl[0], side=rl[2];
       /* the physical member runs from its overhang tip to its joint — cxArmSpan's lo (≤0) says
          how far the wood carries on past the base pin, and every t-anchor maps over that WHOLE
-         length, exactly as the 2D schematic draws it */
-      const lo=cxArmSpan(ji,side)[0], extMM=(-lo)*L, Lfull=L+extMM;
-      const hr=Math.max(cxRodBore()/2,1), dwr=Math.max(cxDowelHole()/2,0.8), pinR=Math.max(cxPinBore()/2,1);
-      const drills=[{d:extMM,r:pinR},{d:Lfull,r:hr}];                   /* base rides the pin · joint tip takes the bolt */
-      try{ cxArmPivots(ji,side).forEach(tv=>drills.push({d:tv*Lfull,r:hr})); }catch(_){}
-      (c.pen.welds||[]).forEach(wd=>{ if(wd.base&&wd.base.on===('j'+ji)&&(wd.base.side||'a')===side)drills.push({d:(cxRefT(wd.base)/100)*Lfull,r:dwr}); });
-      c.pen.joints.forEach(j2=>[j2.a,j2.b].forEach(rf=>{ if(rf&&rf.on===('j'+ji)&&(rf.side||'a')===side&&rf.t!=null)drills.push({d:rf.t*Lfull,r:hr}); }));
-      if(c.pen.penRef&&c.pen.penRef.on===('j'+ji)&&(c.pen.penRef.side||'a')===side&&c.pen.penRef.t!=null)drills.push({d:c.pen.penRef.t*Lfull,r:hr});
-      const seen=[]; const uniq=drills.filter(o=>{ if(seen.some(x=>Math.abs(x-o.d)<1.5))return false; seen.push(o.d); return true; });
+         length, exactly as the 2D schematic draws it. Any inline branch welded to either end is
+         merged in, so the piece is one arm rather than two glued nose to nose. */
+      const AD=cxArmDrills(c,ji,side); if(!AD)return;
+      const extMM=AD.wood.base, Lfull=AD.total, uniq=AD.holes;
       cxArmSplice(Lfull,aMaxS,28).forEach(pc=>{
         const ovS=(pc.idx===0)?barW*0.85:0, ovE=(pc.idx===pc.n-1)?barW*0.85:0;   /* wood past the holes */
         const loops=[flipY(rodLoop(pc.len+ovS+ovE,barW).map(p=>[p[0]-ovS,p[1]]))];
@@ -5246,11 +5337,13 @@ function sceneFromComplex(){
         if(S.cx.armDouble)parts.push({tris:armMesh,col:'#8a6a3c',cutOnly:1,label:(cxHasPen()?'pen arm':'linkage arm')+' (2nd ply)'}); }); }); });
     c.pen.joints.forEach((j,ji)=>{ const isLast=ji===c.pen.joints.length-1;
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.6,2.2),14))],0,0,t*1.2,yLink-t*0.3),col:'#5a4632',hw:1,pose:s=>{ const st=cxPenAt(c,s), J=st?st.jointPos[ji]:null; if(!J)return {x:OFF,z:OFF,rot:0}; return {x:J[0]-ox,z:J[1]-oy,rot:0}; }}); });
+    const MGW=cxArmMerges(c.pen).merged;
     (c.pen.welds||[]).forEach((w,wi)=>{ const L0=w.len||100, bw2=barW*0.9, ov2=bw2*0.85;
+      if(!MGW[wi]){
       const bl=[flipY(rodLoop(L0+2*ov2,bw2).map(p=>[p[0]-ov2,p[1]])), flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12)), flipY(circleLoop(Math.max(cxRodBore()/2,1),16).map(p=>[p[0]+L0,p[1]]))];
       const brMesh=plateMesh(bl,0,0,t*0.5,yLink-0.6);
       if(S.cx.armDouble)parts.push({tris:brMesh,col:'#a3763a',cutOnly:1,label:(cxHasPen()?'pen mount arm':'branch arm')+' (2nd ply)'});
-      parts.push({tris:brMesh,col:'#a3763a',label:cxHasPen()?'pen mount arm':'branch arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const base=cxRefPos(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds), d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(!base||d==null)return {x:OFF,z:OFF,rot:0}; return {x:base[0]-ox,z:base[1]-oy,rot:d+(w.ang==null?90:w.ang)*Math.PI/180}; }});
+      parts.push({tris:brMesh,col:'#a3763a',label:cxHasPen()?'pen mount arm':'branch arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const base=cxRefPos(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds), d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(!base||d==null)return {x:OFF,z:OFF,rot:0}; return {x:base[0]-ox,z:base[1]-oy,rot:d+(w.ang==null?90:w.ang)*Math.PI/180}; }}); }
       parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.7,2.4),14))],0,0,t*1.3,yLink-t*0.4),col:'#c79a63',hw:1,pose:s=>{ const st=cxPenAt(c,s), T=st?st.weldPos[wi]:null; if(!T)return {x:OFF,z:OFF,rot:0}; return {x:T[0]-ox,z:T[1]-oy,rot:0}; }}); });
     if(cxHasPen())parts.push({tris:plateMesh([flipY(circleLoop(Math.max(t*0.8,2.9),16))],0,0,t*1.5,yLink-t*0.5),col:'#bf3a2b',hw:1,pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot:0}; }});
     { const B=cxPaperBoard(c);
@@ -5693,7 +5786,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-20`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-22`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -5707,22 +5800,24 @@ function exportComplex(){
     parts.push(`<path d="${pathFrom(go.poly,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
     if(cxGearOnMotor(g,c)){ const mb=offsetPolygon(motorBoreLoop(),-kh); parts.push(`<path d="${pathFrom(mb,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); }
     else parts.push(`<path d="${svgCircle(gBoreR,cx,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-    if(c.pen)c.pen.pins.forEach((pn,pi)=>{ if(pn.g===g.id && pn.r>cxGearBore()/2+cxBaseHole()/2+1){ parts.push(`<path d="${svgCircle(pinR,cx+pn.r,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(cx+pn.r,cy-pinR-2.5,`pin ${pi+1}`,SCORE,2.4)); } });
+    cxPinHolesFor(c,g).forEach(ph=>{ const r=Math.max(ph.d/2-kh,0.3);
+      parts.push(`<path d="${svgCircle(r,cx+ph.r,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+      parts.push(txt(cx+ph.r,cy-r-2.5,ph.host?`pin ${ph.pi+1}`:`pin ${ph.pi+1} clears`,SCORE,2.4)); });
     if(!!S.engraveLabels)parts.push(txt(cx,cy,`#${g.id}·${g.N}T·L${g.layer}`,SCORE,m*0.8));
     x=cx+go.ra+gap; rowH=Math.max(rowH,2*go.ra+gap*2); });
-  if(c.pen){ const armLens=[]; c.pen.joints.forEach(j=>{armLens.push(j.la,j.lb);}); const w=boreDia()+8, aMax=cxArmMax();
-    armLens.forEach((al,k)=>{ const jointIdx=Math.floor(k/2), side=(k%2===0)?'a':'b';
-      const locs=(c.pen.welds||[]).map((wd,wi)=>({wd,wi})).filter(o=>o.wd.base&&o.wd.base.on===('j'+jointIdx)&&o.wd.base.side===side).map(o=>({t:cxRefT(o.wd.base)/100, wi:o.wi}));
+  if(c.pen){ const w=cxLinkW()+8, aMax=cxArmMax(), MGW=cxArmMerges(c.pen).merged;
+    cxArmList(c).forEach((A,k)=>{ const al=A.D.total;
       cxArmSplice(al,aMax,28).forEach(pc=>{ const cy=w/2+gap;
       parts.push(`<path d="${pathFrom(rodLoop(pc.len,w),x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-      if(pc.pivS)parts.push(`<path d="${svgCircle(rBoreR,x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-      if(pc.pivE)parts.push(`<path d="${svgCircle(rBoreR,x+pc.len,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+      A.D.holes.forEach(h=>{ const local=h.d-(pc.start||0); if(local<-0.01||local>pc.len+0.01)return;
+        parts.push(`<path d="${svgCircle(Math.max(h.r-kh,0.3),x+local,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+        if(/^glue/.test(h.k))parts.push(txt(x+local,cy+w/2-2.4,h.k,SCORE,2.2)); });
       pc.aligns.forEach(d=>parts.push(`<path d="${svgCircle(boreR,x+d,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
-      locs.forEach(lc=>{ const local=lc.t*al-(pc.start||0); if(local>=0&&local<=pc.len){ parts.push(`<path d="${svgCircle(locR,x+local,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); parts.push(txt(x+local,cy+w/2-2.4,`glue W${lc.wi+1}`,SCORE,2.2)); } });
-      parts.push(txt(x+pc.len/2,cy,pc.n>1?`arm ${k+1} · pc ${pc.idx+1}/${pc.n} · splice-glue`:`arm ${k+1} · ${fmt(al)}`,SCORE,3));
+      const mg=A.D.wood.fwd||A.D.wood.back;
+      parts.push(txt(x+pc.len/2,cy,pc.n>1?`arm ${k+1} · pc ${pc.idx+1}/${pc.n} · splice-glue`:`arm ${k+1} · ${fmt(al)}${mg?' · branch merged in':''}`,SCORE,3));
       x=x+pc.len+gap+w; rowH=Math.max(rowH,w+gap*2); }); }); }
-  if(c.pen&&c.pen.welds&&c.pen.welds.length){ const w=boreDia()+8;
-    c.pen.welds.forEach((wd,wi)=>{ const L0=wd.len||100, cy=w/2+gap, isPen=(cxRefKey(c.pen.penRef)==='w'+wi)||(c.pen.penRef&&c.pen.penRef.on==='w'+wi);
+  if(c.pen&&c.pen.welds&&c.pen.welds.length){ const w=cxLinkW()+8, MGW2=cxArmMerges(c.pen).merged;
+    c.pen.welds.forEach((wd,wi)=>{ if(MGW2[wi])return; const L0=wd.len||100, cy=w/2+gap, isPen=(cxRefKey(c.pen.penRef)==='w'+wi)||(c.pen.penRef&&c.pen.penRef.on==='w'+wi);
       parts.push(`<path d="${pathFrom(rodLoop(L0,w),x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
       parts.push(`<path d="${svgCircle(locR,x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
       parts.push(txt(x,cy+w/2-2.4,`glue+pin`,SCORE,2.2));
@@ -5891,6 +5986,31 @@ function cxDriveOrder(c){
   c.gears.filter(g=>g.parent==null||!c.byId[g.parent]).forEach(r=>walk(r,0));
   c.gears.forEach(g=>{ if(!seen[g.id]){ seen[g.id]=1; out.push({g,depth:0,kids:0}); } });
   return out; }
+/* A to-scale plan of what the motor actually punches through the board: the shaft clearance
+   hole, the face screws where they really land (rotation included) and the pitches between
+   them — so the numbers above can be checked against a motor on the bench without hunting
+   for them on the cut sheet. Drawn looking down on the board, same way up as the sheet. */
+function cxMotorFaceSVG(){ const M=cxMotor(); if(!M.on)return '';
+  const scr=cxMotorScrewLocal(), hr=cxMotorBoardHole()/2;
+  let ext=hr+2; scr.forEach(s=>ext=Math.max(ext,Math.hypot(s.x,s.y)+s.d/2+1));
+  const R=ext+10, INK='#23201a', RUST='#bf3a2b', MUT='#6b5330', F=(2*R)/34;
+  const Y=v=>-v;                                            /* board view: +y is up */
+  const dim=(a,b,txt)=>{ const mx=(a.x+b.x)/2, my=(Y(a.y)+Y(b.y))/2;
+    return `<line x1="${a.x.toFixed(2)}" y1="${Y(a.y).toFixed(2)}" x2="${b.x.toFixed(2)}" y2="${Y(b.y).toFixed(2)}" stroke="${MUT}" stroke-width="${(F*0.09).toFixed(2)}"/>`
+      +`<text x="${mx.toFixed(2)}" y="${(my-F*0.5).toFixed(2)}" font-size="${(F*1.05).toFixed(2)}" fill="${MUT}" text-anchor="middle" font-family="'Space Mono',monospace">${txt}</text>`; };
+  const a=cxMotorAng(), ca=Math.cos(a), sa=Math.sin(a), p=[];
+  p.push(`<line x1="${(-R*ca).toFixed(2)}" y1="${(R*sa).toFixed(2)}" x2="${(R*ca).toFixed(2)}" y2="${(-R*sa).toFixed(2)}" stroke="${MUT}" stroke-width="${(F*0.07).toFixed(2)}" stroke-dasharray="${(F*0.5).toFixed(2)} ${(F*0.5).toFixed(2)}"/>`);
+  p.push(`<circle cx="0" cy="0" r="${hr.toFixed(2)}" fill="none" stroke="${RUST}" stroke-width="${(F*0.11).toFixed(2)}"/>`);
+  p.push(`<line x1="${(-hr*0.45).toFixed(2)}" y1="0" x2="${(hr*0.45).toFixed(2)}" y2="0" stroke="${RUST}" stroke-width="${(F*0.07).toFixed(2)}"/>`);
+  p.push(`<line x1="0" y1="${(-hr*0.45).toFixed(2)}" x2="0" y2="${(hr*0.45).toFixed(2)}" stroke="${RUST}" stroke-width="${(F*0.07).toFixed(2)}"/>`);
+  scr.forEach(s=>p.push(`<circle cx="${s.x.toFixed(2)}" cy="${Y(s.y).toFixed(2)}" r="${(s.d/2).toFixed(2)}" fill="none" stroke="${INK}" stroke-width="${(F*0.11).toFixed(2)}"/>`));
+  if(scr.length>=2)p.push(dim(scr[0],scr[1],fmt(M.pitchX||18)));
+  if(scr.length>=3)p.push(dim(scr[0],scr[2],fmt(M.pitchY||17)));
+  p.push(`<text x="0" y="${(hr+F*1.5).toFixed(2)}" font-size="${(F*1.05).toFixed(2)}" fill="${RUST}" text-anchor="middle" font-family="'Space Mono',monospace">\u2300${fmt(2*hr)} shaft</text>`);
+  return `<div class="modia"><svg xmlns="http://www.w3.org/2000/svg" viewBox="${(-R).toFixed(2)} ${(-R).toFixed(2)} ${(2*R).toFixed(2)} ${(2*R).toFixed(2)}">${p.join('')}</svg></div>`
+    +`<div class="hint" style="margin-top:4px">Board holes, actual size relative to each other \u2014 shaft \u2300${fmt(2*hr)}`
+    +(scr.length?`, ${scr.length} face screw${scr.length>1?'s':''} \u2300${fmt(M.faceScrewD||3.2)} at ${fmt(M.pitchX||18)}${scr.length>2?' \u00d7 '+fmt(M.pitchY||17):''} pitch`:', no face screws')
+    +(M.rot?`, turned ${Math.round(M.rot)}\u00b0`:'')+`. Dashed line is the motor body's axis.</div>`; }
 function renderMotorUI(c){ const host=document.getElementById('cxMotorUI'); if(!host)return;
   const M=cxMotor(), num=(id,v,st,mn,mx)=>`<input type="number" class="pnum" id="${id}" value="${v}" step="${st}" min="${mn}" max="${mx}" style="width:64px">`;
   const opts=c.gears.map(g=>`<option value="${g.id}"${M.gear===g.id?' selected':''}>#${g.id} · ${g.N}T · layer ${g.layer}</option>`).join('');
@@ -5915,6 +6035,7 @@ function renderMotorUI(c){ const host=document.getElementById('cxMotorUI'); if(!
       ${M.faceN>2?`<span class="clab">pitch ↕</span>${num('cxMotorFacePY',M.pitchY||17,0.5,6,60)}`:''}
       <span class="clab">offset ↕</span>${num('cxMotorFaceDy',M.faceDy||0,0.5,-40,40)}`:''}
       <span class="clab">rotate motor</span>${num('cxMotorRot',M.rot||0,15,0,345)}°</div>
+    ${cxMotorFaceSVG()}
     ${M.faceN>0?`<div class="hint">Screw clearance holes are cut in the board around the shaft — the motor face bolts straight to the underside. <b>Measure your motor's hole pattern</b> and set the pitches; the defaults are only a guess.</div>`:''}
     <div class="cstage-top" style="margin-top:6px"><label class="pchk" data-on="${M.cradle?1:0}"><input type="checkbox" id="cxMotorCradle" ${M.cradle?'checked':''}>cradle for a screwless motor</label>
       <span class="clab">body ⌀/W</span>${num('cxMotorBodyW',M.bodyW||28,1,15,60)}<span class="clab">body length</span>${num('cxMotorBodyL',M.bodyL||62,1,25,140)}<span class="clab">hang ↓</span>${num('cxFeetDrop',cxFeet().motorDrop||50,1,0,150)}${M.cradle?`<span class="clab">offset along</span>${num('cxMotorBodyOff',M.bodyOff||30,1,0,120)}`:''}</div>
@@ -6049,7 +6170,12 @@ function renderComplexUI(){
         const val=cv?(pn.along||0):pn.r;
         const lab=cv?'along the slide':'dist from centre';
         const lo=cv?-400:2;
-        return `<div class="cstage" style="flex-direction:column;align-items:stretch;gap:6px"><div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px">pin ${i+1}</b><select class="selin cxPinG" data-i="${i}" style="width:auto;flex:1">${hostOpts(pn)}</select></div><div class="cstage-top"><span class="clab">${lab}</span><span class="cstep"><button data-cxpinr="${i}" data-d="-2">−</button><input type="number" value="${val}" class="cxPinR" data-i="${i}" min="${cv?lo:0}" max="220" step="2"><button data-cxpinr="${i}" data-d="2">＋</button></span></div>${(!cv&&pn.r===0)?`<div class="hint"><b>0</b> puts the arm's pivot on the gear's own shaft, so this pin does not move. Two of those give the linkage a fixed home point — which is what a pen driven by converters needs.</div>`:''}${cv?`<div class="hint">This pin rides the converter's output block instead of orbiting a gear, so the linkage gets a straight reciprocation rather than a circle. <b>0</b> puts it on the block's centre; move it along to reach either end.</div>`:''}</div>`; }).join('');
+        return `<div class="cstage" style="flex-direction:column;align-items:stretch;gap:6px"><div class="cstage-top"><b style="font-family:'Space Mono',monospace;font-size:12px">pin ${i+1}</b><select class="selin cxPinG" data-i="${i}" style="width:auto;flex:1">${hostOpts(pn)}</select></div><div class="cstage-top"><span class="clab">${lab}</span><span class="cstep"><button data-cxpinr="${i}" data-d="-2">−</button><input type="number" value="${val}" class="cxPinR" data-i="${i}" min="${cv?lo:0}" max="220" step="2"><button data-cxpinr="${i}" data-d="2">＋</button></span></div>${(()=>{ if(cv||!(pn.r>0))return ''; const ab=cxPinAbove(c,pn); if(!ab.length)return '';
+          const ids=ab.map(o=>'#'+o.id).join(', '), thru=cxPinThru(pn);
+          return `<div class="cstage-top"><label class="pchk" data-on="${thru?1:0}"><input type="checkbox" class="cxPinThru" data-i="${i}" ${thru?'checked':''}>clear through ${ids} above</label></div>`
+            +`<div class="hint"${thru?'':' style="color:#bf3a2b"'}>${thru
+              ? `${ids} ${ab.length>1?'sit':'sits'} on the same shaft, above this pin — ${ab.length>1?'they get':'it gets'} a ⌀${fmt(cxPinClearHole())} clearance hole at the same radius so the pin can stand through. They turn together, so it lines up on every turn.`
+              : `⚠ ${ids} ${ab.length>1?'sit':'sits'} on this shaft above the pin with no hole for it. The pin cannot reach the arm and the stack will not go together — tick the box, or move the pin to the top gear.`}</div>`; })()}${(!cv&&pn.r===0)?`<div class="hint"><b>0</b> puts the arm's pivot on the gear's own shaft, so this pin does not move. Two of those give the linkage a fixed home point — which is what a pen driven by converters needs.</div>`:''}${cv?`<div class="hint">This pin rides the converter's output block instead of orbiting a gear, so the linkage gets a straight reciprocation rather than a circle. <b>0</b> puts it on the block's centre; move it along to reach either end.</div>`:''}</div>`; }).join('');
       const penOn=k=>cxRefKey(P.penRef)===('j'+k)||(P.penRef&&P.penRef.on===('j'+k));
       /* One box per ARM, not per joint. A joint is two arms meeting, and cramming both onto two
          dense lines made it very hard to see which length and which anchor belonged to which.
@@ -8018,6 +8144,7 @@ document.getElementById('cxPen').addEventListener('change',e=>{const t=e.target;
     if(v[0]==='c'){ const was=cxPinIsConv(pn)?(pn.along||0):0; delete pn.g; delete pn.r; pn.cv=v.slice(1); pn.along=was; }
     else { const wasR=cxPinIsConv(pn)?0:pn.r; delete pn.cv; delete pn.along; pn.g=+v.slice(1); pn.r=Math.max(2,wasR||14); }
     renderComplexUI();everything();}
+  else if(t.classList.contains('cxPinThru')){ const pn=P.pins[+t.dataset.i]; if(pn)pn.thru=t.checked; renderComplexUI(); everything(); return; }
   else if(t.classList.contains('cxPinR')){ const pn=P.pins[+t.dataset.i], n=Math.round(+t.value);
     if(cxPinIsConv(pn))pn.along=isFinite(n)?n:(pn.along||0);
     else pn.r=isFinite(n)?Math.max(0,n):pn.r;
