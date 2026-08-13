@@ -472,7 +472,7 @@
 <h4 class="mn-h2">Machine scale</h4>
 <p class="mn-p">The scale buttons resize the whole mechanism — module, arm lengths, pin radii — by an exact factor, relative to the original. Because clearance and hole fits are proportional or absolute as appropriate, a scaled machine still assembles correctly.</p>
 <h4 class="mn-h2">Pens and arms</h4>
-<ul class="mn-ul"><li>A <b>pen</b> can ride on a gear pin, a linkage joint, or part-way along an arm.</li><li><b>Arms</b> pivot on joints. A <b>branch</b> is glued rigidly to an arm — it is not a pivot — and carries the pen at its tip.</li><li>The <b>pen collar</b> is a teardrop piece: the pen drops through the hole at the round end, and the narrow end bolts to the branch tip.</li><li>The pen hole can be round or a 3-8 sided polygon, measured across the flats — so a hex hole grips a hex pencil.</li></ul>
+<ul class="mn-ul"><li>A <b>pen</b> can ride on a gear pin, a linkage joint, or part-way along an arm.</li><li><b>Arms</b> pivot on joints. A <b>branch</b> is glued rigidly to an arm — it is not a pivot — and carries the pen at its tip.</li><li>The arm that carries the pen has a <b>widened pad</b> at its tip with the pen hole through it — no separate collar to bolt on.</li><li>The pen hole can be round or a 3-8 sided polygon, measured across the flats — so a hex hole grips a hex pencil.</li></ul>
 <h4 class="mn-h2">The X-Y pen carriage</h4>
 <p class="mn-p">Set <b>How the pen is carried</b> to <b>X-Y carriage</b> and two converters take over. Each one's output block grows a <b>slotted arm</b> lying across its own direction of travel, and a single pin dropped through both slots is the pen. Slot A fixes where the pen sits along A's axis, slot B along B's, and the crossing point is the pen.</p>
 <p class="mn-p">Neither arm carries the other — both are driven straight off their own yoke, so there is nothing cantilevered and nothing stacked. The slots are cut long enough to cover the full stroke, and both arms appear on the cut sheets as <b>pen slide X</b> and <b>pen slide Y</b>. No linkage arms are needed at all in this mode.</p>
@@ -556,7 +556,7 @@
 <p class="mn-p"><b>Red</b> lines are cuts. <b>Blue</b> lines are engraving or scoring. Map these to your laser's layers as cut and raster/score.</p>
 <div class="mn-note">If a piece is larger than your sheet, a red warning appears above the downloads. Choose a bigger sheet size or split the baseplate — otherwise that piece will be cut short.</div>
 <h3 class="mn-h1">10 · Building it</h3>
-<ol class="mn-ol"><li>Weed and de-soot the parts. Wiping cut edges with methylated spirits removes char, which is a surprisingly large source of friction.</li><li>Press bearings into the gears. They should need firm thumb pressure, not a hammer.</li><li>Fit shafts and standoffs to the baseplate. Dowels glue in; bolts pass through.</li><li>Stack the layers in order, using the generated spacers to set the gaps.</li><li>Check each gear turns freely on its own before adding the next.</li><li>Fit arms and linkages. Branches are glued rigidly; joints must stay free.</li><li>Bolt the pen collar to the branch tip and drop the pen through.</li><li>Turn the crank slowly by hand for a full cycle before running it properly.</li></ol>
+<ol class="mn-ol"><li>Weed and de-soot the parts. Wiping cut edges with methylated spirits removes char, which is a surprisingly large source of friction.</li><li>Press bearings into the gears. They should need firm thumb pressure, not a hammer.</li><li>Fit shafts and standoffs to the baseplate. Dowels glue in; bolts pass through.</li><li>Stack the layers in order, using the generated spacers to set the gaps.</li><li>Check each gear turns freely on its own before adding the next.</li><li>Fit arms and linkages. Branches are glued rigidly; joints must stay free.</li><li>Drop the pen through the widened pad at the tip of the pen arm.</li><li>Turn the crank slowly by hand for a full cycle before running it properly.</li></ol>
 <div class="mn-note">A candle or paste wax rubbed on tooth flanks makes a real difference to how freely wooden gears run.</div>
 <h3 class="mn-h1">11 · Troubleshooting</h3>
 <table class="mn-tbl"><thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead><tbody><tr><td>Gears bind or lock up</td><td>Not enough mesh clearance</td><td>Raise Gear mesh clearance to 0.10-0.12; de-soot and wax the teeth</td></tr><tr><td>Gears rattle, drawing looks fuzzy</td><td>Too much clearance</td><td>Lower to 0.05-0.06 and re-cut</td></tr><tr><td>Gear wobbles on its bolt</td><td>No bearing, or hole too large</td><td>Switch Bearings to 'In gears', or reduce the bearing hole</td></tr><tr><td>Bearing falls out</td><td>Hole cut too big</td><td>Reduce the bearing hole diameter by 0.1mm and re-cut</td></tr><tr><td>Bearing won't go in</td><td>Hole too small</td><td>Increase by 0.1mm; do not change kerf to fix this</td></tr><tr><td>Parts come out undersize</td><td>Kerf set too low</td><td>Measure a test square and correct the kerf</td></tr><tr><td>A piece is cut short at the edge</td><td>Piece exceeds the sheet</td><td>Bigger sheet size, or split the baseplate</td></tr><tr><td>Pen slips in the collar</td><td>Pen hole too large</td><td>Reduce the pen hole size, or match the shape to the barrel</td></tr><tr><td>Drawing never repeats</td><td>Open figure</td><td>Expected — set run for N turns to control the density</td></tr><tr><td>Screen looks unchanged after an edit</td><td>Cached page</td><td>Hard reload, adding ?v=2 to the address</td></tr></tbody></table>
@@ -3623,6 +3623,28 @@ function cxAddJoint(){ if(!S.cx.pen)return; const P=S.cx.pen, nodes=[...P.pins.m
 function cxAddArm(){ const P=S.cx.pen; if(!P)return; P.welds=P.welds||[]; // a single rigid branch off the middle of the newest arm
   const k=P.joints.length-1; if(k<0)return; const L=(P.joints[k]&&P.joints[k].la)||120;
   P.welds.push({base:{on:'j'+k,side:'a',t:0.5}, len:Math.max(24,Math.round(L*0.55)), ang:90}); }
+/* A pen cannot sit ON a joint. Two arms pivot against each other there and the joint centre is
+   the only point they share, so a pen hole at that point means the pencil is the pivot pin —
+   and then nothing holds the two arms together, as building one makes immediately obvious.
+   Instead the arm carries on a little past the joint and the pen goes in the end of that. It is
+   a normal branch welded at the joint end, running straight on, so it merges into its host and
+   comes off the sheet as one longer arm. The pen is no longer at the joint, so the drawing does
+   change — length and angle are yours to tune once it is there. */
+function cxPenStubLen(){ return Math.max(22, Math.ceil(cxPenBossR()+cxRodBore()/2+4)); }
+function cxNodeNeedsStub(ref){ if(typeof ref!=='string')return null;
+  if(typeof cxPenIsCarriage==='function'&&cxPenIsCarriage())return null;  /* pen rides the
+     carriage there, not the linkage — the joint reference is inert and needs no stub */
+  return (ref[0]==='j'||ref[0]==='p')?ref:null; }
+function cxAddPenStub(key){ const P=S.cx.pen; if(!P)return null; P.welds=P.welds||[];
+  key=key||cxNodeNeedsStub(P.penRef); if(!key)return null;
+  if(key[0]==='j'){ const ji=+key.slice(1); if(!P.joints[ji])return null;
+    P.welds.push({base:{on:'j'+ji,side:'a',t:1},len:cxPenStubLen(),ang:0}); }
+  else { let f=null;                                   /* a gear pin has the same problem */
+    (P.joints||[]).forEach((j,ji)=>['a','b'].forEach(sd=>{ const r=(sd==='a')?j.a:j.b;
+      if(!f&&typeof r==='string'&&r===key)f={ji,sd}; }));
+    if(!f)return null;
+    P.welds.push({base:{on:'j'+f.ji,side:f.sd,t:0},len:cxPenStubLen(),ang:180}); }
+  const wi=P.welds.length-1; P.penRef='w'+wi; return wi; }
 function cxRemoveWeld(){ if(S.cx.pen&&S.cx.pen.welds&&S.cx.pen.welds.length)S.cx.pen.welds.pop(); }
 function cxDelWeld(i){ if(S.cx.pen&&S.cx.pen.welds)S.cx.pen.welds.splice(i,1); }
 function cxRemovePin(){ if(S.cx.pen&&S.cx.pen.pins.length>2)S.cx.pen.pins.pop(); }
@@ -4711,7 +4733,11 @@ function cxPenHoleLoop(cx,cy,afAdj){ const n=cxPenSides();
   const R=(Math.max(afAdj,1.5)/2)/Math.cos(Math.PI/n), off=(n%2===0)?0.5:0, pts=[];
   for(let k=0;k<n;k++){ const a=-Math.PI/2+(k+off)*(2*Math.PI/n); pts.push([cx+R*Math.cos(a),cy+R*Math.sin(a)]); }
   return pts; }
-function cxPenHolder(){ const penR=Math.max((S.cx.penDia||10)/2,2.5);
+/* The pen used to sit in a separate teardrop collar bolted to the arm's tip. That was a second
+   part, a second hole and a second thing to explain, for no gain — the arm can simply carry the
+   pen hole itself, with a round pad of wood widened around it so there is meat to grip. */
+function cxPenBossR(){ return cxPenHoleOR()+Math.max(cxRodBore()*0.9,4.5); }
+function cxPenHolderUnused(){ const penR=Math.max((S.cx.penDia||10)/2,2.5);
   const penHoleR=Math.max(cxPenHoleOR(),2);
   /* the narrow end pins to the branch tip, so its hole is whatever the arm joints use — a
      bolt on a bolted build, a dowel on an all-wood one */
@@ -4732,16 +4758,12 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
     const nMg=AL.filter(A=>A.D.wood.fwd||A.D.wood.back).length, nBent=AL.filter(A=>A.D.bent).length;
     cut.push([`linkage arm`,pcs*(S.cx.armDouble?2:1),`${lens.map(l=>fmt(l)).join(', ')} long · ${cxLinkW()}mm wide · ${t}mm${S.cx.armDouble?' · ×2 — glue pairs face-to-face for '+(2*t)+'mm arms':''}${nMg?` · ${nMg} of them run straight through a branch arm — cut as ONE piece with the pivot drilled part-way along, no glue joint`:''}${nBent?` · ${nBent} come out bent, with a branch arm cut in one with them — nothing to glue, the angle is already set`:''}${pcs>lens.length?' · long ones spliced to fit bed (overlap-glue + pins)':''}`]); }
   { const MGB=c.pen?cxArmMerges(c.pen).merged:{}, wl=(c.pen&&c.pen.welds||[]).map((w,wi)=>({w,wi})).filter(o=>!MGB[o.wi]);
-    if(wl.length)cut.push([`branch arm`,wl.length*(S.cx.armDouble?2:1),`${wl.map(o=>fmt(o.w.len||100)).join(', ')} long${S.cx.armDouble?' · ×2 for double thickness':''} · GLUE rigidly onto host arm (fixed, not a pivot) — locating pin at the glue end, pen fits the tip hole · ${t}mm`]); }
+    if(wl.length)cut.push([`branch arm`,wl.length*(S.cx.armDouble?2:1),`${wl.map(o=>fmt(o.w.len||100)).join(', ')} long${S.cx.armDouble?' · ×2 for double thickness':''} · GLUE rigidly onto host arm (fixed, not a pivot) — locating pin at the glue end${cxHasPen()?`, and the one carrying the pen widens to ⌀${fmt(2*cxPenBossR())} around its ${cxPenSides()<3?'⌀':CX_SIDE_NAME[cxPenSides()]+' '}${fmt(cxPenAF())} pen hole`:''} · ${t}mm`]); }
   { const B=cxPaperBoard(c);
     if(B){ cut.push([`paper backing board`,1,`${B.shape==='circle'?'⌀'+fmt(B.dia):fmt(B.w)+' × '+fmt(B.h)} — the paper pins to this · ${t}mm`]);
       cut.push([`paper spacer ring`,1,`⌀${fmt(B.ringOD)} outside, ${fmt(B.strip)} wide strip — sized to the sheet, lifts the board off gear #${B.gear!=null?B.gear:'—'} · ${t}mm`]);
       if(B.screws.length)buy.push([`small screws`,B.screws.length,`~⌀${fmt(B.screwD)} × ${fmt(2*t+8)}mm — one per hole, down through board + ring into ${B.gear!=null?`gear #${B.gear}`:'the board'}. All ${B.gear!=null?'three':'both'} pieces carry the same ⌀${fmt(2*B.screwR)} hole circle, so the stack only goes together one way`]); } }
-  if(c.pen&&cxHasPen()&&(c.pen.joints.length||c.pen.welds&&c.pen.welds.length)){ const H=cxPenHolder();
-    cut.push([`pen collar`,1,`teardrop — pen/pencil drops through the ${cxPenSides()<3?'⌀'+fmt(cxPenAF()):CX_SIDE_NAME[cxPenSides()]+' '+fmt(cxPenAF())+' (across flats)'} hole, narrow end bolts to the branch tip · ${t}mm`]);
-    buy.push([cxBoltsOff()?`collar pin`:`collar bolt`,1,cxBoltsOff()
-      ? `⌀${fmt(S.dowelD||6)} dowel — drops through the collar's narrow end and the tip hole of the branch arm, holding the collar flat against it`
-      : `${S.bolt} bolt — through the collar's narrow end into the branch arm's tip hole (+ nut)`]); }
+  /* no separate collar any more — the pen drops straight through a widened pad on the arm */
   const cv={}; S.cx.converters.forEach(v=>{ if(c.byId[v.gear])cv[v.type]=(cv[v.type]||0)+1; });
   if(cv.crank){ cut.push([`crank arm`,cv.crank,`${t}mm`],[`con-rod`,cv.crank,`${cxLinkW()}mm wide · ${t}mm`],[`slider block`,cv.crank,`${t}mm`],[`crank guide rail`,cv.crank*2,`bridges over the gear · post-hole each end · ${t}mm`]); }
   if(cv.cam){ cut.push([`cam disc`,cv.cam,`${t}mm`],[`cam follower`,cv.cam,`${t}mm`],[`cam guide rail`,cv.cam*2,`bridges over the gear · post-hole each end · ${t}mm`]); }
@@ -4821,14 +4843,18 @@ function cxArmBedMax(){ const m=cxArmMax(); return (m>1e8)?m:Math.max(60,m-2*cxL
    two bar loops, because even-odd fill would punch the overlap out as a hole and the corner
    would cut away. One closed outline comes back, ready to be drilled. */
 var CX_BAR_MEMO={}, CX_BAR_N=0;
-function cxBarUnionLoop(segs,w,res){ if(!segs||!segs.length)return [];
+function cxBarUnionLoop(segs,w,res,discs){ if(!segs||!segs.length)return [];
+  discs=discs||[];
   const R=Math.max(w/2,0.5); res=res||Math.max(0.3,Math.min(0.6,R/8));
-  const key=w.toFixed(2)+'|'+res.toFixed(2)+'|'+segs.map(s=>s.map(v=>v.toFixed(2)).join(',')).join(';');
+  const key=w.toFixed(2)+'|'+res.toFixed(2)+'|'+segs.map(s=>s.map(v=>v.toFixed(2)).join(',')).join(';')
+    +'|'+discs.map(d=>[d.x,d.y,d.r].map(v=>v.toFixed(2)).join(',')).join(';');
   if(CX_BAR_MEMO[key])return CX_BAR_MEMO[key];
   let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9;
   segs.forEach(s=>{ for(const q of [[s[0],s[1]],[s[2],s[3]]]){
     mnx=Math.min(mnx,q[0]); mxx=Math.max(mxx,q[0]); mny=Math.min(mny,q[1]); mxy=Math.max(mxy,q[1]); } });
-  const pad=R+2*res; mnx-=pad; mny-=pad; mxx+=pad; mxy+=pad;
+  let extra=0; discs.forEach(d=>{ extra=Math.max(extra,d.r-R);
+    mnx=Math.min(mnx,d.x); mxx=Math.max(mxx,d.x); mny=Math.min(mny,d.y); mxy=Math.max(mxy,d.y); });
+  const pad=R+extra+2*res; mnx-=pad; mny-=pad; mxx+=pad; mxy+=pad;
   const nx=Math.max(2,Math.ceil((mxx-mnx)/res)), ny=Math.max(2,Math.ceil((mxy-mny)/res));
   if(nx*ny>900000)return [];                                  /* refuse to grind on silly sizes */
   const dseg=(px,py,s)=>{ const ax=s[0],ay=s[1],bx=s[2],by=s[3], vx=bx-ax, vy=by-ay;
@@ -4838,7 +4864,10 @@ function cxBarUnionLoop(segs,w,res){ if(!segs||!segs.length)return [];
   for(let j=0;j<=ny;j++){ const y=mny+j*res;
     for(let i=0;i<=nx;i++){ const x=mnx+i*res; let d=1e9;
       for(let k=0;k<segs.length;k++){ const v=dseg(x,y,segs[k]); if(v<d)d=v; }
-      F[j*(nx+1)+i]=R-d; } }                                  /* positive inside the wood */
+      let f=R-d;
+      for(let k=0;k<discs.length;k++){ const dd=discs[k];
+        const v=dd.r-Math.hypot(x-dd.x,y-dd.y); if(v>f)f=v; }
+      F[j*(nx+1)+i]=f; } }                                    /* positive inside the wood */
   const at=(i,j)=>F[j*(nx+1)+i], px=i=>mnx+i*res, py=j=>mny+j*res;
   const ip=(xa,ya,va,xb,yb,vb)=>{ const t=va/(va-vb); return [xa+(xb-xa)*t, ya+(yb-ya)*t]; };
   const E={}, key2=q=>Math.round(q[0]*1000)+'_'+Math.round(q[1]*1000);
@@ -4944,6 +4973,7 @@ function cxArmWood(ji,side,P){ P=P||S.cx.pen||{}; const j=(P.joints||[])[ji]; if
 /* Every hole in that arm, in one place, so the 3D, the nested cut sheet and the reference
    sheet cannot drift apart. Distances run from the start of the piece. */
 function cxArmDrills(c,ji,side){ const P=(c&&c.pen)||S.cx.pen||{}, W=cxArmWood(ji,side,P); if(!W)return null;
+  const j=(P.joints||[])[ji]; if(!j)return null;
   const hr=Math.max(cxRodBore()/2,1), dwr=Math.max(cxDowelHole()/2,0.8), pinR=Math.max(cxPinBore()/2,1);
   const MG=cxArmMerges(P), sh=W.shift, Lfull=W.ext+W.L, sd=r=>((r&&r.side==='b')?'b':'a');
   const mg0=MG.map['j'+ji+side]||{}, mg=mg0;
@@ -4952,12 +4982,14 @@ function cxArmDrills(c,ji,side){ const P=(c&&c.pen)||S.cx.pen||{}, W=cxArmWood(j
   (P.welds||[]).forEach((wd,wi)=>{ if(MG.merged[wi])return;
     if(wd.base&&wd.base.on===('j'+ji)&&sd(wd.base)===side)H.push({d:sh+(cxRefT(wd.base)/100)*Lfull,r:dwr,k:'glue W'+(wi+1)}); });
   (P.joints||[]).forEach(j2=>[j2.a,j2.b].forEach(rf=>{ if(rf&&rf.on===('j'+ji)&&sd(rf)===side&&rf.t!=null)H.push({d:sh+rf.t*Lfull,r:hr,k:'pivot'}); }));
-  if(P.penRef&&P.penRef.on===('j'+ji)&&sd(P.penRef)===side&&P.penRef.t!=null)H.push({d:sh+P.penRef.t*Lfull,r:hr,k:'pen'});
+  if(P.penRef&&P.penRef.on===('j'+ji)&&sd(P.penRef)===side&&P.penRef.t!=null)H.push({d:sh+P.penRef.t*Lfull,r:pr,k:'pen'});
   /* the tip of a merged branch is where the pen collar pins on, so say so */
   const refW=(ref,wi)=>(typeof ref==='string')?(ref==='w'+wi):!!(ref&&ref.on==='w'+wi);
+  const pr=cxPenHoleOR();
   const tipK=wi=>refW(P.penRef,wi)?'pen':'tip';
-  if(W.fwd)H.push({d:W.total,r:hr,k:tipK(mg0.fwd?mg0.fwd.wi:-1)});
-  if(W.back)H.push({d:0,r:hr,k:tipK(mg0.back?mg0.back.wi:-1)});
+  const tipR=k2=>k2==='pen'?pr:hr;
+  if(W.fwd){ const k2=tipK(mg0.fwd?mg0.fwd.wi:-1); H.push({d:W.total,r:tipR(k2),k:k2}); }
+  if(W.back){ const k2=tipK(mg0.back?mg0.back.wi:-1); H.push({d:0,r:tipR(k2),k:k2}); }
   /* Once a branch is merged in, its wood belongs to this arm — so anything anchored part-way
      along that branch has to be drilled here instead, or the hole goes missing altogether. */
   const mapT=(wi,tv)=>{ if(mg.fwd&&mg.fwd.wi===wi)return W.joint+tv*mg.fwd.len;
@@ -4966,14 +4998,22 @@ function cxArmDrills(c,ji,side){ const P=(c&&c.pen)||S.cx.pen||{}, W=cxArmWood(j
   (P.welds||[]).forEach((wd,wi)=>{ if(MG.merged[wi])return; const d=onW(wd.base);
     if(d!=null)H.push({d,r:dwr,k:'glue W'+(wi+1)}); });
   (P.joints||[]).forEach(j2=>[j2.a,j2.b].forEach(rf=>{ const d=onW(rf); if(d!=null)H.push({d,r:hr,k:'pivot'}); }));
-  { const d=onW(P.penRef); if(d!=null)H.push({d,r:hr,k:'pen'}); }
+  { const d=onW(P.penRef); if(d!=null)H.push({d,r:pr,k:'pen'}); }
   /* a bent branch brings its own tip hole, and anything hung part-way along it */
-  W.bent.forEach(b=>{ H.push({d:b.tip[0],x:b.tip[0],y:b.tip[1],r:hr,k:tipK(b.wi)});
+  W.bent.forEach(b=>{ const bk=tipK(b.wi); H.push({d:b.tip[0],x:b.tip[0],y:b.tip[1],r:tipR(bk),k:bk});
     const along=(tv)=>[b.at+tv*b.len*Math.cos(b.ang), tv*b.len*Math.sin(b.ang)];
     (P.welds||[]).forEach((wd,wi)=>{ if(MG.merged[wi])return;
       if(wd.base&&wd.base.on==='w'+b.wi&&wd.base.t!=null){ const q=along(wd.base.t); H.push({d:q[0],x:q[0],y:q[1],r:dwr,k:'glue W'+(wi+1)}); } });
     (P.joints||[]).forEach(j2=>[j2.a,j2.b].forEach(rf=>{ if(rf&&rf.on==='w'+b.wi&&rf.t!=null){ const q=along(rf.t); H.push({d:q[0],x:q[0],y:q[1],r:hr,k:'pivot'}); } }));
-    if(P.penRef&&P.penRef.on==='w'+b.wi&&P.penRef.t!=null){ const q=along(P.penRef.t); H.push({d:q[0],x:q[0],y:q[1],r:hr,k:'pen'}); } });
+    if(P.penRef&&P.penRef.on==='w'+b.wi&&P.penRef.t!=null){ const q=along(P.penRef.t); H.push({d:q[0],x:q[0],y:q[1],r:pr,k:'pen'}); } });
+  /* The pen can also sit on a plain node rather than part-way along an arm: on a joint, where
+     the pencil passes through both arms and is itself the pivot pin, or on a gear pin. Either
+     way that hole becomes pen-sized and gets its pad, on every arm that meets there. */
+  { const pk=(typeof P.penRef==='string')?P.penRef:((P.penRef&&P.penRef.on&&P.penRef.t==null)?P.penRef.on:null);
+    if(pk){ const bref=(side==='b')?j.b:j.a;
+      const bkey=(typeof bref==='string')?bref:((bref&&bref.on&&bref.t==null)?bref.on:null);
+      H.forEach(o=>{ if(o.k==='joint'&&pk===('j'+ji)){ o.k='pen'; o.r=pr; }
+        else if(o.k==='base'&&bkey&&pk===bkey){ o.k='pen'; o.r=pr; } }); } }
   H.forEach(o=>{ if(o.x==null){ o.x=o.d; o.y=0; } });
   const seen=[]; const holes=H.filter(o=>{ if(seen.some(q=>Math.hypot(q[0]-o.x,q[1]-o.y)<1.5))return false; seen.push([o.x,o.y]); return true; });
   /* centreline of the wood: the arm itself, plus any bent branch off it */
@@ -5450,15 +5490,19 @@ function sceneFromComplex(){
          merged in, so the piece is one arm rather than two glued nose to nose. */
       const AD=cxArmDrills(c,ji,side); if(!AD)return;
       const extMM=AD.wood.base, Lfull=AD.total, uniq=AD.holes;
-      const splice=AD.bent?[{start:0,len:Lfull,pivS:true,pivE:true,aligns:[],idx:0,n:1}]:cxArmSplice(Lfull,aMaxS,28);
+      /* a pen node gets a round pad of wood around it, so the pen hole has something to grip */
+      const boss=uniq.filter(o=>o.k==='pen').map(o=>({x:o.x,y:o.y,r:cxPenBossR()}));
+      const trace=AD.bent||boss.length>0;
+      const splice=trace?[{start:0,len:Lfull,pivS:true,pivE:true,aligns:[],idx:0,n:1}]:cxArmSplice(Lfull,aMaxS,28);
       splice.forEach(pc=>{
         const ovS=(pc.idx===0)?barW*0.85:0, ovE=(pc.idx===pc.n-1)?barW*0.85:0;   /* wood past the holes */
-        const outline=AD.bent
-          ? cxBarUnionLoop([[-ovS,0,Lfull+ovE,0]].concat(AD.segs.slice(1)),barW)
+        const outline=trace
+          ? cxBarUnionLoop([[-ovS,0,Lfull+ovE,0]].concat(AD.segs.slice(1)),barW,null,boss)
           : rodLoop(pc.len+ovS+ovE,barW).map(p=>[p[0]-ovS,p[1]]);
+        const holeLoop=o=>(o.k==='pen')?cxPenHoleLoop(o.x,o.y,cxPenAF()):circleLoop(o.r,18).map(p=>[p[0]+o.x,p[1]+o.y]);
         const loops=[flipY(outline)];
         uniq.forEach(o=>{ const local=o.x-(pc.start||0);
-          if(AD.bent){ loops.push(flipY(circleLoop(o.r,18).map(p=>[p[0]+o.x,p[1]+o.y]))); return; }
+          if(trace){ loops.push(flipY(holeLoop(o))); return; }
           if(local>-ovS+o.r*0.5&&local<pc.len+ovE-o.r*0.5)loops.push(flipY(circleLoop(o.r,18).map(p=>[p[0]+local,p[1]]))); });
         pc.aligns.forEach(d=>loops.push(flipY(circleLoop(Math.max(cxBore()/2,1.2),12).map(p=>[p[0]+d,p[1]]))));
         const armMesh=plateMesh(loops,0,0,t*0.55,yLink-(pc.idx||0)*0.4);
@@ -5469,7 +5513,11 @@ function sceneFromComplex(){
     const MGW=cxArmMerges(c.pen).merged;
     (c.pen.welds||[]).forEach((w,wi)=>{ const L0=w.len||100, bw2=barW*0.9, ov2=bw2*0.85;
       if(!MGW[wi]){
-      const bl=[flipY(rodLoop(L0+2*ov2,bw2).map(p=>[p[0]-ov2,p[1]])), flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12)), flipY(circleLoop(Math.max(cxRodBore()/2,1),16).map(p=>[p[0]+L0,p[1]]))];
+      const isPenW=(typeof c.pen.penRef==='string')?(c.pen.penRef==='w'+wi):!!(c.pen.penRef&&c.pen.penRef.on==='w'+wi);
+      const bl=[flipY(isPenW?cxBarUnionLoop([[-ov2,0,L0+ov2,0]],bw2,null,[{x:L0,y:0,r:cxPenBossR()}])
+                            :rodLoop(L0+2*ov2,bw2).map(p=>[p[0]-ov2,p[1]])),
+        flipY(circleLoop(Math.max(cxDowelHole()/2,0.8),12)),
+        flipY(isPenW?cxPenHoleLoop(L0,0,cxPenAF()):circleLoop(Math.max(cxRodBore()/2,1),16).map(p=>[p[0]+L0,p[1]]))];
       const brMesh=plateMesh(bl,0,0,t*0.5,yLink-0.6);
       if(S.cx.armDouble)parts.push({tris:brMesh,col:'#a3763a',cutOnly:1,label:(cxHasPen()?'pen mount arm':'branch arm')+' (2nd ply)'});
       parts.push({tris:brMesh,col:'#a3763a',label:cxHasPen()?'pen mount arm':'branch arm',pose:s=>{ const st=cxPenAt(c,s); if(!st)return {x:OFF,z:OFF,rot:0}; const base=cxRefPos(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds), d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(!base||d==null)return {x:OFF,z:OFF,rot:0}; return {x:base[0]-ox,z:base[1]-oy,rot:d+(w.ang==null?90:w.ang)*Math.PI/180}; }}); }
@@ -5493,9 +5541,7 @@ function sceneFromComplex(){
         parts.push({tris:plateMesh(cxPaperRingLoops(B).map(flipY),0,0,t,yLink+9.5),col:'#b9a882',label:'paper spacer rings',
           alpha:cxPenIsCarriage()?0.45:1,
           spin:g?{x:gx,z:gz,phase:g.phase,rate:g.rate}:{x:gx,z:gz,phase:0,rate:0}}); } }
-    if(cxHasPen()){ const H=cxPenHolder();
-      const collar=[flipY(H.outline), flipY(cxPenHoleLoop(0,0,cxPenAF())), flipY(circleLoop(Math.max(cxRodBore()/2,1),12).map(p=>[p[0]+H.mount[0],p[1]+H.mount[1]]))];
-      parts.push({tris:plateMesh(collar,0,0,t*0.6,yLink-1.2),col:'#b98c52',label:'pen collar',pose:s=>{ const st=cxPenAt(c,s); if(!st||!st.pen)return {x:OFF,z:OFF,rot:0}; let rot=0; if(c.pen.welds&&c.pen.welds.length){ const w=c.pen.welds[0], d=cxArmDir(w.base,st.pinPos,st.jointPos,c.pen.joints,st.weldPos,c.pen.welds); if(d!=null)rot=d-Math.PI/2; } return {x:st.pen[0]-ox,z:st.pen[1]-oy,rot}; }}); } }
+  }
   // spacer ring stacks lifting elevated gears off the backing wood
   const spOR=Math.max(boreDia()/2+4,4), spIR=Math.max(boreDia()/2,1.5);
   cxSpacers(c).list.forEach(sp=>{ sp.ringYs.forEach(yy=>{
@@ -5915,7 +5961,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-25`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-28`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -5936,31 +5982,37 @@ function exportComplex(){
     x=cx+go.ra+gap; rowH=Math.max(rowH,2*go.ra+gap*2); });
   if(c.pen){ const w=cxLinkW()+8, aMax=cxArmBedMax(), MGW=cxArmMerges(c.pen).merged;
     cxArmList(c).forEach((A,k)=>{ const al=A.D.total, penOnArm=A.D.holes.some(h=>h.k==='pen');
-      if(A.D.bent){ const L=cxBarUnionLoop(A.D.segs,w); let mny=0,mxy=0;
+      const bossA=A.D.holes.filter(h=>h.k==='pen').map(h=>({x:h.x,y:h.y,r:cxPenBossR()}));
+      const drawHole=(h,bx,by)=>{ if(h.k==='pen'){ const hl=cxPenHoleLoop(bx+h.x,by+h.y,Math.max(cxPenAF()-2*kh,1.2));
+          parts.push(`<path d="${hl.map((q,j)=>(j?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ')} Z" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+          parts.push(txt(bx+h.x,by+h.y-cxPenBossR()-2,`✎ pen drops through · ${cxPenSides()<3?'⌀':CX_SIDE_NAME[cxPenSides()]+' '}${fmt(cxPenAF())}`,SCORE,2.2)); return; }
+        parts.push(`<path d="${svgCircle(Math.max(h.r-kh,0.3),bx+h.x,by+h.y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+        if(/^glue/.test(h.k))parts.push(txt(bx+h.x,by+h.y+w/2-2.4,h.k,SCORE,2.2)); };
+      if(A.D.bent||bossA.length){ const L=cxBarUnionLoop(A.D.segs,w-8,null,bossA); let mny=0,mxy=0;
         L.forEach(q=>{mny=Math.min(mny,q[1]);mxy=Math.max(mxy,q[1]);});
         const cy=gap-mny;
         parts.push(`<path d="${pathFrom(offsetPolygon(L,kh),x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-        A.D.holes.forEach(h=>{ parts.push(`<path d="${svgCircle(Math.max(h.r-kh,0.3),x+h.x,cy+h.y)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-          if(h.k==='pen'||/^glue/.test(h.k))parts.push(txt(x+h.x,cy+h.y-h.r-2,h.k==='pen'?`✎ pen collar pins here`:h.k,SCORE,2.2)); });
-        parts.push(txt(x+al/2,cy,`arm ${k+1} · ${fmt(al)} · branch cut in one piece`,SCORE,3));
+        A.D.holes.forEach(h=>drawHole(h,x,cy));
+        parts.push(txt(x+al/2,cy,`arm ${k+1} · ${fmt(al)}${A.D.bent?' · branch cut in one piece':''}`,SCORE,3));
         x=x+al+gap+w; rowH=Math.max(rowH,(mxy-mny)+gap*2); return; }
       cxArmSplice(al,aMax,28).forEach(pc=>{ const cy=w/2+gap;
       parts.push(`<path d="${pathFrom(rodLoop(pc.len,w),x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
       A.D.holes.forEach(h=>{ const local=h.d-(pc.start||0); if(local<-0.01||local>pc.len+0.01)return;
-        parts.push(`<path d="${svgCircle(Math.max(h.r-kh,0.3),x+local,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-        if(/^glue/.test(h.k))parts.push(txt(x+local,cy+w/2-2.4,h.k,SCORE,2.2));
-        if(h.k==='pen')parts.push(txt(x+local,cy-w/2+2.4,`✎ pen collar pins here`,SCORE,2.2)); });
+        drawHole({k:h.k,r:h.r,x:local,y:0},x,cy); });
       pc.aligns.forEach(d=>parts.push(`<path d="${svgCircle(boreR,x+d,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`));
       const mg=A.D.wood.fwd||A.D.wood.back;
       parts.push(txt(x+pc.len/2,cy,pc.n>1?`arm ${k+1} · pc ${pc.idx+1}/${pc.n} · splice-glue`:`arm ${k+1} · ${fmt(al)}${mg?' · branch merged in':''}`,SCORE,3));
       x=x+pc.len+gap+w; rowH=Math.max(rowH,w+gap*2); }); }); }
   if(c.pen&&c.pen.welds&&c.pen.welds.length){ const w=cxLinkW()+8, MGW2=cxArmMerges(c.pen).merged;
-    c.pen.welds.forEach((wd,wi)=>{ if(MGW2[wi])return; const L0=wd.len||100, cy=w/2+gap, isPen=(cxRefKey(c.pen.penRef)==='w'+wi)||(c.pen.penRef&&c.pen.penRef.on==='w'+wi);
-      parts.push(`<path d="${pathFrom(rodLoop(L0,w),x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+    c.pen.welds.forEach((wd,wi)=>{ if(MGW2[wi])return; const L0=wd.len||100, isPen=(cxRefKey(c.pen.penRef)==='w'+wi)||(c.pen.penRef&&c.pen.penRef.on==='w'+wi);
+      const bw3=w-8, bossR=cxPenBossR(), cy=(isPen?Math.max(w/2,bossR+2):w/2)+gap;
+      parts.push(`<path d="${pathFrom(isPen?cxBarUnionLoop([[0,0,L0,0]],bw3,null,[{x:L0,y:0,r:bossR}]):rodLoop(L0,w),x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
       parts.push(`<path d="${svgCircle(locR,x,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
       parts.push(txt(x,cy+w/2-2.4,`glue+pin`,SCORE,2.2));
-      parts.push(`<path d="${svgCircle(rBoreR,x+L0,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-      parts.push(txt(x+L0,cy-w/2+2.6,isPen?`✎ pen`:`tip`,SCORE,2.4));
+      if(isPen){ const hl=cxPenHoleLoop(x+L0,cy,Math.max(cxPenAF()-2*kh,1.2));
+        parts.push(`<path d="${hl.map((q,j)=>(j?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ')} Z" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); }
+      else parts.push(`<path d="${svgCircle(rBoreR,x+L0,cy)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
+      parts.push(txt(x+L0,cy-(isPen?bossR:w/2)-2.4,isPen?`✎ pen drops through · ${cxPenSides()<3?'⌀':CX_SIDE_NAME[cxPenSides()]+' '}${fmt(cxPenAF())}`:`tip`,SCORE,2.4));
       parts.push(txt(x+L0/2,cy,`branch W${wi+1} · ${fmt(L0)} · GLUE onto arm @${cxRefT(wd.base)}% (fixed)`,SCORE,2.4));
       x=x+L0+gap+w; rowH=Math.max(rowH,w+gap*2); }); }
   { const B=cxPaperBoard(c);
@@ -5976,20 +6028,7 @@ function exportComplex(){
       if(B.gear!=null&&B.screws.length)parts.push(txt(rx,ry+B.ringOD/2+4,`same ${B.screws.length}-hole pattern as the board & gear #${B.gear}`,SCORE,2.4));
       x=rx+B.ringOD/2+gap; rowH=Math.max(rowH,B.ringOD+gap*2); } }
   if(Math.abs(cxCutScale()-1)>1e-6)parts.push(txt(2,4,`reference drawing — TRUE SIZE. The cut sheets are set to ${(cxCutScale()*100).toFixed(2).replace(/\.?0+$/,'')}% — cut from those, not this.`,SCORE,3.4));
-  if(c.pen&&cxHasPen()&&(c.pen.welds&&c.pen.welds.length||c.pen.joints.length)){ const H=cxPenHolder();
-    let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9; H.outline.forEach(p=>{mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);});
-    const ox2=x-mnx+2, oy2=gap-mny;
-    const d=H.outline.map((p,j)=>(j?'L':'M')+(p[0]+ox2).toFixed(1)+' '+(p[1]+oy2).toFixed(1)).join(' ')+' Z';
-    parts.push(`<path d="${d}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-    const penAF=Math.max(cxPenAF()-2*kh,1.2), hl=cxPenHoleLoop(ox2,oy2,penAF);
-    const hd=hl.map((p,j)=>(j?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+' Z';
-    parts.push(`<path d="${hd}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-    parts.push(`<path d="${svgCircle(boreR,H.mount[0]+ox2,H.mount[1]+oy2)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`);
-    parts.push(txt(ox2,oy2,`${cxPenSides()<3?'⌀':CX_SIDE_NAME[cxPenSides()]+' '}${fmt(cxPenAF())}`,SCORE,2.4));
-    parts.push(txt(H.mount[0]+ox2,H.mount[1]+oy2-H.Rt-1.5,`⌀${fmt(cxRodBore())} — ${cxBoltsOff()?'dowel':'bolt'} into the arm's pen hole`,SCORE,2.2));
-    parts.push(txt(ox2+(mxx-mnx)/2+3,oy2+H.H*0.45,`pen collar`,SCORE,2.6));
-    parts.push(txt(ox2,oy2+H.Rw+3.2,`pen drops through this end`,SCORE,2.2));
-    x=x+(mxx-mnx)+gap+4; rowH=Math.max(rowH,(mxy-mny)+gap*2); }
+
   /* Feet, cradle, washers and caps are cut too, so they belong on the reference sheet — it was
      showing gears, arms and boards only, which made it hard to tell what a loose part was. */
   { const more=[];
@@ -6401,7 +6440,7 @@ function renderComplexUI(){
         <label class="pchk" data-on="${cxBranchMergeOn()?1:0}" style="margin-left:10px"><input type="checkbox" id="cxMergeBranch" ${cxBranchMergeOn()?'checked':''}>cut branch arms in one with their host</label></div>
         <div class="hint">Wider arms stiffen thin ply${S.cx.armDouble?'; the second set is identical — glue the pairs face-to-face for a '+(2*S.thick)+'mm arm':''}. Width also applies to con-rods and branch arms so the linkage stays consistent.</div>
         <div class="hint">A branch is glued rigidly to its arm and never moves against it, so it can be cut as one bent piece instead — no glue joint, and the angle is exactly right by construction. ${cxBranchMergeOn()?'<b>On</b> — bent pieces nest less tightly, and any that would not fit the sheet stay separate.':'Off — branches are cut loose and glued on, which lets you set the angle by eye. A branch that runs straight on from the end of its arm is always merged either way, since that is just a longer arm.'}</div>`;
-      const penBlock=armCtl+`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label>${cxHasPen()?`<button class="btn ghost" id="patOpen" style="padding:3px 10px;font-size:11px">🖼 Export pattern</button>`:''}</div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div><div class="hint">${cxHasPen()?'The pen sticks to this arm as you build the rest. Set the <b>pencil / pen hole</b> size &amp; shape down in <b>Bearings, bolts &amp; dowels</b>.':'No pen — the arms and branches still move, still get cut, but nothing draws and no pen collar, paper or backing board is generated. Pick any arm above to put a pen back on.'}</div>`;
+      const penBlock=armCtl+`<div class="lab" style="margin-top:10px"><label>✒ Pen — glued to an arm</label>${cxHasPen()?`<button class="btn ghost" id="patOpen" style="padding:3px 10px;font-size:11px">🖼 Export pattern</button>`:''}</div><div class="cstage-top"><span class="clab">pen on</span><select class="selin cxPenRef" style="width:auto">${penOpts(P.penRef)}</select>${tSlider(P.penRef,'pen',null)}</div>${cxNodeNeedsStub(P.penRef)?`<div class="hint" style="color:#8f1e10;background:#fbe9e6;border:1.5px solid #bf3a2b;border-radius:6px;padding:8px 10px;margin-top:6px"><b>⚠ The pen is on ${cxRefLabel(P.penRef)} — that cannot be built.</b> Two arms pivot against each other there, so a pen hole at that point makes the pencil the pivot pin and nothing holds the arms together. The arm needs to carry on a little past it with the pen in the end.<br><button class="btn" id="cxPenStubBtn" style="margin-top:7px;padding:5px 12px;font-size:12px">➕ Add the pen stub</button> <span style="font-size:11px">— adds ${fmt(cxPenStubLen())} of arm past ${cxRefLabel(P.penRef)}, merged into the same piece. <b>The drawing will change</b>, since the pen is no longer on the joint. Tune its length and angle in the branch controls below.</span></div>`:''}<div class="hint">${cxHasPen()?`The pen drops straight through the arm — the wood widens to ⌀${fmt(2*cxPenBossR())} around the hole to hold it, so there is no separate collar to fit. Set the <b>pencil / pen hole</b> size &amp; shape down in <b>Bearings, bolts &amp; dowels</b>.`:'No pen — the arms and branches still move, still get cut, but nothing draws and no paper or backing board is generated. Pick any arm above to put a pen back on.'}</div>`;
       const custom=P.paper&&P.paper.mode==='custom';
       const paperCtl=`<div class="lab" style="margin-top:10px"><label>Paper</label></div><div class="cstage-top" style="margin-bottom:8px"><span class="clab">attach to</span><select class="selin" id="cxPaperGear" style="width:auto">${'<option value="fixed"'+((P.paper&&P.paper.gear!=null)?'':' selected')+'>fixed / moving bed</option>'+c.gears.map(g=>`<option value="g${g.id}"${(P.paper&&P.paper.gear===g.id)?' selected':''}>turntable on #${g.id}</option>`).join('')}</select></div><div class="seg" id="cxPaperSeg"><button data-pm="fit" aria-pressed="${custom?'false':'true'}">Fit to drawing</button><button data-pm="custom" aria-pressed="${custom?'true':'false'}">Custom</button></div>`+(custom?`<div class="cstage-top" style="margin-top:8px"><span class="clab">size</span><select class="selin" id="cxPaperPreset" style="width:auto"><option value="">preset…</option><option value="297x210">A4 · 297×210</option><option value="210x148">A5 · 210×148</option><option value="420x297">A3 · 420×297</option><option value="200x200">square 200</option><option value="300x300">square 300</option></select></div><div class="cstage-top" style="margin-top:6px"><span class="clab">W×H</span><span class="cstep"><button data-cxpaper="w" data-d="-10">−</button><input type="number" value="${P.paper.w}" id="cxPaperW" min="20" step="10"><button data-cxpaper="w" data-d="10">＋</button></span><span class="cstep"><button data-cxpaper="h" data-d="-10">−</button><input type="number" value="${P.paper.h}" id="cxPaperH" min="20" step="10"><button data-cxpaper="h" data-d="10">＋</button></span></div><button class="btn" id="cxFitPaper" style="margin-top:8px">⤢ fit drawing to this paper</button><div class="hint" style="margin-top:4px">Sizes the pins &amp; arms so the pattern fills the sheet.</div>`:'');
       const PB=(P.paper&&P.paper.board)||{on:false,shape:'square'};
@@ -6970,22 +7009,48 @@ function cxCutScale(){ const v=+S.cutScale; return (isFinite(v)&&v>=50&&v<=200)?
 function cxLoopBBox(L){ let a=1e9,b=-1e9,c2=1e9,d=-1e9;
   L.forEach(q=>{ a=Math.min(a,q[0]); b=Math.max(b,q[0]); c2=Math.min(c2,q[1]); d=Math.max(d,q[1]); });
   return {mnx:a,mxx:b,mny:c2,mxy:d,w:b-a,h:d-c2,cx:(a+b)/2,cy:(c2+d)/2}; }
-/* A hole is hardware unless it is a tab slot taking another piece of the same ply. Size alone
-   cannot tell them apart — a 6.2 dowel hole in 6.85 ply is almost exactly slot-width — so the
-   shape decides: a slot is a long, filled-out rectangle, a hole for hardware is round-ish. */
-function cxHoleIsHardware(L,t){ const B=cxLoopBBox(L), short=Math.min(B.w,B.h), long=Math.max(B.w,B.h);
-  if(long>30)return false;                        /* big window — decorative, let it scale */
-  const fill=(B.w*B.h>1e-6)?Math.abs(loopArea(L))/(B.w*B.h):0;
-  const slot=Math.abs(short-t)<=0.8 && long>=1.8*short && fill>0.88;
-  return !slot; }                                 /* dowel, bolt, screw, shaft, pen, bearing */
+/* Three kinds of interior loop, and they scale differently:
+   'hardware' — dowel, bolt, screw, shaft, pen, bearing. Nothing about a bought part shrinks,
+                so the whole hole stays true size.
+   'slot'     — a tab slot taking another piece of the SAME PLY. Its length is wood-to-wood and
+                scales, but its width is the sheet's thickness, which is 6.85 whatever scale you
+                cut at. Scale that too and the tab will not go in at all.
+   'window'   — anything larger, decorative: scales with the part.
+   Size alone cannot separate hardware from a slot — a 6.2 dowel hole in 6.85 ply is almost
+   exactly slot width — so shape decides: a slot is a long, filled-out rectangle. */
+/* Measured along the loop's OWN axes, not the sheet's: feet sit at any angle, so an
+   axis-aligned box around a slot at 45 degrees is a square and looks nothing like a slot. */
+function cxLoopSpan(L){ let ux=1,uy=0,best=-1;
+  for(let i=0;i<L.length;i++){ const a=L[i], b=L[(i+1)%L.length], dx=b[0]-a[0], dy=b[1]-a[1];
+    const d=dx*dx+dy*dy; if(d>best){ best=d; const m=Math.sqrt(d)||1; ux=dx/m; uy=dy/m; } }
+  const vx=-uy, vy=ux; let la=1e9,lb=-1e9,ca=1e9,cb=-1e9;
+  L.forEach(q=>{ const al=q[0]*ux+q[1]*uy, ac=q[0]*vx+q[1]*vy;
+    la=Math.min(la,al); lb=Math.max(lb,al); ca=Math.min(ca,ac); cb=Math.max(cb,ac); });
+  const a=lb-la, b=cb-ca, long=Math.max(a,b), short=Math.min(a,b);
+  return {long,short,fill:(a*b>1e-6)?Math.abs(loopArea(L))/(a*b):0}; }
+function cxHoleKind(L,t){ const S2=cxLoopSpan(L);
+  if(Math.abs(S2.short-t)<=0.8 && S2.long>=1.8*S2.short && S2.fill>0.88)return 'slot';
+  return (S2.long>30)?'window':'hardware'; }
+/* Put a loop back to true size about its own centre — all round for hardware, across the width
+   only for a slot, so the slot stays exactly one sheet thick while its length still scales. */
+function cxUnscaleLoop(L,inv,acrossOnly){ const B=cxLoopBBox(L);
+  if(!acrossOnly)return L.map(q=>[B.cx+(q[0]-B.cx)*inv, B.cy+(q[1]-B.cy)*inv]);
+  let ux=1,uy=0,best=-1;                          /* longest edge gives the slot's length axis */
+  for(let i=0;i<L.length;i++){ const a=L[i], b=L[(i+1)%L.length], dx=b[0]-a[0], dy=b[1]-a[1];
+    const d=dx*dx+dy*dy; if(d>best){ best=d; const m=Math.sqrt(d)||1; ux=dx/m; uy=dy/m; } }
+  const vx=-uy, vy=ux;
+  return L.map(q=>{ const ex=q[0]-B.cx, ey=q[1]-B.cy;
+    const al=ex*ux+ey*uy, ac=(ex*vx+ey*vy)*inv;
+    return [B.cx+al*ux+ac*vx, B.cy+al*uy+ac*vy]; }); }
 function cxApplyCutScale(pieces){ const k=cxCutScale(); if(Math.abs(k-1)<1e-6)return pieces;
   const t=S.thick;
   return pieces.map(p=>{ let oi=0,oa=-1;
     p.loops.forEach((L,i)=>{ const a=Math.abs(loopArea(L)); if(a>oa){oa=a;oi=i;} });
     const loops=p.loops.map((L,i)=>{ const S1=L.map(q=>[q[0]*k,q[1]*k]);
-      if(i===oi||!cxHoleIsHardware(L,t))return S1;
-      const B=cxLoopBBox(S1), inv=1/k;             /* true size again, about its scaled centre */
-      return S1.map(q=>[B.cx+(q[0]-B.cx)*inv, B.cy+(q[1]-B.cy)*inv]); });
+      if(i===oi)return S1;
+      const kind=cxHoleKind(L,t);
+      if(kind==='window')return S1;
+      return cxUnscaleLoop(S1,1/k,kind==='slot'); });
     const B=cxLoopBBox(loops[oi]);
     return {loops,w:B.w,h:B.h,col:p.col,label:p.label}; }); }
 /* ---- nesting ---------------------------------------------------------------------------
@@ -7855,7 +7920,7 @@ function renderCutSheet(){
   view.innerHTML= ovWarn+
     `<div style="display:flex;gap:8px;flex-wrap:wrap">${dlrow}</div>`+
     `<div class="cstage-top" style="margin-top:8px;gap:16px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestOutline" ${outOn?'checked':''}>sheet outline</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestMarker" ${mkOn?'checked':''}>0,0 marker</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px"><input type="checkbox" id="nestLabels" ${lbOn?'checked':''}>engrave part labels</label><label style="display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:12px">cut at<input type="number" class="pnum" id="nestScale" value="${(cxCutScale()*100).toFixed(4).replace(/0+$/,'').replace(/\.$/,'')}" step="0.1" min="50" max="200" style="width:74px">%</label></div>`+
-    (Math.abs(cxCutScale()-1)>1e-6?`<div class="hint" style="margin:6px 0;color:#8f1e10;background:#fbe9e6;border:1.5px solid #bf3a2b;border-radius:6px;padding:8px 10px"><b>Cutting at ${(cxCutScale()*100).toFixed(2).replace(/\.?0+$/,'')}%.</b> Outlines, hole positions and tab slots shrink together so the wood still fits itself. Holes for bought parts — dowels, bolts, bearings, the motor shaft, screws — are held at true size, since a ${fmt(S.dowelD||6)}mm dowel is still ${fmt(S.dowelD||6)}mm. Set it back to 100 for a normal build.</div>`:'')+
+    (Math.abs(cxCutScale()-1)>1e-6?`<div class="hint" style="margin:6px 0;color:#8f1e10;background:#fbe9e6;border:1.5px solid #bf3a2b;border-radius:6px;padding:8px 10px"><b>Cutting at ${(cxCutScale()*100).toFixed(2).replace(/\.?0+$/,'')}%.</b> Outlines and hole positions shrink together, so the wood still fits itself. Two things do not shrink: holes for bought parts — dowels, bolts, bearings, the motor shaft, screws — since a ${fmt(S.dowelD||6)} dowel is still ${fmt(S.dowelD||6)}; and the width of every tab slot, which stays ${fmt(S.thick)} because that is the sheet you are cutting from. Set it back to 100 for a normal build.</div>`:'')+
     `<div class="hint" style="margin:6px 0">${cap} · each sheet saves as its own kerf-compensated SVG. For bed registration, outline off + <b>0,0 marker</b> on.</div>`+
     `<div class="cszoom"><button class="btn ghost" data-cutzoom="1.4" style="padding:4px 12px">＋</button><button class="btn ghost" data-cutzoom="0.71" style="padding:4px 12px">−</button><button class="btn ghost" data-cutzoom="fit" style="padding:4px 12px">⤢ fit width</button><span class="clab" style="align-self:center">${Math.round(zoom*100)}%</span><span class="clab" style="align-self:center;color:var(--ink-mute)">${sheets} sheet${sheets>1?'s':''}, all shown below</span></div>`+
     sheetSVG.map((sv,k)=>`<div class="cshead"><span class="n">sheet ${k+1}</span><span>${sw}\u00d7${sh} mm</span><span style="color:var(--ink-mute)">${(n=>n+' piece'+(n>1?'s':''))(place.filter(pl=>pl.sheet===k).length)}</span><button class="btn ghost" data-dlsheet="${k}" style="padding:3px 10px;font-size:11px;margin-left:auto">\u2b07 SVG</button></div><div class="csheet">${sv}</div>`).join('');
@@ -8316,6 +8381,7 @@ document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.c
   if(b.id==='cxLoadExBtn'){cxLoadExample();renderComplexUI();everything();return;}
   if(b.id==='cxRmPenBtn'){cxRemovePen();renderComplexUI();everything();return;}
   if(b.id==='cxAddArmBtn'){cxAddArm();renderComplexUI();everything();return;}
+  if(b.id==='cxPenStubBtn'){cxAddPenStub();renderComplexUI();everything();return;}
   if(b.id==='cxAddPinBtn'){cxAddPin();renderComplexUI();everything();return;}
   if(b.id==='cxAddJointBtn'){cxAddJoint();renderComplexUI();everything();return;}
   if(b.id==='cxRmPinBtn'){cxRemovePin();renderComplexUI();everything();return;}
@@ -8356,7 +8422,11 @@ document.getElementById('cxPen').addEventListener('change',e=>{const t=e.target;
     renderComplexUI();everything();}
   else if(t.classList.contains('cxJa')){const o=P.joints[+t.dataset.i].a;P.joints[+t.dataset.i].a=cxMakeRef(t.value,(o&&o.on)?o.t:null);renderComplexUI();everything();}
   else if(t.classList.contains('cxJb')){const o=P.joints[+t.dataset.i].b;P.joints[+t.dataset.i].b=cxMakeRef(t.value,(o&&o.on)?o.t:null);renderComplexUI();everything();}
-  else if(t.classList.contains('cxPenRef')){P.penRef=(t.value==='none')?null:cxMakeRef(t.value,(P.penRef&&P.penRef.on)?P.penRef.t:null);renderComplexUI();everything();}
+  else if(t.classList.contains('cxPenRef')){
+    const ref=(t.value==='none')?null:cxMakeRef(t.value,(P.penRef&&P.penRef.on)?P.penRef.t:null);
+    const need=cxNodeNeedsStub(ref);
+    if(need){ P.penRef=ref; cxAddPenStub(need); } else P.penRef=ref;
+    renderComplexUI();everything();}
   else if(t.classList.contains('cxWb')){const w=P.welds[+t.dataset.i];const o=w.base;w.base=cxMakeRef(t.value,(o&&o.on)?o.t:null);renderComplexUI();everything();}
   else if(t.classList.contains('cxWnum')){const w=P.welds[+t.dataset.i],f=t.dataset.f;if(f==='ang')w.ang=Math.max(-180,Math.min(180,Math.round(+t.value)||0));else w.len=Math.max(8,Math.round(+t.value)||w.len);renderComplexUI();everything();}
   else if(t.classList.contains('cxTnum')){const kind=t.dataset.t;let ref=kind==='pen'?P.penRef:kind==='wb'?((P.welds[+t.dataset.i]||{}).base):(P.joints[+t.dataset.i]||{})[kind==='ja'?'a':'b'];if(ref&&ref.on){ref.t=Math.max(0,Math.min(1,(Math.round(+t.value)||0)/100));renderComplexUI();everything();}}
