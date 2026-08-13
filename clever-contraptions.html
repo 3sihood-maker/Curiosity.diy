@@ -5915,7 +5915,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-23`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-24`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -6161,14 +6161,22 @@ function cxMotorFaceSVG(){ const M=cxMotor(); if(!M.on)return '';
   p.push(`<circle cx="0" cy="0" r="${hr.toFixed(2)}" fill="none" stroke="${RUST}" stroke-width="${(F*0.11).toFixed(2)}"/>`);
   p.push(`<line x1="${(-hr*0.45).toFixed(2)}" y1="0" x2="${(hr*0.45).toFixed(2)}" y2="0" stroke="${RUST}" stroke-width="${(F*0.07).toFixed(2)}"/>`);
   p.push(`<line x1="0" y1="${(-hr*0.45).toFixed(2)}" x2="0" y2="${(hr*0.45).toFixed(2)}" stroke="${RUST}" stroke-width="${(F*0.07).toFixed(2)}"/>`);
+  /* the shaft itself, drawn inside its clearance hole — the gap between the two circles is the
+     clearance you actually get, which is easier to judge than a number on its own */
+  const sr=Math.max((M.shaftD||6)/2,0.5);
+  p.push(`<circle cx="0" cy="0" r="${sr.toFixed(2)}" fill="none" stroke="${MUT}" stroke-width="${(F*0.07).toFixed(2)}" stroke-dasharray="${(F*0.35).toFixed(2)} ${(F*0.35).toFixed(2)}"/>`);
   scr.forEach(s=>p.push(`<circle cx="${s.x.toFixed(2)}" cy="${Y(s.y).toFixed(2)}" r="${(s.d/2).toFixed(2)}" fill="none" stroke="${INK}" stroke-width="${(F*0.11).toFixed(2)}"/>`));
   if(scr.length>=2)p.push(dim(scr[0],scr[1],fmt(M.pitchX||18)));
   if(scr.length>=3)p.push(dim(scr[0],scr[2],fmt(M.pitchY||17)));
-  p.push(`<text x="0" y="${(hr+F*1.5).toFixed(2)}" font-size="${(F*1.05).toFixed(2)}" fill="${RUST}" text-anchor="middle" font-family="'Space Mono',monospace">\u2300${fmt(2*hr)} shaft</text>`);
+  const clr=2*hr-2*sr;
+  p.push(`<text x="0" y="${(hr+F*1.5).toFixed(2)}" font-size="${(F*1.05).toFixed(2)}" fill="${RUST}" text-anchor="middle" font-family="'Space Mono',monospace">hole \u2300${fmt(2*hr)}</text>`);
+  p.push(`<text x="0" y="${(hr+F*2.75).toFixed(2)}" font-size="${(F*0.95).toFixed(2)}" fill="${MUT}" text-anchor="middle" font-family="'Space Mono',monospace">shaft \u2300${fmt(2*sr)} \u00b7 ${fmt(clr)} clearance</text>`);
   return `<div class="modia"><svg xmlns="http://www.w3.org/2000/svg" viewBox="${(-R).toFixed(2)} ${(-R).toFixed(2)} ${(2*R).toFixed(2)} ${(2*R).toFixed(2)}">${p.join('')}</svg></div>`
     +`<div class="hint" style="margin-top:4px">Board holes, actual size relative to each other \u2014 shaft \u2300${fmt(2*hr)}`
+    +` for a \u2300${fmt(M.shaftD||6)} shaft (${fmt(2*hr-Math.max(M.shaftD||6,1))} clearance)`
     +(scr.length?`, ${scr.length} face screw${scr.length>1?'s':''} \u2300${fmt(M.faceScrewD||3.2)} at ${fmt(M.pitchX||18)}${scr.length>2?' \u00d7 '+fmt(M.pitchY||17):''} pitch`:', no face screws')
-    +(M.rot?`, turned ${Math.round(M.rot)}\u00b0`:'')+`. Dashed line is the motor body's axis.</div>`; }
+    +(M.rot?`, turned ${Math.round(M.rot)}\u00b0`:'')+`. Dashed circle is the shaft, dashed line the motor body's axis.</div>`
+    +((2*hr-Math.max(M.shaftD||6,1))<0.4?`<div class="hint" style="color:#bf3a2b">\u26a0 Only ${fmt(2*hr-(M.shaftD||6))}mm clearance around the shaft. Charred laser edges eat most of that \u2014 <b>0.4 to 0.6</b> gives a shaft that drops through without forcing. Raise <b>board hole \u2300</b>.</div>`:''); }
 function renderMotorUI(c){ const host=document.getElementById('cxMotorUI'); if(!host)return;
   const M=cxMotor(), num=(id,v,st,mn,mx)=>`<input type="number" class="pnum" id="${id}" value="${v}" step="${st}" min="${mn}" max="${mx}" style="width:64px">`;
   const opts=c.gears.map(g=>`<option value="${g.id}"${M.gear===g.id?' selected':''}>#${g.id} · ${g.N}T · layer ${g.layer}</option>`).join('');
@@ -7100,8 +7108,12 @@ function cxNestedSheets(opts){ opts=opts||{};
         LL.forEach((pt,j)=>{ let X=pt[0],Y=pt[1]; if(pl.rot){const t=X;X=-Y;Y=t;} d+=(j?'L':'M')+(cx+X).toFixed(2)+' '+(cy+Y).toFixed(2)+' '; }); d+='Z '; });
       body+=`<path d="${d}" fill="none" stroke="#bf3a2b" stroke-width="0.12"/>`;
       if(opts.labels&&pl.p.label)body+=`<text x="${cx.toFixed(1)}" y="${(cy+3).toFixed(1)}" font-family="monospace" font-size="4" fill="#2c5f8a" text-anchor="middle">${pl.p.label}</text>`; }
-    const mo=opts.marker?10:0;
-    out.push({name:`sheet_${k+1}_of_${sheets}_${sw}x${sh}mm`, svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-mo} ${-mo} ${sw+2*mo} ${sh+2*mo}" width="${sw}mm" height="${sh}mm">${body}</svg>`}); }
+    /* The declared size MUST match the viewBox, or one user unit stops being one millimetre and
+       the whole sheet cuts small. With the 0,0 marker on, the box grew by the marker margin but
+       the width and height did not, so every part came off about 5% under size — gears still
+       meshed, being all shrunk together, but bought parts no longer fitted the wood. */
+    const mo=opts.marker?10:0, vw=sw+2*mo, vh=sh+2*mo;
+    out.push({name:`sheet_${k+1}_of_${sheets}_${sw}x${sh}mm`, svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-mo} ${-mo} ${vw} ${vh}" width="${vw}mm" height="${vh}mm">${body}</svg>`}); }
   return {sheets:out, count:sheets, sw, sh, oversize};
 }
 /* ---- Test Everything Sheet -------------------------------------------------------------
