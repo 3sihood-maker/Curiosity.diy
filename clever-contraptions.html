@@ -4664,6 +4664,7 @@ function cxPaperBoard(c){ const P=c.pen; if(!P||!P.paper||!cxHasPen())return nul
   const ringOD=2*Math.min(capR,Math.max(screwR+strip/2,12));
   const ringID=2*Math.max(Math.min(screwR-strip/2,ringOD/2-5),4);
   return {shape,w,h,dia,pct,marg:Math.min(dw,dh)*pct/2,ringOD,ringID,strip,screws,screwD,screwR,screwClash,boardR,
+    ringSplit:(pb.ringSplit!=null)?pb.ringSplit:0,
     cx:inkC.cx,cy:inkC.cy,
           gear:g?g.id:null,gearRa,size:shape==='circle'?dia:Math.max(w,h)}; }
 /* Registration screws. The SAME ring of holes is cut in the backing board, in the spacer ring
@@ -4711,6 +4712,72 @@ function cxPaperBoardLoops(B){ const out=[];
 function cxPaperRingLoops(B){ const out=[circleLoop(B.ringOD/2,72), circleLoop(B.ringID/2,60)];
   B.screws.forEach(sc=>out.push(circleLoop(B.screwD/2,10).map(q=>[q[0]+sc[0],q[1]+sc[1]])));
   return out; }
+/* A whole spacer ring reserves a square of sheet the size of its outside diameter and throws
+   away everything inside it. Cut as arcs it nests in the gaps between other parts instead.
+   The arcs meet on radial dovetails — narrow at the joint line, wider beyond — so they cannot
+   pull apart around the ring, and glue only has to stop them lifting. */
+function cxRingSegs(B){ const n=Math.round((B&&B.ringSplit)||0); return (n>=2&&n<=8)?n:0; }
+/* How much sheet the arcs actually reserve against the whole ring. The nester packs pieces as
+   rectangles, so this is a question about bounding boxes, not about the wood in the parts —
+   and the answer is not always a saving. Two half-rings box up to exactly the same square as
+   the ring did, and three arcs are WORSE, because each 120-degree box still spans most of the
+   circle. It only starts paying at six. Better to show the number than to assume. */
+function cxRingSplitSaving(B,n){ if(!B||!n)return 0;
+  const B2=Object.assign({},B,{ringSplit:n}), segs=cxRingSegLoops(B2); if(!segs)return 0;
+  let boxed=0;
+  segs.forEach(sg=>{ let a=1e9,b=-1e9,c=1e9,d=-1e9;
+    sg.loops[0].forEach(q=>{ a=Math.min(a,q[0]); b=Math.max(b,q[0]); c=Math.min(c,q[1]); d=Math.max(d,q[1]); });
+    boxed+=(b-a)*(d-c); });
+  const whole=B.ringOD*B.ringOD;
+  return Math.round(100*(1-boxed/whole)); }
+function cxRingJointProfile(B,maxDepth){ const strip=Math.max(B.ringOD/2-B.ringID/2,4);
+  let depth=Math.min(strip*0.55,11);
+  /* Below about 4mm a dovetail is more of a weak point than a joint, and at eight arcs against
+     six screws there is only ~5mm of arc to play with. Fall back to a plain radial butt rather
+     than cut a tab through a fixing hole. */
+  if(maxDepth!=null)depth=(maxDepth<4)?0:Math.min(depth,maxDepth);
+  return {neck:strip*0.30, head:strip*0.50, depth}; }
+/* One radial edge of an arc, walked from the inner radius out. `sign` flips the dovetail so a
+   segment's trailing tab is the same shape as the notch the next segment presents. */
+function cxRingEdge(B,ang,outward,prof){ const rI=B.ringID/2, rO=B.ringOD/2, P=prof||cxRingJointProfile(B);
+  const rm=(rI+rO)/2, pts=[];
+  const at=(r,tan)=>{ const a=ang+tan/Math.max(r,1); return [r*Math.cos(a), r*Math.sin(a)]; };
+  const seq=(P.depth<=0)?[[rI,0],[rO,0]]
+    :[[rI,0],[rm-P.neck/2,0],[rm-P.head/2,P.depth],[rm+P.head/2,P.depth],[rm+P.neck/2,0],[rO,0]];
+  seq.forEach(s=>pts.push(at(s[0],s[1])));
+  return outward?pts:pts.slice().reverse(); }
+function cxRingSegLoops(B){ const n=cxRingSegs(B); if(!n)return null;
+  const rI=B.ringID/2, rO=B.ringOD/2, step=2*Math.PI/n;
+  /* Put the cuts as far from the fixing screws as they will go. Halfway between neighbouring
+     screws only works when the counts divide nicely — 4 arcs against 6 screws put two joints
+     straight through a screw — so the phase is searched for the best clearance instead. */
+  let base=0, best=-1;
+  if(B.screws&&B.screws.length){ const sa=B.screws.map(sc=>Math.atan2(sc[1],sc[0]));
+    for(let k=0;k<180;k++){ const ph=k*step/180; let mn=1e9;
+      for(let i=0;i<n;i++){ const a=ph+i*step;
+        for(let j=0;j<sa.length;j++){ const d=Math.abs(Math.atan2(Math.sin(a-sa[j]),Math.cos(a-sa[j])));
+          if(d<mn)mn=d; } }
+      if(mn>best){ best=mn; base=ph; } } }
+  /* A dovetail cannot be wider than the gap it has to the nearest screw. With counts that do
+     not divide (eight arcs against six screws) no phase gives much room, so the joint shrinks
+     to fit rather than cutting through a fixing. */
+  const prof=cxRingJointProfile(B, (B.screws&&B.screws.length)
+    ? best*((rI+rO)/2)-B.screwD/2-2 : null);
+  const segs=[];
+  for(let i=0;i<n;i++){ const a0=base+i*step, a1=a0+step, pts=[];
+    void prof;
+    const arc=(r,from,to,dir)=>{ const steps=Math.max(8,Math.ceil(Math.abs(to-from)/0.06));
+      for(let k=0;k<=steps;k++){ const a=from+(to-from)*k/steps; pts.push([r*Math.cos(a),r*Math.sin(a)]); } };
+    arc(rO,a0,a1);                              /* outside, anticlockwise */
+    cxRingEdge(B,a1,false,prof).forEach(q=>pts.push(q));   /* trailing edge, outer to inner */
+    arc(rI,a1,a0);                              /* inside, back */
+    cxRingEdge(B,a0,true,prof).forEach(q=>pts.push(q));    /* leading edge, inner to outer */
+    const holes=(B.screws||[]).filter(sc=>{ const a=Math.atan2(sc[1],sc[0]);
+      let d=a-a0; while(d<0)d+=2*Math.PI; while(d>=2*Math.PI)d-=2*Math.PI; return d<step; })
+      .map(sc=>circleLoop(B.screwD/2,10).map(q=>[q[0]+sc[0],q[1]+sc[1]]));
+    segs.push({loops:[pts].concat(holes),a0,a1}); }
+  segs.plain=(prof.depth<=0); segs.depth=prof.depth;
+  return segs; }
 function cxBrgCount(c){ const M=cxBrgMode(); if(M==='none')return 0; let n=c.gears.length; if(M==='gearsRods'&&c.pen)n+=c.pen.pins.length+c.pen.joints.length; return n; }
 // ---- gear mesh clearance (backlash) ----
 // Cut wooden gears need real backlash: with zero design clearance a perfect cut binds.
@@ -4761,7 +4828,8 @@ function cxBOM(){ const c=computeComplex(), t=S.thick, LG=t*2, m=c.m, cut=[], bu
     if(wl.length)cut.push([`branch arm`,wl.length*(S.cx.armDouble?2:1),`${wl.map(o=>fmt(o.w.len||100)).join(', ')} long${S.cx.armDouble?' · ×2 for double thickness':''} · GLUE rigidly onto host arm (fixed, not a pivot) — locating pin at the glue end${cxHasPen()?`, and the one carrying the pen widens to ⌀${fmt(2*cxPenBossR())} around its ${cxPenSides()<3?'⌀':CX_SIDE_NAME[cxPenSides()]+' '}${fmt(cxPenAF())} pen hole`:''} · ${t}mm`]); }
   { const B=cxPaperBoard(c);
     if(B){ cut.push([`paper backing board`,1,`${B.shape==='circle'?'⌀'+fmt(B.dia):fmt(B.w)+' × '+fmt(B.h)} — the paper pins to this · ${t}mm`]);
-      cut.push([`paper spacer ring`,1,`⌀${fmt(B.ringOD)} outside, ${fmt(B.strip)} wide strip — sized to the sheet, lifts the board off gear #${B.gear!=null?B.gear:'—'} · ${t}mm`]);
+      { const ns=cxRingSegs(B);
+        cut.push([ns?`paper spacer arc`:`paper spacer ring`,ns||1,`⌀${fmt(B.ringOD)} outside, ${fmt(B.strip)} wide strip — sized to the sheet, lifts the board off ${B.gear!=null?`gear #${B.gear}`:'the board'}${ns?` · cut as ${ns} arcs that dovetail into a full ring — they nest in the gaps instead of reserving a ${fmt(B.ringOD)} square of sheet. Glue the joints`:''} · ${t}mm`]); }
       if(B.screws.length)buy.push([`small screws`,B.screws.length,`~⌀${fmt(B.screwD)} × ${fmt(2*t+8)}mm — one per hole, down through board + ring into ${B.gear!=null?`gear #${B.gear}`:'the board'}. All ${B.gear!=null?'three':'both'} pieces carry the same ⌀${fmt(2*B.screwR)} hole circle, so the stack only goes together one way`]); } }
   /* no separate collar any more — the pen drops straight through a widened pad on the arm */
   const cv={}; S.cx.converters.forEach(v=>{ if(c.byId[v.gear])cv[v.type]=(cv[v.type]||0)+1; });
@@ -5538,7 +5606,11 @@ function sceneFromComplex(){
         cxPaperPosts(c).forEach(pp=>{
           parts.push({tris:plateMesh([flipY(circleLoop(pp.d/2,14))],0,0,Math.abs(yLink+6)+t,(yLink+6+t)/2),
             col:'#9a7220',hw:1,spin:{x:pp.x-ox,z:pp.y-oy,phase:0,rate:0}}); });
-        parts.push({tris:plateMesh(cxPaperRingLoops(B).map(flipY),0,0,t,yLink+9.5),col:'#b9a882',label:'paper spacer rings',
+        const RS=cxRingSegLoops(B);
+        if(RS)RS.forEach(sg=>parts.push({tris:plateMesh(sg.loops.map(flipY),0,0,t,yLink+9.5),col:'#b9a882',label:'paper spacer arc',
+          alpha:cxPenIsCarriage()?0.45:1,
+          spin:g?{x:gx,z:gz,phase:g.phase,rate:g.rate}:{x:gx,z:gz,phase:0,rate:0}}));
+        else parts.push({tris:plateMesh(cxPaperRingLoops(B).map(flipY),0,0,t,yLink+9.5),col:'#b9a882',label:'paper spacer rings',
           alpha:cxPenIsCarriage()?0.45:1,
           spin:g?{x:gx,z:gz,phase:g.phase,rate:g.rate}:{x:gx,z:gz,phase:0,rate:0}}); } }
   }
@@ -5961,7 +6033,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-28`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-29`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -6022,9 +6094,12 @@ function exportComplex(){
       parts.push(txt(bx,by,`paper backing board · ${B.shape==='circle'?'⌀'+fmt(B.dia):fmt(B.w)+' × '+fmt(B.h)}`,SCORE,3));
       x=bx+sz/2+gap; rowH=Math.max(rowH,sz+gap*2);
       const rx=x+B.ringOD/2+2, ry=B.ringOD/2+gap;
-      cxPaperRingLoops(B).forEach((L,i)=>{ const d=offsetPolygon(L,i===0?kh:-kh);
+      const RSg=cxRingSegLoops(B);
+      if(RSg)RSg.forEach(sg=>sg.loops.forEach((L,i)=>{ const d=offsetPolygon(L,i===0?kh:-kh);
+        parts.push(`<path d="${pathFrom(d,rx,ry)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); }));
+      else cxPaperRingLoops(B).forEach((L,i)=>{ const d=offsetPolygon(L,i===0?kh:-kh);
         parts.push(`<path d="${pathFrom(d,rx,ry)}" fill="none" stroke="${CUT}" stroke-width="${SW}"/>`); });
-      parts.push(txt(rx,ry,`spacer ring · ${fmt(B.strip)} strip`,SCORE,2.8));
+      parts.push(txt(rx,ry,RSg?`spacer ring · ${RSg.length} arcs · ${fmt(B.strip)} strip`:`spacer ring · ${fmt(B.strip)} strip`,SCORE,2.8));
       if(B.gear!=null&&B.screws.length)parts.push(txt(rx,ry+B.ringOD/2+4,`same ${B.screws.length}-hole pattern as the board & gear #${B.gear}`,SCORE,2.4));
       x=rx+B.ringOD/2+gap; rowH=Math.max(rowH,B.ringOD+gap*2); } }
   if(Math.abs(cxCutScale()-1)>1e-6)parts.push(txt(2,4,`reference drawing — TRUE SIZE. The cut sheets are set to ${(cxCutScale()*100).toFixed(2).replace(/\.?0+$/,'')}% — cut from those, not this.`,SCORE,3.4));
@@ -6451,6 +6526,11 @@ function renderComplexUI(){
       const boardCtl=`<div class="cstage-top" style="margin-top:10px"><label class="pchk" style="flex:1" data-on="${PB.on?1:0}"><input type="checkbox" id="cxPaperBoardOn" ${PB.on?'checked':''}>Cut a paper backing board</label></div>`
        +(PB.on?`<div class="cstage-top" style="margin-top:6px"><span class="clab">shape</span><div class="seg" id="cxPaperShape"><button data-pshape="square" aria-pressed="${PB.shape!=='circle'}">Square</button><button data-pshape="circle" aria-pressed="${PB.shape==='circle'}">Circle</button></div></div>`
         +(BB?`<div class="cstage-top" style="margin-top:6px"><span class="clab">margin</span><span class="cstep"><button data-pmarg="-5">−</button><input type="number" value="${Math.round((BB.pct||0)*100)}" id="cxPaperMarg" min="0" max="25" step="5"><button data-pmarg="5">＋</button></span><span class="clab">% bigger than the drawing</span></div>`:'')
+        +(BB?`<div class="cstage-top" style="margin-top:6px"><span class="clab">spacer ring</span><div class="seg" id="cxRingSplit">${[0,2,3,4,6,8].map(nv=>`<button data-rsplit="${nv}" aria-pressed="${cxRingSegs(BB)===nv}">${nv?nv+' arcs':'one ring'}</button>`).join('')}</div></div>`:'')
+        +(BB?(()=>{ const nv=cxRingSegs(BB); if(!nv)
+            return `<div class="hint" style="margin-top:4px">One ring reserves a ${fmt(BB.ringOD)} square of sheet. Splitting it into arcs can reclaim some of that — ${[3,4,6,8].map(k=>`<b>${k}</b>: ${(s=>s>0?s+'% less':(-s)+'% <b>more</b>')(cxRingSplitSaving(BB,k))}`).join(' · ')}.</div>`;
+          const sv=cxRingSplitSaving(BB,nv), sgs=cxRingSegLoops(BB), plain=!!(sgs&&sgs.plain);
+          return `<div class="hint" style="margin-top:4px${(sv<=0||plain)?';color:#8f1e10':''}">${nv} arcs ${plain?'meeting on plain radial joints':'that dovetail into a full ring — narrow at the cut line and wider beyond, so they cannot pull apart round the ring'}. Glue them as you fit them, and the cuts are placed as far from the fixing screws as they will go.${plain?` ⚠ There is only room for a ${fmt(Math.round(BB.screwR*2*Math.PI/nv))}mm gap between joints and screws here, too little for a dovetail, so these are butt joints held by glue alone — six arcs would interlock properly.`:''} ${sv>0?`Reserves about <b>${sv}% less sheet</b> than the whole ring.`:`⚠ This actually reserves <b>${-sv}% MORE</b> sheet than the whole ring — the nester packs parts as rectangles, and a ${Math.round(360/nv)}° arc still boxes up nearly as wide as the circle. Six or eight arcs are the ones that pay.`}</div>`; })():'')
        +(BB?`<div class="hint" style="margin-top:6px">Board <b>${BB.shape==='circle'?'⌀'+fmt(BB.dia):fmt(BB.w)+' × '+fmt(BB.h)}</b> — ${Math.round(BB.pct*100)}% bigger than the drawing, and never smaller than the sheet. It stands off ${BB.gear!=null?`gear #${BB.gear}`:'the board'} on a <b>${fmt(BB.strip)} wide spacer ring</b> (⌀${fmt(BB.ringOD)}) sized to the board, and all ${BB.gear!=null?'three pieces — board, ring and gear — carry':'both pieces carry'} the same ${BB.screws.length}-hole ⌀${fmt(2*BB.screwR)} registration circle${BB.screwClash?' · ⚠ some holes fall in a spoke window — fewer spokes would seat them all':''}.</div>`:'')
         +(tooBig?`<div class="hint" style="margin-top:4px;color:#bf3a2b">⚠ Bigger than your ${sd[0]}×${sd[1]}mm sheet — use a larger sheet or smaller paper.</div>`:'')
        :'');
@@ -8370,6 +8450,7 @@ document.getElementById('cxPen').addEventListener('click',e=>{const b=e.target.c
       :'No gear on this machine can take a second yoke on that axis without its bar lining up parallel to the other one, which would leave the pen unheld. Add another gear somewhere else first.';
     cxUndoBtn(); renderComplexUI(); everything(); return; }
   if(b.id==='patOpen')return;   // handled by the pattern dialog
+  if(b.dataset.rsplit!=null){ const P=S.cx.pen; if(P){ P.paper=P.paper||{mode:'fit',w:200,h:200}; P.paper.board=P.paper.board||{on:true}; P.paper.board.ringSplit=+b.dataset.rsplit; renderComplexUI(); everything(); } return; }
   if(b.dataset.pshape){ const P=S.cx.pen; if(P){ P.paper=P.paper||{mode:'fit',w:200,h:200}; P.paper.board=P.paper.board||{on:true}; P.paper.board.shape=b.dataset.pshape; renderComplexUI(); everything(); } return; }
   if(b.dataset.pmarg){ const P=S.cx.pen; if(P&&P.paper&&P.paper.board){ const cur=(P.paper.board.margin==null?0.10:P.paper.board.margin);
     P.paper.board.margin=Math.max(0,Math.min(0.25,Math.round((cur*100+(+b.dataset.pmarg))/5)*5/100)); renderComplexUI(); everything(); } return; }
