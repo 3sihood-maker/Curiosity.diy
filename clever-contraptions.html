@@ -4775,7 +4775,17 @@ function cxRingSegLoops(B){ const n=cxRingSegs(B); if(!n)return null;
     const holes=(B.screws||[]).filter(sc=>{ const a=Math.atan2(sc[1],sc[0]);
       let d=a-a0; while(d<0)d+=2*Math.PI; while(d>=2*Math.PI)d-=2*Math.PI; return d<step; })
       .map(sc=>circleLoop(B.screwD/2,10).map(q=>[q[0]+sc[0],q[1]+sc[1]]));
-    segs.push({loops:[pts].concat(holes),a0,a1}); }
+    /* The arc ends and the dovetail edges meet at exactly the same point, so the outline comes
+       out with doubled vertices. The geometry reads fine, but the triangulator behind the cut
+       sheet trips on them and hands back a shredded outline — one arc came off the sheet with a
+       stray line across it. Drop repeats before anything downstream sees them. */
+    const clean=[]; pts.forEach(q=>{ const l=clean[clean.length-1];
+      if(!l||Math.hypot(q[0]-l[0],q[1]-l[1])>0.02)clean.push(q); });
+    while(clean.length>2&&Math.hypot(clean[0][0]-clean[clean.length-1][0],clean[0][1]-clean[clean.length-1][1])<=0.02)clean.pop();
+    let A2=0; for(let k=0;k<clean.length;k++){ const q=clean[k], r2=clean[(k+1)%clean.length];
+      A2+=q[0]*r2[1]-r2[0]*q[1]; }
+    if(A2<0)clean.reverse();
+    segs.push({loops:[clean].concat(holes),a0,a1}); }
   segs.plain=(prof.depth<=0); segs.depth=prof.depth;
   return segs; }
 function cxBrgCount(c){ const M=cxBrgMode(); if(M==='none')return 0; let n=c.gears.length; if(M==='gearsRods'&&c.pen)n+=c.pen.pins.length+c.pen.joints.length; return n; }
@@ -6033,7 +6043,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-29`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-30`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
