@@ -3228,11 +3228,14 @@ function cxRefPos(ref,pin,jt,joints,wl,welds,sl){ if(ref==null)return null;
     if(!base||!tip)return null; return [base[0]+(tip[0]-base[0])*t, base[1]+(tip[1]-base[1])*t]; }
   return null; }
 // a branch arm (weld): rigidly fixed to its host arm at a tap, sticking out at an angle
-function cxArmDir(baseRef,pin,jt,joints,wl,welds){ if(!baseRef||!baseRef.on)return null; const on=baseRef.on,k=+on.slice(1); let a,b;
-  if(on[0]==='j'){ const j=joints[k]; if(!j)return null; a=cxRefPos(baseRef.side==='b'?j.b:j.a,pin,jt,joints,wl,welds); b=jt[k]; }
-  else if(on[0]==='w'){ const w=welds[k]; if(!w)return null; a=cxRefPos(w.base,pin,jt,joints,wl,welds); b=wl[k]; } else return null;
+function cxArmDir(baseRef,pin,jt,joints,wl,welds,sl){ if(!baseRef||!baseRef.on)return null; const on=baseRef.on,k=+on.slice(1); let a,b;
+  if(on[0]==='j'){ const j=joints[k]; if(!j)return null; a=cxRefPos(baseRef.side==='b'?j.b:j.a,pin,jt,joints,wl,welds,sl); b=jt[k]; }
+  else if(on[0]==='w'){ const w=welds[k]; if(!w)return null; a=cxRefPos(w.base,pin,jt,joints,wl,welds,sl); b=wl[k]; }
+  else if(on[0]==='s'){ const S2=sl&&sl[k]; if(!S2)return null;   /* a sliding arm points from its pin through its sliding pin */
+    return Math.atan2(S2.B[1]-S2.A[1],S2.B[0]-S2.A[0]); }
+  else return null;
   if(!a||!b)return null; return Math.atan2(b[1]-a[1],b[0]-a[0]); }
-function cxWeldTip(w,pin,jt,wl,joints,welds){ const base=cxRefPos(w.base,pin,jt,joints,wl,welds), d=cxArmDir(w.base,pin,jt,joints,wl,welds);
+function cxWeldTip(w,pin,jt,wl,joints,welds,sl){ const base=cxRefPos(w.base,pin,jt,joints,wl,welds,sl), d=cxArmDir(w.base,pin,jt,joints,wl,welds,sl);
   if(!base||d==null)return null; const ang=d+(w.ang==null?90:w.ang)*Math.PI/180, L=w.len||100; return [base[0]+L*Math.cos(ang), base[1]+L*Math.sin(ang)]; }
 function cxNodePos(ref,pin,jt){ const P=S.cx.pen||{}; return cxRefPos(ref,pin,jt,P.joints||[],P._wl||null,P.welds||[]); }
 /* How far a member actually runs. An arm normally spans its base to its joint — 0 to 1. But if
@@ -3579,15 +3582,15 @@ function cxPenAt(c,ang){ const P=c.pen; if(!P)return null;
   const weldPos=welds.map(_=>null);
   /* resolve branch tips as soon as their host exists, so a LATER joint can pivot on a
      branch tip — the missing link for full pantographs */
-  const fillWelds=()=>{ welds.forEach((w2,wi)=>{ if(weldPos[wi])return;
-    try{ const p=cxWeldTip(w2,pinPos,jointPos,weldPos,P.joints,welds); if(p)weldPos[wi]=p; }catch(_){}}); };
   const slEarly=(P.sliders||[]).map(_=>null), needsE=P._slNeeds||[];
   const fillSlEarly=()=>{ (P.sliders||[]).forEach((sl,si)=>{ if(slEarly[si])return;
     try{ const S2=cxSliderPos(sl,pinPos,jointPos,P.joints,weldPos,welds,slEarly,needsE[si]); if(S2)slEarly[si]=S2; }catch(_){}}); };
-  for(const j of P.joints){ fillWelds(); fillSlEarly();
+  const fillWelds=()=>{ fillSlEarly(); welds.forEach((w2,wi)=>{ if(weldPos[wi])return;
+    try{ const p=cxWeldTip(w2,pinPos,jointPos,weldPos,P.joints,welds,slEarly); if(p)weldPos[wi]=p; }catch(_){}}); fillSlEarly(); };
+  for(const j of P.joints){ fillWelds();
     const A=cxRefPos(j.a,pinPos,jointPos,P.joints,weldPos,welds,slEarly), B=cxRefPos(j.b,pinPos,jointPos,P.joints,weldPos,welds,slEarly);
     jointPos.push((A&&B)?circIntersect(A,j.la,B,j.lb,j.branch||1):null); }
-  fillWelds(); P._wl=weldPos;
+  fillWelds(); fillWelds(); P._wl=weldPos;
   const slider=(P.sliders||[]).map(_=>null);
   const needs=P._slNeeds||[];
   const fillSliders=()=>{ (P.sliders||[]).forEach((sl,si)=>{ if(slider[si])return;
@@ -3702,7 +3705,13 @@ function cxAddPin(){ if(!S.cx.pen)return; const c=computeComplex(), used=S.cx.pe
 function cxAddJoint(){ if(!S.cx.pen)return; const P=S.cx.pen, nodes=[...P.pins.map((_,i)=>'p'+i),...P.joints.map((_,i)=>'j'+i)];
   const a=nodes[nodes.length-1]||'p0', b=nodes[nodes.length-2]||a, L=(P.joints[0]&&P.joints[0].la)||120; P.joints.push({a,la:L,b,lb:L,branch:1}); }
 function cxAddArm(){ const P=S.cx.pen; if(!P)return; P.welds=P.welds||[]; // a single rigid branch off the middle of the newest arm
-  const k=P.joints.length-1; if(k<0)return; const L=(P.joints[k]&&P.joints[k].la)||120;
+  const k=P.joints.length-1;
+  if(k<0){ /* no pairs of arms — hang the branch on the newest sliding arm instead. The button
+       used to bail out silently here, which read as simply broken. */
+    const s=(P.sliders||[]).length-1; if(s<0)return;
+    const L2=P.sliders[s].len||140;
+    P.welds.push({base:{on:'s'+s,t:0.5}, len:Math.max(24,Math.round(L2*0.4)), ang:90}); return; }
+  const L=(P.joints[k]&&P.joints[k].la)||120;
   P.welds.push({base:{on:'j'+k,side:'a',t:0.5}, len:Math.max(24,Math.round(L*0.55)), ang:90}); }
 /* A pen cannot sit ON a joint. Two arms pivot against each other there and the joint centre is
    the only point they share, so a pen hole at that point means the pencil is the pivot pin —
@@ -5738,6 +5747,11 @@ function sceneFromComplex(){
       (c.pen.joints||[]).forEach(j2=>{ hangRef(j2.a); hangRef(j2.b); });
       /* another slider's slot can ride a pin standing in THIS arm — drill for that pin too */
       (c.pen.sliders||[]).forEach((o2,oi2)=>{ if(oi2===si)return; hangRef(o2.a); hangRef(o2.b); });
+      /* a branch glued part-way along this arm needs its locating dowel hole */
+      (c.pen.welds||[]).forEach(w2=>{ if(w2&&w2.base&&w2.base.on==='s'+si){
+        const dwr2=Math.max(cxDowelHole()/2,0.8), d2=(w2.base.t==null?0.5:w2.base.t)*L;
+        if(!(d2>s0-2*dwr2&&d2<s1+2*dwr2)&&!seenD.some(x=>Math.abs(x-d2)<1.5)){
+          seenD.push(d2); loops.push(flipY(circleLoop(dwr2,12).map(q=>[q[0]+d2,q[1]]))); } } });
       if(isPen)loops.push(flipY(cxPenHoleLoop(L,0,cxPenAF())));
       else hang(L);
       const slMesh=plateMesh(loops,0,0,t*0.5,yLink+2.2+2.6*si);
@@ -6199,7 +6213,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-37`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-38`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -6682,6 +6696,8 @@ function renderComplexUI(){
       const W=P.welds||[];
       const weldBaseOpts=(sel,upto)=>{ const sk=cxRefKey(sel); const opt=(v,l)=>`<option value="${v}"${v===sk?' selected':''}>${l}</option>`; let o='';
         P.joints.forEach((_,k)=>o+=opt('t:j'+k+':a','arm→J'+(k+1)+' (a)')+opt('t:j'+k+':b','arm→J'+(k+1)+' (b)'));
+        (P.sliders||[]).forEach((_,m2)=>{ const v='t:s'+m2, on=!!(sel&&sel.on==='s'+m2);
+          o+=`<option value="${v}"${on?' selected':''}>sliding arm S${m2+1}</option>`; });
         for(let m=0;m<upto;m++)o+=opt('t:w'+m,'branch W'+(m+1)); return o; };
       /* A welded branch is another arm — it just starts on an existing one and heads off at an
          angle rather than meeting a second arm at a joint. Presented in the same box as the rest
