@@ -6245,7 +6245,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-40`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-41`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -6499,11 +6499,11 @@ function cxDriveOrder(c){
 function cxMotorFaceSVG(){ const M=cxMotor(); if(!M.on)return '';
   const scr=cxMotorScrewLocal(), hr=cxMotorBoardHole()/2;
   let ext=hr+2; scr.forEach(s=>ext=Math.max(ext,Math.hypot(s.x,s.y)+s.d/2+1));
-  const R=ext+10, INK='#23201a', RUST='#bf3a2b', MUT='#6b5330', F=(2*R)/34;
+  const R=ext+12, INK='#23201a', RUST='#bf3a2b', MUT='#6b5330', F=(2*R)/24;
   const Y=v=>-v;                                            /* board view: +y is up */
   const dim=(a,b,txt)=>{ const mx=(a.x+b.x)/2, my=(Y(a.y)+Y(b.y))/2;
     return `<line x1="${a.x.toFixed(2)}" y1="${Y(a.y).toFixed(2)}" x2="${b.x.toFixed(2)}" y2="${Y(b.y).toFixed(2)}" stroke="${MUT}" stroke-width="${(F*0.09).toFixed(2)}"/>`
-      +`<text x="${mx.toFixed(2)}" y="${(my-F*0.5).toFixed(2)}" font-size="${(F*1.05).toFixed(2)}" fill="${MUT}" text-anchor="middle" font-family="'Space Mono',monospace">${txt}</text>`; };
+      +`<text x="${mx.toFixed(2)}" y="${(my-F*0.42).toFixed(2)}" font-size="${(F*1.3).toFixed(2)}" fill="${MUT}" text-anchor="middle" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(F*0.28).toFixed(2)}">${txt}</text>`; };
   const a=cxMotorAng(), ca=Math.cos(a), sa=Math.sin(a), p=[];
   p.push(`<line x1="${(-R*ca).toFixed(2)}" y1="${(R*sa).toFixed(2)}" x2="${(R*ca).toFixed(2)}" y2="${(-R*sa).toFixed(2)}" stroke="${MUT}" stroke-width="${(F*0.07).toFixed(2)}" stroke-dasharray="${(F*0.5).toFixed(2)} ${(F*0.5).toFixed(2)}"/>`);
   p.push(`<circle cx="0" cy="0" r="${hr.toFixed(2)}" fill="none" stroke="${RUST}" stroke-width="${(F*0.11).toFixed(2)}"/>`);
@@ -6516,15 +6516,32 @@ function cxMotorFaceSVG(){ const M=cxMotor(); if(!M.on)return '';
   scr.forEach(s=>p.push(`<circle cx="${s.x.toFixed(2)}" cy="${Y(s.y).toFixed(2)}" r="${(s.d/2).toFixed(2)}" fill="none" stroke="${INK}" stroke-width="${(F*0.11).toFixed(2)}"/>`));
   if(scr.length>=2)p.push(dim(scr[0],scr[1],fmt(M.pitchX||18)));
   if(scr.length>=3)p.push(dim(scr[0],scr[2],fmt(M.pitchY||17)));
+  /* offset ↕ made visible: a cross at the CENTRE OF THE SCREW PATTERN, and a dimension from
+     the shaft centre to it. That distance is what the offset field sets — pattern centre to
+     shaft centre — not any single hole. Zero puts the shaft dead-centre in the pattern. */
+  if(scr.length>=1){ const dxl=M.faceDx||0, dyl=M.faceDy||0;
+    const pcx=dxl*ca-dyl*sa, pcy=dxl*sa+dyl*ca;
+    p.push(`<line x1="${(pcx-F*0.8).toFixed(2)}" y1="${Y(pcy).toFixed(2)}" x2="${(pcx+F*0.8).toFixed(2)}" y2="${Y(pcy).toFixed(2)}" stroke="${INK}" stroke-width="${(F*0.1).toFixed(2)}"/>`);
+    p.push(`<line x1="${pcx.toFixed(2)}" y1="${(Y(pcy)-F*0.8).toFixed(2)}" x2="${pcx.toFixed(2)}" y2="${(Y(pcy)+F*0.8).toFixed(2)}" stroke="${INK}" stroke-width="${(F*0.1).toFixed(2)}"/>`);
+    if(Math.abs(dyl)>0.01||Math.abs(dxl)>0.01){
+      p.push(`<line x1="0" y1="0" x2="${pcx.toFixed(2)}" y2="${Y(pcy).toFixed(2)}" stroke="${RUST}" stroke-width="${(F*0.12).toFixed(2)}"/>`);
+      const mid=[pcx/2,Y(pcy)/2];
+      p.push(`<text x="${(mid[0]+F*0.6).toFixed(2)}" y="${(mid[1]-F*0.4).toFixed(2)}" font-size="${(F*1.3).toFixed(2)}" fill="${RUST}" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(F*0.28).toFixed(2)}">offset ${fmt(Math.hypot(dxl,dyl))}</text>`);
+    } else {
+      p.push(`<text x="${(pcx+F*1.0).toFixed(2)}" y="${(Y(pcy)-F*0.7).toFixed(2)}" font-size="${(F*1.1).toFixed(2)}" fill="${INK}" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(F*0.24).toFixed(2)}">pattern centre = shaft</text>`); } }
   const clr=2*hr-2*sr;
-  p.push(`<text x="0" y="${(hr+F*1.5).toFixed(2)}" font-size="${(F*1.05).toFixed(2)}" fill="${RUST}" text-anchor="middle" font-family="'Space Mono',monospace">hole \u2300${fmt(2*hr)}</text>`);
-  p.push(`<text x="0" y="${(hr+F*2.75).toFixed(2)}" font-size="${(F*0.95).toFixed(2)}" fill="${MUT}" text-anchor="middle" font-family="'Space Mono',monospace">shaft \u2300${fmt(2*sr)} \u00b7 ${fmt(clr)} clearance</text>`);
+  p.push(`<text x="0" y="${(hr+F*1.7).toFixed(2)}" font-size="${(F*1.3).toFixed(2)}" fill="${RUST}" text-anchor="middle" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(F*0.28).toFixed(2)}">hole \u2300${fmt(2*hr)}</text>`);
+  p.push(`<text x="0" y="${(hr+F*3.1).toFixed(2)}" font-size="${(F*1.15).toFixed(2)}" fill="${MUT}" text-anchor="middle" font-family="'Space Mono',monospace" paint-order="stroke" stroke="#efe7d5" stroke-width="${(F*0.26).toFixed(2)}">shaft \u2300${fmt(2*sr)} \u00b7 ${fmt(clr)} clearance</text>`);
   return `<div class="modia"><svg xmlns="http://www.w3.org/2000/svg" viewBox="${(-R).toFixed(2)} ${(-R).toFixed(2)} ${(2*R).toFixed(2)} ${(2*R).toFixed(2)}">${p.join('')}</svg></div>`
-    +`<div class="hint" style="margin-top:4px">Board holes, actual size relative to each other \u2014 shaft \u2300${fmt(2*hr)}`
+    +`<div class="hint" style="margin-top:4px;font-size:12.5px">Board holes, actual size relative to each other \u2014 shaft \u2300${fmt(2*hr)}`
     +` for a \u2300${fmt(M.shaftD||6)} shaft (${fmt(2*hr-Math.max(M.shaftD||6,1))} clearance)`
     +(scr.length?`, ${scr.length} face screw${scr.length>1?'s':''} \u2300${fmt(M.faceScrewD||3.2)} at ${fmt(M.pitchX||18)}${scr.length>2?' \u00d7 '+fmt(M.pitchY||17):''} pitch`:', no face screws')
-    +(M.rot?`, turned ${Math.round(M.rot)}\u00b0`:'')+`. Dashed circle is the shaft, dashed line the motor body's axis.</div>`
+    +(M.rot?`, turned ${Math.round(M.rot)}\u00b0`:'')+`. Dashed circle is the shaft, dashed line the motor body's axis.`
+    +((scr.length&&(M.faceDy||M.faceDx))?` The <b>+</b> cross is the centre of the screw pattern; <b>offset \u2195</b> is the distance from the shaft centre to that cross, along the pitch-\u2195 direction \u2014 not to any single hole. Measure it on your motor as (distance shaft\u2192far screw row minus distance shaft\u2192near row) \u00f7 2.`:(scr.length?` <b>offset \u2195 = 0</b>: the shaft sits dead-centre in the screw pattern.`:''))+`</div>`
     +((2*hr-Math.max(M.shaftD||6,1))<0.4?`<div class="hint" style="color:#bf3a2b">\u26a0 Only ${fmt(2*hr-(M.shaftD||6))}mm clearance around the shaft. Charred laser edges eat most of that \u2014 <b>0.4 to 0.6</b> gives a shaft that drops through without forcing. Raise <b>board hole \u2300</b>.</div>`:''); }
+/* Redraw just the diagram, so it tracks every keystroke without re-rendering the panel and
+   stealing focus from the field being typed in. */
+function cxRefreshMoDia(){ const w2=document.getElementById('cxMoDiaWrap'); if(w2)w2.innerHTML=cxMotorFaceSVG(); }
 function renderMotorUI(c){ const host=document.getElementById('cxMotorUI'); if(!host)return;
   const M=cxMotor(), num=(id,v,st,mn,mx)=>`<input type="number" class="pnum" id="${id}" value="${v}" step="${st}" min="${mn}" max="${mx}" style="width:64px">`;
   const opts=c.gears.map(g=>`<option value="${g.id}"${M.gear===g.id?' selected':''}>#${g.id} · ${g.N}T · layer ${g.layer}</option>`).join('');
@@ -6549,7 +6566,7 @@ function renderMotorUI(c){ const host=document.getElementById('cxMotorUI'); if(!
       ${M.faceN>2?`<span class="clab">pitch ↕</span>${num('cxMotorFacePY',M.pitchY||17,0.5,6,60)}`:''}
       <span class="clab">offset ↕</span>${num('cxMotorFaceDy',M.faceDy||0,0.5,-40,40)}`:''}
       <span class="clab">rotate motor</span>${num('cxMotorRot',M.rot||0,15,0,345)}°</div>
-    ${cxMotorFaceSVG()}
+    <div id="cxMoDiaWrap">${cxMotorFaceSVG()}</div>
     ${M.faceN>0?`<div class="hint">Screw clearance holes are cut in the board around the shaft — the motor face bolts straight to the underside. <b>Measure your motor's hole pattern</b> and set the pitches; the defaults are only a guess.</div>`:''}
     <div class="cstage-top" style="margin-top:6px"><label class="pchk" data-on="${M.cradle?1:0}"><input type="checkbox" id="cxMotorCradle" ${M.cradle?'checked':''}>cradle for a screwless motor</label>
       <span class="clab">body ⌀/W</span>${num('cxMotorBodyW',M.bodyW||28,1,15,60)}<span class="clab">body length</span>${num('cxMotorBodyL',M.bodyL||62,1,25,140)}<span class="clab">hang ↓</span>${num('cxFeetDrop',cxFeet().motorDrop||50,1,0,150)}${M.cradle?`<span class="clab">offset along</span>${num('cxMotorBodyOff',M.bodyOff||30,1,0,120)}`:''}</div>
@@ -8612,12 +8629,12 @@ document.addEventListener('change',e=>{ const t=e.target; if(!t||!t.id)return;
   if(t.id==='cxMotorOn'){ cxMotor().on=t.checked; renderComplexUI(); everything(); return; }
   if(t.id==='cxMotorGear'){ cxMotor().gear=(t.value==='')?null:+t.value; renderComplexUI(); everything(); return; }
   if(t.id==='cxMotorBore'){ cxMotor().bore=t.value; renderComplexUI(); everything(); return; }
-  if(t.id==='cxMotorD'){ const M=cxMotor(); M.shaftD=Math.max(2,Math.min(15,+t.value||6)); if(M.flat!=null&&M.flat>=M.shaftD)M.flat=M.shaftD-0.5; M.clr=null; renderComplexUI(); everything(); return; }
-  if(t.id==='cxMotorFlat'){ const M=cxMotor(); M.flat=Math.max(1,Math.min((M.shaftD||6)-0.05,+t.value||((M.shaftD||6)-0.5))); renderComplexUI(); everything(); return; }
+  if(t.id==='cxMotorD'){ const M=cxMotor(); M.shaftD=Math.max(2,Math.min(15,+t.value||6)); if(M.flat!=null&&M.flat>=M.shaftD)M.flat=M.shaftD-0.5; M.clr=null; renderComplexUI(); cxRefreshMoDia(); everything(); return; }
+  if(t.id==='cxMotorFlat'){ const M=cxMotor(); M.flat=Math.max(1,Math.min((M.shaftD||6)-0.05,+t.value||((M.shaftD||6)-0.5))); renderComplexUI(); cxRefreshMoDia(); everything(); return; }
   if(t.id==='cxMotorFaceN'){ cxMotor().faceN=+t.value||0; renderComplexUI(); everything(); return; }
-  if(t.id==='cxMotorFaceD'){ cxMotor().faceScrewD=Math.max(2,Math.min(6,+t.value||3.2)); everything(); return; }
-  if(t.id==='cxMotorFacePX'){ cxMotor().pitchX=Math.max(6,Math.min(60,+t.value||18)); everything(); return; }
-  if(t.id==='cxMotorFacePY'){ cxMotor().pitchY=Math.max(6,Math.min(60,+t.value||17)); everything(); return; }
+  if(t.id==='cxMotorFaceD'){ cxMotor().faceScrewD=Math.max(2,Math.min(6,+t.value||3.2)); cxRefreshMoDia(); everything(); return; }
+  if(t.id==='cxMotorFacePX'){ cxMotor().pitchX=Math.max(6,Math.min(60,+t.value||18)); cxRefreshMoDia(); everything(); return; }
+  if(t.id==='cxMotorFacePY'){ cxMotor().pitchY=Math.max(6,Math.min(60,+t.value||17)); cxRefreshMoDia(); everything(); return; }
   if(t.id==='cxArmWIn'){ S.cx.linkW=Math.max(8,Math.min(30,+t.value||12)); renderComplexUI(); everything(); return; }
   if(t.id==='cxArmDouble'){ S.cx.armDouble=t.checked; renderComplexUI(); everything(); return; }
   if(t.id==='cxMergeBranch'){ S.cx.mergeBranch=t.checked; renderComplexUI(); everything(); return; }
@@ -8626,8 +8643,8 @@ document.addEventListener('change',e=>{ const t=e.target; if(!t||!t.id)return;
   if(t.id==='cxMotorBodyL'){ cxMotor().bodyL=Math.max(25,Math.min(140,+t.value||62)); renderComplexUI(); everything(); return; }
   if(t.id==='cxMotorBodyOff'){ cxMotor().bodyOff=Math.max(0,Math.min(120,+t.value||30)); renderComplexUI(); everything(); return; }
   if(t.id==='cxMotorRot'){ cxMotor().rot=((+t.value||0)%360+360)%360; renderComplexUI(); everything(); return; }
-  if(t.id==='cxMotorFaceDy'){ cxMotor().faceDy=Math.max(-40,Math.min(40,+t.value||0)); everything(); return; }
-  if(t.id==='cxMotorClr'){ const M=cxMotor(); const v=+t.value; if(isFinite(v)&&v>0)M.clr=Math.max(0,v-(M.shaftD||6)); everything(); return; }
+  if(t.id==='cxMotorFaceDy'){ cxMotor().faceDy=Math.max(-40,Math.min(40,+t.value||0)); cxRefreshMoDia(); everything(); return; }
+  if(t.id==='cxMotorClr'){ const M=cxMotor(); const v=+t.value; if(isFinite(v)&&v>0)M.clr=Math.max(0,v-(M.shaftD||6)); cxRefreshMoDia(); everything(); return; }
 });
 document.getElementById('cxBOM').addEventListener('click',e=>{if(e.target.closest('#cxBOMCopy')){navigator.clipboard&&navigator.clipboard.writeText(cxBOMText());const b=e.target.closest('#cxBOMCopy');if(b){const o=b.textContent;b.textContent='copied ✓';setTimeout(()=>{b.textContent=o;},1400);}}});
 document.getElementById('cxSplit').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const P=S.cx.split;
