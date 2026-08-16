@@ -3823,9 +3823,35 @@ function cxScaleMechanism(k){ const P=S.cx;
   P.linkW=Math.max(boreDia()+6, Math.round((P.linkW||12)*k));
   (P.converters||[]).forEach(v=>{ ['r','rod','rb'].forEach(f=>{ if(v[f]!=null)v[f]=Math.max(1,Math.round(v[f]*k)); });
     ['yokeW','sliderW','sliderLen','fw'].forEach(f=>{ if(v[f]!=null)v[f]=Math.max(cvMin(f),Math.round(v[f]*k)); }); });
-  if(P.pen){ P.pen.pins.forEach(pn=>{ if(cxPinIsConv(pn))pn.along=Math.round((pn.along||0)*k); else pn.r=(pn.r===0)?0:Math.max(1,Math.round(pn.r*k)); });
-    P.pen.joints.forEach(j=>{ j.la=Math.max(4,Math.round(j.la*k)); j.lb=Math.max(4,Math.round(j.lb*k)); });
-    (P.pen.welds||[]).forEach(w=>w.len=Math.max(3,Math.round((w.len||100)*k))); } }
+  /* members round to HALF millimetres: whole-mm rounding on a 7mm crank pin at half scale is a
+     14% error on that member, visibly bending the drawing the panel promises is unchanged */
+  const h2=v=>Math.round(v*2)/2;
+  if(P.pen){ P.pen.pins.forEach(pn=>{ if(cxPinIsConv(pn))pn.along=h2((pn.along||0)*k); else pn.r=(pn.r===0)?0:Math.max(1,h2(pn.r*k)); });
+    P.pen.joints.forEach(j=>{ j.la=Math.max(4,h2(j.la*k)); j.lb=Math.max(4,h2(j.lb*k)); });
+    (P.pen.welds||[]).forEach(w=>w.len=Math.max(3,h2((w.len||100)*k)));
+    /* Sliding arms scale like every other member: the length in millimetres, never the
+       fractional positions (a crossing pin at 55% along is still at 55%). Written after this
+       function was, so a scaled slider machine used to keep its old arm lengths against grown
+       gears — a completely different linkage, and a completely different drawing. */
+    (P.pen.sliders||[]).forEach(sl=>{ sl.len=Math.max(20,h2((sl.len||120)*k)); }); }
+  CX_SLR_MEMO={}; try{ if(P.pen)P.pen._slNeeds=null; }catch(_){}
+  /* Dowel bores and slot clearances are hardware — they do NOT scale — so a scaled-down
+     slider can land just under its slot's new minimum. Lift it to the floor here, so the scale
+     buttons never leave a red length warning behind. Everything anchored PART-WAY along the
+     lifted arm holds its absolute position: a fraction of a longer arm is further out, and on
+     a crossing machine that error is amplified twice over — first swinging the second arm
+     about a short pin-to-pin distance, then multiplied along it to the pen. Rescaling the
+     fractions keeps the drawing a faithful scaled copy; only the lifted arm's own tip moves. */
+  try{ if(P.pen&&P.pen.sliders&&P.pen.sliders.length){ const c2=computeComplex();
+    P.pen.sliders.forEach((sl,si)=>{ const nd=cxSliderNeed(c2,si,P.pen.penRef==='s'+si);
+      if(sl.len<nd){ const f=sl.len/nd;
+        const fixT=ref=>{ if(ref&&ref.on==='s'+si&&ref.t!=null)ref.t=Math.max(0,Math.min(1,ref.t*f)); };
+        (P.pen.joints||[]).forEach(j=>{ fixT(j.a); fixT(j.b); });
+        (P.pen.welds||[]).forEach(w2=>{ if(w2)fixT(w2.base); });
+        P.pen.sliders.forEach((o,oi)=>{ if(oi!==si){ fixT(o.a); fixT(o.b); } });
+        fixT(P.pen.penRef);
+        sl.len=nd; } });
+    CX_SLR_MEMO={}; } }catch(_){} }
 // gears whose body has too little rim left around the fixed dowel bore at the current scale
 function cxTinyGears(c){ const br=boreDia()/2; return c.gears.filter(g=>((c.m*(g.N-2.5)/2)-br)<3); }
 // a guide piece that spans the gear's own axis must let the shaft through
@@ -6219,7 +6245,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-39`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-40`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
