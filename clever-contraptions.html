@@ -4480,6 +4480,12 @@ function cxFeetH(){ const F=cxFeet(); const hang=cxMotor().on?(F.motorDrop||50)+
    cross-lapped to one tie. Placement hunts for spots inside the board outline that are
    clear of every shaft nut, the motor keep-out, and the guide posts. */
 var _feetPlanCache={key:null,plan:null};
+/* Keep the by-hand foot list exactly as long as the asked-for unit count, padding new feet in
+   a spread rather than a stack so a third foot never lands on top of the second. */
+function cxManSync(F){ F.man=F.man||[];
+  while(F.man.length<Math.max(1,Math.min(3,F.units||2))){ const n=F.man.length, last=F.man[n-1]||{x:0,y:40,ang:0};
+    F.man.push({x:(last.x||0)-60, y:-(last.y||0), ang:last.ang||0}); }
+  F.man.length=Math.max(1,Math.min(3,F.units||2)); }
 function cxFeetPlan(c){ const F=cxFeet(); if(!F.on)return {ok:false,units:[],fl:F.fl||90,msg:''};
   const M=S.cx.motor||{}, key=JSON.stringify([F,M.on,M.gear,M.rot,M.cradle,M.bodyW,M.bodyL,M.bodyOff,c.gears.map(g=>[g.id,g.x,g.y,g.N]),S.thick]);
   if(_feetPlanCache.key===key)return _feetPlanCache.plan;
@@ -6213,7 +6219,7 @@ function complexReadout(){
     const ed=S.cx.edges.filter(x=>c.byId[x.gear]); const edTxt=ed.length?` · ${ed.length} edge-mounted rack${ed.length>1?'s':''}`:'';
     const brgTxt=(cxBrgMode()!=='none')?` · ⌀${S.cx.bearing.od}mm bearings ${cxBrgMode()==='gearsRods'?'in gears &amp; rod pivots':'in gears'}`:'';
     msg.className='mesh-ok good';msg.textContent=`✔ ${c.gears.length} gears on ${c.layers} layer${c.layers>1?'s':''} — one crank drives the stack. Driver→output ${red.toFixed(2)}:1 (${dir}).${cvTxt}${edTxt}${brgTxt}${spTxt}`;}
-  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-38`;
+  const cap=document.getElementById('caption'); if(cap)cap.textContent=`Complex Workbench — ${c.gears.length} gears, ${c.layers} layers · ${cxBoardShapeLabel()} board · build rackgear-39`;
 }
 function exportComplex(){
   const c=computeComplex(), m=c.m, kh=S.kerf/2, CUT='#bf3a2b', SCORE='#2c5f8a', SW=0.12, gap=8, parts=[]; let x=gap, rowH=0;
@@ -8553,12 +8559,16 @@ document.addEventListener('change',e=>{ const t=e.target; if(!t||!t.id)return;
   if(t.id==='cxFeetHand'){ const F=cxFeet();
     if(t.checked&&(!F.man||!F.man.length)){ try{ const c2=computeComplex(), bpl=cxBoardPlan(c2), p2=cxFeetPlan(c2);
       F.man=(p2.ok&&p2.units.length?p2.units:[{x:bpl.ox,y:bpl.oy+40,ang:0},{x:bpl.ox,y:bpl.oy-40,ang:0}]).map(u=>({x:Math.round(u.x-bpl.ox),y:Math.round(u.y-bpl.oy),ang:Math.round((u.ang||0)*180/Math.PI)})); }catch(_){ F.man=[{x:0,y:40,ang:0},{x:0,y:-40,ang:0}]; } }
+    /* The list must match the units count from the START. Seeding from the planner used to
+       hand over however many feet the planner managed (often fewer), so asking for three and
+       then ticking place-by-hand gave two rows and no way to a third. */
+    if(t.checked)cxManSync(F);
     F.byHand=t.checked; renderComplexUI(); everything(); return; }
   if(/^cxFeetM[XYA]_\d+$/.test(t.id||'')){ const F=cxFeet(), m2=t.id.match(/^cxFeetM([XYA])_(\d+)$/), u=(F.man||[])[+m2[2]];
     if(u){ const v=+t.value||0; if(m2[1]==='X')u.x=v; else if(m2[1]==='Y')u.y=v; else u.ang=v; everything(); } return; }
   if(t.id==='cxFeetStyle'){ cxFeet().style=t.value; renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetUnits'){ const F=cxFeet(); F.units=+t.value||2;
-    if(F.byHand&&F.man){ while(F.man.length<F.units)F.man.push({x:(F.man[F.man.length-1]||{x:0}).x+40,y:(F.man[F.man.length-1]||{y:0}).y,ang:0}); F.man.length=Math.min(F.man.length,F.units); }
+    if(F.byHand)cxManSync(F);
     renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetH'){ const v=+t.value; cxFeet().h=isFinite(v)&&v>0?Math.max(25,Math.min(120,v)):null; renderComplexUI(); everything(); return; }
   if(t.id==='cxFeetFL'){ cxFeet().fl=Math.max(30,Math.min(200,+t.value||90)); renderComplexUI(); everything(); return; }
@@ -9122,8 +9132,8 @@ function scheduleAutosave(){ if(!cccBooted)return; markDirty(); if(autosaveT)cle
     if(prevSession.sheet){ const sz=document.getElementById('sheetSize'); if(sz&&[...sz.options].some(o=>o.value===prevSession.sheet)){ sz.value=prevSession.sheet; if(prevSession.sheetW)S.sheetW=prevSession.sheetW; if(prevSession.sheetH)S.sheetH=prevSession.sheetH; try{syncSheetCustom();}catch(_){} try{cxSyncSplitMax();}catch(_){} } }
     applyLoadedState(); markSaved(); }catch(_){} kill(); });
   no.addEventListener('click',kill);
-  /* Fade it away by itself if ignored, so it never nags. */
-  setTimeout(()=>{ if(bar.parentNode){ bar.style.transition='opacity .6s'; bar.style.opacity='0'; setTimeout(kill,700); } },30000);
+  /* It used to fade itself out after 30 seconds, which meant looking away at the wrong moment
+     lost the offer with no way back. It now stays until answered — one tap either way. */
 })();
 /* Keyboard: Esc closes overlays; Ctrl/Cmd+Z / Shift+Z (or Y) drives the Complex Workbench history. */
 document.addEventListener('keydown',e=>{
